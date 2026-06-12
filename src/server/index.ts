@@ -395,7 +395,7 @@ const MIME_TYPES: Record<string, string> = {
 };
 
 function serveStatic(req: IncomingMessage, res: any) {
-  const urlPath = req.url === '/' ? 'index.html' : req.url!;
+  const urlPath = req.url === '/' ? 'index.html' : req.url!.replace(/^\//, '');
   let filePath = resolve(CLIENT_DIR, urlPath);
   // H3: prevent path traversal
   if (!filePath.startsWith(resolve(CLIENT_DIR))) return false;
@@ -430,8 +430,8 @@ const wss = new WebSocketServer({ server, path: '/ws' });
 
 wss.on('connection', handleConnection);
 
-server.listen(PORT, () => {
+server.listen(PORT, '0.0.0.0', () => {
   console.log(`🎮 Astrocade Trivia Royale server running on port ${PORT}`);
-  console.log(`   WebSocket: ws://localhost:${PORT}/ws`);
-  console.log(`   Health:    http://localhost:${PORT}/health`);
+  console.log(`   WebSocket: ws://0.0.0.0:${PORT}/ws`);
+  console.log(`   Health:    http://0.0.0.0:${PORT}/health`);
 });
