@@ -400,7 +400,8 @@ function serveStatic(req: IncomingMessage, res: any) {
   // H3: prevent path traversal
   if (!filePath.startsWith(resolve(CLIENT_DIR))) return false;
   const ext = extname(filePath);
-  if (!ext || !MIME_TYPES[ext]) filePath = resolve(CLIENT_DIR, 'index.html');
+  // Only serve files with known extensions; no SPA fallback to index.html
+  if (!ext || !MIME_TYPES[ext]) return false;
 
   if (existsSync(filePath) && statSync(filePath).isFile()) {
     const ct = MIME_TYPES[extname(filePath)] || 'application/octet-stream';

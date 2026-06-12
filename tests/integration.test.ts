@@ -68,16 +68,23 @@ function waitForMessage(ws: WebSocket, type: string, timeout = 5000): Promise<an
 async function testWebSocketJoin() {
   console.log('\n🔌 WebSocket: join');
   const ws = await wsConnect();
+
+  // Collect messages to handle race conditions
+  const messages: any[] = [];
+  ws.on('message', (data: Buffer) => messages.push(JSON.parse(data.toString())));
+
   ws.send(JSON.stringify({ type: 'join', name: 'TestBot' }));
 
-  const joined = await waitForMessage(ws, 'joined');
-  assert(joined.playerId.startsWith('p-'), 'Player ID assigned');
-  assert(joined.roomId.startsWith('room-'), 'Room ID assigned');
-  assert(joined.name === 'TestBot', 'Name echoed back');
+  // Wait for joined + room_update (may arrive in any order)
+  await new Promise(r => setTimeout(r, 500));
 
-  const roomUpdate = await waitForMessage(ws, 'room_update');
-  assert(roomUpdate.roomState.players.length >= 1, 'Room has ≥1 player');
-  assert(roomUpdate.roomState.state === 'waiting', 'Room state is waiting');
+  const joined = messages.find(m => m.type === 'joined');
+  const roomUpdate = messages.find(m => m.type === 'room_update');
+  assert(joined?.playerId?.startsWith('p-'), 'Player ID assigned');
+  assert(joined?.roomId?.startsWith('room-'), 'Room ID assigned');
+  assert(joined?.name === 'TestBot', 'Name echoed back');
+  assert(roomUpdate?.roomState?.players?.length >= 1, 'Room has ≥1 player');
+  assert(roomUpdate?.roomState?.state === 'waiting', 'Room state is waiting');
 
   ws.close();
 }
