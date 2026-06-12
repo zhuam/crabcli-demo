@@ -1,0 +1,667 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#FFD23F">
+<title>Idle Lemonade Stand</title>
+<style>
+  :root{
+    --brand:#FFD23F; --mint:#06A77D; --warn:#F46036;
+    --ink:#2D2A32; --bg:#FFF8E7; --panel:#FFEEB3; --shadow:rgba(45,42,50,.18);
+    --num:'Roboto Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+    --ui:'Quicksand', system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0; padding:0; height:100%; background:var(--bg); color:var(--ink); font-family:var(--ui);}
+  body{
+    display:flex; flex-direction:column; align-items:stretch;
+    overflow:hidden; touch-action:manipulation; user-select:none; -webkit-user-select:none;
+    background:radial-gradient(1200px 800px at 50% -10%, #FFE99A 0%, var(--bg) 60%);
+  }
+  #app{
+    max-width:520px; width:100%; margin:0 auto; height:100dvh; min-height:100%;
+    display:flex; flex-direction:column; padding:env(safe-area-inset-top) 12px env(safe-area-inset-bottom) 12px;
+    position:relative;
+  }
+  /* top bar */
+  .top{
+    display:flex; align-items:center; justify-content:space-between; gap:8px;
+    padding:8px 6px; font-family:var(--num); font-weight:700;
+  }
+  .top .cell{display:flex; align-items:center; gap:6px; font-size:14px;}
+  .top .cash{font-size:20px; color:var(--ink);}
+  .top .best{color:#7a6b3f;}
+  .top .stores{color:var(--mint);}
+  .mute{
+    appearance:none; border:0; background:transparent; font-size:20px;
+    width:36px; height:36px; border-radius:50%; cursor:pointer;
+  }
+  .mute:hover{background:rgba(0,0,0,.05);}
+  /* progress (IPO) */
+  .ipo{
+    margin:4px 6px 6px; height:10px; background:#eadfa6; border-radius:6px; overflow:hidden;
+    position:relative;
+  }
+  .ipo .bar{
+    height:100%; width:0%; background:linear-gradient(90deg, var(--mint), #ffd23f);
+    transition:width .18s linear;
+  }
+  .ipo .label{
+    position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+    font-size:10px; font-family:var(--num); color:#3b3520; font-weight:700; letter-spacing:.5px;
+  }
+  /* main click area */
+  .stage{
+    flex:1; display:flex; align-items:center; justify-content:center; position:relative;
+    min-height:230px;
+  }
+  .cup{
+    width:min(62vw, 240px); aspect-ratio:1/1; border:none; cursor:pointer;
+    background:radial-gradient(circle at 35% 30%, #fff5b0 0%, var(--brand) 55%, #e0b020 100%);
+    border-radius:50%; box-shadow:0 12px 24px var(--shadow), inset 0 -10px 24px rgba(0,0,0,.12);
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px;
+    font-family:var(--ui); font-weight:700; color:#3b3520;
+    transition:transform .08s ease;
+    position:relative;
+    padding:0;
+  }
+  .cup:active, .cup.tapped{ transform:scale(.95); }
+  .cup .emoji{ font-size:80px; line-height:1; filter:drop-shadow(0 4px 6px rgba(0,0,0,.18));}
+  .cup .perclick{ font-family:var(--num); font-size:16px; color:#3b3520; margin-top:4px;}
+  .cup .hint{ font-size:11px; opacity:.6; font-family:var(--num); }
+  /* particles & float texts */
+  .fx{ position:absolute; pointer-events:none; left:0; top:0; right:0; bottom:0; overflow:hidden;}
+  .float{
+    position:absolute; font-family:var(--num); font-weight:700; color:var(--mint);
+    font-size:18px; pointer-events:none; will-change:transform,opacity;
+    text-shadow:0 1px 0 #fff;
+  }
+  .coin{
+    position:absolute; width:14px; height:14px; border-radius:50%;
+    background:radial-gradient(circle at 35% 30%, #fff7c0, #ffcd2f 60%, #b78800);
+    pointer-events:none; will-change:transform,opacity;
+    box-shadow:0 1px 2px rgba(0,0,0,.25);
+  }
+  /* price slider */
+  .price{
+    margin:6px; padding:8px 10px; background:var(--panel); border-radius:12px;
+    display:flex; align-items:center; gap:10px; box-shadow:0 2px 6px var(--shadow);
+  }
+  .price label{font-size:12px; font-family:var(--num);}
+  .price .val{font-family:var(--num); font-weight:700; min-width:54px; text-align:right;}
+  .price input[type=range]{flex:1;}
+  .price .demand{font-size:11px; color:#7a6b3f; font-family:var(--num); min-width:60px; text-align:right;}
+  /* upgrades */
+  .ups{
+    display:flex; flex-direction:column; gap:6px; margin:4px 6px 8px;
+  }
+  .up{
+    background:#fff; border:0; border-radius:12px; padding:10px 12px;
+    display:grid; grid-template-columns:auto 1fr auto; gap:8px; align-items:center;
+    box-shadow:0 2px 6px var(--shadow); cursor:pointer; text-align:left;
+    transition:transform .1s ease, box-shadow .1s ease, opacity .1s;
+    color:var(--ink); font:inherit;
+  }
+  .up:active{ transform:translateY(1px); }
+  .up.affordable{ background:linear-gradient(180deg, #fff, #effbe9); box-shadow:0 0 0 2px var(--mint), 0 2px 6px var(--shadow);}
+  .up:disabled{ opacity:.55; cursor:not-allowed;}
+  .up .icon{ font-size:24px;}
+  .up .meta{ display:flex; flex-direction:column; gap:2px;}
+  .up .name{ font-weight:700; font-size:14px;}
+  .up .desc{ font-size:11px; color:#5a5560; font-family:var(--num);}
+  .up .cta{ display:flex; flex-direction:column; align-items:flex-end; gap:2px;}
+  .up .cost{ font-family:var(--num); font-weight:700; font-size:14px; color:var(--mint);}
+  .up:disabled .cost{ color:var(--warn);}
+  .up .key{ font-size:10px; color:#888; font-family:var(--num);}
+  /* end screen */
+  .modal{
+    position:fixed; inset:0; background:rgba(20,18,22,.55); backdrop-filter:blur(4px);
+    display:none; align-items:center; justify-content:center; z-index:10;
+    animation:fade .3s ease;
+  }
+  .modal.show{ display:flex; }
+  .card{
+    background:var(--bg); border-radius:18px; padding:22px 22px 18px; max-width:340px; width:88%;
+    text-align:center; box-shadow:0 16px 40px rgba(0,0,0,.35);
+    animation:pop .35s cubic-bezier(.2,1.2,.4,1);
+  }
+  .card h2{ margin:0 0 10px; font-size:22px; }
+  .card .stats{ font-family:var(--num); font-size:13px; line-height:1.7; color:#3b3520; margin:8px 0 16px;}
+  .card .stats .new{ color:var(--warn); font-weight:700; margin-left:4px;}
+  .card .replay{
+    appearance:none; border:0; cursor:pointer; font:inherit; font-weight:700;
+    background:var(--brand); color:#3b3520; padding:14px 18px; border-radius:14px;
+    width:100%; font-size:16px; box-shadow:0 4px 0 #c9a017;
+  }
+  .card .replay:active{ transform:translateY(2px); box-shadow:0 2px 0 #c9a017;}
+  .card .sub{ margin-top:8px; font-size:11px; color:#7a6b3f; font-family:var(--num);}
+  /* fireworks layer */
+  .fw{ position:fixed; inset:0; pointer-events:none; z-index:9; overflow:hidden; }
+  @keyframes fade{ from{opacity:0} to{opacity:1} }
+  @keyframes pop{ 0%{transform:scale(.7); opacity:0} 100%{transform:scale(1); opacity:1} }
+  /* small screens */
+  @media (max-height: 640px){
+    .cup .emoji{ font-size:64px; }
+    .cup{ width:min(50vw,180px); }
+  }
+</style>
+</head>
+<body>
+<div id="app" aria-label="Idle Lemonade Stand">
+  <div class="top">
+    <div class="cell cash">💰 <span id="cash">$0</span></div>
+    <div class="cell best">⭐ <span id="best">$0</span></div>
+    <div class="cell stores">🏪 <span id="stores">1</span></div>
+    <button class="mute" id="mute" aria-label="toggle sound" title="Mute (M)">🔊</button>
+  </div>
+  <div class="ipo" aria-label="IPO progress">
+    <div class="bar" id="bar"></div>
+    <div class="label" id="barLabel">IPO 0%</div>
+  </div>
+
+  <div class="stage" id="stage">
+    <button class="cup" id="cup" aria-label="Sell lemonade (Space)">
+      <div class="emoji">🍋</div>
+      <div class="perclick" id="perClick">+$1</div>
+      <div class="hint">tap / Space</div>
+    </button>
+    <div class="fx" id="fx" aria-hidden="true"></div>
+  </div>
+
+  <div class="price">
+    <label>💵 Price</label>
+    <input type="range" id="price" min="1" max="10" step="1" value="2" aria-label="Price per cup">
+    <div class="val" id="priceVal">$2</div>
+    <div class="demand" id="demand">demand 90%</div>
+  </div>
+
+  <div class="ups" id="ups"></div>
+
+  <div class="fw" id="fw" aria-hidden="true"></div>
+</div>
+
+<div class="modal" id="end" role="dialog" aria-modal="true">
+  <div class="card">
+    <h2 id="endTitle">🎉 IPO Success!</h2>
+    <div class="stats" id="endStats"></div>
+    <button class="replay" id="replay">Play Again (Space)</button>
+    <div class="sub">Press <b>Space</b> or <b>Enter</b> to restart</div>
+  </div>
+</div>
+
+<script>
+"use strict";
+/* ==========================================================
+   Idle Lemonade Stand — single-file vanilla JS
+   - rAF + 100ms accumulator tick (decoupled sim/render)
+   - pointer events + keyboard (Space, 1/2/3, R, M)
+   - WebAudio synth SFX, navigator.vibrate haptic
+   - localStorage: highScore + fastestWinMs + muted
+   - Closed 3-minute round, NO offline progression
+   ========================================================== */
+
+const CONFIG = {
+  TICK_MS: 100,
+  MAX_DUR_MS: 180_000,   // 3 minutes hard cap
+  WIN_TARGET: 100_000,   // $100K market cap = IPO (achievable in ~90-150s)
+  EMP_IDLE_RATE: 0.5,    // employees produce at 0.5x when idle (player not clicking)
+  IDLE_THRESHOLD_MS: 1500, // > this without click = idle
+  SHOP_BONUS: 0.6,       // each extra shop multiplies total lps
+  // upgrades
+  emp:   { base:10,   factor:1.18, lps:2,     name:"Hire Employee",   icon:"👷", desc:"+2 cups/s auto" },
+  cup:   { base:25,   factor:1.20, perClick:2, name:"Bigger Cup",     icon:"🥤", desc:"+per-click power" },
+  shop:  { base:500,  factor:1.45,             name:"Open New Shop",  icon:"🏪", desc:"+60% empire boost" },
+};
+
+const KEY_HIGH = "lemonade.highScore";
+const KEY_TIME = "lemonade.fastestWinMs";
+const KEY_MUTE = "lemonade.muted";
+
+/* ---------- helpers ---------- */
+const $ = (id)=>document.getElementById(id);
+const fmt = (n)=>{
+  if(!isFinite(n)) return "$∞";
+  if(n<1000) return "$"+Math.floor(n);
+  const units=["","K","M","B","T"];
+  let i=0; let v=n;
+  while(v>=1000 && i<units.length-1){v/=1000;i++;}
+  return "$"+(v>=100?v.toFixed(0):v>=10?v.toFixed(1):v.toFixed(2))+units[i];
+};
+const safeLS = {
+  get(k,def){ try{ const v=localStorage.getItem(k); return v==null?def:v; }catch{return def;} },
+  set(k,v){ try{ localStorage.setItem(k,String(v)); }catch{} },
+};
+
+/* ---------- state ---------- */
+let state, rafId=0, lastNow=0, accum=0;
+
+function freshState(){
+  return {
+    cash: 0,
+    totalEarned: 0,
+    cupsSold: 0,
+    price: 2,                // $/cup
+    perClick: 1,             // base from cup upgrade
+    cupLvl: 0,
+    empLvl: 0,               // hired employees count
+    shopLvl: 1,              // start with 1 shop
+    startedAt: performance.now(),
+    elapsedMs: 0,
+    lastClickAt: performance.now(),
+    ended: false,
+    won: false,
+    highScore: parseInt(safeLS.get(KEY_HIGH,"0"),10)||0,
+    fastestWin: parseInt(safeLS.get(KEY_TIME,"0"),10)||0,
+    muted: safeLS.get(KEY_MUTE,"0")==="1",
+  };
+}
+
+/* derived: lps (per second auto income) */
+function lps(){
+  const empLps = state.empLvl * CONFIG.emp.lps;
+  const shopMult = 1 + (state.shopLvl-1)*CONFIG.SHOP_BONUS;
+  return empLps * shopMult;
+}
+/* current click value */
+function clickValue(){
+  const base = state.perClick * state.price;
+  const shopMult = 1 + (state.shopLvl-1)*CONFIG.SHOP_BONUS;
+  // demand penalty: higher price -> fewer cups but each click still sells one
+  return base * shopMult;
+}
+/* demand fraction 0..1, affects auto income via price */
+function demand(){
+  // price 1 -> 1.0, price 10 -> 0.2 (linear-ish)
+  return Math.max(0.15, 1.05 - state.price*0.085);
+}
+function autoIncomePerSec(){
+  return lps() * state.price * demand();
+}
+function costOf(kind){
+  const c = CONFIG[kind];
+  const lvl = kind==="emp"?state.empLvl: kind==="cup"?state.cupLvl: state.shopLvl-1;
+  return Math.ceil(c.base * Math.pow(c.factor, lvl));
+}
+
+/* ---------- audio (synth) ---------- */
+let actx=null;
+function audio(){
+  if(state.muted) return null;
+  if(!actx){ try{ actx = new (window.AudioContext||window.webkitAudioContext)(); }catch{ return null; } }
+  if(actx.state==="suspended") actx.resume();
+  return actx;
+}
+function beep(freq=800, dur=0.05, type="square", gain=0.05, slideTo=null){
+  const a = audio(); if(!a) return;
+  const o = a.createOscillator();
+  const g = a.createGain();
+  o.type=type; o.frequency.value=freq;
+  if(slideTo) o.frequency.exponentialRampToValueAtTime(slideTo, a.currentTime+dur);
+  g.gain.value=gain;
+  g.gain.exponentialRampToValueAtTime(0.0001, a.currentTime+dur);
+  o.connect(g).connect(a.destination);
+  o.start(); o.stop(a.currentTime+dur);
+}
+let lastClickSfx=0;
+function sfxClick(){
+  const now=performance.now();
+  if(now-lastClickSfx<60) return; // throttle for rapid spam
+  lastClickSfx=now;
+  beep(820, 0.05, "square", 0.04);
+}
+function sfxUpgrade(){ beep(520,0.18,"triangle",0.06,820); }
+function sfxWin(){
+  const a=audio(); if(!a) return;
+  const notes=[523,587,659,698,784,880,988,1046];
+  notes.forEach((f,i)=>setTimeout(()=>beep(f,0.12,"triangle",0.06), i*70));
+}
+function sfxLose(){ beep(280,0.45,"sawtooth",0.06,140); }
+
+function vibrate(ms){ if(navigator.vibrate) try{ navigator.vibrate(ms); }catch{} }
+
+/* ---------- render ---------- */
+const dirty = new Set();
+const mark = (k)=>dirty.add(k);
+
+function render(){
+  if(dirty.has("cash")) $("cash").textContent = fmt(state.cash);
+  if(dirty.has("best")) $("best").textContent = fmt(state.highScore);
+  if(dirty.has("stores")) $("stores").textContent = state.shopLvl;
+  if(dirty.has("perClick")) $("perClick").textContent = "+"+fmt(clickValue()).replace("$","$");
+  if(dirty.has("ipo")){
+    const pct = Math.min(100, state.cash/CONFIG.WIN_TARGET*100);
+    $("bar").style.width = pct.toFixed(1)+"%";
+    $("barLabel").textContent = "IPO "+pct.toFixed(0)+"% — Goal "+fmt(CONFIG.WIN_TARGET);
+  }
+  if(dirty.has("price")){
+    $("priceVal").textContent = "$"+state.price;
+    $("demand").textContent = "demand "+Math.round(demand()*100)+"%";
+  }
+  if(dirty.has("ups")) renderUps();
+  if(dirty.has("mute")) $("mute").textContent = state.muted?"🔇":"🔊";
+  dirty.clear();
+}
+
+function renderUps(){
+  const el = $("ups");
+  const items = [
+    {kind:"emp",  k:"1", info:`Lv.${state.empLvl} · auto ${fmt(autoIncomePerSec()).replace('$','$')}/s`},
+    {kind:"cup",  k:"2", info:`Lv.${state.cupLvl} · +${fmt(clickValue()).replace('$','$')}/click`},
+    {kind:"shop", k:"3", info:`${state.shopLvl} shops · +${Math.round((state.shopLvl-1)*CONFIG.SHOP_BONUS*100)}% boost`},
+  ];
+  // build once if empty
+  if(el.childElementCount !== items.length){
+    el.innerHTML = "";
+    items.forEach((it,idx)=>{
+      const c=CONFIG[it.kind];
+      const b=document.createElement("button");
+      b.className="up"; b.dataset.kind=it.kind; b.dataset.idx=idx;
+      b.innerHTML = `
+        <div class="icon">${c.icon}</div>
+        <div class="meta"><div class="name">${c.name}</div><div class="desc" data-info></div></div>
+        <div class="cta"><div class="cost" data-cost></div><div class="key">key ${it.k}</div></div>`;
+      b.addEventListener("pointerdown",(e)=>{e.preventDefault(); buy(it.kind);});
+      el.appendChild(b);
+    });
+  }
+  // update info & cost & affordable styling
+  Array.from(el.children).forEach((b,i)=>{
+    const it = items[i];
+    const cost = costOf(it.kind);
+    b.querySelector("[data-info]").textContent = it.info;
+    b.querySelector("[data-cost]").textContent = fmt(cost);
+    const can = state.cash >= cost && !state.ended;
+    b.disabled = !can;
+    b.classList.toggle("affordable", can);
+  });
+}
+
+/* ---------- effects ---------- */
+const fxLayer = ()=>$("fx");
+const stageEl = ()=>$("stage");
+const cupEl = ()=>$("cup");
+
+function spawnFloat(text, x, y, color){
+  const f = document.createElement("div");
+  f.className="float"; f.textContent=text;
+  if(color) f.style.color=color;
+  f.style.left=(x-12)+"px"; f.style.top=(y-10)+"px";
+  fxLayer().appendChild(f);
+  const dx = (Math.random()*40-20);
+  f.animate(
+    [{transform:"translate(0,0)", opacity:1},
+     {transform:`translate(${dx}px,-60px)`, opacity:0}],
+    {duration:700, easing:"cubic-bezier(.2,.8,.3,1)"}
+  ).onfinish = ()=>f.remove();
+}
+
+function spawnCoins(x, y){
+  const stage = stageEl().getBoundingClientRect();
+  const target = $("cash").getBoundingClientRect();
+  const tx = target.left - stage.left + target.width/2;
+  const ty = target.top - stage.top + target.height/2;
+  for(let i=0;i<3;i++){
+    const c = document.createElement("div");
+    c.className="coin";
+    c.style.left=(x-7)+"px"; c.style.top=(y-7)+"px";
+    fxLayer().appendChild(c);
+    const dx = tx - x + (Math.random()*20-10);
+    const dy = ty - y;
+    c.animate(
+      [{transform:"translate(0,0) scale(.6)", opacity:1},
+       {transform:`translate(${dx*0.5}px,${dy*0.5-30}px) scale(1.1)`, opacity:1, offset:.5},
+       {transform:`translate(${dx}px,${dy}px) scale(.4)`, opacity:0}],
+      {duration:520+Math.random()*120, easing:"cubic-bezier(.4,.05,.4,1)"}
+    ).onfinish = ()=>c.remove();
+  }
+}
+
+function fireworks(){
+  const fw = $("fw");
+  fw.innerHTML="";
+  for(let burst=0; burst<6; burst++){
+    setTimeout(()=>{
+      const cx = Math.random()*window.innerWidth;
+      const cy = window.innerHeight*(0.2+Math.random()*0.4);
+      const colors = ["#FFD23F","#06A77D","#F46036","#ff7eb6","#7e9bff"];
+      const col = colors[(burst)%colors.length];
+      for(let i=0;i<14;i++){
+        const p = document.createElement("div");
+        p.className="coin";
+        p.style.background=col;
+        p.style.left=cx+"px"; p.style.top=cy+"px";
+        fw.appendChild(p);
+        const ang = (i/14)*Math.PI*2;
+        const r = 80+Math.random()*60;
+        p.animate(
+          [{transform:"translate(0,0)", opacity:1},
+           {transform:`translate(${Math.cos(ang)*r}px,${Math.sin(ang)*r}px)`, opacity:0}],
+          {duration:900, easing:"cubic-bezier(.2,.7,.4,1)"}
+        ).onfinish = ()=>p.remove();
+      }
+    }, burst*180);
+  }
+}
+
+/* ---------- actions ---------- */
+function clickSell(x, y){
+  if(state.ended) return;
+  const gain = clickValue();
+  state.cash += gain;
+  state.totalEarned += gain;
+  state.cupsSold += 1;
+  state.lastClickAt = performance.now();
+  mark("cash"); mark("ipo"); mark("ups"); mark("perClick");
+  // visual
+  const cup = cupEl();
+  cup.classList.remove("tapped"); void cup.offsetWidth; cup.classList.add("tapped");
+  setTimeout(()=>cup.classList.remove("tapped"),100);
+  if(typeof x!=="number"){
+    const r = cup.getBoundingClientRect();
+    const s = stageEl().getBoundingClientRect();
+    x = r.left - s.left + r.width/2;
+    y = r.top - s.top + r.height/2;
+  }
+  spawnFloat("+"+fmt(gain), x, y);
+  spawnCoins(x, y);
+  sfxClick();
+  vibrate(8);
+  if(state.cash >= CONFIG.WIN_TARGET) endGame(true);
+}
+
+function buy(kind){
+  if(state.ended) return;
+  const cost = costOf(kind);
+  if(state.cash < cost){
+    // fail feedback
+    vibrate(20);
+    beep(200,0.08,"square",0.04);
+    return;
+  }
+  state.cash -= cost;
+  if(kind==="emp"){ state.empLvl += 1; }
+  else if(kind==="cup"){ state.cupLvl += 1; state.perClick = 1 + state.cupLvl*CONFIG.cup.perClick; }
+  else if(kind==="shop"){ state.shopLvl += 1; }
+  mark("cash"); mark("ipo"); mark("ups"); mark("stores"); mark("perClick");
+  sfxUpgrade();
+  vibrate(15);
+  // levelup float at button
+  spawnFloat("Lv Up!", window.innerWidth/2, window.innerHeight*0.55, "#F46036");
+}
+
+/* ---------- main loop ---------- */
+function tick(dtSec){
+  if(state.ended) return;
+  state.elapsedMs = performance.now() - state.startedAt;
+  // auto income (with idle factor)
+  const since = performance.now() - state.lastClickAt;
+  const idleFactor = since > CONFIG.IDLE_THRESHOLD_MS ? CONFIG.EMP_IDLE_RATE : 1;
+  const inc = autoIncomePerSec() * dtSec * idleFactor;
+  if(inc>0){
+    state.cash += inc;
+    state.totalEarned += inc;
+    state.cupsSold += inc / state.price; // approximate
+    mark("cash"); mark("ipo"); mark("ups");
+  }
+  if(state.cash >= CONFIG.WIN_TARGET){ endGame(true); return; }
+  if(state.elapsedMs >= CONFIG.MAX_DUR_MS){ endGame(false); return; }
+}
+
+function loop(now){
+  rafId = requestAnimationFrame(loop);
+  const dt = Math.min(500, now - lastNow);
+  lastNow = now;
+  accum += dt;
+  while(accum >= CONFIG.TICK_MS){
+    tick(CONFIG.TICK_MS/1000);
+    accum -= CONFIG.TICK_MS;
+  }
+  if(dirty.size) render();
+}
+
+/* ---------- end / restart ---------- */
+function endGame(won){
+  if(state.ended) return;
+  state.ended = true;
+  state.won = won;
+  // persist new records
+  let newHigh=false, newFast=false;
+  if(state.totalEarned > state.highScore){
+    state.highScore = Math.floor(state.totalEarned);
+    safeLS.set(KEY_HIGH, state.highScore);
+    newHigh = true;
+  }
+  if(won){
+    if(!state.fastestWin || state.elapsedMs < state.fastestWin){
+      state.fastestWin = Math.floor(state.elapsedMs);
+      safeLS.set(KEY_TIME, state.fastestWin);
+      newFast = true;
+    }
+  }
+  mark("best"); render();
+  // show modal
+  const t = $("endTitle");
+  const s = $("endStats");
+  const secs = (state.elapsedMs/1000).toFixed(1);
+  if(won){
+    t.textContent = "🎉 IPO Success!";
+    s.innerHTML = `
+      <div>💼 Empire Value: <b>${fmt(state.totalEarned)}</b></div>
+      <div>⏱ Time: <b>${secs}s</b>${newFast?'<span class="new">NEW</span>':''}</div>
+      <div>🍋 Cups Sold: <b>${Math.floor(state.cupsSold).toLocaleString()}</b></div>
+      <div>🏆 Best Earnings: <b>${fmt(state.highScore)}</b>${newHigh?'<span class="new">NEW</span>':''}</div>
+      <div>⚡ Fastest IPO: <b>${state.fastestWin?(state.fastestWin/1000).toFixed(1)+'s':'—'}</b></div>`;
+    sfxWin(); vibrate([30,50,30,50,80]);
+    fireworks();
+  }else{
+    t.textContent = "⏰ Time's Up!";
+    const pct = Math.min(99,Math.floor(state.cash/CONFIG.WIN_TARGET*100));
+    s.innerHTML = `
+      <div>So close! IPO at <b>${pct}%</b></div>
+      <div>💼 Earnings: <b>${fmt(state.totalEarned)}</b></div>
+      <div>🍋 Cups Sold: <b>${Math.floor(state.cupsSold).toLocaleString()}</b></div>
+      <div>🏆 Best Earnings: <b>${fmt(state.highScore)}</b>${newHigh?'<span class="new">NEW</span>':''}</div>`;
+    sfxLose(); vibrate(120);
+  }
+  $("replay").textContent = won?"Play Again (Space)":"Try Again (Space)";
+  $("end").classList.add("show");
+  $("replay").focus();
+}
+
+function restart(){
+  $("end").classList.remove("show");
+  $("fw").innerHTML="";
+  $("fx").innerHTML="";
+  const muted = state.muted;
+  const high = state.highScore;
+  const fast = state.fastestWin;
+  state = freshState();
+  state.muted = muted;
+  state.highScore = high;
+  state.fastestWin = fast;
+  // reset price slider & UI
+  $("price").value = state.price;
+  $("ups").innerHTML = "";
+  ["cash","best","stores","perClick","ipo","price","ups","mute"].forEach(mark);
+  render();
+}
+
+/* ---------- input ---------- */
+function bindInputs(){
+  // cup tap (pointer)
+  cupEl().addEventListener("pointerdown",(e)=>{
+    e.preventDefault();
+    const r = cupEl().getBoundingClientRect();
+    const s = stageEl().getBoundingClientRect();
+    const x = (e.clientX || (r.left+r.width/2)) - s.left;
+    const y = (e.clientY || (r.top+r.height/2)) - s.top;
+    clickSell(x,y);
+  });
+  // keyboard
+  window.addEventListener("keydown",(e)=>{
+    if(e.repeat && e.code==="Space"){ /* allow rapid */ }
+    if($("end").classList.contains("show")){
+      if(e.code==="Space" || e.code==="Enter" || e.key==="r" || e.key==="R"){
+        e.preventDefault(); restart();
+      }
+      return;
+    }
+    if(e.code==="Space"){ e.preventDefault(); clickSell(); }
+    else if(e.key==="1"){ buy("emp"); }
+    else if(e.key==="2"){ buy("cup"); }
+    else if(e.key==="3"){ buy("shop"); }
+    else if(e.key==="r" || e.key==="R"){ restart(); }
+    else if(e.key==="m" || e.key==="M"){ toggleMute(); }
+    else if(e.key==="ArrowLeft"){ adjustPrice(-1); }
+    else if(e.key==="ArrowRight"){ adjustPrice(+1); }
+  });
+  // price slider
+  $("price").addEventListener("input",(e)=>{
+    state.price = parseInt(e.target.value,10)||2;
+    mark("price"); mark("perClick"); mark("ups");
+  });
+  // mute
+  $("mute").addEventListener("pointerdown",(e)=>{ e.preventDefault(); toggleMute(); });
+  // replay
+  $("replay").addEventListener("pointerdown",(e)=>{ e.preventDefault(); restart(); });
+  $("replay").addEventListener("click",(e)=>{ e.preventDefault(); restart(); });
+  // visibility pause
+  document.addEventListener("visibilitychange",()=>{
+    if(document.hidden){
+      if(rafId) cancelAnimationFrame(rafId);
+      rafId=0;
+    }else if(!rafId && !state.ended){
+      lastNow = performance.now(); accum=0;
+      rafId = requestAnimationFrame(loop);
+    }
+  });
+}
+function adjustPrice(d){
+  const p = Math.max(1, Math.min(10, state.price+d));
+  if(p===state.price) return;
+  state.price = p;
+  $("price").value = p;
+  mark("price"); mark("perClick"); mark("ups");
+}
+function toggleMute(){
+  state.muted = !state.muted;
+  safeLS.set(KEY_MUTE, state.muted?"1":"0");
+  mark("mute"); render();
+}
+
+/* ---------- boot ---------- */
+function boot(){
+  state = freshState();
+  $("price").value = state.price;
+  $("mute").textContent = state.muted?"🔇":"🔊";
+  ["cash","best","stores","perClick","ipo","price","ups","mute"].forEach(mark);
+  render();
+  bindInputs();
+  lastNow = performance.now();
+  rafId = requestAnimationFrame(loop);
+}
+boot();
+</script>
+</body>
+</html>
