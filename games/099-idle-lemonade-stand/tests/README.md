@@ -5,6 +5,7 @@
 | File | Type | Purpose |
 |---|---|---|
 | `static.test.cjs` | Node CommonJS | Headless static analysis: DOM ids, regex over JS source, sandboxed unit-tests of pure functions (`priceMultiplier`, `employeeCost`). 119 assertions. CI-friendly. |
+| `behavior.test.cjs` | Node CommonJS | Behavior + boundary + regression tests: VM-executed `fmtMoney`/`fmtTime` extremes, `priceMultiplier` continuity, `computeIncomePerSec` upgrade-mult composition, localStorage round-trip with mock (incl. corrupt-JSON / Safari-private fallback), full `restartGame` purity, SFX+haptic 6-trigger completeness, P0/P1 regression locks (legacy dir removed; default tab=staff). 127 assertions. |
 | `smoke.test.html` | Browser harness | Loads the actual game in an `<iframe>`, simulates pointer/keyboard events, asserts DOM mutations and localStorage round-trip. Good for visual & timing checks. |
 
 ## Run
@@ -13,10 +14,11 @@
 
 ```bash
 cd games/099-idle-lemonade-stand
-node tests/static.test.cjs
+node tests/static.test.cjs    # 119 passed · 0 failed
+node tests/behavior.test.cjs  # 127 passed · 0 failed
 ```
 
-Expected output ends with: `119 passed · 0 failed`.
+Combined: **246 assertions** across both Node suites.
 
 ### Browser smoke
 
@@ -43,3 +45,10 @@ Acceptance criteria for Issue #99:
 6. **本地最高分** — `localStorage:idle_lemonade_best` schema `{ fastestSec, maxEarn, gamesPlayed, ipoCount }` written on victory and on timeout.
 
 Plus bonus checks: a11y roles, `prefers-reduced-motion`, IIFE/strict-mode hardening, tab state machine, economy math (sandboxed).
+
+### Regression locks (commit `a9fd812`)
+- **P0**: `games/099-idle-lemonade/` legacy directory must NOT exist (`behavior.test.cjs` fs-asserts).
+- **P1**: Boot path AND restart path must both call `switchTab('staff')` so a new player lands on the staff tab (the action with the highest growth leverage), not the price slider.
+
+### Notable boundary findings
+- `fmtMoney(999_999)` renders as `"$1000.00K"` (cosmetic 1-frame edge at the K→M boundary). Locked as current behavior; safe to flip the assertion when the formatter is improved.
