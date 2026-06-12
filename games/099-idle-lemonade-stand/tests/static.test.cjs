@@ -140,7 +140,7 @@ group('Bonus · Tab switching');
 ok('switchTab() defined', /function\s+switchTab\s*\(/.test(js));
 ok('switchTab toggles aria-selected', /aria-selected['"]\s*,\s*sel\s*\?\s*['"]true['"]\s*:\s*['"]false['"]/.test(js));
 ok('switchTab toggles hidden on panels', /removeAttribute\(['"]hidden['"]\)[\s\S]{0,100}setAttribute\(['"]hidden['"]/.test(js));
-ok('default tab = price', /switchTab\(['"]price['"]\)/.test(js));
+ok('default tab = staff (P1 fix per tech-analyst)', /\/\/\s*默认 tab[\s\S]{0,120}switchTab\(['"]staff['"]\)/.test(js));
 
 // ============= Click handler economic correctness (light unit checks) =============
 group('Bonus · Economy logic (parsed)');

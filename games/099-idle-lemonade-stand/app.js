@@ -667,14 +667,13 @@
     particles.length = 0;
     staffDirty = true; upgDirty = true;
     resultModal.setAttribute('hidden', '');
-    switchTab('staff'); // 进入第一局自然引导到员工 tab
-    setTimeout(() => switchTab('price'), 50);
+    switchTab('staff'); // 进入下一局自然引导到员工 tab（招员工是上市关键）
     sellBtn.focus();
   }
 
   // ============= BOOT =============
-  // 默认 tab
-  switchTab('price');
+  // 默认 tab：staff（按 tech-analyst P1：新手优先看到“招员工”而非价格滑块）
+  switchTab('staff');
   renderAll();
   requestAnimationFrame(ts => { lastTs = ts; loop(ts); });
 
