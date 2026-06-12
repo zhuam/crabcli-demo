@@ -1,14 +1,59 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>Astrocade Trivia Royale</title>
   <link rel="stylesheet" href="./style.css">
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎯</text></svg>">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚀</text></svg>">
 </head>
 <body>
-  <div id="app"></div>
+  <div id="app">
+    <!-- Lobby Screen -->
+    <div id="screen-lobby" class="screen active">
+      <div class="logo">🚀 TRIVIA ROYALE</div>
+      <div class="logo-sub">Astrocade Knowledge Battle</div>
+      <input id="name-input" class="input" type="text" placeholder="Enter your name..." maxlength="16" autofocus />
+      <button id="join-btn" class="btn btn-primary">PLAY NOW</button>
+      <div id="lobby-waiting" class="lobby-info" style="display:none;">
+        <div>Searching for opponents<span class="waiting-dots"></span></div>
+        <div class="room-id" id="room-id"></div>
+        <div class="player-list" id="player-list"></div>
+      </div>
+      <div style="color:var(--text-dim);font-size:0.8rem;margin-top:8px;">Top 3 win • 10 questions • 10s each</div>
+    </div>
+
+    <!-- Countdown Screen -->
+    <div id="screen-countdown" class="screen">
+      <div class="countdown-number" id="countdown-value">3</div>
+      <div style="font-size:1.2rem;color:var(--text-dim);">GET READY!</div>
+    </div>
+
+    <!-- Question Screen -->
+    <div id="screen-question" class="screen">
+      <div class="question-header">
+        <div class="question-counter" id="q-counter">Q1/10</div>
+        <div class="timer-ring" id="timer-ring">
+          <svg width="56" height="56" viewBox="0 0 56 56">
+            <circle cx="28" cy="28" r="24" fill="none" stroke="var(--surface2)" stroke-width="4"/>
+            <circle id="timer-circle" cx="28" cy="28" r="24" fill="none" stroke="var(--primary-light)" stroke-width="4" stroke-linecap="round" stroke-dasharray="150.8" stroke-dashoffset="0"/>
+          </svg>
+          <span class="time-text" id="time-text">10</span>
+        </div>
+      </div>
+      <div class="question-text" id="q-text"></div>
+      <div class="options-grid" id="options-grid"></div>
+      <div class="answered-bar" id="answered-bar"></div>
+    </div>
+
+    <!-- Results Screen -->
+    <div id="screen-results" class="screen">
+      <div class="results-title" id="results-title">🏆 GAME OVER</div>
+      <div id="high-score-area"></div>
+      <div class="results-list" id="results-list"></div>
+      <button id="play-again-btn" class="btn btn-success">🔄 PLAY AGAIN</button>
+    </div>
+  </div>
   <script type="module" src="./main.ts"></script>
 </body>
 </html>
