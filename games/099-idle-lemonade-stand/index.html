@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
+  <meta name="theme-color" content="#F9D423" />
+  <title>Idle Lemonade Stand · 柠檬水帝国</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="app">
+    <!-- 顶部状态条 -->
+    <header class="status-bar" role="banner">
+      <div class="stat" aria-label="当前现金">
+        <span class="ico" aria-hidden="true">💰</span>
+        <span class="val" id="cashDisplay">$0</span>
+      </div>
+      <div class="stat center" aria-label="本局用时">
+        <span class="ico" aria-hidden="true">⏱</span>
+        <span class="val" id="timeDisplay">0:00</span>
+      </div>
+      <div class="stat right" aria-label="最佳纪录">
+        <span class="ico" aria-hidden="true">🏆</span>
+        <span class="val" id="bestDisplay">--:--</span>
+      </div>
+      <button id="muteBtn" class="mute-btn" aria-label="静音切换" aria-pressed="false" title="静音 (M)">
+        <span id="muteIcon" aria-hidden="true">🔊</span>
+      </button>
+    </header>
+
+    <!-- 进度条 (到 IPO) -->
+    <div class="progress-wrap" aria-label="距离上市进度">
+      <div class="progress-bar"><div id="progressFill" class="progress-fill"></div></div>
+      <div class="progress-label" id="progressLabel">距离上市 $1,000,000</div>
+    </div>
+
+    <!-- 中央 Canvas 摊位 -->
+    <main class="stage" aria-hidden="true">
+      <canvas id="stage" width="600" height="320"></canvas>
+      <div id="floatLayer" class="float-layer"></div>
+    </main>
+
+    <!-- 主点击按钮 -->
+    <div class="main-action">
+      <button id="sellBtn" class="sell-btn" aria-label="卖一杯柠檬水">
+        <span class="sell-icon" aria-hidden="true">🥤</span>
+        <span class="sell-text">卖一杯柠檬水</span>
+        <span class="sell-price" id="sellPrice">+$1</span>
+      </button>
+      <div class="cps-hint" id="cpsHint" aria-live="polite">每秒收入：$0</div>
+    </div>
+
+    <!-- 底部三 Tab -->
+    <nav class="tab-bar" role="tablist" aria-label="升级面板">
+      <button class="tab" role="tab" data-tab="price" aria-selected="true" aria-controls="panel-price" id="tab-price">
+        <span class="tab-icon" aria-hidden="true">💲</span>
+        <span class="tab-label">价格</span>
+        <span class="tab-badge" id="badge-price" hidden></span>
+      </button>
+      <button class="tab" role="tab" data-tab="staff" aria-selected="false" aria-controls="panel-staff" id="tab-staff">
+        <span class="tab-icon" aria-hidden="true">👥</span>
+        <span class="tab-label">员工</span>
+        <span class="tab-badge" id="badge-staff" hidden></span>
+      </button>
+      <button class="tab" role="tab" data-tab="upgrade" aria-selected="false" aria-controls="panel-upgrade" id="tab-upgrade">
+        <span class="tab-icon" aria-hidden="true">⬆️</span>
+        <span class="tab-label">升级</span>
+        <span class="tab-badge" id="badge-upgrade" hidden></span>
+      </button>
+    </nav>
+
+    <!-- 面板内容 -->
+    <section class="panels">
+      <div class="panel" id="panel-price" role="tabpanel" aria-labelledby="tab-price">
+        <div class="row">
+          <div class="row-info">
+            <div class="row-title">每杯定价</div>
+            <div class="row-sub" id="priceSub">当前 $1.00 · 销量乘数 ×1.00</div>
+          </div>
+        </div>
+        <div class="price-controls">
+          <button class="price-btn" data-delta="-0.5" aria-label="降价 0.5">-0.5</button>
+          <div class="price-cur" id="priceCur">$1.00</div>
+          <button class="price-btn" data-delta="0.5" aria-label="提价 0.5">+0.5</button>
+        </div>
+        <p class="hint">提价 → 单杯收入↑ 但销量↓；降价 → 销量↑ 单杯收入↓。最佳价格 $1.00</p>
+      </div>
+
+      <div class="panel" id="panel-staff" role="tabpanel" aria-labelledby="tab-staff" hidden>
+        <div id="staffList" class="list"></div>
+      </div>
+
+      <div class="panel" id="panel-upgrade" role="tabpanel" aria-labelledby="tab-upgrade" hidden>
+        <div id="upgradeList" class="list"></div>
+      </div>
+    </section>
+
+    <!-- 结算弹窗 -->
+    <div id="resultModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="resultTitle" hidden>
+      <div class="modal-card">
+        <div id="confettiLayer" class="confetti-layer" aria-hidden="true"></div>
+        <h1 id="resultTitle" class="result-title">🎉 IPO 上市成功! 🎉</h1>
+        <div class="result-stats">
+          <div class="result-stat"><span>总收入</span><span id="resultEarn">$0</span></div>
+          <div class="result-stat"><span>用时</span><span id="resultTime">0:00</span></div>
+          <div class="result-stat"><span>历史最快</span><span id="resultBest">--:--</span></div>
+          <div class="result-stat new-best" id="newBestRow" hidden><span>⭐ 新纪录!</span></div>
+        </div>
+        <button id="restartBtn" class="restart-btn" aria-label="再来一局">🔄 再来一局</button>
+        <p class="modal-hint">提示：按 Space 键可快速售出</p>
+      </div>
+    </div>
+
+    <!-- Toast / 解锁提示 -->
+    <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
