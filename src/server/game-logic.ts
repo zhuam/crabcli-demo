@@ -73,13 +73,20 @@ function getRoomState(room: Room): RoomState {
 }
 
 export function endGame(room: Room) {
+  // Prevent double-end (e.g. all-questions-done + disconnect both trigger endGame)
+  if (room.state === 'results') return;
+  // Clean up any pending question/reveal timers — game is over
+  if (room.timer) { clearInterval(room.timer as any); clearTimeout(room.timer as any); room.timer = null; }
+  if (room.countdownTick) { clearInterval(room.countdownTick); room.countdownTick = null; }
   room.state = 'results';
   const ranked = Array.from(room.players.values())
     .sort((a, b) => b.score - a.score || a.lastAnswerTime - b.lastAnswerTime);
   ranked.forEach((p, i) => { p.rank = i + 1; });
   const winnerId = ranked[0]?.id || '';
   for (const [pid, player] of room.players) {
-    send(room.sockets.get(pid)!, {
+    const ws = room.sockets.get(pid);
+    if (!ws) continue;
+    send(ws, {
       type: 'game_over',
       rankings: ranked,
       winnerId,
@@ -116,7 +123,9 @@ function revealAnswer(room: Room) {
   ranked.forEach((p, i) => { p.rank = i + 1; });
   for (const [pid, player] of room.players) {
     if (!player.alive) continue;
-    send(room.sockets.get(pid)!, {
+    const ws = room.sockets.get(pid);
+    if (!ws) continue;
+    send(ws, {
       type: 'answer_result',
       correctIndex: q.correctIndex,
       players: ranked,

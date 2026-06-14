@@ -11,7 +11,6 @@
   let authAction = 'login'; // 'login' or 'register'
   let searchQuery = '';
   let searchTimeout = null;
-  let multiplayerOnly = false;
 
   // Pagination state
   const PAGE_SIZE = 24;
@@ -20,12 +19,6 @@
   // Favorites state
   let favoriteIds = new Set();
   let favoritesLoading = false;
-
-  // Recently played (localStorage)
-  let recentlyPlayed = [];
-
-  // Implemented games (have directories on disk)
-  let implementedGames = new Set();
 
   // ─── Category Icons ───
   const CATEGORY_ICONS = {
@@ -55,11 +48,6 @@
   const authError = $('#auth-error');
   const usernameInput = $('#username-input');
   const passwordInput = $('#password-input');
-  const multiplayerToggle = $('#multiplayer-toggle');
-
-  // Recently played
-  const recentlySection = $('#recently-section');
-  const recentList = $('#recent-list');
 
   // Skeleton
   const skeletonContainer = $('#skeleton-container');
@@ -88,20 +76,19 @@
 
   // Guest banner
   const guestBanner = $('#guest-banner');
-  const guestBannerCloseBtn = $('#guest-banner-close');
-  const guestBannerSignin = $('#guest-banner-signin');
+  const guestBannerClose = $('#guest-banner-close');
+  const guestBannerSignin = $('#guest-banner-signin') || $('#banner-signin');
+  const guestBannerCloseBtn = $('#guest-banner-close') || $('#banner-close');
 
   // ─── Boot ───
   async function init() {
     showSkeleton();
     await loadRegistry();
-    loadRecentlyPlayed();
     hideSkeleton();
     checkGuestBanner();
     await checkAuth();
     renderCategories();
     renderFeatured();
-    renderRecentlyPlayed();
     applyFilters();
     bindEvents();
   }
@@ -140,77 +127,11 @@
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       registry = await res.json();
       totalGames.textContent = registry.games.length;
-
-      // Detect which games are actually implemented by trying to fetch them
-      for (const game of registry.games) {
-        try {
-          const resp = await fetch(`/games/${game.id}/`, { method: 'HEAD' });
-          if (resp.ok) {
-            implementedGames.add(game.id);
-          }
-        } catch { /* not implemented */ }
-      }
     } catch (err) {
       console.error('Failed to load game registry:', err);
       hideSkeleton();
       gamesGrid.innerHTML = '<div class="no-results"><div class="emoji">🔌</div><p>Failed to load games. Please refresh.</p></div>';
     }
-  }
-
-  // ─── Recently Played ───
-  function loadRecentlyPlayed() {
-    try {
-      recentlyPlayed = JSON.parse(localStorage.getItem('recentlyPlayed') || '[]');
-    } catch {
-      recentlyPlayed = [];
-    }
-  }
-
-  function recordPlayed(gameId) {
-    // Remove if already exists
-    recentlyPlayed = recentlyPlayed.filter(p => p.id !== gameId);
-    // Add to front with timestamp
-    recentlyPlayed.unshift({ id: gameId, playedAt: Date.now() });
-    // Keep last 10
-    recentlyPlayed = recentlyPlayed.slice(0, 10);
-    localStorage.setItem('recentlyPlayed', JSON.stringify(recentlyPlayed));
-    renderRecentlyPlayed();
-  }
-
-  function renderRecentlyPlayed() {
-    if (recentlyPlayed.length === 0) {
-      recentlySection.style.display = 'none';
-      return;
-    }
-    recentlySection.style.display = 'block';
-    const games = recentlyPlayed
-      .map(p => registry.games.find(g => g.id === p.id))
-      .filter(Boolean);
-
-    recentList.innerHTML = games.map(game => {
-      const icon = game.icon || CATEGORY_ICONS[game.category] || '🎮';
-      const played = recentlyPlayed.find(p => p.id === game.id);
-      const timeLabel = timeAgo(played?.playedAt);
-      return `
-        <a class="recent-card" href="/games/${game.id}/" onclick="recordPlayed('${game.id}')">
-          <div class="recent-thumb">${icon}</div>
-          <div class="recent-name">${escapeHtml(game.name)}</div>
-          <div class="recent-time">${timeLabel}</div>
-        </a>
-      `;
-    }).join('');
-  }
-
-  function timeAgo(ts) {
-    if (!ts) return '';
-    const diff = Date.now() - ts;
-    const mins = Math.floor(diff / 60000);
-    if (mins < 1) return 'Just now';
-    if (mins < 60) return mins + 'm ago';
-    const hrs = Math.floor(mins / 60);
-    if (hrs < 24) return hrs + 'h ago';
-    const days = Math.floor(hrs / 24);
-    return days + 'd ago';
   }
 
   // ─── Guest Banner ───
@@ -366,7 +287,7 @@
 
   function renderProfileFavorites() {
     if (favoriteIds.size === 0) {
-      profileFavList.innerHTML = '<div class="profile-fav-empty">No favorites yet. Click ♥ on a game card!</div>';
+      profileFavList.innerHTML = '<div class="profile-fav-empty">No favorites yet. Click ♥ on a game!</div>';
       return;
     }
     const favGames = registry.games.filter(g => favoriteIds.has(g.id));
@@ -447,22 +368,19 @@
     }
     featuredSection.style.display = 'block';
     featuredList.innerHTML = featured.map(game => {
-      const icon = game.icon || CATEGORY_ICONS[game.category] || '🎮';
       const isFav = favoriteIds.has(game.id);
-      const implemented = implementedGames.has(game.id);
       return `
-        <a class="featured-card" href="/games/${game.id}/" onclick="recordPlayed('${game.id}')">
+        <a class="featured-card" href="/games/${game.id}/">
           <button class="fav-btn ${isFav ? 'active' : ''}" data-game="${game.id}" data-featured="true" onclick="event.preventDefault(); event.stopPropagation();">
             ${isFav ? '&#10084;' : '&#9825;'}
           </button>
-          <div class="game-icon">${icon}</div>
+          <div class="game-icon">${CATEGORY_ICONS[game.category] || '🎮'}</div>
           <div class="game-name">${escapeHtml(game.name)}</div>
           <div class="game-desc">${escapeHtml(game.description)}</div>
           <div class="game-meta">
             <span>${game.players || '1'} player${(game.players || '1') !== '1' ? 's' : ''}</span>
             ${game.rating ? `<span>⭐ ${game.rating}</span>` : ''}
           </div>
-          ${!implemented ? '<div class="coming-soon-badge">Coming Soon</div>' : ''}
         </a>
       `;
     }).join('');
@@ -488,14 +406,6 @@
     // Category filter
     else if (currentCategory !== 'all') {
       filteredGames = filteredGames.filter(g => g.category === currentCategory);
-    }
-
-    // Multiplayer filter
-    if (multiplayerOnly) {
-      filteredGames = filteredGames.filter(g => {
-        const p = g.players || '1';
-        return p !== '1' && p !== 'single';
-      });
     }
 
     // Search filter
@@ -548,18 +458,14 @@
 
     gameCount.textContent = `${filteredGames.length} game${filteredGames.length !== 1 ? 's' : ''}`;
     gamesGrid.innerHTML = visibleGames.map(game => {
-      const icon = game.icon || CATEGORY_ICONS[game.category] || '🎮';
+      const catIcon = CATEGORY_ICONS[game.category] || '🎮';
       const isFav = favoriteIds.has(game.id);
-      const implemented = implementedGames.has(game.id);
-      const cardClass = implemented ? 'game-card' : 'game-card coming-soon';
-
       return `
-        <a class="${cardClass}" href="/games/${game.id}/" onclick="recordPlayed('${game.id}')">
+        <a class="game-card" href="/games/${game.id}/">
           <button class="fav-btn ${isFav ? 'active' : ''}" data-game="${game.id}" onclick="event.preventDefault(); event.stopPropagation();">
             ${isFav ? '&#10084;' : '&#9825;'}
           </button>
-          ${!implemented ? '<span class="coming-soon-badge">Coming Soon</span>' : ''}
-          <div class="game-icon">${icon}</div>
+          <div class="game-icon">${catIcon}</div>
           <div class="game-name" title="${escapeHtml(game.name)}">${escapeHtml(game.name)}</div>
           <div class="game-desc">${escapeHtml(game.description)}</div>
           <div class="game-tags">
@@ -666,15 +572,6 @@
       currentSort = sortSelect.value;
       applyFilters();
     });
-
-    // Multiplayer toggle
-    if (multiplayerToggle) {
-      multiplayerToggle.addEventListener('click', () => {
-        multiplayerOnly = !multiplayerOnly;
-        multiplayerToggle.classList.toggle('active', multiplayerOnly);
-        applyFilters();
-      });
-    }
 
     // Load more
     if (loadMoreBtn) {

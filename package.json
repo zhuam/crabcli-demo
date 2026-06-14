@@ -4,14 +4,12 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "npm run build:trivia && tsx src/gateway/server.ts",
-    "dev:trivia": "vite",
+    "dev": "tsx src/gateway/server.ts",
+    "dev:trivia": "concurrently \"vite\" \"tsx src/server/index.ts\"",
     "build": "vite build",
-    "build:trivia": "cd src/client && npx vite build --config ../../vite.config.ts",
     "preview": "vite preview",
-    "start": "npm run build:trivia && NODE_ENV=production tsx src/gateway/server.ts",
-    "test:lemonade": "node tests/lemonade.test.mjs",
-    "test:hub": "node tests/hub-gateway.test.mjs"
+    "start": "NODE_ENV=production tsx src/gateway/server.ts",
+    "test:lemonade": "node tests/lemonade.test.mjs"
   },
   "dependencies": {
     "ws": "^8.16.0",

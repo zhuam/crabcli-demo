@@ -4,27 +4,22 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>CrabCLI Arcade — Game Hub</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Source+Serif+Pro:wght@400;600&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/hub/hub.css" />
 </head>
-<body data-comp-id="body">
-  <div id="app" data-comp-id="app">
-
+<body>
+  <div id="app">
     <!-- Guest Welcome Banner -->
-    <div id="guest-banner" class="guest-banner" data-comp-id="guest-banner" style="display:none;">
-      <span class="guest-banner-text">Welcome to CrabCLI Arcade! Browse games or <a id="guest-banner-signin" href="#">Sign In</a> to track scores and save favorites.</span>
-      <button id="guest-banner-close" class="guest-banner-close" aria-label="Dismiss">&times;</button>
+    <div id="guest-banner" class="guest-banner" style="display:none;">
+      <span>Welcome to CrabCLI Arcade! Browse games or <a id="banner-signin" href="#">Sign In</a> to track your scores.</span>
+      <button id="banner-close" class="banner-close" aria-label="Dismiss">&times;</button>
     </div>
 
     <!-- Header -->
-    <header class="header" id="header" data-comp-id="header">
+    <header class="header" id="header">
       <div class="header-left">
-        <a href="/" class="logo" data-comp-id="logo">
-          <span class="logo-mark">&#x1F980;</span>
-          <span class="logo-text">CrabCLI Arcade</span>
-        </a>
+        <a href="/" class="logo">🦀 CrabCLI Arcade</a>
       </div>
-      <div class="header-center" data-comp-id="search">
+      <div class="header-center">
         <div class="search-box">
           <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
@@ -37,9 +32,9 @@
           </svg>
         </button>
       </div>
-      <div class="header-right" data-comp-id="auth-area">
+      <div class="header-right">
         <div id="auth-area">
-          <button id="auth-btn" class="btn btn-ghost" data-comp-id="signin-btn">Sign In</button>
+          <button id="auth-btn" class="btn btn-ghost">👤 Sign In</button>
         </div>
       </div>
     </header>
@@ -51,68 +46,63 @@
     </div>
 
     <!-- Main Content -->
-    <main class="main" data-comp-id="main">
-
-      <!-- Recently Played -->
-      <section class="recently-played" id="recently-section" data-comp-id="recently-section" style="display:none;">
-        <h2 class="section-title">Recently Played</h2>
-        <div class="recent-list" id="recent-list"></div>
-      </section>
-
+    <main class="main">
       <!-- Categories -->
-      <nav class="categories" id="categories" data-comp-id="categories"></nav>
+      <nav class="categories" id="categories">
+        <!-- Populated by JS -->
+      </nav>
 
       <!-- Featured Section -->
-      <section class="featured" id="featured-section" data-comp-id="featured-section" style="display:none;">
-        <h2 class="section-title">Featured Games</h2>
-        <div class="featured-list" id="featured-list"></div>
+      <section class="featured" id="featured-section" style="display:none;">
+        <h2 class="section-title">⭐ Featured Games</h2>
+        <div class="featured-list" id="featured-list">
+          <!-- Populated by JS -->
+        </div>
       </section>
 
       <!-- Games Grid -->
-      <section class="games-section" data-comp-id="games-section">
-        <div class="games-header" data-comp-id="games-header">
+      <section class="games-section">
+        <div class="games-header">
           <h2 class="section-title" id="games-title">All Games</h2>
           <div class="sort-controls">
-            <button id="multiplayer-toggle" class="multiplayer-toggle" title="Show multiplayer games only" data-comp-id="multiplayer-toggle">
-              <span class="multiplayer-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-              </span>
-              Multiplayer
-            </button>
             <select id="sort-select" class="sort-select">
-              <option value="popular">Popular</option>
-              <option value="newest">Newest</option>
-              <option value="rating">Rating</option>
-              <option value="az">A-Z</option>
+              <option value="popular">🔥 Popular</option>
+              <option value="newest">🕐 Newest</option>
+              <option value="rating">⭐ Rating</option>
+              <option value="az">🔤 A-Z</option>
             </select>
             <span id="game-count" class="game-count"></span>
           </div>
         </div>
 
         <!-- Loading Skeleton -->
-        <div id="skeleton-container" class="games-grid" style="display:none;"></div>
+        <div id="skeleton-container" class="games-grid" style="display:none;">
+          <!-- 8 skeleton cards rendered by JS -->
+        </div>
 
-        <div class="games-grid" id="games-grid" data-comp-id="games-grid"></div>
+        <div class="games-grid" id="games-grid">
+          <!-- Populated by JS -->
+        </div>
 
         <!-- Load More Button -->
         <div class="load-more-wrap" id="load-more-wrap" style="display:none;">
-          <button id="load-more-btn" class="load-more-btn" data-comp-id="load-more-btn">Load More</button>
+          <button id="load-more-btn" class="load-more-btn">Load More</button>
         </div>
       </section>
     </main>
 
     <!-- Footer -->
-    <footer class="footer" data-comp-id="footer">
-      <p>CrabCLI Arcade — <span id="total-games">0</span> games and counting</p>
+    <footer class="footer">
+      <p>🦀 CrabCLI Arcade — <span id="total-games">0</span> games and counting</p>
     </footer>
   </div>
 
   <!-- Auth Modal -->
-  <div id="auth-modal" class="modal-overlay" style="display:none;" data-comp-id="auth-modal">
+  <div id="auth-modal" class="modal-overlay" style="display:none;">
     <div class="modal">
       <div class="modal-header">
         <h2 id="modal-title">Sign In</h2>
-        <button id="modal-close" class="modal-close" aria-label="Close">&times;</button>
+        <button id="modal-close" class="modal-close">&times;</button>
       </div>
       <div class="modal-body">
         <div id="auth-error" class="error-msg" style="display:none;"></div>
@@ -136,7 +126,7 @@
   </div>
 
   <!-- Profile Panel (dropdown) -->
-  <div id="profile-panel" class="profile-panel" style="display:none;" data-comp-id="profile-panel">
+  <div id="profile-panel" class="profile-panel" style="display:none;">
     <div class="profile-header" id="profile-header">
       <div class="user-avatar-lg" id="profile-avatar">?</div>
       <div>

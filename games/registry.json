@@ -3,7 +3,6 @@
     {
       "id": "trivia-royale",
       "name": "Astrocade Trivia Royale",
-      "icon": "🚀",
       "description": "Real-time multiplayer trivia battle against 2-8 players",
       "category": "puzzle",
       "tags": ["multiplayer", "websocket", "trivia"],
@@ -19,7 +18,6 @@
     {
       "id": "idle-lemonade",
       "name": "Idle Lemonade Stand",
-      "icon": "🍋",
       "description": "Build your lemonade empire one cup at a time",
       "category": "idle",
       "tags": ["singleplayer", "idle", "management"],
@@ -34,7 +32,6 @@
     {
       "id": "cosmic-shooter",
       "name": "Cosmic Shooter",
-      "icon": "👾",
       "description": "Defend the galaxy from waves of pixel aliens",
       "category": "action",
       "tags": ["singleplayer", "shooter", "retro"],
@@ -49,7 +46,6 @@
     {
       "id": "word-wizard",
       "name": "Word Wizard",
-      "icon": "🧙",
       "description": "Spell your way through enchanted dungeons",
       "category": "puzzle",
       "tags": ["singleplayer", "word", "puzzle"],
@@ -62,7 +58,6 @@
     {
       "id": "tower-defense",
       "name": "Tower Defense Classic",
-      "icon": "🏰",
       "description": "Strategic tower placement to stop the horde",
       "category": "strategy",
       "tags": ["singleplayer", "tower-defense", "strategy"],
@@ -75,7 +70,6 @@
     {
       "id": "pixel-racer",
       "name": "Pixel Racer",
-      "icon": "🏎️",
       "description": "Retro-style racing with power-ups and drift",
       "category": "action",
       "tags": ["multiplayer", "racing", "retro"],
@@ -88,7 +82,6 @@
     {
       "id": "match-three",
       "name": "Gem Match",
-      "icon": "💎",
       "description": "Classic match-3 with daily challenges",
       "category": "casual",
       "tags": ["singleplayer", "match3", "casual"],
@@ -101,7 +94,6 @@
     {
       "id": "chess-club",
       "name": "Chess Club",
-      "icon": "♛",
       "description": "Play chess online with rating and puzzles",
       "category": "strategy",
       "tags": ["multiplayer", "chess", "board"],
@@ -115,7 +107,6 @@
     {
       "id": "snake-reborn",
       "name": "Snake Reborn",
-      "icon": "🐍",
       "description": "Modern take on the classic snake game",
       "category": "casual",
       "tags": ["singleplayer", "classic", "arcade"],
@@ -128,7 +119,6 @@
     {
       "id": "sudoku-master",
       "name": "Sudoku Master",
-      "icon": "🔢",
       "description": "Thousands of puzzles across five difficulty levels",
       "category": "puzzle",
       "tags": ["singleplayer", "logic", "puzzle"],
@@ -141,7 +131,6 @@
     {
       "id": "farm-tycoon",
       "name": "Farm Tycoon",
-      "icon": "🌾",
       "description": "Plant, harvest, and grow your agricultural empire",
       "category": "idle",
       "tags": ["singleplayer", "idle", "simulation"],
@@ -154,7 +143,6 @@
     {
       "id": "space-invaders",
       "name": "Space Invaders Neo",
-      "icon": "🛸",
       "description": "Updated classic with new power-ups and bosses",
       "category": "action",
       "tags": ["singleplayer", "shooter", "classic"],
@@ -167,7 +155,6 @@
     {
       "id": "card-battle",
       "name": "Card Battle Arena",
-      "icon": "🃏",
       "description": "Collect cards and duel players worldwide",
       "category": "strategy",
       "tags": ["multiplayer", "cards", "pvp"],
@@ -182,7 +169,6 @@
     {
       "id": "bubble-pop",
       "name": "Bubble Pop",
-      "icon": "🫧",
       "description": "Satisfying bubble popping with combo chains",
       "category": "casual",
       "tags": ["singleplayer", "casual", "arcade"],
@@ -195,7 +181,6 @@
     {
       "id": "minesweeper",
       "name": "Minesweeper Pro",
-      "icon": "💣",
       "description": "The logic puzzle that never gets old",
       "category": "puzzle",
       "tags": ["singleplayer", "logic", "classic"],
@@ -208,7 +193,6 @@
     {
       "id": "cookie-clicker",
       "name": "Cookie Clicker",
-      "icon": "🍪",
       "description": "Bake billions of cookies and unlock upgrades",
       "category": "idle",
       "tags": ["singleplayer", "clicker", "idle"],
@@ -221,7 +205,6 @@
     {
       "id": "platformer",
       "name": "Pixel Platformer",
-      "icon": "🏃",
       "description": "Jump, dash, and collect through 50 levels",
       "category": "action",
       "tags": ["singleplayer", "platformer", "retro"],
@@ -234,7 +217,6 @@
     {
       "id": "go-master",
       "name": "Go Master",
-      "icon": "⚫",
       "description": "Ancient board game with AI opponents",
       "category": "strategy",
       "tags": ["singleplayer", "board", "ai"],
@@ -247,7 +229,6 @@
     {
       "id": "2048",
       "name": "2048",
-      "icon": "🔷",
       "description": "Slide tiles to reach the legendary 2048",
       "category": "casual",
       "tags": ["singleplayer", "puzzle", "classic"],
@@ -260,7 +241,6 @@
     {
       "id": "nonogram",
       "name": "Nonogram Quest",
-      "icon": "🧮",
       "description": "Solve picture logic puzzles of increasing complexity",
       "category": "puzzle",
       "tags": ["singleplayer", "logic", "puzzle"],
@@ -273,7 +253,6 @@
     {
       "id": "idle-miner",
       "name": "Idle Miner",
-      "icon": "⛏️",
       "description": "Dig deep and automate your mining operation",
       "category": "idle",
       "tags": ["singleplayer", "idle", "management"],
@@ -286,7 +265,6 @@
     {
       "id": "dungeon-crawl",
       "name": "Dungeon Crawler",
-      "icon": "🗡️",
       "description": "Procedurally generated dungeons with permadeath",
       "category": "action",
       "tags": ["singleplayer", "roguelike", "rpg"],
@@ -300,7 +278,6 @@
     {
       "id": "checkers",
       "name": "Checkers Online",
-      "icon": "🔴",
       "description": "Classic checkers with matchmaking",
       "category": "strategy",
       "tags": ["multiplayer", "board", "classic"],
@@ -314,7 +291,6 @@
     {
       "id": "solitaire",
       "name": "Solitaire",
-      "icon": "🂡",
       "description": "The timeless card game, beautifully done",
       "category": "casual",
       "tags": ["singleplayer", "cards", "classic"],

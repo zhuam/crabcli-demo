@@ -9,7 +9,6 @@ import { handleAuth, setAuthCookie, json as authJson } from './auth.js';
 import { handleScores } from './scores.js';
 import { handleFavorites } from './favorites.js';
 import { handleConnection } from '../server/game-logic.js';
-import { execSync } from 'child_process';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PROJECT_ROOT = resolve(__dirname, '../..');
@@ -18,55 +17,29 @@ const PORT = parseInt(process.env.PORT || '3000', 10);
 // ─── Load game registry ───
 const REGISTRY = JSON.parse(readFileSync(resolve(PROJECT_ROOT, 'games/registry.json'), 'utf-8'));
 
-function getCategoryIcon(cat: string): string {
-  const icons: Record<string, string> = {
-    puzzle: '🧩', idle: '🏪', action: '⚡',
-    strategy: '♟️', casual: '🎯'
-  };
-  return icons[cat] || '🎮';
-}
-
-// ─── Build trivia-royale if not yet built (dev mode) ───
-if (process.env.NODE_ENV !== 'production') {
-  const triviaBuilt = existsSync(resolve(PROJECT_ROOT, 'games/trivia-royale/index.html'));
-  if (!triviaBuilt) {
-    console.log('[gateway] Building Trivia Royale for dev...');
-    try {
-      execSync('npm run build:trivia', { cwd: PROJECT_ROOT, stdio: 'inherit' });
-      console.log('[gateway] Trivia Royale build complete.');
-    } catch (e) {
-      console.warn('[gateway] Warning: Failed to build Trivia Royale. Game may not load.');
-    }
-  }
-}
-
 // ─── Game directory resolver ───
 const GAMES_DIR = resolve(PROJECT_ROOT, 'games');
+const DIST_CLIENT = resolve(PROJECT_ROOT, 'dist/client');
 
 function findGameDir(gameId: string): string | null {
-  // Scan games/ for a directory matching the game ID
+  // trivia-royale → built Vite output
+  if (gameId === 'trivia-royale') {
+    return existsSync(DIST_CLIENT) ? DIST_CLIENT : null;
+  }
+
+  // Scan games/ for a directory containing the game ID
   if (existsSync(GAMES_DIR)) {
     for (const entry of readdirSync(GAMES_DIR)) {
       const fullPath = join(GAMES_DIR, entry);
       if (!existsSync(fullPath) || !statSync(fullPath).isDirectory()) continue;
-      // Direct match
-      if (entry === gameId) return fullPath;
-      // Contains the id (handles "099-idle-lemonade-stand" → "idle-lemonade")
-      if (entry.includes(gameId)) return fullPath;
+      // Direct match or contains the id (handles "099-idle-lemonade-stand" → "idle-lemonade")
+      if (entry === gameId || entry.includes(gameId)) return fullPath;
       // Strip numeric prefix: "099-idle-lemonade-stand" → "idle-lemonade-stand"
       const stripped = entry.replace(/^\d+-/, '');
-      if (stripped === gameId || stripped.includes(gameId) || gameId.includes(stripped)) return fullPath;
+      if (stripped.includes(gameId) || gameId.includes(stripped)) return fullPath;
     }
   }
   return null;
-}
-
-function isGameImplemented(gameId: string): boolean {
-  return findGameDir(gameId) !== null;
-}
-
-function isGameRegistered(gameId: string): boolean {
-  return REGISTRY.games.some(g => g.id === gameId);
 }
 
 // ─── MIME types ───
@@ -176,41 +149,6 @@ const server = createServer(async (req, res) => {
       return serveFile(res, filePath) || json(res, 404, { error: 'Not found' });
     }
 
-    // Shared game assets (/games/shared/*) — common CSS, JS, images for all games
-    if (pathname.startsWith('/games/shared/')) {
-      const SHARED_DIR = resolve(PROJECT_ROOT, 'games/shared');
-      const subPath = pathname.slice('/games/shared/'.length);
-      const filePath = resolve(SHARED_DIR, subPath);
-      if (!filePath.startsWith(SHARED_DIR)) {
-        return json(res, 403, { error: 'Forbidden' });
-      }
-      return serveFile(res, filePath) || json(res, 404, { error: 'Shared asset not found' });
-    }
-
-    // Trivia Royale Vite build assets (/assets/*)
-    // Generic fallback: search all game directories for matching asset files
-    if (pathname.startsWith('/assets/')) {
-      const assetName = pathname.slice('/assets/'.length);
-      // First try trivia-royale (known Vite-built game)
-      const TRIVIA_ASSETS = resolve(PROJECT_ROOT, 'games/trivia-royale/assets');
-      const triviaPath = resolve(TRIVIA_ASSETS, assetName);
-      if (triviaPath.startsWith(TRIVIA_ASSETS) && existsSync(triviaPath)) {
-        return serveFile(res, triviaPath);
-      }
-      // Search other game directories for assets/
-      if (existsSync(GAMES_DIR)) {
-        for (const entry of readdirSync(GAMES_DIR)) {
-          const assetDir = join(GAMES_DIR, entry, 'assets');
-          if (!existsSync(assetDir)) continue;
-          const assetPath = resolve(assetDir, assetName);
-          if (assetPath.startsWith(assetDir) && existsSync(assetPath)) {
-            return serveFile(res, assetPath);
-          }
-        }
-      }
-      return json(res, 404, { error: 'Asset not found' });
-    }
-
     // Game static files (/games/:id/*)
     if (pathname.startsWith('/games/')) {
       const parts = pathname.split('/').filter(Boolean); // ['games', 'gameId', ...rest]
@@ -227,26 +165,8 @@ const server = createServer(async (req, res) => {
           if (serveFile(res, filePath)) return;
         }
 
-        // Game registered but not built — serve Coming Soon page
-        if (isGameRegistered(gameId)) {
-          const comingSoonPath = resolve(PROJECT_ROOT, 'hub/coming-soon.html');
-          if (existsSync(comingSoonPath)) {
-            // Inject game info into coming-soon page
-            const game = REGISTRY.games.find(g => g.id === gameId);
-            if (game) {
-              let html = readFileSync(comingSoonPath, 'utf-8');
-              html = html.replace(/__GAME_NAME__/g, game.name)
-                         .replace(/__GAME_DESC__/g, game.description)
-                         .replace(/__GAME_ICON__/g, game.icon || getCategoryIcon(game.category))
-                         .replace(/__GAME_ID__/g, game.id);
-              res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
-              return res.end(html);
-            }
-          }
-        }
-
-        // Unknown game
-        return json(res, 404, { error: `Game "${gameId}" not found or not built yet` });
+        // If game dir not found, return 404 with game ID
+        return json(res, 404, { error: `Game "${gameId}" not found or not built yet`, hint: gameId === 'trivia-royale' ? 'Run `npm run build` first' : undefined });
       }
       return json(res, 400, { error: 'Invalid game path' });
     }
