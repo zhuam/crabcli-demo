@@ -13,13 +13,13 @@ export default defineConfig({
     port: 3000,
     proxy: {
       '/ws': {
-        target: 'ws://localhost:3001',
+        target: 'ws://localhost:3000',
         ws: true,
       },
     },
   },
   build: {
-    outDir: '../../dist/client',
+    outDir: '../../games/trivia-royale/',
     emptyOutDir: true,
     target: 'es2022',
     minify: false,

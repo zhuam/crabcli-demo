@@ -1,0 +1,866 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CrabCLI Arcade — Game Hub</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --color-bg: #f8f9fa;
+  --color-surface: #ffffff;
+  --color-surface-alt: #f1f3f5;
+  --color-border: #e2e5ea;
+  --color-text: #1a1d23;
+  --color-muted: #6b7280;
+  --color-accent: #6c5ce7;
+  --color-accent-hover: #5a4bd6;
+  --color-danger: #e17055;
+  --color-success: #00b894;
+  --color-warning: #fdcb6e;
+  --color-game-bg: #0a0e27;
+
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Consolas, monospace;
+
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+
+  --max-width: 1200px;
+  --section-gap: 96px;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.55;
+  color: var(--color-text);
+  background: var(--color-bg);
+  -webkit-font-smoothing: antialiased;
+}
+
+a { color: var(--color-accent); text-decoration: none; }
+a:hover { color: var(--color-accent-hover); }
+
+img { max-width: 100%; display: block; }
+
+.container { max-width: var(--max-width); margin: 0 auto; padding: 0 24px; }
+@media (min-width: 920px) { .container { padding: 0 64px; } }
+
+/* ── Header ── */
+.site-header {
+  position: sticky; top: 0; z-index: 100;
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+  backdrop-filter: blur(8px);
+}
+.header-inner {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 12px 24px;
+  display: flex; align-items: center; gap: 24px;
+}
+@media (min-width: 920px) { .header-inner { padding: 12px 64px; } }
+
+.brand {
+  display: flex; align-items: center; gap: 10px;
+  font-weight: 700; font-size: 18px; color: var(--color-text);
+  white-space: nowrap;
+}
+.brand-icon {
+  width: 32px; height: 32px;
+  background: var(--color-accent);
+  border-radius: var(--radius-md);
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; font-size: 16px; font-weight: 700;
+}
+
+.header-search {
+  flex: 1; max-width: 480px; position: relative;
+}
+.header-search input {
+  width: 100%;
+  padding: 8px 16px 8px 40px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  font-family: var(--font-sans);
+  background: var(--color-surface-alt);
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.header-search input:focus {
+  outline: none;
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-accent) 20%, transparent);
+  background: var(--color-surface);
+}
+.header-search .search-icon {
+  position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
+  color: var(--color-muted); pointer-events: none;
+}
+
+.header-actions {
+  display: flex; align-items: center; gap: 12px; margin-left: auto;
+}
+.btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 16px;
+  border-radius: var(--radius-md);
+  font-size: 14px; font-weight: 500;
+  font-family: var(--font-sans);
+  cursor: pointer; border: none;
+  transition: background 0.15s, transform 0.1s;
+}
+.btn:active { transform: scale(0.97); }
+.btn-primary { background: var(--color-accent); color: #fff; }
+.btn-primary:hover { background: var(--color-accent-hover); }
+.btn-secondary {
+  background: transparent; color: var(--color-text);
+  border: 1px solid var(--color-border);
+}
+.btn-secondary:hover { background: var(--color-surface-alt); }
+
+.user-badge {
+  display: flex; align-items: center; gap: 8px;
+  padding: 4px 12px 4px 4px;
+  border-radius: 24px;
+  background: var(--color-surface-alt);
+  font-size: 13px; font-weight: 500;
+  cursor: pointer;
+}
+.user-avatar {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  background: var(--color-accent);
+  color: #fff; font-size: 12px; font-weight: 600;
+  display: flex; align-items: center; justify-content: center;
+}
+
+/* ── Hero ── */
+.hero {
+  padding: 64px 0 48px;
+}
+.hero-inner {
+  display: flex; flex-direction: column; gap: 16px;
+  align-items: flex-start;
+}
+.hero h1 {
+  font-size: clamp(28px, 4vw, 49px);
+  font-weight: 700; letter-spacing: -0.01em;
+  line-height: 1.1;
+}
+.hero h1 .accent { color: var(--color-accent); }
+.hero p {
+  font-size: 18px; color: var(--color-muted);
+  max-width: 560px;
+}
+.hero-stats {
+  display: flex; gap: 32px; margin-top: 8px;
+}
+.hero-stat {
+  font-family: var(--font-mono);
+  font-size: 13px; color: var(--color-muted);
+}
+.hero-stat strong {
+  display: block; font-size: 24px; font-weight: 600;
+  color: var(--color-text); font-family: var(--font-sans);
+}
+
+/* ── Featured ── */
+.featured { padding: 32px 0 0; }
+.featured-label {
+  font-family: var(--font-mono);
+  font-size: 12px; font-weight: 500;
+  text-transform: uppercase; letter-spacing: 0.06em;
+  color: var(--color-muted);
+  margin-bottom: 16px;
+}
+.featured-scroll {
+  display: flex; gap: 16px;
+  overflow-x: auto; padding-bottom: 8px;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+}
+.featured-scroll::-webkit-scrollbar { height: 4px; }
+.featured-scroll::-webkit-scrollbar-thumb { background: var(--color-border); border-radius: 2px; }
+
+.featured-card {
+  flex: 0 0 280px;
+  scroll-snap-align: start;
+  background: var(--color-game-bg);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+.featured-card:hover { transform: translateY(-4px); }
+.featured-thumb {
+  height: 140px;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--color-accent) 60%, #1a1d23), var(--color-game-bg));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 48px;
+}
+.featured-info { padding: 12px 16px; }
+.featured-info h3 {
+  font-size: 14px; font-weight: 600; color: #fff;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.featured-info .meta {
+  font-size: 12px; color: rgba(255,255,255,0.5);
+  margin-top: 4px;
+  font-family: var(--font-mono);
+}
+
+/* ── Controls ── */
+.controls { padding: 32px 0 0; }
+.controls-bar {
+  display: flex; flex-wrap: wrap; gap: 12px; align-items: center;
+}
+.chip-group { display: flex; gap: 6px; flex-wrap: wrap; }
+.chip {
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 13px; font-weight: 500;
+  font-family: var(--font-sans);
+  cursor: pointer; border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-muted);
+  transition: all 0.15s;
+}
+.chip:hover { border-color: var(--color-accent); color: var(--color-accent); }
+.chip.active {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: #fff;
+}
+.controls-spacer { flex: 1; }
+.sort-select {
+  padding: 6px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: 13px; font-family: var(--font-sans);
+  background: var(--color-surface);
+  color: var(--color-text);
+  cursor: pointer;
+}
+.multiplayer-toggle {
+  display: flex; align-items: center; gap: 6px;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 13px; font-weight: 500;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  cursor: pointer; transition: all 0.15s;
+}
+.multiplayer-toggle.active {
+  border-color: var(--color-success);
+  background: color-mix(in srgb, var(--color-success) 10%, var(--color-surface));
+  color: var(--color-success);
+}
+
+/* ── Recently Played ── */
+.recently-played { padding: 32px 0 0; }
+.recently-played h2 {
+  font-size: 18px; font-weight: 600; margin-bottom: 16px;
+}
+.recent-scroll {
+  display: flex; gap: 12px;
+  overflow-x: auto; padding-bottom: 8px;
+}
+.recent-card {
+  flex: 0 0 120px;
+  text-align: center;
+  cursor: pointer;
+  transition: transform 0.15s;
+}
+.recent-card:hover { transform: translateY(-2px); }
+.recent-thumb {
+  width: 80px; height: 80px;
+  margin: 0 auto 8px;
+  border-radius: var(--radius-lg);
+  background: var(--color-game-bg);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 32px;
+}
+.recent-card .name {
+  font-size: 12px; font-weight: 500;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  max-width: 120px;
+}
+.recent-card .time {
+  font-size: 11px; color: var(--color-muted);
+  font-family: var(--font-mono);
+}
+
+/* ── Game Grid ── */
+.game-grid-section { padding: 32px 0 0; }
+.game-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 16px;
+}
+.game-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  cursor: pointer;
+  transition: border-color 0.15s, transform 0.15s;
+}
+.game-card:hover { border-color: var(--color-accent); transform: translateY(-2px); }
+.game-card.unavailable { opacity: 0.6; }
+.game-card.unavailable:hover { opacity: 0.8; }
+.game-card-thumb {
+  height: 120px;
+  background: var(--color-game-bg);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 40px;
+  position: relative;
+}
+.game-card-thumb .coming-soon-badge {
+  position: absolute; top: 8px; right: 8px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 10px; font-weight: 600;
+  background: color-mix(in srgb, var(--color-warning) 80%, #fff);
+  color: #1a1d23;
+}
+.game-card-body { padding: 12px 16px 16px; }
+.game-card-body h3 {
+  font-size: 14px; font-weight: 600;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  margin-bottom: 4px;
+}
+.game-card-body .desc {
+  font-size: 12px; color: var(--color-muted);
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+  overflow: hidden; margin-bottom: 8px;
+}
+.game-card-meta {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 11px; font-family: var(--font-mono);
+  color: var(--color-muted);
+}
+.game-card-meta .category {
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: var(--color-surface-alt);
+}
+.game-card-meta .rating { color: var(--color-warning); }
+.game-card-fav {
+  margin-left: auto;
+  background: none; border: none; cursor: pointer;
+  font-size: 14px; padding: 2px;
+  transition: transform 0.15s;
+}
+.game-card-fav:hover { transform: scale(1.2); }
+.game-card-fav.favorited { color: var(--color-danger); }
+
+/* ── Pagination ── */
+.pagination {
+  padding: 48px 0;
+  display: flex; justify-content: center;
+}
+.btn-load-more {
+  padding: 10px 32px;
+  border-radius: var(--radius-md);
+  font-size: 14px; font-weight: 500;
+  font-family: var(--font-sans);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.btn-load-more:hover {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+/* ── Loading Skeleton ── */
+.skeleton-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+.skeleton-thumb {
+  height: 120px;
+  background: linear-gradient(90deg, var(--color-surface-alt) 25%, var(--color-border) 50%, var(--color-surface-alt) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+.skeleton-body { padding: 12px 16px 16px; }
+.skeleton-line {
+  height: 12px; border-radius: 4px;
+  background: linear-gradient(90deg, var(--color-surface-alt) 25%, var(--color-border) 50%, var(--color-surface-alt) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  margin-bottom: 8px;
+}
+.skeleton-line:last-child { width: 60%; margin-bottom: 0; }
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ── Auth Modal ── */
+.modal-overlay {
+  display: none;
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 200;
+  align-items: center; justify-content: center;
+  backdrop-filter: blur(4px);
+}
+.modal-overlay.open { display: flex; }
+.modal {
+  background: var(--color-surface);
+  border-radius: var(--radius-xl);
+  padding: 32px;
+  width: 100%; max-width: 400px;
+  box-shadow: 0 24px 48px rgba(0,0,0,0.12);
+}
+.modal h2 {
+  font-size: 24px; font-weight: 700; margin-bottom: 24px;
+  text-align: center;
+}
+.modal-tabs {
+  display: flex; gap: 0; margin-bottom: 24px;
+  border-bottom: 1px solid var(--color-border);
+}
+.modal-tab {
+  flex: 1; padding: 10px 0;
+  text-align: center;
+  font-size: 14px; font-weight: 500;
+  color: var(--color-muted);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.15s;
+  background: none; border-top: none; border-left: none; border-right: none;
+  font-family: var(--font-sans);
+}
+.modal-tab.active { color: var(--color-accent); border-bottom-color: var(--color-accent); }
+.form-group { margin-bottom: 16px; }
+.form-group label {
+  display: block;
+  font-size: 13px; font-weight: 500;
+  margin-bottom: 6px; color: var(--color-text);
+}
+.form-group input {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: 14px; font-family: var(--font-sans);
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.form-group input:focus {
+  outline: none;
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-accent) 20%, transparent);
+}
+.form-submit {
+  width: 100%;
+  padding: 12px;
+  border: none; border-radius: var(--radius-md);
+  background: var(--color-accent); color: #fff;
+  font-size: 14px; font-weight: 600;
+  font-family: var(--font-sans);
+  cursor: pointer;
+  margin-top: 8px;
+  transition: background 0.15s;
+}
+.form-submit:hover { background: var(--color-accent-hover); }
+.modal-close {
+  position: absolute; top: 16px; right: 16px;
+  background: none; border: none; font-size: 20px;
+  cursor: pointer; color: var(--color-muted);
+}
+.modal-close:hover { color: var(--color-text); }
+
+/* ── Guest Banner ── */
+.guest-banner {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 20px 24px;
+  margin-bottom: 32px;
+  display: flex; align-items: center; gap: 16px;
+}
+.guest-banner p { flex: 1; font-size: 14px; color: var(--color-muted); }
+.guest-banner p strong { color: var(--color-text); }
+.guest-banner .btn { white-space: nowrap; }
+.guest-banner .dismiss {
+  background: none; border: none;
+  color: var(--color-muted); cursor: pointer;
+  font-size: 16px; padding: 4px;
+}
+
+/* ── Footer ── */
+.site-footer {
+  padding: 32px 0;
+  border-top: 1px solid var(--color-border);
+  text-align: center;
+  font-size: 13px; color: var(--color-muted);
+}
+
+/* ── Responsive ── */
+@media (max-width: 640px) {
+  .header-search { display: none; }
+  .hero h1 { font-size: 28px; }
+  .hero-stats { gap: 20px; }
+  .hero-stat strong { font-size: 20px; }
+  .game-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; }
+  .controls-bar { gap: 8px; }
+  .featured-card { flex: 0 0 220px; }
+  .modal { margin: 16px; padding: 24px; }
+  .guest-banner { flex-direction: column; text-align: center; }
+}
+</style>
+</head>
+<body>
+
+<!-- ── Header ── -->
+<header class="site-header" data-comp-id="site-header">
+  <div class="header-inner">
+    <a href="/" class="brand" data-comp-id="brand">
+      <span class="brand-icon">C</span>
+      <span>CrabCLI Arcade</span>
+    </a>
+    <div class="header-search" data-comp-id="header-search">
+      <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      <input type="text" placeholder="Search games..." id="search-input" data-comp-id="search-input">
+    </div>
+    <div class="header-actions" data-comp-id="header-actions">
+      <span class="user-badge" id="user-badge" data-comp-id="user-badge">
+        <span class="user-avatar" data-comp-id="user-avatar">G</span>
+        <span data-comp-id="user-name">Guest</span>
+      </span>
+      <button class="btn btn-primary" id="signin-btn" data-comp-id="signin-btn">Sign In</button>
+    </div>
+  </div>
+</header>
+
+<main id="content">
+
+  <!-- ── Hero ── -->
+  <section class="hero" data-comp-id="hero">
+    <div class="container hero-inner">
+      <h1 data-comp-id="hero-title">Play <span class="accent">Arcade Games</span> — All in One Place</h1>
+      <p data-comp-id="hero-desc">Browse, search, and play dozens of games from a single URL. Sign in to track your scores and save favorites across all games.</p>
+      <div class="hero-stats" data-comp-id="hero-stats">
+        <div class="hero-stat"><strong>24</strong>Games</div>
+        <div class="hero-stat"><strong>5</strong>Categories</div>
+        <div class="hero-stat"><strong>1</strong>Portal</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Guest Banner ── -->
+  <div class="container">
+    <div class="guest-banner" data-comp-id="guest-banner" id="guest-banner">
+      <p><strong>Welcome to CrabCLI Arcade!</strong> Play all games instantly — or sign in to track scores and save favorites.</p>
+      <button class="btn btn-secondary" id="guest-play-btn" data-comp-id="guest-play-btn">Play as Guest</button>
+      <button class="btn btn-primary" id="banner-signin" data-comp-id="banner-signin">Sign In</button>
+      <button class="dismiss" id="dismiss-banner" data-comp-id="dismiss-banner">&times;</button>
+    </div>
+  </div>
+
+  <!-- ── Featured ── -->
+  <section class="featured" data-comp-id="featured-section">
+    <div class="container">
+      <div class="featured-label" data-comp-id="featured-label">Featured Games</div>
+      <div class="featured-scroll" data-comp-id="featured-scroll">
+        <div class="featured-card" data-comp-id="featured-card-trivia">
+          <div class="featured-thumb">❓</div>
+          <div class="featured-info">
+            <h3>Trivia Royale</h3>
+            <div class="meta">Puzzle · Multiplayer</div>
+          </div>
+        </div>
+        <div class="featured-card" data-comp-id="featured-card-lemonade">
+          <div class="featured-thumb">🏪</div>
+          <div class="featured-info">
+            <h3>Lemonade Stand</h3>
+            <div class="meta">Idle · Single Player</div>
+          </div>
+        </div>
+        <div class="featured-card" data-comp-id="featured-card-2048">
+          <div class="featured-thumb">🔢</div>
+          <div class="featured-info">
+            <h3>2048</h3>
+            <div class="meta">Puzzle · Single Player</div>
+          </div>
+        </div>
+        <div class="featured-card" data-comp-id="featured-card-minesweeper">
+          <div class="featured-thumb">💣</div>
+          <div class="featured-info">
+            <h3>Minesweeper</h3>
+            <div class="meta">Puzzle · Single Player</div>
+          </div>
+        </div>
+        <div class="featured-card" data-comp-id="featured-card-snake">
+          <div class="featured-thumb">🐍</div>
+          <div class="featured-info">
+            <h3>Snake</h3>
+            <div class="meta">Casual · Single Player</div>
+          </div>
+        </div>
+        <div class="featured-card" data-comp-id="featured-card-chess">
+          <div class="featured-thumb">♟️</div>
+          <div class="featured-info">
+            <h3>Chess</h3>
+            <div class="meta">Strategy · 2 Players</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Recently Played ── -->
+  <section class="recently-played" data-comp-id="recently-played">
+    <div class="container">
+      <h2 data-comp-id="recently-played-title">Recently Played</h2>
+      <div class="recent-scroll" data-comp-id="recently-scroll">
+        <div class="recent-card" data-comp-id="recent-1">
+          <div class="recent-thumb">🏪</div>
+          <div class="name">Lemonade Stand</div>
+          <div class="time">2h ago</div>
+        </div>
+        <div class="recent-card" data-comp-id="recent-2">
+          <div class="recent-thumb">❓</div>
+          <div class="name">Trivia Royale</div>
+          <div class="time">5h ago</div>
+        </div>
+        <div class="recent-card" data-comp-id="recent-3">
+          <div class="recent-thumb">🔢</div>
+          <div class="name">2048</div>
+          <div class="time">1d ago</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Controls ── -->
+  <section class="controls" data-comp-id="controls">
+    <div class="container">
+      <div class="controls-bar">
+        <div class="chip-group" data-comp-id="category-chips">
+          <button class="chip active" data-comp-id="chip-all">All</button>
+          <button class="chip" data-comp-id="chip-puzzle">Puzzle</button>
+          <button class="chip" data-comp-id="chip-idle">Idle</button>
+          <button class="chip" data-comp-id="chip-action">Action</button>
+          <button class="chip" data-comp-id="chip-strategy">Strategy</button>
+          <button class="chip" data-comp-id="chip-casual">Casual</button>
+          <button class="chip" data-comp-id="chip-favorites">Favorites</button>
+        </div>
+        <div class="controls-spacer"></div>
+        <button class="multiplayer-toggle" data-comp-id="multiplayer-toggle">
+          <span>👥</span> Multiplayer only
+        </button>
+        <select class="sort-select" data-comp-id="sort-select">
+          <option value="popular">Most Popular</option>
+          <option value="newest">Newest</option>
+          <option value="rating">Highest Rated</option>
+          <option value="alpha">A-Z</option>
+        </select>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Game Grid ── -->
+  <section class="game-grid-section" data-comp-id="game-grid-section">
+    <div class="container">
+      <div class="game-grid" data-comp-id="game-grid">
+        <!-- Card 1: Trivia Royale (available) -->
+        <div class="game-card" data-comp-id="game-card-1">
+          <div class="game-card-thumb">❓</div>
+          <div class="game-card-body">
+            <h3>Trivia Royale</h3>
+            <p class="desc">Real-time multiplayer trivia game. Compete against other players in real-time quiz battles.</p>
+            <div class="game-card-meta">
+              <span class="category">Puzzle</span>
+              <span class="rating">★ 4.8</span>
+              <span>2-8P</span>
+              <button class="game-card-fav favorited" data-comp-id="fav-1">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+        <!-- Card 2: Lemonade Stand (available) -->
+        <div class="game-card" data-comp-id="game-card-2">
+          <div class="game-card-thumb">🏪</div>
+          <div class="game-card-body">
+            <h3>Lemonade Stand</h3>
+            <p class="desc">Run your own lemonade empire. Set prices, manage inventory, and grow your business.</p>
+            <div class="game-card-meta">
+              <span class="category">Idle</span>
+              <span class="rating">★ 4.5</span>
+              <span>1P</span>
+              <button class="game-card-fav" data-comp-id="fav-2">                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg></button>
+            </div>
+          </div>
+        </div>
+        <!-- Card 3: 2048 (coming soon) -->
+        <div class="game-card unavailable" data-comp-id="game-card-3">
+          <div class="game-card-thumb">
+            🔢
+            <span class="coming-soon-badge">Coming Soon</span>
+          </div>
+          <div class="game-card-body">
+            <h3>2048</h3>
+            <p class="desc">Slide numbered tiles to combine them and reach 2048.</p>
+            <div class="game-card-meta">
+              <span class="category">Puzzle</span>
+              <span class="rating">★ 4.6</span>
+              <span>1P</span>
+              <button class="game-card-fav" data-comp-id="fav-3">                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg></button>
+            </div>
+          </div>
+        </div>
+        <!-- Card 4: Minesweeper (coming soon) -->
+        <div class="game-card unavailable" data-comp-id="game-card-4">
+          <div class="game-card-thumb">
+            💣
+            <span class="coming-soon-badge">Coming Soon</span>
+          </div>
+          <div class="game-card-body">
+            <h3>Minesweeper</h3>
+            <p class="desc">Classic minesweeper. Clear the board without detonating any mines.</p>
+            <div class="game-card-meta">
+              <span class="category">Puzzle</span>
+              <span class="rating">★ 4.3</span>
+              <span>1P</span>
+              <button class="game-card-fav" data-comp-id="fav-4">                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg></button>
+            </div>
+          </div>
+        </div>
+        <!-- Card 5: Snake (coming soon) -->
+        <div class="game-card unavailable" data-comp-id="game-card-5">
+          <div class="game-card-thumb">
+            🐍
+            <span class="coming-soon-badge">Coming Soon</span>
+          </div>
+          <div class="game-card-body">
+            <h3>Snake</h3>
+            <p class="desc">Classic snake game. Eat food, grow longer, don't hit the walls.</p>
+            <div class="game-card-meta">
+              <span class="category">Casual</span>
+              <span class="rating">★ 4.1</span>
+              <span>1P</span>
+              <button class="game-card-fav" data-comp-id="fav-5">                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg></button>
+            </div>
+          </div>
+        </div>
+        <!-- Card 6: Chess (coming soon) -->
+        <div class="game-card unavailable" data-comp-id="game-card-6">
+          <div class="game-card-thumb">
+            ♟️
+            <span class="coming-soon-badge">Coming Soon</span>
+          </div>
+          <div class="game-card-body">
+            <h3>Chess</h3>
+            <p class="desc">Classic two-player chess. Challenge a friend or play against AI.</p>
+            <div class="game-card-meta">
+              <span class="category">Strategy</span>
+              <span class="rating">★ 4.9</span>
+              <span>2P</span>
+              <button class="game-card-fav" data-comp-id="fav-6">                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg></button>
+            </div>
+          </div>
+        </div>
+        <!-- Card 7: Tower Defense (coming soon) -->
+        <div class="game-card unavailable" data-comp-id="game-card-7">
+          <div class="game-card-thumb">
+            🏰
+            <span class="coming-soon-badge">Coming Soon</span>
+          </div>
+          <div class="game-card-body">
+            <h3>Tower Defense</h3>
+            <p class="desc">Build towers and defend your base against waves of enemies.</p>
+            <div class="game-card-meta">
+              <span class="category">Strategy</span>
+              <span class="rating">★ 4.4</span>
+              <span>1P</span>
+              <button class="game-card-fav" data-comp-id="fav-7">                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg></button>
+            </div>
+          </div>
+        </div>
+        <!-- Card 8: Word Scramble (coming soon) -->
+        <div class="game-card unavailable" data-comp-id="game-card-8">
+          <div class="game-card-thumb">
+            🔤
+            <span class="coming-soon-badge">Coming Soon</span>
+          </div>
+          <div class="game-card-body">
+            <h3>Word Scramble</h3>
+            <p class="desc">Unscramble letters to form words. Timed challenges keep it exciting.</p>
+            <div class="game-card-meta">
+              <span class="category">Puzzle</span>
+              <span class="rating">★ 4.0</span>
+              <span>1P</span>
+              <button class="game-card-fav" data-comp-id="fav-8">                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg></button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Pagination ── -->
+  <div class="pagination" data-comp-id="pagination">
+    <button class="btn-load-more" data-comp-id="load-more-btn">Show More (16 remaining)</button>
+  </div>
+
+  <!-- ── Loading Skeleton (hidden, shown during load) ── -->
+  <div class="container" data-comp-id="skeleton-container" style="display:none;">
+    <div class="game-grid">
+      <div class="skeleton-card"><div class="skeleton-thumb"></div><div class="skeleton-body"><div class="skeleton-line"></div><div class="skeleton-line"></div></div></div>
+      <div class="skeleton-card"><div class="skeleton-thumb"></div><div class="skeleton-body"><div class="skeleton-line"></div><div class="skeleton-line"></div></div></div>
+      <div class="skeleton-card"><div class="skeleton-thumb"></div><div class="skeleton-body"><div class="skeleton-line"></div><div class="skeleton-line"></div></div></div>
+      <div class="skeleton-card"><div class="skeleton-thumb"></div><div class="skeleton-body"><div class="skeleton-line"></div><div class="skeleton-line"></div></div></div>
+    </div>
+  </div>
+
+</main>
+
+<!-- ── Auth Modal ── -->
+<div class="modal-overlay" data-comp-id="auth-modal-overlay" id="auth-modal">
+  <div class="modal" data-comp-id="auth-modal" style="position:relative;">
+    <button class="modal-close" data-comp-id="modal-close">&times;</button>
+    <h2 data-comp-id="modal-title">Welcome Back</h2>
+    <div class="modal-tabs" data-comp-id="modal-tabs">
+      <button class="modal-tab active" data-comp-id="tab-login">Sign In</button>
+      <button class="modal-tab" data-comp-id="tab-register">Create Account</button>
+    </div>
+    <form data-comp-id="login-form" id="login-form">
+      <div class="form-group">
+        <label for="username">Username</label>
+        <input type="text" id="username" placeholder="Enter your username" autocomplete="username">
+      </div>
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input type="password" id="password" placeholder="Enter your password" autocomplete="current-password">
+      </div>
+      <button type="submit" class="form-submit" data-comp-id="login-submit">Sign In</button>
+    </form>
+  </div>
+</div>
+
+<!-- ── Footer ── -->
+<footer class="site-footer" data-comp-id="site-footer">
+  <div class="container">
+    <p>CrabCLI Arcade &middot; All games served on port 3000 &middot; Built with CrabCLI</p>
+  </div>
+</footer>
+
+</body>
+</html>

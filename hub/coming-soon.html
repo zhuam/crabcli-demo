@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Coming Soon — CrabCLI Arcade</title>
+  <style>
+    :root {
+      --bg: #0a0e27;
+      --surface: #151a3a;
+      --surface2: #1e2455;
+      --primary: #6c5ce7;
+      --primary-light: #a29bfe;
+      --accent: #fd79a8;
+      --warning: #fdcb6e;
+      --text: #f0f0f0;
+      --text-dim: #8a8fb5;
+      --radius: 12px;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    .card {
+      max-width: 480px;
+      width: 100%;
+      background: var(--surface);
+      border: 1px solid var(--surface2);
+      border-radius: var(--radius);
+      padding: 48px 32px;
+      text-align: center;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.4);
+    }
+    .game-icon {
+      font-size: 4rem;
+      margin-bottom: 16px;
+      display: inline-block;
+      animation: float 3s ease-in-out infinite;
+    }
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+    }
+    .badge {
+      display: inline-block;
+      padding: 4px 16px;
+      border-radius: 20px;
+      background: color-mix(in srgb, var(--warning) 30%, transparent);
+      border: 1px solid color-mix(in srgb, var(--warning) 50%, transparent);
+      color: var(--warning);
+      font-size: 0.8rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 16px;
+    }
+    h1 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+    .desc {
+      color: var(--text-dim);
+      font-size: 0.95rem;
+      line-height: 1.5;
+      margin-bottom: 32px;
+    }
+    .back-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 32px;
+      border: none;
+      border-radius: 24px;
+      background: var(--primary);
+      color: white;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.15s;
+      box-shadow: 0 4px 20px rgba(108, 92, 231, 0.4);
+    }
+    .back-btn:hover {
+      background: var(--primary-light);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 25px rgba(108, 92, 231, 0.6);
+    }
+    .notify {
+      margin-top: 24px;
+      font-size: 0.8rem;
+      color: var(--text-dim);
+    }
+    .notify a {
+      color: var(--primary-light);
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="game-icon">__GAME_ICON__</div>
+    <div class="badge">Coming Soon</div>
+    <h1>__GAME_NAME__</h1>
+    <p class="desc">__GAME_DESC__</p>
+    <a href="/" class="back-btn">← Back to Arcade</a>
+    <div class="notify">Sign in to the Arcade and we'll notify you when <strong>__GAME_NAME__</strong> is ready to play.</div>
+  </div>
+</body>
+</html>

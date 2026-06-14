@@ -121,6 +121,15 @@
 
   // ============= AUDIO =============
   let audioCtx = null;
+
+  // ─── Unified Gateway Score Submission ───
+  function submitScore(score, timeSec, victory) {
+    fetch('/api/scores', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ gameId: 'idle-lemonade', score, metadata: JSON.stringify({ timeSec, victory }) }),
+    }).catch(() => { /* silently fail if not logged in */ });
+  }
   function ensureAudio() {
     if (!audioCtx) {
       try {
@@ -617,6 +626,17 @@
     }
     best.gamesPlayed = (best.gamesPlayed || 0) + 1;
     lsSet(LS.BEST, best);
+
+    // Submit score to unified gateway
+    submitScore(Math.floor(state.totalEarned), sec, isVictory);
+
+    // Record recently played
+    try {
+      const recent = JSON.parse(localStorage.getItem('recentlyPlayed') || '[]');
+      const filtered = recent.filter(p => p.id !== 'idle-lemonade');
+      filtered.unshift({ id: 'idle-lemonade', playedAt: Date.now() });
+      localStorage.setItem('recentlyPlayed', JSON.stringify(filtered.slice(0, 10)));
+    } catch {}
 
     // 弹窗内容
     if (isVictory) {

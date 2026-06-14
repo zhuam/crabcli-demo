@@ -6,7 +6,6 @@
 |---|---|---|
 | `static.test.cjs` | Node CommonJS | Headless static analysis: DOM ids, regex over JS source, sandboxed unit-tests of pure functions (`priceMultiplier`, `employeeCost`). 119 assertions. CI-friendly. |
 | `behavior.test.cjs` | Node CommonJS | Behavior + boundary + regression tests: VM-executed `fmtMoney`/`fmtTime` extremes, `priceMultiplier` continuity, `computeIncomePerSec` upgrade-mult composition, localStorage round-trip with mock (incl. corrupt-JSON / Safari-private fallback), full `restartGame` purity, SFX+haptic 6-trigger completeness, P0/P1 regression locks (legacy dir removed; default tab=staff). 127 assertions. |
-| `integration.test.cjs` | Node CommonJS | **NEW** — E2E-style boot of the REAL `app.js` inside a hand-rolled DOM stub (no jsdom dep): asserts post-boot DOM mutations, drives sell/click/tab/keydown/mute/price events, simulates the timeout end-state by advancing fake `performance.now()` past `MAX_GAME_SEC`, verifies modal + LS persistence, then triggers restart via Enter and asserts full DOM reset. Plus boundary sweeps (priceMultiplier monotonicity, fmtMoney 200-sample fuzz, employeeCost @ n∈{0..100}) and additional regression locks (best loaded before renderAll, no-op sellOne after finished, badge guards). 82 assertions. |
 | `smoke.test.html` | Browser harness | Loads the actual game in an `<iframe>`, simulates pointer/keyboard events, asserts DOM mutations and localStorage round-trip. Good for visual & timing checks. |
 
 ## Run
@@ -15,12 +14,11 @@
 
 ```bash
 cd games/099-idle-lemonade-stand
-node tests/static.test.cjs       # 119 passed · 0 failed
-node tests/behavior.test.cjs     # 127 passed · 0 failed
-node tests/integration.test.cjs  #  82 passed · 0 failed
+node tests/static.test.cjs    # 119 passed · 0 failed
+node tests/behavior.test.cjs  # 127 passed · 0 failed
 ```
 
-Combined: **328 assertions** across all three Node suites.
+Combined: **246 assertions** across both Node suites.
 
 ### Browser smoke
 
@@ -53,11 +51,4 @@ Plus bonus checks: a11y roles, `prefers-reduced-motion`, IIFE/strict-mode harden
 - **P1**: Boot path AND restart path must both call `switchTab('staff')` so a new player lands on the staff tab (the action with the highest growth leverage), not the price slider.
 
 ### Notable boundary findings
-- `fmtMoney(999_999)` renders as `"$1000.00K"` and `fmtMoney(9_999)` renders as `"$10.00K"` (cosmetic 1-frame edge at the K→M / decimal-rounding boundary). Locked as current behavior in `integration.test.cjs`; safe to flip the assertion when the formatter is improved.
-
-### What integration.test.cjs adds beyond the other two suites
-- **Real boot path** — the IIFE in `app.js` runs in a `vm` context with a hand-rolled DOM (no jsdom dependency). Catches regressions like missing element ids, wrong-default tab on boot, or a renamed listener.
-- **Event-driven E2E** — simulates `pointerdown`/`click`/`keydown` and asserts DOM text mutations + classList changes on the SAME runtime object the user would touch.
-- **Timeout end-state simulation** — advances stub `performance.now()` past `MAX_GAME_SEC` and asserts both the modal title (“⏰ 时间到”) AND the localStorage best-schema persistence (`gamesPlayed=1`, `ipoCount=0`).
-- **Post-finish no-op guard** — confirms `sellOne` is dead after `state.finished` (cash text doesn’t mutate).
-- **Boundary sweeps** — 200 random fmtMoney samples, full-range monotonicity for priceMultiplier, employeeCost @ n=100.
+- `fmtMoney(999_999)` renders as `"$1000.00K"` (cosmetic 1-frame edge at the K→M boundary). Locked as current behavior; safe to flip the assertion when the formatter is improved.

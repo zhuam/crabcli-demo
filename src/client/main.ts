@@ -1,5 +1,24 @@
 import { ClientMessage, ServerMessage, Player, GAME_CONFIG, HighScoreEntry } from '../shared/types.js';
 
+// ─── Record recently played ───
+function recordPlayed(gameId: string) {
+  try {
+    const recent = JSON.parse(localStorage.getItem('recentlyPlayed') || '[]');
+    const filtered = recent.filter((p: any) => p.id !== gameId);
+    filtered.unshift({ id: gameId, playedAt: Date.now() });
+    localStorage.setItem('recentlyPlayed', JSON.stringify(filtered.slice(0, 10)));
+  } catch {}
+}
+
+// ─── Submit score to unified gateway ───
+function submitGatewayScore(score: number) {
+  fetch('/api/scores', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ gameId: 'trivia-royale', score, metadata: '{}' }),
+  }).catch(() => { /* silently fail if not logged in */ });
+}
+
 // ─── DOM refs ───
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 
@@ -93,7 +112,7 @@ function getBestScore(): number {
 // ─── Connect ───
 function connect() {
   const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
-  const wsUrl = `${protocol}//${location.host}/ws`;
+  const wsUrl = `${protocol}//${location.host}/ws/game/trivia-royale`;
   ws = new WebSocket(wsUrl);
 
   ws.onopen = () => {
@@ -130,6 +149,7 @@ function handleServerMessage(msg: ServerMessage) {
       roomIdEl.textContent = `Room: ${msg.roomId}`;
       joinBtn.style.display = 'none';
       nameInput.style.display = 'none';
+      recordPlayed('trivia-royale');
       vibrate(50);
       break;
 
@@ -182,6 +202,7 @@ function handleServerMessage(msg: ServerMessage) {
       sfxGameOver();
       vibrate([100, 50, 100, 50, 200]);
       const isNewHigh = saveHighScore(msg.yourScore, msg.yourRank, msg.rankings.length);
+      submitGatewayScore(msg.yourScore);
       if (isNewHigh) {
         highScoreArea.innerHTML = '<div class="high-score-badge">🎉 NEW HIGH SCORE!</div>';
       } else {
