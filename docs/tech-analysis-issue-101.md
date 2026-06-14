@@ -1,320 +1,226 @@
-# 技术分析报告：统一游戏大厅（Game Hub）
+# 技术分析报告：统一游戏大厅（Game Hub）— 实施状态评估
 
 > Issue #101 — 构建一个游戏大厅
 > 分析师：tech-analyst（技术视角）
 > 日期：2026-06-14
+> 状态：**核心架构已实现**，部分功能待完善
 
 ---
 
-## 1. 现状分析
+## 1. 执行摘要
 
-### 1.1 现有游戏清单
+经过对代码库的全面审查，Issue #101 提出的三项需求（统一导航、统一端口、统一账户）**核心架构已全部实现**。当前系统已具备：
 
-| # | 游戏 | 位置 | 架构 | 端口 | 账户 |
-|---|------|------|------|------|------|
-| 1 | Astrocade Trivia Royale | `index.html` + `src/` | WebSocket 多人游戏 (ws) | Vite 3000 + Server 3001 | 无（仅名字输入）|
-| 2 | Idle Lemonade Stand | `games/099-idle-lemonade-stand/` | 纯前端单文件 (app.js) | 无（静态文件） | localStorage |
+- **统一网关**：`src/gateway/server.ts` — 单端口（3000）HTTP + WebSocket 入口
+- **游戏大厅**：`hub/index.html` + `hub.js` + `hub.css` — 卡片网格 + 分类筛选 + 搜索 + 认证
+- **游戏注册表**：`games/registry.json` — 24 款游戏，5 个分类
+- **统一认证**：JWT Cookie + SQLite 用户表
+- **跨游戏 API**：分数/排行榜、收藏
 
-**代码引用**：
-- Trivia Royale 端口：`src/server/index.ts:383` — `PORT = parseInt(process.env.PORT || '3001', 10)`
-- Vite 代理配置：`vite.config.ts:11-19` — `server.port: 3000`, `proxy: { '/ws': { target: 'ws://localhost:3001' } }`
-- Lemonade Stand 无后端：`games/099-idle-lemonade-stand/app.js` — 纯 IIFE，无 server 依赖
-- Lemonade Stand 存档：`app.js:59-72` — `localStorage.getItem/setItem('idle_lemonade_best')`
-
-### 1.2 已识别的核心问题
-
-**问题 1 — 端口混乱**：每款新增游戏都需要独立端口，Trivia Royale 已占用 3000/3001 两个端口。扩展到几百款游戏时，端口管理将不可持续。
-
-**问题 2 — 无统一导航**：Trivia Royale 直接作为 `index.html`（项目首页），Lemonade Stand 放在 `games/` 子目录下手动访问。没有游戏注册表、索引页或路由机制。
-
-**问题 3 — 账户体系碎片化**：Trivia Royale 无认证（仅输入名字进入房间），Lemonade Stand 用 localStorage 存最佳成绩。两者完全不互通，无法实现跨游戏排行榜或用户偏好。
+**剩余工作**：Favorites UI 集成、Guest 模式、规模化到几百款游戏的性能优化、实际游戏资源迁移。
 
 ---
 
-## 2. 技术架构设计
+## 2. 现状详细分析
 
-### 2.1 总体架构
+### 2.1 需求一：支持几百款游戏的导航和查找
 
-```
-                    ┌──────────────────────┐
-                    │   统一网关 (Port 80) │
-                    │   Express/Fastify    │
-                    └──┬───────┬───────┬───┘
-                       │       │       │
-               静态文件路由  WebSocket路由  游戏API
-                       │       │       │
-              ┌────────┘       │       └────────┐
-              ▼                ▼                ▼
-        /hub/ (大厅)     /ws/game/:id     /api/*
-        /games/:id/      (按游戏分通道)   /auth/*
-        静态HTML/JS/CSS                  /scores/*
-```
+#### 已实现
 
-**核心原则**：所有流量收敛到 **单一 HTTP 端口**（生产环境 Port 80/443，开发环境 Port 3000），通过 URL 路径前缀区分游戏。
+| 功能 | 文件位置 | 说明 |
+|------|----------|------|
+| 游戏注册表 | `games/registry.json` | 24 款游戏，每款含 id、name、description、category、tags、players、rating、featured 等元数据 |
+| 分类导航 | `hub/hub.js:125-131` | 5 个分类（all/puzzle/idle/action/strategy/casual），chip 标签页 |
+| 搜索 | `hub/hub.js:237-242` | 输入框 + 300ms 防抖，支持名称/描述/分类/tags 全文匹配 |
+| 排序 | `hub/hub.js:175-188` | 4 种排序：Popular、Newest、Rating、A-Z |
+| Featured 推荐 | `hub/hub.js:134-152` | 横向滚动推荐栏 |
+| API 端点 | `src/gateway/server.ts:111-117` | `/api/games` 和 `/api/games/categories` |
 
-### 2.2 统一端口策略（解决 Issue 第 2 点）
+#### 证据引用
+- `games/registry.json:1-312` — 完整注册表，24 款游戏
+- `hub/hub.js:44-51` — 初始化流程：loadRegistry → checkAuth → renderCategories → renderFeatured → applyFilters → bindEvents
+- `src/gateway/server.ts:111-113` — `GET /api/games` 返回 REGISTRY
 
-#### 方案：统一网关 + 路径路由
+#### 剩余 Gap
 
-**推荐方案 — 单服务器反向路由**：
+| Gap | 优先级 | 说明 |
+|-----|--------|------|
+| 虚拟滚动/分页 | 中 | 当前无分页，24 款尚可，50+ 需虚拟滚动 |
+| 收藏 UI 集成 | 中 | Favorites API 已实现（`src/gateway/favorites.ts`），但 hub 页面无收藏入口 |
+| "最近游玩" | 低 | 无 recently-played 功能 |
+| 游戏缩略图 | 低 | registry 声明了 thumbnail 字段但磁盘上无实际图片 |
 
-用 Express 作为统一入口服务器，替代当前的 Vite dev server + 独立后端 的双端口架构：
+### 2.2 需求二：HTTP 端口统一
 
-```
-生产/开发统一：PORT=3000 (单一入口)
-├── GET /                    → 游戏大厅首页（hub）
-├── GET /games/:id           → 游戏静态资源（每个游戏独立目录）
-├── GET /games/:id/*         → 游戏子资源（CSS/JS/images）
-├── WS  /ws/game/:id         → 游戏 WebSocket 通道
-├── GET /api/auth/*          → 统一认证 API
-├── GET /api/scores/*        → 统一分数/排行榜 API
-└── GET /health              → 健康检查
-```
+#### 已实现
 
-**迁移路径**：
-1. Trivia Royale 的 WebSocket 从 `/ws` 改为 `/ws/game/trivia`（`src/server/index.ts:430` 当前 `path: '/ws'`）
-2. 静态资源从 Vite build output 改为网关统一 serve
-3. 取消独立 `dev:server` 进程，`npm run dev` 只启动一个统一服务器
+| 功能 | 文件位置 | 说明 |
+|------|----------|------|
+| 单端口 HTTP | `src/gateway/server.ts:15` | PORT=3000，所有路由收敛于此 |
+| 游戏静态资源 | `src/gateway/server.ts:153-172` | `/games/:id/*` 路由到对应游戏目录 |
+| WebSocket 路由 | `src/gateway/server.ts:187-216` | `/ws/game/:id` 按游戏分通道 |
+| 游戏目录解析 | `src/gateway/server.ts:24-43` | findGameDir() 支持数字前缀 stripping 和模糊匹配 |
+| Hub 静态 | `src/gateway/server.ts:138-150` | `/` → hub/index.html, `/hub/*` → hub/ 目录 |
 
-#### 备选方案评估
+#### 证据引用
+- `src/gateway/server.ts:15` — `const PORT = parseInt(process.env.PORT || '3000', 10)`
+- `src/gateway/server.ts:106-175` — 完整路由表：/health, /api/games, /api/auth/*, /api/scores/*, /api/favorites/*, /, /hub/*, /games/:id/*
+- `src/gateway/server.ts:187-216` — WebSocket upgrade 处理，按 `/ws/game/:id` 分发
+- `vite.config.ts:11-19` — Vite dev server 端口 3000，WS 代理到 3001
 
-| 方案 | 优点 | 缺点 | 推荐度 |
-|------|------|------|--------|
-| 单 Express 网关（推荐） | 简单、单端口、易部署 | 所有游戏跑在同一进程 | ★★★★★ |
-| Nginx 反向代理 | 隔离性好、适合生产 | 开发环境配置重 | ★★★ |
-| Docker + 端口映射 | 完全隔离 | 运维复杂、不适合 demo 项目 | ★★ |
+#### 剩余 Gap
 
-### 2.3 游戏导航与注册机制（解决 Issue 第 1 点）
+| Gap | 优先级 | 说明 |
+|-----|--------|------|
+| 旧端口清理 | 中 | `src/server/index.ts` 仍有独立 3001 端口服务（Trivia Royale 旧入口） |
+| 实际游戏资源迁移 | 高 | registry 有 24 款游戏，但磁盘上只有 `games/099-idle-lemonade-stand/` 一个实际游戏目录 |
+| 生产环境部署 | 低 | `npm run start` → `tsx src/gateway/server.ts`，无 Nginx 层 |
 
-#### 2.3.1 游戏元数据注册表
+### 2.3 需求三：统一账户体系
 
-创建 `games/registry.json` 作为所有游戏的统一注册表：
+#### 已实现
 
-```json
-{
-  "games": [
-    {
-      "id": "trivia-royale",
-      "name": "Astrocade Trivia Royale",
-      "description": "多人实时答题竞技",
-      "category": "puzzle",
-      "tags": ["multiplayer", "websocket", "trivia"],
-      "thumbnail": "/games/trivia-royale/thumb.png",
-      "path": "/games/trivia-royale/",
-      "hasServer": true,
-      "players": "2-8",
-      "version": "1.0.0"
-    },
-    {
-      "id": "idle-lemonade",
-      "name": "Idle Lemonade Stand",
-      "description": "柠檬水摊位经营模拟",
-      "category": "idle",
-      "tags": ["singleplayer", "idle", "management"],
-      "thumbnail": "/games/idle-lemonade/thumb.png",
-      "path": "/games/idle-lemonade/",
-      "hasServer": false,
-      "players": "1",
-      "version": "1.0.0"
-    }
-  ],
-  "categories": [
-    { "id": "puzzle", "name": "益智问答", "icon": "🧩" },
-    { "id": "idle", "name": "放置经营", "icon": "🏪" },
-    { "id": "action", "name": "动作", "icon": "⚡" },
-    { "id": "strategy", "name": "策略", "icon": "♟️" },
-    { "id": "casual", "name": "休闲", "icon": "🎮" }
-  ]
-}
-```
+| 功能 | 文件位置 | 说明 |
+|------|----------|------|
+| 用户注册 | `src/gateway/auth.ts:22-43` | POST /api/auth/register — 用户名，UUID，SQLite |
+| 用户登录 | `src/gateway/auth.ts:46-59` | POST /api/auth/login — 用户名匹配 |
+| 用户查询 | `src/gateway/auth.ts:63-76` | GET /api/auth/me — JWT Cookie 验证 |
+| JWT 中间件 | `src/gateway/auth-middleware.ts` | parseCookies + verifyToken |
+| Cookie 设置 | `src/gateway/auth.ts:9-11` | HttpOnly, SameSite=Lax, Path=/, 7 天过期 |
+| 分数 API | `src/gateway/scores.ts` | 提交分数、个人分数查询、游戏排行榜 |
+| 收藏 API | `src/gateway/favorites.ts` | 查看收藏、切换收藏状态 |
+| 数据库 | `src/gateway/db.ts` | SQLite WAL 模式，users/scores/favorites 三表 |
+| Hub 认证 UI | `hub/hub.js:67-105` | checkAuth → user badge / guest badge，登录/注册 modal |
 
-#### 2.3.2 大厅页面架构
+#### 证据引用
+- `src/gateway/db.ts:23-49` — 三表 schema：users (id, name, createdAt), scores (id, userId, gameId, score, metadata, createdAt), favorites (userId, gameId)
+- `src/gateway/auth.ts:7` — `const JWT_SECRET = process.env.JWT_SECRET || 'crabcli-arcade-secret'`
+- `src/gateway/auth.ts:40` — `jwt.sign({ userId: id, name, createdAt }, JWT_SECRET, { expiresIn: '7d' })`
+- `hub/hub.js:270-305` — 登录/注册表单提交逻辑
+- `src/shared/hub-types.ts` — 完整的 TypeScript 类型定义：GameEntry, User, ScoreEntry, LeaderboardEntry 等
 
-大厅页面 `index.html`（替换当前 Trivia Royale 首页）：
+#### 剩余 Gap
 
-```
-┌──────────────────────────────────────┐
-│  🎮 CrabCLI Arcade    [搜索]  [登录] │
-├──────────────────────────────────────┤
-│  分类筛选: [全部] [益智] [放置] [动作]│
-├──────────────────────────────────────┤
-│                                      │
-│  ┌─────┐ ┌─────┐ ┌─────┐ ┌─────┐   │
-│  │  🧩 │ │  🏪 │ │  ⚡ │ │  ♟️ │   │
-│  │问答 │ │经营 │ │ ... │ │ ... │   │
-│  │2-8人│ │1人  │ │     │ │     │   │
-│  └─────┘ └─────┘ └─────┘ └─────┘   │
-│                                      │
-│  分页: < 1 2 3 4 ... 20 >            │
-└──────────────────────────────────────┘
-```
-
-**前端技术选择**：
-- 纯 HTML/CSS/JS（与现有游戏风格一致）
-- CSS Grid 卡片布局 + 虚拟滚动（支持几百款游戏）
-- 客户端搜索（注册表 JSON 加载后过滤，几百项不需要后端搜索）
-- 可选：IndexedDB 缓存注册表，减少加载
-
-#### 2.3.3 可扩展性考虑（几百款游戏）
-
-| 规模 | 方案 | 说明 |
-|------|------|------|
-| < 50 款 | 客户端过滤 | 注册表 JSON 一次性加载，JS 过滤排序 |
-| 50-500 款 | 分页 + 懒加载 | 每页 24 款，滚动加载 |
-| 500+ 款 | 后端搜索 API | `/api/games/search?q=...&category=...` |
-
-当前阶段（< 50 款）无需后端搜索，客户端过滤即可满足。
-
-### 2.4 统一账户体系（解决 Issue 第 3 点）
-
-#### 2.4.1 轻量级认证方案
-
-推荐 **JWT Cookie + 无状态 session**：
-
-```
-┌─────────────────────────────────────────┐
-│  用户注册/登录                           │
-│  POST /api/auth/register {name, email?} │
-│  POST /api/auth/login     {name}        │
-│  → 返回 Set-Cookie: token=<JWT>         │
-│     HttpOnly, Secure, SameSite=Strict   │
-└─────────────────────────────────────────┘
-        │
-        ▼
-┌─────────────────────────────────────────┐
-│  游戏内调用                              │
-│  GET /api/auth/me  → {id, name, avatar} │
-│  每个游戏通过统一 API 获取当前用户身份    │
-└─────────────────────────────────────────┘
-        │
-        ▼
-┌─────────────────────────────────────────┐
-│  跨游戏数据                              │
-│  GET  /api/scores?gameId=xxx            │
-│  POST /api/scores  {gameId, score, meta}│
-│  GET  /api/scores/leaderboard?gameId=xx │
-└─────────────────────────────────────────┘
-```
-
-**JWT Payload**：
-```typescript
-interface UserToken {
-  userId: string;      // 用户唯一 ID
-  name: string;        // 显示名称
-  createdAt: number;   // 注册时间戳
-  iat: number;         // issued at
-  exp: number;         // expires at (7天)
-}
-```
-
-#### 2.4.2 迁移现有游戏
-
-| 游戏 | 当前 | 迁移后 |
-|------|------|--------|
-| Trivia Royale | 输入名字 → 随机 playerId | 自动获取 JWT name，保留房间逻辑 |
-| Lemonade Stand | localStorage 存最佳成绩 | POST /api/scores 统一持久化 |
-
-#### 2.4.3 数据库选择
-
-| 方案 | 优点 | 缺点 | 推荐度 |
-|------|------|------|--------|
-| SQLite（文件 DB） | 零配置、单文件、适合 demo | 并发写入有限 | ★★★★★ |
-| PostgreSQL | 生产级、强一致 | 需要额外服务 | ★★★ |
-| 纯内存 + 定期快照 | 最简单 | 重启丢失数据 | ★★ |
-
-**推荐 SQLite**：零外部依赖，一个 `.db` 文件，通过 `better-sqlite3` 或 `sql.js` 集成。
+| Gap | 优先级 | 说明 |
+|-----|--------|------|
+| 无密码认证 | 高 | 当前仅用户名注册/登录，无密码校验，存在身份冒用风险 |
+| 无 Guest 模式 | 中 | Hub 无 guest-first 流程，未登录时显示 "Sign In" 按钮 |
+| 无 Guest→Account 迁移 | 低 | localStorage 数据无法合并到云端 |
+| 无 Profile 页面 | 低 | 无用户资料页（统计、成就、设置） |
+| JWT Secret 硬编码 | 低 | 默认 secret 为 `'crabcli-arcade-secret'`，生产环境需环境变量 |
 
 ---
 
-## 3. 实施阶段规划
+## 3. 架构评估
 
-### Phase 1: 统一网关（1-2 天）
-- [ ] 创建统一 Express 入口 `src/gateway/server.ts`
-- [ ] 迁移 Trivia Royale 静态资源到 `/games/trivia-royale/`
-- [ ] 配置路由：`/` → 大厅占位页，`/games/:id/*` → 静态文件
-- [ ] WebSocket 统一前缀 `/ws/game/:id`
-- [ ] 保留现有 Vite 构建流程，修改 output 到 `dist/games/:id/`
+### 3.1 当前架构
 
-### Phase 2: 游戏大厅（2-3 天）
-- [ ] 创建 `games/registry.json` 注册表
-- [ ] 实现大厅首页 `src/hub/index.html`（卡片布局 + 分类筛选 + 搜索）
-- [ ] 实现 `/api/games` 端点返回注册表
-- [ ] 每个游戏添加 `thumb.png` 和 `manifest.json`
+```
+                    PORT 3000 (src/gateway/server.ts)
+                    ┌─────────────────────────────────┐
+                    │        统一网关 (Node.js)         │
+                    │  Node http.Server + ws WSS       │
+                    └──┬────────┬────────┬────────┬────┘
+                       │        │        │        │
+              静态文件路由   WebSocket   REST API   SQLite
+                       │        │        │        │
+              ┌────────┘        │        │        │
+              ▼                 ▼        ▼        ▼
+        /hub/ (大厅)    /ws/game/:id  /api/*   data/crabcli.db
+        /games/:id/    (按游戏分通道) /auth    users
+        静态HTML/JS                  /scores   scores
+                                     /favorites favorites
+```
 
-### Phase 3: 统一账户（2-3 天）
-- [ ] SQLite 用户表 + JWT 认证中间件
-- [ ] `/api/auth/register`、`/api/auth/login`、`/api/auth/me`
-- [ ] 分数/排行榜 API：`/api/scores/*`
-- [ ] Trivia Royale 迁移到统一 auth
-- [ ] Lemonade Stand 迁移到统一 scores
+**技术栈**：
+- 运行时：Node.js + tsx (TypeScript 直接执行)
+- HTTP：Node 原生 `http.Server`（无 Express/Fastify 框架）
+- WebSocket：`ws` 库，noServer 模式手动 upgrade
+- 数据库：SQLite via `better-sqlite3`，WAL 模式
+- 认证：JWT via `jsonwebtoken`，Cookie 传输
+- 前端：纯 HTML/CSS/JS，无框架
 
-### Phase 4: 扩展性（可选）
-- [ ] 游戏 SDK：`game-sdk.js` 统一封装 auth + scores API
-- [ ] 游戏接入指南 / 模板
-- [ ] 管理后台：添加/编辑/下架游戏
-- [ ] 虚拟滚动 + 懒加载（超过 50 款时）
+### 3.2 可扩展性评估
 
----
+| 维度 | 当前状态 | 上限预估 | 瓶颈 |
+|------|----------|----------|------|
+| 游戏数量 | 24 款注册，1 款有资源 | ~200 款（客户端过滤） | 注册表 JSON 大小 + 前端渲染性能 |
+| 并发用户 | 单机 WebSocket | ~1000 连接（Node.js 单进程） | CPU + 内存，无水平扩展 |
+| 数据库写入 | SQLite WAL | ~100 writes/s | 并发写入锁 |
+| 认证安全 | 仅用户名 | 低 | 无密码，无 rate limiting |
 
-## 4. 风险评估
+### 3.3 风险矩阵
 
 | 风险 | 概率 | 影响 | 缓解 |
 |------|------|------|------|
-| 游戏静态资源路径迁移导致 404 | 中 | 高 | 网关层兼容旧路径，逐步迁移 |
-| WebSocket 多游戏路由冲突 | 低 | 高 | 严格按 `/ws/game/:id` 隔离 |
-| 几百款游戏时前端渲染卡顿 | 中 | 中 | 虚拟滚动 + 分页 + 按需加载 |
-| JWT 泄露（XSS） | 低 | 高 | HttpOnly cookie + SameSite=Strict |
-| 现有 Trivia Royale  multiplayer 逻辑破坏 | 中 | 高 | 保留房间管理逻辑不变，只改入口路径 |
+| 游戏资源缺失导致 404 | 高 | 中 | registry 中 23 款游戏无对应目录，网关返回 404 |
+| 用户名冒用 | 高 | 高 | 无密码认证，任何人可用他人用户名登录 |
+| JWT Secret 泄露 | 中 | 高 | 默认 secret 硬编码在源码中 |
+| 数百游戏时前端卡顿 | 中 | 中 | 当前无虚拟滚动，需添加分页/懒加载 |
+| WebSocket 单进程瓶颈 | 低 | 中 | 数百并发时 Node 单进程 CPU 受限 |
 
 ---
 
-## 5. 文件结构规划（实施后）
+## 4. 实施建议
 
-```
-crabcli-demo/
-├── src/
-│   ├── gateway/
-│   │   └── server.ts              # 统一 Express 入口
-│   ├── auth/
-│   │   ├── middleware.ts          # JWT 验证中间件
-│   │   └── routes.ts              # /api/auth/* 路由
-│   ├── scores/
-│   │   └── routes.ts              # /api/scores/* 路由
-│   └── shared/
-│       └── types.ts               # 共享类型
-├── hub/
-│   ├── index.html                 # 游戏大厅首页
-│   ├── hub.js                     # 大厅前端逻辑
-│   └── hub.css                    # 大厅样式
-├── games/
-│   ├── registry.json              # 游戏注册表
-│   ├── trivia-royale/             # 迁移后的 Trivia
-│   │   ├── index.html
-│   │   ├── main.ts
-│   │   └── style.css
-│   └── idle-lemonade/             # 迁移后的 Lemonade
-│       ├── index.html
-│       ├── app.js
-│       └── style.css
-├── questions/
-│   └── bank.ts                    # 保持不变
-├── db/
-│   └── data.sqlite                # SQLite 数据库文件（gitignore）
-├── package.json                   # 更新 scripts
-├── vite.config.ts                 # 多入口配置
-└── tsconfig.json
-```
+### Phase 1: 补齐缺失功能（1-2 天）
+
+- [ ] 收藏 UI 集成：在 hub 页添加收藏按钮和收藏列表页
+- [ ] Guest 模式：允许未登录用户浏览和玩游戏
+- [ ] 密码认证：为注册/登录添加 password 字段
+- [ ] 清理旧端口：移除 `src/server/index.ts` 独立服务
+
+### Phase 2: 规模化准备（2-3 天）
+
+- [ ] 虚拟滚动或分页：超过 50 款游戏时启用
+- [ ] 注册表懒加载：按需加载游戏元数据
+- [ ] 图片懒加载：游戏缩略图按需加载
+- [ ] 游戏 SDK：封装 auth + scores API 供新游戏接入
+
+### Phase 3: 安全性增强（1-2 天）
+
+- [ ] JWT Secret 环境变量化
+- [ ] Rate limiting：登录接口限流
+- [ ] CSRF 保护
+- [ ] Input validation 加强
+
+### Phase 4: 游戏资源迁移（持续）
+
+- [ ] 为注册表中 23 款无资源的游戏添加实际内容
+- [ ] 缩略图资源准备
+- [ ] 每个游戏添加 manifest.json 元数据
+
+---
+
+## 5. 文件索引
+
+| 文件 | 用途 | 状态 |
+|------|------|------|
+| `src/gateway/server.ts` | 统一网关入口 | 完成 |
+| `src/gateway/auth.ts` | 认证 API | 完成 |
+| `src/gateway/auth-middleware.ts` | JWT 验证中间件 | 完成 |
+| `src/gateway/db.ts` | SQLite 数据库 | 完成 |
+| `src/gateway/scores.ts` | 分数 API | 完成 |
+| `src/gateway/favorites.ts` | 收藏 API | 完成 |
+| `hub/index.html` | 大厅页面 | 完成 |
+| `hub/hub.js` | 大厅前端逻辑 | 完成 |
+| `hub/hub.css` | 大厅样式 | 完成 |
+| `games/registry.json` | 游戏注册表 | 完成（24 款） |
+| `src/shared/hub-types.ts` | 共享类型 | 完成 |
+| `games/099-idle-lemonade-stand/` | 实际游戏资源 | 仅 1 款 |
 
 ---
 
 ## 6. 总结
 
-**核心结论**：
-1. **端口统一**：单一 Express 网关收敛到 Port 3000，通过 URL 路径前缀 (`/games/:id`, `/ws/game/:id`) 路由到具体游戏，彻底消除端口混乱。
-2. **导航统一**：`games/registry.json` 元数据注册表 + 大厅首页（卡片网格 + 分类筛选 + 客户端搜索），支持渐进扩展到几百款游戏。
-3. **账户统一**：JWT Cookie 认证 + SQLite 持久化 + 跨游戏分数 API，轻量无外部依赖。
+**Issue #101 的三项需求均已实现核心架构**：
+
+1. **统一导航** — 注册表驱动的分类/搜索/排序游戏大厅已上线，24 款游戏元数据就绪。扩展到几百款需添加虚拟滚动。
+2. **统一端口** — 单端口 3000 网关收敛所有 HTTP/WS 流量，通过路径前缀 `/games/:id` 和 `/ws/game/:id` 路由。旧 3001 端口待清理。
+3. **统一账户** — JWT Cookie + SQLite 三表（users/scores/favorites）+ 完整 CRUD API。缺失密码认证和 Guest 模式。
 
 **与 UX 分析的接口点**：
-- 大厅页面的卡片信息密度、分类标签展示 → UX 视角主导
-- 登录/注册流程的交互细节 → UX 视角主导
-- 技术侧保证：注册表 JSON 提供游戏名称、描述、分类、缩略图、玩家数等字段，供 UX 层灵活编排
+- Favorites API 已就绪但无 UI — UX 侧可设计收藏交互
+- 无 Guest 流程 — UX 侧可定义 guest-first onboarding
+- 无 Profile 页 — UX 侧可设计用户资料布局
+- 注册表字段齐全 — 支持 UX 侧灵活编排游戏展示
