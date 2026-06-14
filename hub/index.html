@@ -8,8 +8,14 @@
 </head>
 <body>
   <div id="app">
+    <!-- Guest Welcome Banner -->
+    <div id="guest-banner" class="guest-banner" style="display:none;">
+      <span>Welcome to CrabCLI Arcade! Browse games or <a id="banner-signin" href="#">Sign In</a> to track your scores.</span>
+      <button id="banner-close" class="banner-close" aria-label="Dismiss">&times;</button>
+    </div>
+
     <!-- Header -->
-    <header class="header">
+    <header class="header" id="header">
       <div class="header-left">
         <a href="/" class="logo">🦀 CrabCLI Arcade</a>
       </div>
@@ -20,6 +26,11 @@
           </svg>
           <input id="search-input" type="text" placeholder="Search games..." autocomplete="off" />
         </div>
+        <button id="mobile-search-btn" class="search-icon-btn" aria-label="Search">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+          </svg>
+        </button>
       </div>
       <div class="header-right">
         <div id="auth-area">
@@ -27,6 +38,12 @@
         </div>
       </div>
     </header>
+
+    <!-- Mobile Search Bar (expanded) -->
+    <div id="mobile-search-bar" class="mobile-search-bar" style="display:none;">
+      <input id="mobile-search-input" class="search-input-full" type="text" placeholder="Search games..." autocomplete="off" />
+      <button id="mobile-search-close" class="mobile-search-close" aria-label="Close search">&times;</button>
+    </div>
 
     <!-- Main Content -->
     <main class="main">
@@ -57,8 +74,19 @@
             <span id="game-count" class="game-count"></span>
           </div>
         </div>
+
+        <!-- Loading Skeleton -->
+        <div id="skeleton-container" class="games-grid" style="display:none;">
+          <!-- 8 skeleton cards rendered by JS -->
+        </div>
+
         <div class="games-grid" id="games-grid">
           <!-- Populated by JS -->
+        </div>
+
+        <!-- Load More Button -->
+        <div class="load-more-wrap" id="load-more-wrap" style="display:none;">
+          <button id="load-more-btn" class="load-more-btn">Load More</button>
         </div>
       </section>
     </main>
@@ -83,6 +111,10 @@
             <label for="username-input">Username</label>
             <input id="username-input" type="text" placeholder="Enter your username" required maxlength="32" autocomplete="username" />
           </div>
+          <div class="form-group">
+            <label for="password-input">Password</label>
+            <input id="password-input" type="password" placeholder="4+ characters" required minlength="4" autocomplete="current-password" />
+          </div>
           <div class="auth-tabs">
             <button type="button" class="auth-tab active" data-action="login">Sign In</button>
             <button type="button" class="auth-tab" data-action="register">Create Account</button>
@@ -90,6 +122,29 @@
           <button type="submit" id="auth-submit" class="btn btn-primary">Sign In</button>
         </form>
       </div>
+    </div>
+  </div>
+
+  <!-- Profile Panel (dropdown) -->
+  <div id="profile-panel" class="profile-panel" style="display:none;">
+    <div class="profile-header" id="profile-header">
+      <div class="user-avatar-lg" id="profile-avatar">?</div>
+      <div>
+        <div class="profile-name" id="profile-name"></div>
+        <div class="profile-since" id="profile-since"></div>
+      </div>
+    </div>
+    <div class="profile-stats" id="profile-stats">
+      <div class="profile-stat"><div class="profile-stat-value" id="stat-games">0</div><div class="profile-stat-label">Games</div></div>
+      <div class="profile-stat"><div class="profile-stat-value" id="stat-scores">0</div><div class="profile-stat-label">Scores</div></div>
+      <div class="profile-stat"><div class="profile-stat-value" id="stat-favorites">0</div><div class="profile-stat-label">Favorites</div></div>
+    </div>
+    <div class="profile-favorites" id="profile-favorites">
+      <div class="profile-section-label">Favorites</div>
+      <div id="profile-fav-list"></div>
+    </div>
+    <div class="profile-signout">
+      <button id="profile-signout">Sign Out</button>
     </div>
   </div>
 

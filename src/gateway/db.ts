@@ -24,6 +24,7 @@ db.exec(`
   CREATE TABLE IF NOT EXISTS users (
     id TEXT PRIMARY KEY,
     name TEXT UNIQUE NOT NULL,
+    passwordHash TEXT,
     createdAt INTEGER NOT NULL
   );
 
@@ -47,5 +48,12 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS scores_game_score ON scores(gameId, score DESC);
   CREATE INDEX IF NOT EXISTS users_name ON users(name);
 `);
+
+// Migration: add passwordHash column if missing
+try {
+  db.exec(`ALTER TABLE users ADD COLUMN passwordHash TEXT`);
+} catch {
+  // Column already exists, ignore
+}
 
 export { db };

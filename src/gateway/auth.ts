@@ -6,6 +6,10 @@ import crypto from 'crypto';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'crabcli-arcade-secret';
 
+function hashPassword(password: string): string {
+  return crypto.createHash('sha256').update(password).digest('hex');
+}
+
 export function setAuthCookie(res: ServerResponse, token: string) {
   res.setHeader('Set-Cookie', `token=${token}; HttpOnly; SameSite=Lax; Path=/; Max-Age=604800`);
 }
@@ -21,15 +25,20 @@ export async function handleAuth(req: IncomingMessage, res: ServerResponse, body
   // POST /api/auth/register
   if (req.method === 'POST' && url.pathname === '/api/auth/register') {
     const name = body?.name;
+    const password = body?.password;
     if (!name || typeof name !== 'string' || name.trim().length === 0) {
       return json(res, 400, { error: 'Name is required' });
+    }
+    if (!password || typeof password !== 'string' || password.length < 4) {
+      return json(res, 400, { error: 'Password must be at least 4 characters' });
     }
 
     const id = crypto.randomUUID();
     const createdAt = Date.now();
+    const passwordHash = hashPassword(password);
 
     try {
-      db.prepare('INSERT INTO users (id, name, createdAt) VALUES (?, ?, ?)').run(id, name.trim(), createdAt);
+      db.prepare('INSERT INTO users (id, name, passwordHash, createdAt) VALUES (?, ?, ?, ?)').run(id, name.trim(), passwordHash, createdAt);
     } catch (e: any) {
       if (e.message && (e.message.includes('UNIQUE') || e.message.includes('unique'))) {
         return json(res, 409, { error: 'Username already taken' });
@@ -45,18 +54,29 @@ export async function handleAuth(req: IncomingMessage, res: ServerResponse, body
   // POST /api/auth/login
   if (req.method === 'POST' && url.pathname === '/api/auth/login') {
     const name = body?.name;
+    const password = body?.password;
     if (!name || typeof name !== 'string' || name.trim().length === 0) {
       return json(res, 400, { error: 'Name is required' });
     }
+    if (!password || typeof password !== 'string') {
+      return json(res, 400, { error: 'Password is required' });
+    }
 
-    const user = db.prepare('SELECT id, name, createdAt FROM users WHERE name = ?').get(name.trim()) as { id: string; name: string; createdAt: number } | undefined;
+    const user = db.prepare('SELECT id, name, passwordHash, createdAt FROM users WHERE name = ?').get(name.trim()) as { id: string; name: string; passwordHash: string | null; createdAt: number } | undefined;
     if (!user) {
       return json(res, 404, { error: 'User not found' });
     }
 
+    // If user has a password, verify it. Otherwise accept password-less login (legacy accounts).
+    if (user.passwordHash) {
+      if (hashPassword(password) !== user.passwordHash) {
+        return json(res, 401, { error: 'Incorrect password' });
+      }
+    }
+
     const token = jwt.sign({ userId: user.id, name: user.name, createdAt: user.createdAt }, JWT_SECRET, { expiresIn: '7d' });
     setAuthCookie(res, token);
-    return json(res, 200, { user });
+    return json(res, 200, { user: { id: user.id, name: user.name, createdAt: user.createdAt } });
   }
 
   // GET /api/auth/me

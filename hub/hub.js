@@ -12,6 +12,14 @@
   let searchQuery = '';
   let searchTimeout = null;
 
+  // Pagination state
+  const PAGE_SIZE = 24;
+  let visibleCount = PAGE_SIZE;
+
+  // Favorites state
+  let favoriteIds = new Set();
+  let favoritesLoading = false;
+
   // ─── Category Icons ───
   const CATEGORY_ICONS = {
     puzzle: '🧩', idle: '🏪', action: '⚡',
@@ -39,15 +47,77 @@
   const authSubmit = $('#auth-submit');
   const authError = $('#auth-error');
   const usernameInput = $('#username-input');
+  const passwordInput = $('#password-input');
+
+  // Skeleton
+  const skeletonContainer = $('#skeleton-container');
+
+  // Load more
+  const loadMoreWrap = $('#load-more-wrap');
+  const loadMoreBtn = $('#load-more-btn');
+
+  // Profile panel
+  const profilePanel = $('#profile-panel');
+  const profileAvatar = $('#profile-avatar');
+  const profileName = $('#profile-name');
+  const profileSince = $('#profile-since');
+  const profileSignout = $('#profile-signout');
+  const profileFavList = $('#profile-fav-list');
+  const statGames = $('#stat-games');
+  const statScores = $('#stat-scores');
+  const statFavorites = $('#stat-favorites');
+  let profileOpen = false;
+
+  // Mobile search
+  const mobileSearchBtn = $('#mobile-search-btn');
+  const mobileSearchBar = $('#mobile-search-bar');
+  const mobileSearchInput = $('#mobile-search-input');
+  const mobileSearchClose = $('#mobile-search-close');
+
+  // Guest banner
+  const guestBanner = $('#guest-banner');
+  const guestBannerClose = $('#guest-banner-close');
+  const guestBannerSignin = $('#guest-banner-signin') || $('#banner-signin');
+  const guestBannerCloseBtn = $('#guest-banner-close') || $('#banner-close');
 
   // ─── Boot ───
   async function init() {
+    showSkeleton();
     await loadRegistry();
-    checkAuth();
+    hideSkeleton();
+    checkGuestBanner();
+    await checkAuth();
     renderCategories();
     renderFeatured();
     applyFilters();
     bindEvents();
+  }
+
+  // ─── Skeleton ───
+  function showSkeleton() {
+    gamesGrid.style.display = 'none';
+    skeletonContainer.style.display = 'grid';
+    skeletonContainer.innerHTML = '';
+    for (let i = 0; i < 8; i++) {
+      skeletonContainer.innerHTML += `
+        <div class="skeleton-card">
+          <div class="skeleton skeleton-icon"></div>
+          <div class="skeleton skeleton-name"></div>
+          <div class="skeleton skeleton-desc"></div>
+          <div class="skeleton skeleton-desc"></div>
+          <div class="skeleton-tags">
+            <div class="skeleton skeleton-tag"></div>
+            <div class="skeleton skeleton-tag"></div>
+          </div>
+        </div>
+      `;
+    }
+  }
+
+  function hideSkeleton() {
+    skeletonContainer.style.display = 'none';
+    skeletonContainer.innerHTML = '';
+    gamesGrid.style.display = '';
   }
 
   // ─── Load Registry ───
@@ -59,7 +129,17 @@
       totalGames.textContent = registry.games.length;
     } catch (err) {
       console.error('Failed to load game registry:', err);
+      hideSkeleton();
       gamesGrid.innerHTML = '<div class="no-results"><div class="emoji">🔌</div><p>Failed to load games. Please refresh.</p></div>';
+    }
+  }
+
+  // ─── Guest Banner ───
+  function checkGuestBanner() {
+    if (!currentUser && !localStorage.getItem('guestBannerDismissed')) {
+      guestBanner.style.display = 'flex';
+    } else {
+      guestBanner.style.display = 'none';
     }
   }
 
@@ -71,6 +151,8 @@
         const data = await res.json();
         currentUser = data.user;
         renderUserBadge();
+        await loadFavorites();
+        checkGuestBanner();
       } else {
         currentUser = null;
         renderGuestBadge();
@@ -78,6 +160,51 @@
     } catch {
       currentUser = null;
       renderGuestBadge();
+    }
+  }
+
+  async function loadFavorites() {
+    if (!currentUser) return;
+    try {
+      const res = await fetch('/api/favorites');
+      if (res.ok) {
+        const data = await res.json();
+        favoriteIds = new Set(data.favorites || []);
+      }
+    } catch (err) {
+      console.error('Failed to load favorites:', err);
+    }
+  }
+
+  async function toggleFavorite(gameId) {
+    if (!currentUser) {
+      openAuthModal('login');
+      return;
+    }
+    try {
+      const res = await fetch(`/api/favorites/${gameId}`, { method: 'POST' });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.favorite) {
+          favoriteIds.add(gameId);
+        } else {
+          favoriteIds.delete(gameId);
+        }
+        // Update heart button
+        const btn = document.querySelector(`.fav-btn[data-game="${gameId}"]`);
+        if (btn) {
+          btn.classList.toggle('active', data.favorite);
+          btn.classList.add('pulse');
+          setTimeout(() => btn.classList.remove('pulse'), 300);
+          btn.innerHTML = data.favorite ? '&#10084;' : '&#9825;';
+        }
+        // If in favorites category, re-render
+        if (currentCategory === 'favorites') {
+          applyFilters();
+        }
+      }
+    } catch (err) {
+      console.error('Failed to toggle favorite:', err);
     }
   }
 
@@ -90,18 +217,114 @@
         <span class="user-name">${escapeHtml(currentUser.name)}</span>
       </div>
     `;
-    $('#user-menu-btn').addEventListener('click', () => {
-      if (confirm(`Sign out as "${currentUser.name}"?`)) {
-        document.cookie = 'token=; Path=/; Max-Age=0';
-        currentUser = null;
-        renderGuestBadge();
-      }
-    });
+    const menuBtn = $('#user-menu-btn');
+    if (menuBtn) {
+      menuBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        toggleProfilePanel();
+      });
+    }
   }
 
   function renderGuestBadge() {
     authArea.innerHTML = `<button id="auth-btn" class="btn btn-ghost">👤 Sign In</button>`;
-    $('#auth-btn').addEventListener('click', openAuthModal);
+    const btn = $('#auth-btn');
+    if (btn) btn.addEventListener('click', () => openAuthModal('login'));
+    // Close profile panel if open
+    if (profileOpen) closeProfilePanel();
+  }
+
+  function toggleProfilePanel() {
+    if (profileOpen) {
+      closeProfilePanel();
+    } else {
+      openProfilePanel();
+    }
+  }
+
+  async function openProfilePanel() {
+    if (!currentUser) return;
+    profileOpen = true;
+    profilePanel.style.display = 'block';
+
+    // Set header info
+    const initial = (currentUser.name || '?')[0].toUpperCase();
+    profileAvatar.textContent = initial;
+    profileName.textContent = currentUser.name;
+    if (currentUser.createdAt) {
+      const date = new Date(currentUser.createdAt);
+      profileSince.textContent = `Member since ${date.toLocaleDateString()}`;
+    }
+
+    // Fetch stats
+    try {
+      const [scoresRes] = await Promise.all([
+        fetch(`/api/scores?userId=${currentUser.id}`).catch(() => null),
+      ]);
+      if (scoresRes && scoresRes.ok) {
+        const scoresData = await scoresRes.json();
+        const scores = scoresData.scores || [];
+        statGames.textContent = new Set(scores.map(s => s.gameId)).size;
+        statScores.textContent = scores.length;
+      } else {
+        statGames.textContent = '0';
+        statScores.textContent = '0';
+      }
+    } catch {
+      statGames.textContent = '0';
+      statScores.textContent = '0';
+    }
+
+    // Render favorites
+    statFavorites.textContent = favoriteIds.size;
+    renderProfileFavorites();
+
+    // Close on outside click
+    setTimeout(() => {
+      document.addEventListener('click', closeProfilePanelOutside);
+    }, 0);
+  }
+
+  function renderProfileFavorites() {
+    if (favoriteIds.size === 0) {
+      profileFavList.innerHTML = '<div class="profile-fav-empty">No favorites yet. Click ♥ on a game!</div>';
+      return;
+    }
+    const favGames = registry.games.filter(g => favoriteIds.has(g.id));
+    profileFavList.innerHTML = favGames.map(g =>
+      `<div class="profile-fav-item" data-game="${g.id}">${g.name}</div>`
+    ).join('');
+
+    profileFavList.querySelectorAll('.profile-fav-item').forEach(item => {
+      item.addEventListener('click', () => {
+        const gameId = item.dataset.game;
+        window.location.href = `/games/${gameId}/`;
+      });
+    });
+  }
+
+  function closeProfilePanel() {
+    profileOpen = false;
+    profilePanel.style.display = 'none';
+    document.removeEventListener('click', closeProfilePanelOutside);
+  }
+
+  function closeProfilePanelOutside(e) {
+    if (!profilePanel.contains(e.target) && e.target.id !== 'user-menu-btn' && !e.target.closest('#user-menu-btn')) {
+      closeProfilePanel();
+    }
+  }
+
+  async function signOut() {
+    document.cookie = 'token=; Path=/; Max-Age=0';
+    currentUser = null;
+    favoriteIds.clear();
+    closeProfilePanel();
+    renderGuestBadge();
+    if (currentCategory === 'favorites') {
+      currentCategory = 'all';
+      applyFilters();
+    }
   }
 
   function openAuthModal(action) {
@@ -114,6 +337,7 @@
       tab.classList.toggle('active', tab.dataset.action === authAction);
     });
     usernameInput.value = '';
+    if (passwordInput) passwordInput.value = '';
     usernameInput.focus();
   }
 
@@ -123,11 +347,16 @@
 
   // ─── Categories ───
   function renderCategories() {
-    categoriesNav.innerHTML = registry.categories.map(cat => `
+    const chips = registry.categories.map(cat => `
       <button class="cat-chip ${cat.id === 'all' ? 'active' : ''}" data-category="${cat.id}">
         ${cat.icon || CATEGORY_ICONS[cat.id] || '🎮'} ${cat.name}
       </button>
     `).join('');
+    // Add favorites chip for logged-in users
+    const favChip = currentUser
+      ? `<button class="cat-chip" data-category="favorites">❤️ Favorites</button>`
+      : '';
+    categoriesNav.innerHTML = chips + favChip;
   }
 
   // ─── Featured ───
@@ -138,25 +367,44 @@
       return;
     }
     featuredSection.style.display = 'block';
-    featuredList.innerHTML = featured.map(game => `
-      <a class="featured-card" href="/games/${game.id}/">
-        <div class="game-icon">${CATEGORY_ICONS[game.category] || '🎮'}</div>
-        <div class="game-name">${escapeHtml(game.name)}</div>
-        <div class="game-desc">${escapeHtml(game.description)}</div>
-        <div class="game-meta">
-          <span>${game.players || '1'} player${(game.players || '1') !== '1' ? 's' : ''}</span>
-          ${game.rating ? `<span>⭐ ${game.rating}</span>` : ''}
-        </div>
-      </a>
-    `).join('');
+    featuredList.innerHTML = featured.map(game => {
+      const isFav = favoriteIds.has(game.id);
+      return `
+        <a class="featured-card" href="/games/${game.id}/">
+          <button class="fav-btn ${isFav ? 'active' : ''}" data-game="${game.id}" data-featured="true" onclick="event.preventDefault(); event.stopPropagation();">
+            ${isFav ? '&#10084;' : '&#9825;'}
+          </button>
+          <div class="game-icon">${CATEGORY_ICONS[game.category] || '🎮'}</div>
+          <div class="game-name">${escapeHtml(game.name)}</div>
+          <div class="game-desc">${escapeHtml(game.description)}</div>
+          <div class="game-meta">
+            <span>${game.players || '1'} player${(game.players || '1') !== '1' ? 's' : ''}</span>
+            ${game.rating ? `<span>⭐ ${game.rating}</span>` : ''}
+          </div>
+        </a>
+      `;
+    }).join('');
+
+    // Bind featured fav buttons
+    featuredList.querySelectorAll('.fav-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        toggleFavorite(btn.dataset.game);
+      });
+    });
   }
 
   // ─── Filter & Sort ───
   function applyFilters() {
     filteredGames = [...registry.games];
 
+    // Favorites filter
+    if (currentCategory === 'favorites') {
+      filteredGames = filteredGames.filter(g => favoriteIds.has(g.id));
+    }
     // Category filter
-    if (currentCategory !== 'all') {
+    else if (currentCategory !== 'all') {
       filteredGames = filteredGames.filter(g => g.category === currentCategory);
     }
 
@@ -187,15 +435,21 @@
         break;
     }
 
+    // Reset pagination
+    visibleCount = PAGE_SIZE;
     renderGames();
+    updateLoadMore();
   }
 
   function renderGames() {
-    if (filteredGames.length === 0) {
+    const visibleGames = filteredGames.slice(0, visibleCount);
+
+    if (visibleGames.length === 0 && filteredGames.length === 0) {
       gamesGrid.innerHTML = `
         <div class="no-results">
           <div class="emoji">🔍</div>
           <p>No games found${searchQuery ? ` for "${escapeHtml(searchQuery)}"` : ''}.</p>
+          ${currentCategory === 'favorites' ? '<p class="sub">You haven\'t favorited any games yet. Click the heart on a game card!</p>' : ''}
         </div>
       `;
       gameCount.textContent = '0 games';
@@ -203,10 +457,14 @@
     }
 
     gameCount.textContent = `${filteredGames.length} game${filteredGames.length !== 1 ? 's' : ''}`;
-    gamesGrid.innerHTML = filteredGames.map(game => {
+    gamesGrid.innerHTML = visibleGames.map(game => {
       const catIcon = CATEGORY_ICONS[game.category] || '🎮';
+      const isFav = favoriteIds.has(game.id);
       return `
         <a class="game-card" href="/games/${game.id}/">
+          <button class="fav-btn ${isFav ? 'active' : ''}" data-game="${game.id}" onclick="event.preventDefault(); event.stopPropagation();">
+            ${isFav ? '&#10084;' : '&#9825;'}
+          </button>
           <div class="game-icon">${catIcon}</div>
           <div class="game-name" title="${escapeHtml(game.name)}">${escapeHtml(game.name)}</div>
           <div class="game-desc">${escapeHtml(game.description)}</div>
@@ -218,6 +476,47 @@
         </a>
       `;
     }).join('');
+
+    // Bind fav buttons
+    gamesGrid.querySelectorAll('.fav-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        toggleFavorite(btn.dataset.game);
+      });
+    });
+  }
+
+  function updateLoadMore() {
+    if (visibleCount >= filteredGames.length) {
+      loadMoreWrap.style.display = 'none';
+      return;
+    }
+    loadMoreWrap.style.display = 'flex';
+    const remaining = filteredGames.length - visibleCount;
+    const nextBatch = Math.min(PAGE_SIZE, remaining);
+    loadMoreBtn.textContent = `Show ${nextBatch} of ${remaining} more`;
+  }
+
+  function loadMore() {
+    visibleCount += PAGE_SIZE;
+    renderGames();
+    updateLoadMore();
+  }
+
+  // ─── Mobile Search ───
+  function openMobileSearch() {
+    mobileSearchBar.classList.add('visible');
+    mobileSearchBar.style.display = '';
+    setTimeout(() => mobileSearchInput.focus(), 100);
+  }
+
+  function closeMobileSearch() {
+    mobileSearchBar.classList.remove('visible');
+    mobileSearchBar.style.display = 'none';
+    mobileSearchInput.value = '';
+    searchQuery = '';
+    applyFilters();
   }
 
   // ─── Events ───
@@ -233,7 +532,7 @@
       applyFilters();
     });
 
-    // Search with debounce
+    // Desktop search with debounce
     searchInput.addEventListener('input', () => {
       clearTimeout(searchTimeout);
       searchTimeout = setTimeout(() => {
@@ -242,11 +541,56 @@
       }, 300);
     });
 
+    // Mobile search
+    if (mobileSearchBtn) {
+      mobileSearchBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (mobileSearchBar.classList.contains('visible')) {
+          closeMobileSearch();
+        } else {
+          openMobileSearch();
+        }
+      });
+    }
+    if (mobileSearchClose) {
+      mobileSearchClose.addEventListener('click', closeMobileSearch);
+    }
+    if (mobileSearchInput) {
+      mobileSearchInput.addEventListener('input', () => {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+          searchQuery = mobileSearchInput.value;
+          // Sync desktop search
+          if (searchInput) searchInput.value = searchQuery;
+          applyFilters();
+        }, 300);
+      });
+    }
+
     // Sort
     sortSelect.addEventListener('change', () => {
       currentSort = sortSelect.value;
       applyFilters();
     });
+
+    // Load more
+    if (loadMoreBtn) {
+      loadMoreBtn.addEventListener('click', loadMore);
+    }
+
+    // Guest banner
+    if (guestBannerCloseBtn) {
+      guestBannerCloseBtn.addEventListener('click', () => {
+        guestBanner.style.display = 'none';
+        localStorage.setItem('guestBannerDismissed', '1');
+      });
+    }
+    if (guestBannerSignin) {
+      guestBannerSignin.addEventListener('click', (e) => {
+        e.preventDefault();
+        openAuthModal('login');
+      });
+    }
 
     // Auth modal
     modalClose.addEventListener('click', closeAuthModal);
@@ -263,6 +607,10 @@
         $$('.auth-tab').forEach(t => t.classList.remove('active'));
         tab.classList.add('active');
         authError.style.display = 'none';
+        // Update password autocomplete
+        if (passwordInput) {
+          passwordInput.setAttribute('autocomplete', authAction === 'login' ? 'current-password' : 'new-password');
+        }
       });
     });
 
@@ -270,7 +618,14 @@
     authForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       const name = usernameInput.value.trim();
+      const password = passwordInput ? passwordInput.value : '';
+
       if (!name) return;
+      if (!password || password.length < 4) {
+        authError.textContent = 'Password must be at least 4 characters';
+        authError.style.display = 'block';
+        return;
+      }
 
       authSubmit.disabled = true;
       authSubmit.textContent = 'Loading...';
@@ -281,7 +636,7 @@
         const res = await fetch(endpoint, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name }),
+          body: JSON.stringify({ name, password }),
         });
 
         const data = await res.json();
@@ -293,8 +648,15 @@
         }
 
         currentUser = data.user;
+        await loadFavorites();
         renderUserBadge();
+        renderCategories();
+        checkGuestBanner();
         closeAuthModal();
+        // If was on favorites category, re-apply
+        if (currentCategory === 'favorites') {
+          applyFilters();
+        }
       } catch (err) {
         authError.textContent = 'Network error. Please try again.';
         authError.style.display = 'block';
@@ -304,10 +666,21 @@
       }
     });
 
-    // Keyboard: Escape to close modal
+    // Profile signout
+    if (profileSignout) {
+      profileSignout.addEventListener('click', signOut);
+    }
+
+    // Keyboard: Escape to close modals/panels
     document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && authModal.style.display !== 'none') {
-        closeAuthModal();
+      if (e.key === 'Escape') {
+        if (authModal.style.display !== 'none') {
+          closeAuthModal();
+        } else if (profileOpen) {
+          closeProfilePanel();
+        } else if (mobileSearchBar && mobileSearchBar.classList.contains('visible')) {
+          closeMobileSearch();
+        }
       }
     });
   }
