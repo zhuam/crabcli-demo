@@ -19,14 +19,8 @@ const REGISTRY = JSON.parse(readFileSync(resolve(PROJECT_ROOT, 'games/registry.j
 
 // ─── Game directory resolver ───
 const GAMES_DIR = resolve(PROJECT_ROOT, 'games');
-const DIST_CLIENT = resolve(PROJECT_ROOT, 'dist/client');
 
 function findGameDir(gameId: string): string | null {
-  // trivia-royale → built Vite output
-  if (gameId === 'trivia-royale') {
-    return existsSync(DIST_CLIENT) ? DIST_CLIENT : null;
-  }
-
   // Scan games/ for a directory containing the game ID
   if (existsSync(GAMES_DIR)) {
     for (const entry of readdirSync(GAMES_DIR)) {
@@ -166,7 +160,7 @@ const server = createServer(async (req, res) => {
         }
 
         // If game dir not found, return 404 with game ID
-        return json(res, 404, { error: `Game "${gameId}" not found or not built yet`, hint: gameId === 'trivia-royale' ? 'Run `npm run build` first' : undefined });
+        return json(res, 404, { error: `Game "${gameId}" not found or not built yet`, hint: gameId === 'trivia-royale' ? 'Run `npm run build` to compile trivia-royale into games/trivia-royale/' : undefined });
       }
       return json(res, 400, { error: 'Invalid game path' });
     }

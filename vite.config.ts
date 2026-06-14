@@ -3,6 +3,7 @@ import { resolve } from 'path';
 
 export default defineConfig({
   root: 'src/client',
+  base: '/games/trivia-royale/',
   resolve: {
     alias: {
       '@shared': resolve(__dirname, 'src/shared'),

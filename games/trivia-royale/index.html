@@ -9,11 +9,23 @@
     .back-to-hub { /* Styles in shared game-frame.css */ }
   </style>
   <link rel="stylesheet" href="/games/shared/game-frame.css">
-  <script type="module" crossorigin src="/assets/index-0ejH5RuV.js"></script>
-  <link rel="stylesheet" crossorigin href="/assets/index-BYflUb_P.css">
+  <script type="module" crossorigin src="/games/trivia-royale/assets/index-0ejH5RuV.js"></script>
+  <link rel="stylesheet" crossorigin href="/games/trivia-royale/assets/index-BYflUb_P.css">
 </head>
 <body>
-  <a href="/" class="back-to-hub" onclick="recordPlayed('trivia-royale')">← Arcade</a>
+  <a href="/" class="back-to-hub" onclick="window.recordPlayed && window.recordPlayed('trivia-royale')">← Arcade</a>
+
+  <script>
+    // recordPlayed for hub recently-played tracking (bound globally so onclick can use it)
+    window.recordPlayed = function recordPlayed(gameId) {
+      try {
+        const recent = JSON.parse(localStorage.getItem('recentlyPlayed') || '[]');
+        const filtered = recent.filter(p => p.id !== gameId);
+        filtered.unshift({ id: gameId, playedAt: Date.now() });
+        localStorage.setItem('recentlyPlayed', JSON.stringify(filtered.slice(0, 10)));
+      } catch {}
+    };
+  </script>
 
   <div id="app">
     <!-- Lobby Screen -->

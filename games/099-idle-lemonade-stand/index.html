@@ -12,7 +12,19 @@
   </style>
 </head>
 <body>
-  <a href="/" class="back-to-hub" onclick="recordPlayed('idle-lemonade')">← Arcade</a>
+  <a href="/" class="back-to-hub" onclick="window.recordPlayed && window.recordPlayed('idle-lemonade')">← Arcade</a>
+
+  <script>
+    // recordPlayed for hub recently-played tracking (bound globally so onclick can use it)
+    window.recordPlayed = function recordPlayed(gameId) {
+      try {
+        const recent = JSON.parse(localStorage.getItem('recentlyPlayed') || '[]');
+        const filtered = recent.filter(p => p.id !== gameId);
+        filtered.unshift({ id: gameId, playedAt: Date.now() });
+        localStorage.setItem('recentlyPlayed', JSON.stringify(filtered.slice(0, 10)));
+      } catch {}
+    };
+  </script>
 
   <div id="app">
     <!-- 顶部状态条 -->
