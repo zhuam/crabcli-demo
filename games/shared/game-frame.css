@@ -1,0 +1,101 @@
+/* CrabCLI Arcade — Shared Game Frame Styles
+   Provides consistent UI elements for all games served via /games/:id/
+   Included by games to maintain visual consistency with the hub. */
+
+/* ─── Back to Hub Button ─── */
+.back-to-hub {
+  position: fixed;
+  top: 12px;
+  left: 12px;
+  z-index: 10000;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 20px;
+  background: rgba(10, 14, 39, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 0.8rem;
+  font-weight: 600;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.15s ease;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  user-select: none;
+}
+
+.back-to-hub:hover {
+  color: #fff;
+  border-color: #6c5ce7;
+  background: rgba(108, 92, 231, 0.25);
+}
+
+.back-to-hub svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* ─── Game Frame Wrapper (optional) ─── */
+.game-frame {
+  width: 100%;
+  height: 100vh;
+  overflow: hidden;
+  position: relative;
+}
+
+.game-frame__content {
+  width: 100%;
+  height: 100%;
+  padding-top: 48px; /* Space for back-to-hub button */
+  box-sizing: border-box;
+}
+
+/* ─── Game Header Bar ─── */
+.game-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 48px;
+  background: rgba(10, 14, 39, 0.9);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  z-index: 9999;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.game-header__title {
+  flex: 1;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 0.85rem;
+  font-weight: 600;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* ─── Responsive ─── */
+@media (max-width: 768px) {
+  .back-to-hub {
+    top: 8px;
+    left: 8px;
+    padding: 6px 12px;
+    font-size: 0.75rem;
+    border-radius: 16px;
+  }
+
+  .back-to-hub span:last-child {
+    display: none; /* Hide text on mobile, show only arrow */
+  }
+
+  .back-to-hub::after {
+    content: '←';
+    font-size: 1.1rem;
+    line-height: 1;
+  }
+}

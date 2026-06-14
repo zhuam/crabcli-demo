@@ -6,22 +6,13 @@
   <meta name="theme-color" content="#F9D423" />
   <title>Idle Lemonade Stand · 柠檬水帝国</title>
   <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="/games/shared/game-frame.css" />
   <style>
-    /* Back to Hub button */
-    .back-to-hub {
-      position: fixed; top: 8px; left: 8px; z-index: 1000;
-      display: inline-flex; align-items: center; gap: 6px;
-      padding: 6px 12px; border-radius: 16px;
-      background: rgba(10, 14, 39, 0.85); border: 1px solid rgba(255,255,255,0.15);
-      color: rgba(255,255,255,0.8); font-size: 0.75rem; font-weight: 600;
-      cursor: pointer; text-decoration: none; transition: all 0.15s;
-      backdrop-filter: blur(8px);
-    }
-    .back-to-hub:hover { color: #fff; border-color: #6c5ce7; }
+    .back-to-hub { /* Styles in shared game-frame.css */ }
   </style>
 </head>
 <body>
-  <a href="/" class="back-to-hub">← Arcade</a>
+  <a href="/" class="back-to-hub" onclick="recordPlayed('idle-lemonade')">← Arcade</a>
 
   <div id="app">
     <!-- 顶部状态条 -->

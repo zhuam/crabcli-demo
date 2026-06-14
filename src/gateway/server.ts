@@ -176,15 +176,39 @@ const server = createServer(async (req, res) => {
       return serveFile(res, filePath) || json(res, 404, { error: 'Not found' });
     }
 
-    // Trivia Royale Vite build assets (/assets/*)
-    if (pathname.startsWith('/assets/')) {
-      const TRIVIA_ASSETS = resolve(PROJECT_ROOT, 'games/trivia-royale/assets');
-      const subPath = pathname.slice(1); // 'assets/index-xxx.js'
-      const filePath = resolve(PROJECT_ROOT, 'games/trivia-royale', subPath);
-      if (!filePath.startsWith(TRIVIA_ASSETS)) {
+    // Shared game assets (/games/shared/*) — common CSS, JS, images for all games
+    if (pathname.startsWith('/games/shared/')) {
+      const SHARED_DIR = resolve(PROJECT_ROOT, 'games/shared');
+      const subPath = pathname.slice('/games/shared/'.length);
+      const filePath = resolve(SHARED_DIR, subPath);
+      if (!filePath.startsWith(SHARED_DIR)) {
         return json(res, 403, { error: 'Forbidden' });
       }
-      return serveFile(res, filePath) || json(res, 404, { error: 'Asset not found' });
+      return serveFile(res, filePath) || json(res, 404, { error: 'Shared asset not found' });
+    }
+
+    // Trivia Royale Vite build assets (/assets/*)
+    // Generic fallback: search all game directories for matching asset files
+    if (pathname.startsWith('/assets/')) {
+      const assetName = pathname.slice('/assets/'.length);
+      // First try trivia-royale (known Vite-built game)
+      const TRIVIA_ASSETS = resolve(PROJECT_ROOT, 'games/trivia-royale/assets');
+      const triviaPath = resolve(TRIVIA_ASSETS, assetName);
+      if (triviaPath.startsWith(TRIVIA_ASSETS) && existsSync(triviaPath)) {
+        return serveFile(res, triviaPath);
+      }
+      // Search other game directories for assets/
+      if (existsSync(GAMES_DIR)) {
+        for (const entry of readdirSync(GAMES_DIR)) {
+          const assetDir = join(GAMES_DIR, entry, 'assets');
+          if (!existsSync(assetDir)) continue;
+          const assetPath = resolve(assetDir, assetName);
+          if (assetPath.startsWith(assetDir) && existsSync(assetPath)) {
+            return serveFile(res, assetPath);
+          }
+        }
+      }
+      return json(res, 404, { error: 'Asset not found' });
     }
 
     // Game static files (/games/:id/*)

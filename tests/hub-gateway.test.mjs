@@ -111,7 +111,7 @@ async function testStaticFiles() {
   const cssRes = await fetch(`${BASE}/hub/hub.css`);
   assert(cssRes.status === 200, 'Hub CSS returns 200');
   const cssText = await cssRes.text();
-  assert(cssText.includes('--primary'), 'CSS contains theme variables');
+  assert(cssText.includes('--color-accent') || cssText.includes('--primary'), 'CSS contains theme variables');
 
   // Hub JS
   const jsRes = await fetch(`${BASE}/hub/hub.js`);

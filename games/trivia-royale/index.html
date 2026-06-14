@@ -6,21 +6,14 @@
   <title>Astrocade Trivia Royale</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚀</text></svg>">
   <style>
-    .back-to-hub {
-      position: fixed; top: 12px; left: 12px; z-index: 1000;
-      display: inline-flex; align-items: center; gap: 6px;
-      padding: 8px 14px; border-radius: 20px;
-      background: rgba(21, 26, 58, 0.9); border: 1px solid #1e2455;
-      color: #8a8fb5; font-size: 0.8rem; font-weight: 600;
-      cursor: pointer; text-decoration: none; transition: all 0.15s;
-    }
-    .back-to-hub:hover { color: #a29bfe; border-color: #6c5ce7; }
+    .back-to-hub { /* Styles in shared game-frame.css */ }
   </style>
+  <link rel="stylesheet" href="/games/shared/game-frame.css">
   <script type="module" crossorigin src="/assets/index-0ejH5RuV.js"></script>
   <link rel="stylesheet" crossorigin href="/assets/index-BYflUb_P.css">
 </head>
 <body>
-  <a href="/" class="back-to-hub">← Back to Arcade</a>
+  <a href="/" class="back-to-hub" onclick="recordPlayed('trivia-royale')">← Arcade</a>
 
   <div id="app">
     <!-- Lobby Screen -->
