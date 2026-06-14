@@ -2,3 +2,5 @@ node_modules/
 dist/
 .x-miner/
 *.js.map
+data/
+*.db

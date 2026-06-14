@@ -93,7 +93,7 @@ function getBestScore(): number {
 // ─── Connect ───
 function connect() {
   const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
-  const wsUrl = `${protocol}//${location.host}/ws`;
+  const wsUrl = `${protocol}//${location.host}/ws/game/trivia-royale`;
   ws = new WebSocket(wsUrl);
 
   ws.onopen = () => {

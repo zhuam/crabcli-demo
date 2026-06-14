@@ -4,18 +4,21 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "concurrently \"vite\" \"tsx src/server/index.ts\"",
-    "dev:client": "vite",
-    "dev:server": "tsx src/server/index.ts",
+    "dev": "tsx src/gateway/server.ts",
+    "dev:trivia": "concurrently \"vite\" \"tsx src/server/index.ts\"",
     "build": "vite build",
     "preview": "vite preview",
-    "start": "PORT=3000 NODE_ENV=production tsx src/server/index.ts",
+    "start": "NODE_ENV=production tsx src/gateway/server.ts",
     "test:lemonade": "node tests/lemonade.test.mjs"
   },
   "dependencies": {
-    "ws": "^8.16.0"
+    "ws": "^8.16.0",
+    "better-sqlite3": "^11.0.0",
+    "jsonwebtoken": "^9.0.2"
   },
   "devDependencies": {
+    "@types/better-sqlite3": "^7.6.12",
+    "@types/jsonwebtoken": "^9.0.7",
     "@types/ws": "^8.5.10",
     "concurrently": "^8.2.2",
     "tsx": "^4.7.0",
