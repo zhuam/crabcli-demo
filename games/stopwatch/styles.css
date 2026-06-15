@@ -1,0 +1,308 @@
+/* ============================================================
+   Stopwatch · styles.css
+   modern-minimal · OKLch neutrals + single accent · tabular-nums
+   Design tokens & component rules transplanted from
+   .x-miner/artifacts/t1-design/stopwatch-design.html
+   ============================================================ */
+
+:root {
+  /* Color — light */
+  --color-bg:      oklch(0.99 0 0);
+  --color-surface: oklch(0.97 0 0);
+  --color-border:  oklch(0.92 0 0);
+  --color-muted:   oklch(0.55 0 0);
+  --color-text:    oklch(0.20 0 0);
+  --color-accent:  oklch(0.55 0.18 250);
+
+  /* Typography stacks */
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+  /* Spacing scale */
+  --space-1:  4px;
+  --space-2:  8px;
+  --space-3:  12px;
+  --space-4:  16px;
+  --space-6:  24px;
+  --space-8:  32px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --space-24: 96px;
+
+  /* Radius */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+
+  --maxw: 720px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-bg:      oklch(0.16 0 0);
+    --color-surface: oklch(0.20 0 0);
+    --color-border:  oklch(0.28 0 0);
+    --color-muted:   oklch(0.65 0 0);
+    --color-text:    oklch(0.96 0 0);
+    --color-accent:  oklch(0.72 0.16 250);
+  }
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+
+body {
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ---------- Top nav ---------- */
+.topnav {
+  border-bottom: 1px solid var(--color-border);
+  padding: var(--space-4) var(--space-8);
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+}
+.topnav .brand {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-muted);
+}
+.topnav .brand b { color: var(--color-text); font-weight: 600; }
+.topnav .meta {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--color-muted);
+}
+
+/* ---------- Page wrapper ---------- */
+.page {
+  flex: 1 0 auto;
+  max-width: var(--maxw);
+  width: 100%;
+  margin: 0 auto;
+  padding: var(--space-16) var(--space-6) var(--space-24);
+}
+
+/* ---------- Stage ---------- */
+.stage {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-24) var(--space-8);
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-12);
+  place-items: center;
+}
+
+/* ---------- Main display ---------- */
+.display {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  text-align: center;
+  color: var(--color-text);
+  line-height: 1;
+  user-select: none;
+  display: inline-flex;
+  align-items: baseline;
+  justify-content: center;
+}
+
+.display .primary {
+  font-size: clamp(72px, 14vw, 128px);
+  display: inline-block;
+}
+.display .fraction {
+  font-size: clamp(48px, 9vw, 80px);
+  color: var(--color-muted);
+}
+
+/* State-driven opacity, no color shift to keep monochrome rigor */
+.display[data-state="idle"]   .primary,
+.display[data-state="idle"]   .fraction { opacity: 0.55; }
+.display[data-state="paused"] .primary,
+.display[data-state="paused"] .fraction { opacity: 0.85; }
+.display[data-state="running"] .primary,
+.display[data-state="running"] .fraction { opacity: 1; }
+
+/* ---------- Controls ---------- */
+.controls {
+  display: flex;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.btn {
+  appearance: none;
+  background: transparent;
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 12px 24px;
+  min-width: 116px;
+  min-height: 44px; /* touch target */
+  cursor: pointer;
+  transition:
+    border-color 120ms ease,
+    color 120ms ease,
+    background 120ms ease,
+    opacity 120ms ease;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+.btn:hover { border-color: var(--color-text); }
+.btn:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+.btn[disabled] {
+  opacity: 0.30;
+  cursor: not-allowed;
+  border-color: var(--color-border);
+  color: var(--color-muted);
+}
+.btn[disabled]:hover { border-color: var(--color-border); }
+
+.btn--primary {
+  background: var(--color-text);
+  color: var(--color-bg);
+  border-color: var(--color-text);
+}
+.btn--primary:hover {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: #fff;
+}
+.btn--primary[disabled] {
+  background: var(--color-border);
+  color: var(--color-muted);
+  border-color: var(--color-border);
+}
+
+.btn .kbd {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--color-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.btn--primary .kbd { color: rgba(255,255,255,0.65); }
+.btn[disabled] .kbd { color: var(--color-muted); }
+
+/* ---------- Laps ---------- */
+.laps {
+  list-style: none;
+  margin: var(--space-4) 0 0;
+  padding: 0;
+  width: 100%;
+  max-width: 520px;
+  max-height: 320px;
+  overflow-y: auto;
+}
+.laps[data-empty="true"] { display: none; }
+
+.laps__head,
+.lap {
+  display: grid;
+  grid-template-columns: 64px 1fr 1fr;
+  gap: var(--space-4);
+  padding: var(--space-3) 0;
+  align-items: baseline;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.laps__head {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-muted);
+}
+.laps__head .lap__time,
+.laps__head .lap__total {
+  text-align: right;
+}
+
+.lap {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 16px;
+}
+.lap__idx   { color: var(--color-muted); font-size: 13px; }
+.lap__time  { text-align: right; }
+.lap__total { text-align: right; color: var(--color-muted); }
+
+/* Highlight newest insert briefly without splashy motion */
+.lap.is-fresh {
+  animation: lap-fade 240ms ease-out;
+}
+@keyframes lap-fade {
+  from { background: color-mix(in oklab, var(--color-accent) 14%, transparent); }
+  to   { background: transparent; }
+}
+
+/* Best/worst tagging — kept subtle, opt-in via class */
+.lap--best  { color: var(--color-text); font-weight: 600; }
+.lap--best  .lap__idx::after  { content: " ↑"; }
+.lap--worst .lap__idx::after  { content: " ↓"; }
+
+/* ---------- Footer ---------- */
+.footer {
+  border-top: 1px solid var(--color-border);
+  padding: var(--space-6) var(--space-8);
+  margin-top: auto;
+  color: var(--color-muted);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  text-align: center;
+  letter-spacing: 0.04em;
+}
+
+/* ---------- A11y helper ---------- */
+.visually-hidden {
+  position: absolute;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0,0,0,0);
+  white-space: nowrap; border: 0;
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 480px) {
+  .stage {
+    padding: var(--space-12) var(--space-4);
+    gap: var(--space-8);
+  }
+  .btn { min-width: 96px; padding: 10px 16px; }
+  .laps__head, .lap {
+    grid-template-columns: 52px 1fr 1fr;
+  }
+}
+
+/* Reduced motion — drop fade on lap insert */
+@media (prefers-reduced-motion: reduce) {
+  .lap.is-fresh { animation: none; }
+  .btn { transition: none; }
+}
