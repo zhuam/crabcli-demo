@@ -1,0 +1,177 @@
+/* ============================================================
+   Quote · modern-minimal
+   Single quote card, grayscale palette, light/dark, vanilla CSS.
+   ============================================================ */
+
+:root {
+  --color-bg:       oklch(0.99 0 0);
+  --color-surface:  oklch(1.00 0 0);
+  --color-border:   oklch(0.92 0 0);
+  --color-text:     oklch(0.20 0 0);
+  --color-muted:    oklch(0.55 0 0);
+  --color-accent:   oklch(0.55 0.18 250);
+
+  --font-sans:   'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-serif:  'Source Serif Pro', Georgia, 'Times New Roman', serif;
+
+  --radius-md:   12px;
+  --radius-lg:   22px;
+  --radius-pill: 999px;
+
+  --card-max:    640px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-bg:      oklch(0.16 0 0);
+    --color-surface: oklch(0.20 0 0);
+    --color-border:  oklch(0.28 0 0);
+    --color-text:    oklch(0.96 0 0);
+    --color-muted:   oklch(0.65 0 0);
+    --color-accent:  oklch(0.72 0.16 250);
+  }
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.visually-hidden {
+  position: absolute;
+  clip: rect(0 0 0 0);
+  width: 1px; height: 1px;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+/* top bar */
+.top {
+  padding: 20px 28px;
+  border-bottom: 1px solid var(--color-border);
+  font-size: 14px;
+  color: var(--color-muted);
+  letter-spacing: 0.02em;
+}
+.top b { color: var(--color-text); font-weight: 600; }
+
+/* stage */
+.stage {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 32px;
+  padding: 48px 24px;
+}
+
+/* card */
+.card {
+  margin: 0;
+  width: 100%;
+  max-width: var(--card-max);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 40px 36px 32px;
+  box-shadow:
+    0 1px 2px rgba(0,0,0,0.04),
+    0 12px 32px -16px rgba(0,0,0,0.18);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  transition: opacity 240ms ease, transform 240ms ease;
+}
+.card.is-swapping { opacity: 0; transform: translateY(4px); }
+
+.quote {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-size: clamp(20px, 2.4vw, 26px);
+  font-weight: 400;
+  line-height: 1.45;
+  color: var(--color-text);
+  /* hanging quote mark, kept subtle */
+  position: relative;
+  padding-left: 0.6em;
+  text-indent: -0.6em;
+}
+.quote::before { content: '\201C'; color: var(--color-muted); padding-right: 0.05em; }
+.quote::after  { content: '\201D'; color: var(--color-muted); padding-left: 0.05em; }
+.quote em { font-style: italic; color: var(--color-muted); }
+
+.author {
+  font-size: 14px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-muted);
+  align-self: flex-end;
+}
+.author:not(:empty)::before { content: '— '; }
+
+/* button */
+.new-btn {
+  appearance: none;
+  border: 1px solid var(--color-border);
+  background: var(--color-text);
+  color: var(--color-bg);
+  font: inherit;
+  font-weight: 600;
+  font-size: 15px;
+  letter-spacing: 0.02em;
+  padding: 12px 32px;
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  transition: transform 120ms ease, opacity 120ms ease, background 120ms ease;
+  min-width: 160px;
+}
+.new-btn:hover  { transform: translateY(-1px); }
+.new-btn:active { transform: translateY(0); }
+.new-btn:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 3px;
+}
+.new-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.hint {
+  margin: 0;
+  font-size: 13px;
+  color: var(--color-muted);
+}
+.hint kbd {
+  font: inherit;
+  font-size: 12px;
+  padding: 2px 6px;
+  border: 1px solid var(--color-border);
+  border-bottom-width: 2px;
+  border-radius: 4px;
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+/* mobile */
+@media (max-width: 480px) {
+  .card { padding: 28px 22px 22px; border-radius: 18px; }
+  .stage { gap: 24px; padding: 32px 16px; }
+  .top { padding: 16px 20px; }
+}
+
+/* respect users who prefer reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .card { transition: none; }
+  .new-btn { transition: none; }
+}

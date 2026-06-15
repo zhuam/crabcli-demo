@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Quote — random quote</title>
+  <meta name="description" content="A minimal random quote viewer. Click to draw a new quote from a small curated list." />
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+
+  <header class="top">
+    <div class="brand"><b>Quote</b> · a random thought</div>
+  </header>
+
+  <main class="stage" aria-label="Random quote">
+    <h1 class="visually-hidden">Random quote</h1>
+
+    <figure class="card" id="card">
+      <blockquote class="quote" id="quoteText" aria-live="polite">
+        Click <em>New quote</em> to begin.
+      </blockquote>
+      <figcaption class="author" id="quoteAuthor" aria-hidden="true"></figcaption>
+    </figure>
+
+    <button id="newBtn" class="new-btn" type="button" aria-controls="quoteText">
+      New quote
+    </button>
+
+    <p class="hint" aria-hidden="true">Press <kbd>Space</kbd> or <kbd>Enter</kbd> for the next one</p>
+  </main>
+
+  <script src="./script.js" defer></script>
+</body>
+</html>
