@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+  <meta name="theme-color" content="#0a0e27">
+  <title>Solar Snake</title>
+  <link rel="stylesheet" href="/games/shared/game-frame.css">
+  <style>
+    :root {
+      --bg-deep: #0a0e27;
+      --snake-head: #FFD700;
+      --snake-body: #FF6B35;
+      --star-cyan: #00FFFF;
+      --text-primary: #FFFFFF;
+      --text-muted: rgba(255,255,255,0.5);
+      --danger: #DC2626;
+      --focus-ring: #00FFFF;
+      --dpad-bg: rgba(255,255,255,0.12);
+      --dpad-active: rgba(255,255,255,0.3);
+      --font-display: 'Audiowide', 'Orbitron', system-ui, sans-serif;
+      --font-body: system-ui, -apple-system, sans-serif;
+      --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg-deep);
+      color: var(--text-primary);
+      font-family: var(--font-body);
+      overflow: hidden;
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    /* ── Screens ── */
+    .screen { display: none; flex-direction: column; align-items: center; width: 100%; position: fixed; inset: 0; }
+    .screen.active { display: flex; }
+
+    /* ── Title Screen ── */
+    .title-screen { justify-content: center; gap: 32px; text-align: center; z-index: 1; }
+    .title-icon {
+      width: 96px; height: 96px; border-radius: 50%;
+      background: radial-gradient(circle at 40% 40%, var(--snake-head), var(--snake-body));
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 0 40px rgba(255,215,0,0.4);
+      position: relative; margin: 0 auto;
+    }
+    .title-icon::before, .title-icon::after {
+      content: ''; position: absolute; width: 12px; height: 12px;
+      background: var(--bg-deep); border-radius: 50%; top: 32%;
+    }
+    .title-icon::before { left: 24%; }
+    .title-icon::after { right: 24%; }
+    @media (prefers-reduced-motion: no-preference) {
+      .title-icon { animation: pulse-glow 2s ease-in-out infinite alternate; }
+    }
+    @keyframes pulse-glow {
+      0% { box-shadow: 0 0 40px rgba(255,215,0,0.4); }
+      100% { box-shadow: 0 0 60px rgba(255,215,0,0.6); }
+    }
+    .title-text {
+      font-family: var(--font-display); font-size: 44px; font-weight: 400;
+      letter-spacing: 0.12em; color: var(--snake-head);
+      text-shadow: 0 0 24px rgba(255,215,0,0.5); line-height: 1.1;
+    }
+    .title-subtitle { font-size: 13px; color: var(--text-muted); letter-spacing: 0.25em; text-transform: uppercase; }
+    .title-best { font-family: var(--font-mono); font-size: 14px; color: var(--text-muted); }
+    .title-best span { color: var(--snake-head); font-weight: 700; }
+
+    .btn-primary {
+      font-family: var(--font-display); font-size: 18px; letter-spacing: 0.15em; text-transform: uppercase;
+      background: linear-gradient(135deg, var(--snake-head), var(--snake-body));
+      color: var(--bg-deep); border: none; border-radius: 9999px;
+      padding: 16px 52px; min-height: 56px; cursor: pointer;
+      box-shadow: 0 0 24px rgba(255,215,0,0.3), 0 4px 16px rgba(0,0,0,0.3);
+      transition: transform 150ms ease, box-shadow 150ms ease;
+    }
+    .btn-primary:hover { transform: scale(1.05); box-shadow: 0 0 36px rgba(255,215,0,0.5); }
+    .btn-primary:active { transform: scale(0.97); }
+    .btn-primary:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 4px; }
+
+    /* ── Playing Screen ── */
+    .play-screen { justify-content: flex-start; padding: 12px; z-index: 1; }
+    .canvas-wrapper {
+      position: relative; width: 100%; max-width: 400px; aspect-ratio: 1;
+      border-radius: 20px; overflow: hidden;
+      box-shadow: 0 0 60px rgba(0,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.06);
+    }
+    .canvas-wrapper canvas { display: block; width: 100%; height: 100%; }
+
+    /* ── HUD ── */
+    .hud {
+      position: absolute; top: 0; left: 0; right: 0;
+      padding: 12px 16px; display: flex; align-items: center; justify-content: space-between;
+      pointer-events: none; z-index: 2;
+    }
+    .hud-score {
+      display: flex; align-items: center; gap: 8px;
+      font-family: var(--font-mono); font-size: 18px; font-weight: 700;
+      text-shadow: 0 0 8px rgba(0,255,255,0.4);
+    }
+    .hud-high { font-family: var(--font-mono); font-size: 12px; color: var(--text-muted); }
+    .speed-badge {
+      font-family: var(--font-mono); font-size: 10px; padding: 2px 8px;
+      border-radius: 9999px; background: rgba(139,92,246,0.25);
+      color: #8B5CF6; border: 1px solid rgba(139,92,246,0.3);
+    }
+
+    /* ── D-Pad ── */
+    .dpad {
+      display: none; grid-template-columns: repeat(3, 56px); grid-template-rows: repeat(3, 56px);
+      gap: 8px; margin-top: auto; margin-bottom: 16px;
+    }
+    @media (pointer: coarse), (max-width: 768px) { .dpad { display: grid; } }
+    .dpad-btn {
+      width: 56px; height: 56px; border: none; background: var(--dpad-bg);
+      border-radius: 12px; color: var(--text-primary); font-size: 22px;
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      transition: background 150ms ease, transform 150ms ease;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .dpad-btn:active { background: var(--dpad-active); transform: scale(0.9); }
+    .dpad-btn:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
+    .dpad-spacer { visibility: hidden; }
+
+    /* ── Game Over Overlay ── */
+    .gameover-overlay {
+      position: absolute; inset: 0; background: rgba(0,0,0,0.75);
+      z-index: 10; display: none; flex-direction: column; align-items: center;
+      justify-content: center; gap: 12px; border-radius: 20px;
+      backdrop-filter: blur(6px);
+    }
+    .gameover-overlay.active { display: flex; }
+    .gameover-heading {
+      font-family: var(--font-display); font-size: 30px; letter-spacing: 0.1em;
+      color: var(--danger); text-shadow: 0 0 16px rgba(220,38,38,0.5);
+    }
+    .gameover-score-label { font-size: 12px; color: var(--text-muted); letter-spacing: 0.2em; text-transform: uppercase; }
+    .gameover-score-value { font-family: var(--font-mono); font-size: 56px; font-weight: 700; line-height: 1; }
+    .gameover-new-best {
+      font-family: var(--font-display); font-size: 15px; color: var(--snake-head);
+      letter-spacing: 0.1em; text-shadow: 0 0 12px rgba(255,215,0,0.5);
+    }
+    @media (prefers-reduced-motion: no-preference) {
+      .gameover-new-best { animation: celebrate 0.6s ease-in-out infinite alternate; }
+    }
+    @keyframes celebrate { 0% { transform: scale(1); } 100% { transform: scale(1.12); } }
+    .gameover-best { font-family: var(--font-mono); font-size: 13px; color: var(--text-muted); }
+    .btn-replay {
+      font-family: var(--font-display); font-size: 16px; letter-spacing: 0.12em; text-transform: uppercase;
+      background: linear-gradient(135deg, var(--snake-head), var(--snake-body));
+      color: var(--bg-deep); border: none; border-radius: 9999px;
+      padding: 14px 44px; min-height: 48px; cursor: pointer;
+      box-shadow: 0 0 20px rgba(255,215,0,0.3), 0 4px 12px rgba(0,0,0,0.3);
+      margin-top: 8px; transition: transform 150ms ease, box-shadow 150ms ease;
+    }
+    .btn-replay:hover { transform: scale(1.05); }
+    .btn-replay:active { transform: scale(0.97); }
+    .btn-replay:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 4px; }
+
+    /* ── Mute Toggle ── */
+    .mute-btn {
+      width: 44px; height: 44px; border: none; background: var(--dpad-bg);
+      border-radius: 50%; font-size: 20px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      position: fixed; top: 12px; right: 12px; z-index: 10001;
+      transition: background 150ms ease; color: var(--text-primary);
+    }
+    .mute-btn:hover { background: var(--dpad-active); }
+    .mute-btn:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
+
+    /* ── Canvas starfield bg ── */
+    #bgCanvas { position: fixed; inset: 0; z-index: 0; }
+
+    .sr-only {
+      position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+      overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0;
+    }
+
+    /* Score animation */
+    .score-pop {
+      position: absolute; top: 40px; left: 50%; transform: translateX(-50%);
+      font-family: var(--font-mono); font-size: 24px; font-weight: 700;
+      color: var(--star-cyan); text-shadow: 0 0 12px rgba(0,255,255,0.6);
+      pointer-events: none; z-index: 3;
+    }
+    @media (prefers-reduced-motion: no-preference) {
+      .score-pop { animation: score-pop-anim 0.4s ease-out forwards; }
+    }
+    @keyframes score-pop-anim {
+      0% { opacity: 1; transform: translateX(-50%) scale(1.4); }
+      100% { opacity: 0; transform: translateX(-50%) scale(1) translateY(-20px); }
+    }
+  </style>
+</head>
+<body>
+
+<canvas id="bgCanvas" aria-hidden="true"></canvas>
+
+<!-- Mute toggle (global) -->
+<button class="mute-btn" id="muteBtn" aria-label="Toggle sound" aria-pressed="false">🔊</button>
+
+<!-- ═══════ TITLE SCREEN ═══════ -->
+<div class="screen title-screen active" id="titleScreen" role="region" aria-label="Title screen">
+  <div class="title-icon" aria-hidden="true"></div>
+  <h1 class="title-text">SOLAR<br>SNAKE</h1>
+  <p class="title-subtitle">宇宙版贪吃蛇</p>
+  <button class="btn-primary" id="startBtn" autofocus>START</button>
+  <p class="title-best" id="titleBest">Best: <span>0</span></p>
+</div>
+
+<!-- ═══════ PLAYING SCREEN ═══════ -->
+<div class="screen play-screen" id="playScreen" role="region" aria-label="Game screen">
+  <div class="canvas-wrapper" id="canvasWrapper">
+    <canvas id="gameCanvas" width="400" height="400"></canvas>
+    <!-- HUD -->
+    <div class="hud">
+      <div class="hud-score">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <path d="M8 1L9.8 6.2H15.4L10.8 9.5L12.6 14.8L8 11.5L3.4 14.8L5.2 9.5L0.6 6.2H6.2L8 1Z" fill="#00FFFF"/>
+        </svg>
+        <span id="scoreDisplay">0</span>
+      </div>
+      <span class="speed-badge" id="speedBadge">x1.0</span>
+      <div class="hud-high" id="hudHigh">HI: 0</div>
+    </div>
+    <!-- Score pop container -->
+    <div id="scorePopContainer" style="position:absolute;inset:0;pointer-events:none;z-index:3"></div>
+    <!-- Game Over Overlay -->
+    <div class="gameover-overlay" id="gameoverOverlay" role="dialog" aria-label="Game over">
+      <h2 class="gameover-heading">GAME OVER</h2>
+      <p class="gameover-score-label">Score</p>
+      <p class="gameover-score-value" id="goScore">0</p>
+      <p class="gameover-new-best" id="goNewBest" style="display:none">NEW BEST!</p>
+      <p class="gameover-best" id="goBest">Best: 0</p>
+      <button class="btn-replay" id="replayBtn" aria-label="Play again">再来一局</button>
+    </div>
+  </div>
+  <!-- D-Pad -->
+  <nav class="dpad" aria-label="Direction controls">
+    <div class="dpad-spacer"></div>
+    <button class="dpad-btn" data-dir="UP" aria-label="Up">&#9650;</button>
+    <div class="dpad-spacer"></div>
+    <button class="dpad-btn" data-dir="LEFT" aria-label="Left">&#9664;</button>
+    <div class="dpad-spacer"></div>
+    <button class="dpad-btn" data-dir="RIGHT" aria-label="Right">&#9654;</button>
+    <div class="dpad-spacer"></div>
+    <button class="dpad-btn" data-dir="DOWN" aria-label="Down">&#9660;</button>
+    <div class="dpad-spacer"></div>
+  </nav>
+</div>
+
+<!-- Aria live region -->
+<div class="sr-only" role="status" aria-live="polite" id="ariaLive">Score: 0</div>
+
+<script>
+(function() {
+  'use strict';
+
+  // ── Constants ──
+  var GRID = 20;
+  var CELL = 20;
+  var CANVAS_SIZE = GRID * CELL;
+  var STORAGE_KEY = 'solar-snake-high-score';
+  var SPEED_TIERS = [{score: 0, rate: 8}, {score: 100, rate: 10}, {score: 300, rate: 12}];
+  var OPPOSITE = {UP: 'DOWN', DOWN: 'UP', LEFT: 'RIGHT', RIGHT: 'LEFT'};
+  var DIR_VEC = {UP: {x: 0, y: -1}, DOWN: {x: 0, y: 1}, LEFT: {x: -1, y: 0}, RIGHT: {x: 1, y: 0}};
+
+  // ── DOM refs ──
+  var titleScreen = document.getElementById('titleScreen');
+  var playScreen = document.getElementById('playScreen');
+  var canvas = document.getElementById('gameCanvas');
+  var ctx = canvas.getContext('2d');
+  var bgCanvas = document.getElementById('bgCanvas');
+  var bgCtx = bgCanvas.getContext('2d');
+  var canvasWrapper = document.getElementById('canvasWrapper');
+  var scoreDisplay = document.getElementById('scoreDisplay');
+  var hudHigh = document.getElementById('hudHigh');
+  var speedBadge = document.getElementById('speedBadge');
+  var goScore = document.getElementById('goScore');
+  var goBest = document.getElementById('goBest');
+  var goNewBest = document.getElementById('goNewBest');
+  var gameoverOverlay = document.getElementById('gameoverOverlay');
+  var titleBest = document.getElementById('titleBest');
+  var ariaLive = document.getElementById('ariaLive');
+  var scorePopContainer = document.getElementById('scorePopContainer');
+
+  // ── State ──
+  var gameState = 'TITLE'; // TITLE | PLAYING | GAMEOVER
+  var snake = [];
+  var direction = 'RIGHT';
+  var nextDirection = 'RIGHT';
+  var star = null;
+  var score = 0;
+  var highScore = loadHighScore();
+  var tickRate = 8;
+  var accumulator = 0;
+  var lastTime = 0;
+  var rafId = null;
+  var muted = localStorage.getItem('solar-snake-muted') === 'true';
+  var audioCtx = null;
+  var particles = [];
+  var screenShake = {x: 0, y: 0, active: false, start: 0};
+  var prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  updateMuteBtn();
+  updateTitleBest();
+
+  // ── Background Starfield ──
+  function initBg() {
+    bgCanvas.width = window.innerWidth;
+    bgCanvas.height = window.innerHeight;
+    bgCtx.fillStyle = '#0a0e27';
+    bgCtx.fillRect(0, 0, bgCanvas.width, bgCanvas.height);
+    for (var i = 0; i < 120; i++) {
+      var alpha = Math.random() * 0.5 + 0.15;
+      bgCtx.fillStyle = 'rgba(255,255,255,' + alpha + ')';
+      bgCtx.beginPath();
+      bgCtx.arc(Math.random() * bgCanvas.width, Math.random() * bgCanvas.height, Math.random() * 1.5 + 0.3, 0, Math.PI * 2);
+      bgCtx.fill();
+    }
+  }
+  initBg();
+  window.addEventListener('resize', initBg);
+
+  // ── Audio ──
+  function ensureAudioCtx() {
+    if (!audioCtx) {
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+  }
+
+  function playSound(type) {
+    if (muted || !audioCtx) return;
+    var now = audioCtx.currentTime;
+    var osc = audioCtx.createOscillator();
+    var gain = audioCtx.createGain();
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    gain.gain.setValueAtTime(0.15, now);
+
+    switch (type) {
+      case 'eat':
+        osc.frequency.setValueAtTime(440, now);
+        osc.frequency.linearRampToValueAtTime(880, now + 0.1);
+        gain.gain.linearRampToValueAtTime(0, now + 0.12);
+        osc.start(now); osc.stop(now + 0.12);
+        break;
+      case 'death':
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(200, now);
+        osc.frequency.linearRampToValueAtTime(60, now + 0.2);
+        gain.gain.setValueAtTime(0.2, now);
+        gain.gain.linearRampToValueAtTime(0, now + 0.2);
+        osc.start(now); osc.stop(now + 0.2);
+        break;
+      case 'start':
+        osc.frequency.setValueAtTime(660, now);
+        gain.gain.linearRampToValueAtTime(0, now + 0.05);
+        osc.start(now); osc.stop(now + 0.05);
+        break;
+      case 'highscore':
+        osc.frequency.setValueAtTime(440, now);
+        osc.frequency.setValueAtTime(660, now + 0.08);
+        osc.frequency.setValueAtTime(880, now + 0.16);
+        gain.gain.linearRampToValueAtTime(0, now + 0.25);
+        osc.start(now); osc.stop(now + 0.25);
+        break;
+    }
+  }
+
+  function vibrate(pattern) {
+    if (navigator.vibrate) navigator.vibrate(pattern);
+  }
+
+  // ── LocalStorage ──
+  function loadHighScore() {
+    try { return parseInt(localStorage.getItem(STORAGE_KEY)) || 0; } catch { return 0; }
+  }
+  function saveHighScore(s) {
+    try {
+      var cur = loadHighScore();
+      if (s > cur) { localStorage.setItem(STORAGE_KEY, String(s)); return true; }
+      return false;
+    } catch { return false; }
+  }
+  function recordPlayed() {
+    try {
+      var recent = JSON.parse(localStorage.getItem('recentlyPlayed') || '[]');
+      var filtered = recent.filter(function(p) { return p.id !== 'solar-snake'; });
+      filtered.unshift({ id: 'solar-snake', playedAt: Date.now() });
+      localStorage.setItem('recentlyPlayed', JSON.stringify(filtered.slice(0, 10)));
+    } catch {}
+  }
+
+  // ── Mute ──
+  var muteBtn = document.getElementById('muteBtn');
+  muteBtn.addEventListener('click', function() {
+    muted = !muted;
+    localStorage.setItem('solar-snake-muted', String(muted));
+    updateMuteBtn();
+    if (!muted) ensureAudioCtx();
+  });
+  function updateMuteBtn() {
+    muteBtn.textContent = muted ? '🔇' : '🔊';
+    muteBtn.setAttribute('aria-pressed', String(muted));
+  }
+
+  // ── Screens ──
+  function showScreen(name) {
+    titleScreen.classList.remove('active');
+    playScreen.classList.remove('active');
+    gameoverOverlay.classList.remove('active');
+    if (name === 'TITLE') {
+      titleScreen.classList.add('active');
+      updateTitleBest();
+      document.title = 'Solar Snake';
+    } else if (name === 'PLAYING') {
+      playScreen.classList.add('active');
+      updateHUD();
+    } else if (name === 'GAMEOVER') {
+      playScreen.classList.add('active');
+      gameoverOverlay.classList.add('active');
+    }
+    gameState = name;
+  }
+
+  function updateTitleBest() {
+    titleBest.querySelector('span').textContent = loadHighScore();
+  }
+
+  function updateHUD() {
+    scoreDisplay.textContent = score;
+    hudHigh.textContent = 'HI: ' + loadHighScore();
+    // Speed tier
+    var tier = SPEED_TIERS[0];
+    for (var i = SPEED_TIERS.length - 1; i >= 0; i--) {
+      if (score >= SPEED_TIERS[i].score) { tier = SPEED_TIERS[i]; break; }
+    }
+    tickRate = tier.rate;
+    var multiplier = (tickRate / 8).toFixed(1);
+    speedBadge.textContent = 'x' + multiplier;
+  }
+
+  // ── Game Init ──
+  function initGame() {
+    var startX = Math.floor(GRID / 2);
+    var startY = Math.floor(GRID / 2);
+    snake = [];
+    for (var i = 2; i >= 0; i--) {
+      snake.push({ x: startX - i, y: startY });
+    }
+    direction = 'RIGHT';
+    nextDirection = 'RIGHT';
+    score = 0;
+    tickRate = 8;
+    accumulator = 0;
+    particles = [];
+    screenShake = { x: 0, y: 0, active: false, start: 0 };
+    star = spawnStar();
+    updateHUD();
+    recordPlayed();
+  }
+
+  function spawnStar() {
+    var occupied = {};
+    for (var i = 0; i < snake.length; i++) {
+      occupied[snake[i].x + ',' + snake[i].y] = true;
+    }
+    var free = [];
+    for (var x = 0; x < GRID; x++) {
+      for (var y = 0; y < GRID; y++) {
+        if (!occupied[x + ',' + y]) free.push({ x: x, y: y });
+      }
+    }
+    if (free.length === 0) return null; // WIN
+    return free[Math.floor(Math.random() * free.length)];
+  }
+
+  // ── Game Loop ──
+  function startLoop() {
+    lastTime = performance.now();
+    accumulator = 0;
+    if (rafId) cancelAnimationFrame(rafId);
+    rafId = requestAnimationFrame(gameLoop);
+  }
+
+  function gameLoop(timestamp) {
+    var dt = timestamp - lastTime;
+    lastTime = timestamp;
+    accumulator += dt;
+    if (accumulator > 1000) accumulator = 1000; // prevent spiral of death
+
+    while (accumulator >= 1000 / tickRate) {
+      if (gameState !== 'PLAYING') break;
+      update();
+      accumulator -= 1000 / tickRate;
+    }
+
+    render();
+    if (gameState === 'PLAYING') {
+      rafId = requestAnimationFrame(gameLoop);
+    }
+  }
+
+  // ── Update ──
+  function update() {
+    direction = nextDirection;
+    var head = snake[0];
+    var vec = DIR_VEC[direction];
+    var newHead = { x: head.x + vec.x, y: head.y + vec.y };
+
+    // Wall collision
+    if (newHead.x < 0 || newHead.x >= GRID || newHead.y < 0 || newHead.y >= GRID) {
+      die();
+      return;
+    }
+
+    // Self collision (skip if snake too short)
+    if (snake.length >= 4) {
+      for (var i = 0; i < snake.length - 1; i++) {
+        if (snake[i].x === newHead.x && snake[i].y === newHead.y) {
+          die();
+          return;
+        }
+      }
+    }
+
+    snake.unshift(newHead);
+
+    // Star collision
+    if (star && newHead.x === star.x && newHead.y === star.y) {
+      score += 10;
+      updateHUD();
+      playSound('eat');
+      vibrate(30);
+      spawnParticles(star.x * CELL + CELL / 2, star.y * CELL + CELL / 2);
+      showScorePop();
+      ariaLive.textContent = 'Score: ' + score;
+      star = spawnStar();
+    } else {
+      snake.pop();
+    }
+  }
+
+  function die() {
+    gameState = 'GAMEOVER';
+    playSound('death');
+    vibrate([100, 50, 100]);
+    if (!prefersReduced) {
+      screenShake = { x: 0, y: 0, active: true, start: performance.now() };
+    }
+    render(); // one final render with shake
+
+    // High score
+    var isNewBest = saveHighScore(score);
+    if (isNewBest) {
+      playSound('highscore');
+      vibrate([50, 30, 50, 30, 100]);
+    }
+
+    // Show game over overlay
+    goScore.textContent = score;
+    goBest.textContent = 'Best: ' + loadHighScore();
+    goNewBest.style.display = isNewBest ? 'block' : 'none';
+
+    setTimeout(function() {
+      showScreen('GAMEOVER');
+      document.getElementById('replayBtn').focus();
+      ariaLive.textContent = 'Game Over! Score: ' + score + (isNewBest ? ' New best!' : '') + '. Press Enter to play again.';
+    }, prefersReduced ? 100 : 300);
+  }
+
+  // ── Render ──
+  function render() {
+    ctx.save();
+
+    // Screen shake
+    if (screenShake.active && !prefersReduced) {
+      var elapsed = performance.now() - screenShake.start;
+      if (elapsed < 200) {
+        var intensity = 2 * (1 - elapsed / 200);
+        ctx.translate(
+          (Math.random() - 0.5) * intensity * 2,
+          (Math.random() - 0.5) * intensity * 2
+        );
+      } else {
+        screenShake.active = false;
+      }
+    }
+
+    // Clear + background
+    ctx.fillStyle = '#0a0e27';
+    ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+
+    // Subtle grid lines
+    ctx.strokeStyle = 'rgba(255,255,255,0.025)';
+    ctx.lineWidth = 0.5;
+    for (var i = 0; i <= GRID; i++) {
+      ctx.beginPath(); ctx.moveTo(i * CELL, 0); ctx.lineTo(i * CELL, CANVAS_SIZE); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(0, i * CELL); ctx.lineTo(CANVAS_SIZE, i * CELL); ctx.stroke();
+    }
+
+    // Wall border
+    ctx.strokeStyle = 'rgba(59,130,246,0.15)';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(1, 1, CANVAS_SIZE - 2, CANVAS_SIZE - 2);
+
+    // Star
+    if (star) {
+      drawStar(star.x * CELL + CELL / 2, star.y * CELL + CELL / 2);
+    }
+
+    // Snake body
+    for (var j = snake.length - 1; j >= 1; j--) {
+      var seg = snake[j];
+      var t = j / (snake.length - 1);
+      var r = 255;
+      var g = Math.round(215 - t * 108);
+      var b = Math.round(53 * t);
+      ctx.fillStyle = 'rgb(' + r + ',' + g + ',' + b + ')';
+      drawRoundRect(seg.x * CELL + 2, seg.y * CELL + 2, CELL - 4, CELL - 4, 3);
+      ctx.fill();
+    }
+
+    // Snake head
+    if (snake.length > 0) {
+      var head = snake[0];
+      ctx.save();
+      if (!prefersReduced) {
+        ctx.shadowBlur = 8;
+        ctx.shadowColor = '#FFD700';
+      }
+      ctx.fillStyle = '#FFD700';
+      drawRoundRect(head.x * CELL + 1, head.y * CELL + 1, CELL - 2, CELL - 2, 4);
+      ctx.fill();
+      ctx.restore();
+
+      // Eyes
+      ctx.fillStyle = '#0a0e27';
+      var ex1, ey1, ex2, ey2;
+      switch (direction) {
+        case 'RIGHT': ex1 = head.x*CELL+13; ey1 = head.y*CELL+6; ex2 = head.x*CELL+13; ey2 = head.y*CELL+14; break;
+        case 'LEFT':  ex1 = head.x*CELL+7;  ey1 = head.y*CELL+6; ex2 = head.x*CELL+7;  ey2 = head.y*CELL+14; break;
+        case 'UP':    ex1 = head.x*CELL+6;  ey1 = head.y*CELL+7; ex2 = head.x*CELL+14; ey2 = head.y*CELL+7; break;
+        case 'DOWN':  ex1 = head.x*CELL+6;  ey1 = head.y*CELL+13; ex2 = head.x*CELL+14; ey2 = head.y*CELL+13; break;
+      }
+      ctx.beginPath(); ctx.arc(ex1, ey1, 2.5, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(ex2, ey2, 2.5, 0, Math.PI * 2); ctx.fill();
+      // Pupils
+      ctx.fillStyle = '#FFFFFF';
+      ctx.beginPath(); ctx.arc(ex1 + 1, ey1 - 1, 1, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(ex2 + 1, ey2 - 1, 1, 0, Math.PI * 2); ctx.fill();
+    }
+
+    // Particles
+    renderParticles();
+
+    ctx.restore();
+  }
+
+  function drawRoundRect(x, y, w, h, r) {
+    r = Math.min(r, w / 2, h / 2);
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + w - r, y);
+    ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+    ctx.lineTo(x + w, y + h - r);
+    ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    ctx.lineTo(x + r, y + h);
+    ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+    ctx.lineTo(x, y + r);
+    ctx.quadraticCurveTo(x, y, x + r, y);
+    ctx.closePath();
+  }
+
+  function drawStar(cx, cy) {
+    var time = performance.now() / 1000;
+    var pulse = prefersReduced ? 1 : 0.9 + 0.1 * Math.sin(time * 4);
+    ctx.save();
+    if (!prefersReduced) {
+      ctx.shadowBlur = 14;
+      ctx.shadowColor = '#00FFFF';
+    }
+    ctx.fillStyle = '#00FFFF';
+    ctx.translate(cx, cy);
+    ctx.scale(pulse, pulse);
+    ctx.beginPath();
+    for (var i = 0; i < 8; i++) {
+      var angle = (i * Math.PI) / 4 - Math.PI / 2;
+      var r = i % 2 === 0 ? 10 : 4;
+      var px = Math.cos(angle) * r;
+      var py = Math.sin(angle) * r;
+      i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
+    }
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+
+    // Inner glow
+    ctx.fillStyle = 'rgba(255,255,255,0.6)';
+    ctx.beginPath();
+    ctx.arc(cx, cy, 3, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // ── Particles (Canvas-based) ──
+  function spawnParticles(cx, cy) {
+    if (prefersReduced) return;
+    for (var i = 0; i < 8; i++) {
+      var angle = (i / 8) * Math.PI * 2;
+      var speed = 1.5 + Math.random() * 2;
+      particles.push({
+        x: cx, y: cy,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        life: 1,
+        decay: 0.025 + Math.random() * 0.015,
+        size: 2 + Math.random() * 2
+      });
+    }
+  }
+
+  function renderParticles() {
+    for (var i = particles.length - 1; i >= 0; i--) {
+      var p = particles[i];
+      p.x += p.vx;
+      p.y += p.vy;
+      p.life -= p.decay;
+      if (p.life <= 0) { particles.splice(i, 1); continue; }
+      ctx.globalAlpha = p.life;
+      ctx.fillStyle = '#00FFFF';
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.size * p.life, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  function showScorePop() {
+    if (prefersReduced) return;
+    var el = document.createElement('div');
+    el.className = 'score-pop';
+    el.textContent = '+' + 10;
+    scorePopContainer.appendChild(el);
+    setTimeout(function() { el.remove(); }, 420);
+  }
+
+  // ── Input ──
+  function setDirection(dir) {
+    if (OPPOSITE[dir] !== direction) {
+      nextDirection = dir;
+    }
+  }
+
+  // Keyboard
+  document.addEventListener('keydown', function(e) {
+    var t = e.target;
+    var tag = (t && t.tagName || '').toLowerCase();
+    if (tag === 'input' || tag === 'textarea' || (t && t.isContentEditable)) return;
+
+    var key = e.key;
+    if (gameState === 'TITLE' && (key === 'Enter' || key === ' ')) {
+      e.preventDefault();
+      startGame();
+      return;
+    }
+    if (gameState === 'GAMEOVER' && (key === 'Enter' || key === ' ')) {
+      e.preventDefault();
+      startGame();
+      return;
+    }
+
+    if (gameState !== 'PLAYING') return;
+
+    switch (key) {
+      case 'ArrowUp':    e.preventDefault(); setDirection('UP'); break;
+      case 'ArrowDown':  e.preventDefault(); setDirection('DOWN'); break;
+      case 'ArrowLeft':  e.preventDefault(); setDirection('LEFT'); break;
+      case 'ArrowRight': e.preventDefault(); setDirection('RIGHT'); break;
+    }
+  });
+
+  // Touch swipe
+  var touchStartX, touchStartY;
+  canvas.addEventListener('touchstart', function(e) {
+    e.preventDefault();
+    touchStartX = e.touches[0].clientX;
+    touchStartY = e.touches[0].clientY;
+  }, { passive: false });
+
+  canvas.addEventListener('touchend', function(e) {
+    e.preventDefault();
+    if (!touchStartX) return;
+    var dx = e.changedTouches[0].clientX - touchStartX;
+    var dy = e.changedTouches[0].clientY - touchStartY;
+    var absDx = Math.abs(dx), absDy = Math.abs(dy);
+    if (Math.max(absDx, absDy) < 30) return;
+    if (absDx > absDy) setDirection(dx > 0 ? 'RIGHT' : 'LEFT');
+    else setDirection(dy > 0 ? 'DOWN' : 'UP');
+    touchStartX = null;
+    touchStartY = null;
+  }, { passive: false });
+
+  // Swipe on game-over overlay for quick restart
+  gameoverOverlay.addEventListener('touchstart', function(e) {
+    touchStartX = e.touches[0].clientX;
+    touchStartY = e.touches[0].clientY;
+  }, { passive: true });
+
+  gameoverOverlay.addEventListener('touchend', function(e) {
+    var dx = e.changedTouches[0].clientX - touchStartX;
+    var dy = e.changedTouches[0].clientY - touchStartY;
+    if (Math.max(Math.abs(dx), Math.abs(dy)) > 30) {
+      startGame();
+    }
+    touchStartX = null;
+    touchStartY = null;
+  }, { passive: true });
+
+  // D-Pad
+  var dpadBtns = document.querySelectorAll('.dpad-btn');
+  for (var i = 0; i < dpadBtns.length; i++) {
+    dpadBtns[i].addEventListener('click', function() {
+      if (gameState === 'PLAYING') setDirection(this.getAttribute('data-dir'));
+    });
+    dpadBtns[i].addEventListener('touchstart', function(e) {
+      e.preventDefault();
+      if (gameState === 'PLAYING') setDirection(this.getAttribute('data-dir'));
+    }, { passive: false });
+  }
+
+  // ── Buttons ──
+  document.getElementById('startBtn').addEventListener('click', function() {
+    ensureAudioCtx();
+    startGame();
+  });
+
+  document.getElementById('replayBtn').addEventListener('click', function() {
+    ensureAudioCtx();
+    startGame();
+  });
+
+  function startGame() {
+    initGame();
+    showScreen('PLAYING');
+    document.title = 'Solar Snake — Score: 0';
+    playSound('start');
+    startLoop();
+  }
+
+  // Update document title during play
+  var origUpdateHUD = updateHUD;
+  var _origUpdateHUD = updateHUD;
+  updateHUD = function() {
+    _origUpdateHUD();
+    if (gameState === 'PLAYING') {
+      document.title = 'Solar Snake — Score: ' + score;
+    }
+  };
+
+  // ── Init title screen ──
+  showScreen('TITLE');
+
+  // Render a static preview on the game canvas for the playing screen
+  (function renderPreview() {
+    ctx.fillStyle = '#0a0e27';
+    ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+    ctx.strokeStyle = 'rgba(255,255,255,0.025)';
+    ctx.lineWidth = 0.5;
+    for (var i = 0; i <= GRID; i++) {
+      ctx.beginPath(); ctx.moveTo(i * CELL, 0); ctx.lineTo(i * CELL, CANVAS_SIZE); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(0, i * CELL); ctx.lineTo(CANVAS_SIZE, i * CELL); ctx.stroke();
+    }
+    // Draw a static snake
+    var preview = [{x:10,y:10},{x:9,y:10},{x:8,y:10},{x:7,y:10},{x:6,y:10},{x:6,y:9},{x:6,y:8}];
+    for (var j = preview.length - 1; j >= 1; j--) {
+      var seg = preview[j];
+      var t = j / (preview.length - 1);
+      ctx.fillStyle = 'rgb(255,' + Math.round(215 - t * 108) + ',' + Math.round(53 * t) + ')';
+      drawRoundRect(seg.x * CELL + 2, seg.y * CELL + 2, CELL - 4, CELL - 4, 3);
+      ctx.fill();
+    }
+    ctx.fillStyle = '#FFD700';
+    if (!prefersReduced) { ctx.shadowBlur = 8; ctx.shadowColor = '#FFD700'; }
+    drawRoundRect(preview[0].x * CELL + 1, preview[0].y * CELL + 1, CELL - 2, CELL - 2, 4);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+    // Star
+    drawStar(14 * CELL + CELL / 2, 5 * CELL + CELL / 2);
+  })();
+
+})();
+</script>
+
+</body>
+</html>

@@ -301,6 +301,19 @@
       "rating": 4.0
     },
     {
+      "id": "solar-snake",
+      "name": "Solar Snake",
+      "description": "宇宙版贪吃蛇，吃星变长，碰撞结束",
+      "category": "casual",
+      "tags": ["singleplayer", "snake", "classic", "space"],
+      "thumbnail": "/games/solar-snake/thumb.png",
+      "path": "/games/solar-snake/",
+      "hasServer": false,
+      "players": "1",
+      "version": "1.0.0",
+      "rating": 4.0
+    },
+    {
       "id": "dice",
       "name": "Dice",
       "description": "Minimal dice roller — click for a fair 1–6 with a short animation",
