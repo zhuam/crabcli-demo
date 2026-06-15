@@ -1,0 +1,218 @@
+/* ============================================================
+   Dice · modern-minimal
+   Single white dice face, traditional 3x3 pip layout via 7 slots,
+   light/dark, vanilla CSS. No deps.
+   ============================================================ */
+
+:root {
+  --color-bg:       oklch(0.99 0 0);
+  --color-surface:  oklch(1.00 0 0);
+  --color-border:   oklch(0.92 0 0);
+  --color-text:     oklch(0.20 0 0);
+  --color-muted:    oklch(0.55 0 0);
+  --color-accent:   oklch(0.55 0.18 250);
+  --color-pip:      oklch(0.20 0 0);
+
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+
+  --radius-md: 8px;
+  --radius-lg: 22px;
+  --radius-pill: 999px;
+
+  --dice-size: 200px;
+  --pip-size:  26px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-bg:      oklch(0.16 0 0);
+    --color-surface: oklch(0.96 0 0);
+    --color-border:  oklch(0.28 0 0);
+    --color-text:    oklch(0.96 0 0);
+    --color-muted:   oklch(0.65 0 0);
+    --color-accent:  oklch(0.72 0.16 250);
+    --color-pip:     oklch(0.18 0 0);
+  }
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.visually-hidden {
+  position: absolute;
+  clip: rect(0 0 0 0);
+  width: 1px; height: 1px;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+/* top bar */
+.top {
+  padding: 20px 28px;
+  border-bottom: 1px solid var(--color-border);
+  font-size: 14px;
+  color: var(--color-muted);
+  letter-spacing: 0.02em;
+}
+.top b { color: var(--color-text); font-weight: 600; }
+
+/* stage */
+.stage {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 32px;
+  padding: 48px 24px;
+}
+
+/* dice */
+.dice {
+  width: var(--dice-size);
+  height: var(--dice-size);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow:
+    0 1px 2px rgba(0,0,0,0.04),
+    0 12px 32px -16px rgba(0,0,0,0.18);
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows:    repeat(3, 1fr);
+  padding: 22px;
+  gap: 0;
+  user-select: none;
+  will-change: transform;
+}
+
+.pip {
+  width: var(--pip-size);
+  height: var(--pip-size);
+  border-radius: 50%;
+  background: var(--color-pip);
+  align-self: center;
+  justify-self: center;
+  visibility: hidden; /* shown by face rules below */
+}
+
+/* 3x3 grid slot mapping (1..7 used; slot 4 = center) */
+.pip[data-slot="1"] { grid-column: 1; grid-row: 1; }
+.pip[data-slot="2"] { grid-column: 3; grid-row: 1; }
+.pip[data-slot="3"] { grid-column: 1; grid-row: 2; }
+.pip[data-slot="4"] { grid-column: 2; grid-row: 2; } /* center */
+.pip[data-slot="5"] { grid-column: 3; grid-row: 2; }
+.pip[data-slot="6"] { grid-column: 1; grid-row: 3; }
+.pip[data-slot="7"] { grid-column: 3; grid-row: 3; }
+
+/* face rules — which slots are visible for each face value */
+.dice[data-face="1"] .pip[data-slot="4"] { visibility: visible; }
+
+.dice[data-face="2"] .pip[data-slot="1"],
+.dice[data-face="2"] .pip[data-slot="7"] { visibility: visible; }
+
+.dice[data-face="3"] .pip[data-slot="1"],
+.dice[data-face="3"] .pip[data-slot="4"],
+.dice[data-face="3"] .pip[data-slot="7"] { visibility: visible; }
+
+.dice[data-face="4"] .pip[data-slot="1"],
+.dice[data-face="4"] .pip[data-slot="2"],
+.dice[data-face="4"] .pip[data-slot="6"],
+.dice[data-face="4"] .pip[data-slot="7"] { visibility: visible; }
+
+.dice[data-face="5"] .pip[data-slot="1"],
+.dice[data-face="5"] .pip[data-slot="2"],
+.dice[data-face="5"] .pip[data-slot="4"],
+.dice[data-face="5"] .pip[data-slot="6"],
+.dice[data-face="5"] .pip[data-slot="7"] { visibility: visible; }
+
+.dice[data-face="6"] .pip[data-slot="1"],
+.dice[data-face="6"] .pip[data-slot="2"],
+.dice[data-face="6"] .pip[data-slot="3"],
+.dice[data-face="6"] .pip[data-slot="5"],
+.dice[data-face="6"] .pip[data-slot="6"],
+.dice[data-face="6"] .pip[data-slot="7"] { visibility: visible; }
+
+/* roll animation: rotate + scale, ~700ms */
+@keyframes diceRoll {
+  0%   { transform: rotate(0deg)   scale(1);    }
+  25%  { transform: rotate(180deg) scale(0.92); }
+  50%  { transform: rotate(360deg) scale(1.05); }
+  75%  { transform: rotate(540deg) scale(0.96); }
+  100% { transform: rotate(720deg) scale(1);    }
+}
+.dice.is-rolling {
+  animation: diceRoll 700ms cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+/* button */
+.roll-btn {
+  appearance: none;
+  border: 1px solid var(--color-border);
+  background: var(--color-text);
+  color: var(--color-bg);
+  font: inherit;
+  font-weight: 600;
+  font-size: 15px;
+  letter-spacing: 0.02em;
+  padding: 12px 32px;
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  transition: transform 120ms ease, opacity 120ms ease, background 120ms ease;
+  min-width: 140px;
+}
+.roll-btn:hover  { transform: translateY(-1px); }
+.roll-btn:active { transform: translateY(0); }
+.roll-btn:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 3px;
+}
+.roll-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.hint {
+  margin: 0;
+  font-size: 13px;
+  color: var(--color-muted);
+}
+.hint kbd {
+  font: inherit;
+  font-size: 12px;
+  padding: 2px 6px;
+  border: 1px solid var(--color-border);
+  border-bottom-width: 2px;
+  border-radius: 4px;
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+/* mobile */
+@media (max-width: 480px) {
+  :root {
+    --dice-size: 160px;
+    --pip-size:  22px;
+  }
+  .dice { padding: 18px; border-radius: 18px; }
+  .stage { gap: 24px; padding: 32px 16px; }
+  .top { padding: 16px 20px; }
+}
+
+/* respect users who prefer reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .dice.is-rolling { animation: none; }
+  .roll-btn { transition: none; }
+}

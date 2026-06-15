@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Dice — minimal roller</title>
+  <meta name="description" content="A minimal dice roller. Click to roll. Random 1–6 with a short animation." />
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+
+  <header class="top">
+    <div class="brand"><b>Dice</b> · roll 1–6</div>
+  </header>
+
+  <main class="stage" aria-label="Dice game">
+    <h1 class="visually-hidden">Dice roller</h1>
+
+    <div
+      id="dice"
+      class="dice"
+      data-face="1"
+      role="img"
+      aria-label="Dice showing 1"
+    >
+      <span class="pip" data-slot="1"></span>
+      <span class="pip" data-slot="2"></span>
+      <span class="pip" data-slot="3"></span>
+      <span class="pip" data-slot="4"></span>
+      <span class="pip" data-slot="5"></span>
+      <span class="pip" data-slot="6"></span>
+      <span class="pip" data-slot="7"></span>
+    </div>
+
+    <button id="rollBtn" class="roll-btn" type="button" aria-controls="dice">
+      Roll
+    </button>
+
+    <p class="hint" aria-hidden="true">Press <kbd>Space</kbd> or <kbd>Enter</kbd> to roll</p>
+    <p id="srStatus" class="visually-hidden" aria-live="polite"></p>
+  </main>
+
+  <script src="./main.js" defer></script>
+</body>
+</html>
