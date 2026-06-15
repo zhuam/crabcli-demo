@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="zh-CN" data-comp-id="page-stopwatch">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Stopwatch — Minimal millisecond stopwatch</title>
+  <meta name="description" content="极简秒表：开始 / 暂停 / 记圈 / 清零，毫秒级显示，键盘快捷键 Space / L / R。" />
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body data-comp-id="page-root">
+
+  <!-- TOP NAV — minimal brand line, mirrors design spec -->
+  <header class="topnav" data-comp-id="topnav">
+    <div class="brand"><b>STOPWATCH</b>&nbsp;/&nbsp;minimal</div>
+    <div class="meta">games/stopwatch · v1.0.0</div>
+  </header>
+
+  <main id="content" class="page" data-comp-id="page">
+
+    <!-- ========== STAGE — main timing UI ========== -->
+    <section class="stage" data-comp-id="stage" aria-labelledby="sw-title">
+      <h1 id="sw-title" class="visually-hidden">Stopwatch</h1>
+
+      <!-- Main display: MM:SS.cc with differentiated typography -->
+      <time class="display"
+            data-comp-id="display"
+            data-state="idle"
+            aria-live="off">
+        <span class="primary"><span data-mm>00</span>:<span data-ss>00</span></span><span class="fraction">.<span data-cs>00</span></span>
+      </time>
+
+      <!-- Controls: primary toggles 开始/暂停/继续; lap & reset are state-gated -->
+      <div class="controls" role="group" aria-label="计时控制" data-comp-id="controls">
+        <button class="btn btn--primary"
+                type="button"
+                data-action="primary"
+                data-comp-id="btn-primary"
+                aria-label="开始 (Space)">
+          <span data-label>开始</span>
+          <span class="kbd">Space</span>
+        </button>
+        <button class="btn"
+                type="button"
+                data-action="lap"
+                data-comp-id="btn-lap"
+                aria-label="记圈 (L)"
+                disabled>
+          <span>记圈</span>
+          <span class="kbd">L</span>
+        </button>
+        <button class="btn"
+                type="button"
+                data-action="reset"
+                data-comp-id="btn-reset"
+                aria-label="清零 (R)"
+                disabled>
+          <span>清零</span>
+          <span class="kbd">R</span>
+        </button>
+      </div>
+
+      <!-- Laps: three-column list, newest unshifted on top, hidden when empty -->
+      <ol class="laps"
+          data-comp-id="laps"
+          data-empty="true"
+          aria-label="圈数列表">
+        <li class="laps__head" aria-hidden="true">
+          <span>圈号</span>
+          <span class="lap__time">本圈</span>
+          <span class="lap__total">总时</span>
+        </li>
+        <!-- lap rows are inserted here by app.js -->
+      </ol>
+
+      <!-- Polite live region for non-noisy announcements (lap / pause / reset) -->
+      <div class="visually-hidden"
+           aria-live="polite"
+           data-comp-id="announce"
+           data-announce></div>
+    </section>
+
+  </main>
+
+  <footer class="footer" data-comp-id="footer">
+    Space 主按钮 · L 记圈 · R 清零 · 暗色随系统
+  </footer>
+
+  <script src="./app.js" defer></script>
+</body>
+</html>
