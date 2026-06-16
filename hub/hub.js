@@ -12,6 +12,10 @@
   let searchQuery = '';
   let searchTimeout = null;
 
+  // Lockout state
+  let lockoutTimer = null;
+  let lockoutRetryAfter = 0;
+
   // Pagination state
   const PAGE_SIZE = 24;
   let visibleCount = PAGE_SIZE;
@@ -331,8 +335,16 @@
     authAction = action || 'login';
     authModal.style.display = 'flex';
     authError.style.display = 'none';
+    authError.className = 'error-msg';
     modalTitle.textContent = authAction === 'login' ? 'Sign In' : 'Create Account';
     authSubmit.textContent = authAction === 'login' ? 'Sign In' : 'Create Account';
+    authSubmit.disabled = false;
+    usernameInput.classList.remove('input-locked');
+    usernameInput.readOnly = false;
+    if (passwordInput) {
+      passwordInput.classList.remove('input-locked');
+      passwordInput.readOnly = false;
+    }
     $$('.auth-tab').forEach(tab => {
       tab.classList.toggle('active', tab.dataset.action === authAction);
     });
@@ -343,6 +355,65 @@
 
   function closeAuthModal() {
     authModal.style.display = 'none';
+    clearLockoutTimer();
+  }
+
+  function clearLockoutTimer() {
+    if (lockoutTimer) {
+      clearInterval(lockoutTimer);
+      lockoutTimer = null;
+    }
+    lockoutRetryAfter = 0;
+  }
+
+  function startLockoutCountdown(retryAfterSeconds) {
+    clearLockoutTimer();
+    lockoutRetryAfter = retryAfterSeconds;
+    authSubmit.disabled = true;
+    usernameInput.classList.add('input-locked');
+    usernameInput.readOnly = true;
+    if (passwordInput) {
+      passwordInput.classList.add('input-locked');
+      passwordInput.readOnly = true;
+    }
+
+    lockoutTimer = setInterval(() => {
+      lockoutRetryAfter -= 1;
+      if (lockoutRetryAfter <= 0) {
+        clearLockoutTimer();
+        authError.style.display = 'none';
+        authError.className = 'error-msg';
+        authSubmit.disabled = false;
+        usernameInput.classList.remove('input-locked');
+        usernameInput.readOnly = false;
+        if (passwordInput) {
+          passwordInput.classList.remove('input-locked');
+          passwordInput.readOnly = false;
+        }
+        return;
+      }
+      const mins = Math.floor(lockoutRetryAfter / 60);
+      const secs = lockoutRetryAfter % 60;
+      authError.innerHTML =
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;flex-shrink:0;margin-top:1px"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>' +
+        '<span class="error-msg__text">Account temporarily locked due to multiple failed attempts.' +
+        '<span class="error-msg__countdown">' + mins + ':' + String(secs).padStart(2, '0') + '</span>' +
+        '<span class="error-msg__countdown-label">until you can try again</span>' +
+        '</span>';
+      authError.style.display = 'flex';
+    }, 1000);
+
+    // Show initial countdown immediately
+    const mins = Math.floor(lockoutRetryAfter / 60);
+    const secs = lockoutRetryAfter % 60;
+    authError.className = 'error-msg error-msg--locked';
+    authError.innerHTML =
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;flex-shrink:0;margin-top:1px"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>' +
+      '<span class="error-msg__text">Account temporarily locked due to multiple failed attempts.' +
+      '<span class="error-msg__countdown">' + mins + ':' + String(secs).padStart(2, '0') + '</span>' +
+      '<span class="error-msg__countdown-label">until you can try again</span>' +
+      '</span>';
+    authError.style.display = 'flex';
   }
 
   // ─── Categories ───
@@ -623,13 +694,18 @@
       if (!name) return;
       if (!password || password.length < 4) {
         authError.textContent = 'Password must be at least 4 characters';
-        authError.style.display = 'block';
+        authError.className = 'error-msg error-msg--standard';
+        authError.style.display = 'flex';
         return;
       }
+
+      // Prevent submit during lockout
+      if (lockoutTimer) return;
 
       authSubmit.disabled = true;
       authSubmit.textContent = 'Loading...';
       authError.style.display = 'none';
+      authError.className = 'error-msg';
 
       try {
         const endpoint = authAction === 'login' ? '/api/auth/login' : '/api/auth/register';
@@ -642,8 +718,28 @@
         const data = await res.json();
 
         if (!res.ok) {
-          authError.textContent = data.error || 'Something went wrong';
-          authError.style.display = 'block';
+          // Handle 423 Locked response
+          if (res.status === 423 && data.retryAfterSeconds) {
+            startLockoutCountdown(data.retryAfterSeconds);
+            authSubmit.textContent = authAction === 'login' ? 'Sign In' : 'Create Account';
+            return;
+          }
+
+          // Handle progressive warning (3-4 failures)
+          if (data.warning) {
+            authError.className = 'error-msg error-msg--warning';
+            authError.innerHTML =
+              '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;flex-shrink:0;margin-top:1px"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>' +
+              '<span class="error-msg__text">' + escapeHtml(data.error) + ' ' + escapeHtml(data.message || '') + '</span>';
+            authError.style.display = 'flex';
+          } else {
+            // Standard error (1-2 failures or other errors)
+            authError.className = 'error-msg error-msg--standard';
+            authError.innerHTML =
+              '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;flex-shrink:0;margin-top:1px"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>' +
+              '<span class="error-msg__text">' + escapeHtml(data.error || 'Something went wrong') + '</span>';
+            authError.style.display = 'flex';
+          }
           return;
         }
 
@@ -658,11 +754,16 @@
           applyFilters();
         }
       } catch (err) {
-        authError.textContent = 'Network error. Please try again.';
-        authError.style.display = 'block';
+        authError.className = 'error-msg error-msg--standard';
+        authError.innerHTML =
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;flex-shrink:0;margin-top:1px"><line x1="1" y1="1" x2="23" y2="23"/><path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55"/><path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39"/><path d="M10.71 5.05A16 16 0 0 1 22.56 9"/><path d="M1.42 9a15.91 15.91 0 0 1 4.7-2.88"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>' +
+          '<span class="error-msg__text">Network error. Please try again.</span>';
+        authError.style.display = 'flex';
       } finally {
-        authSubmit.disabled = false;
-        authSubmit.textContent = authAction === 'login' ? 'Sign In' : 'Create Account';
+        if (!lockoutTimer) {
+          authSubmit.disabled = false;
+          authSubmit.textContent = authAction === 'login' ? 'Sign In' : 'Create Account';
+        }
       }
     });
 

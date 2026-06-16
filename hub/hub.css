@@ -529,6 +529,69 @@ a { color: inherit; text-decoration: none; }
   color: var(--danger);
   font-size: 0.85rem;
   margin-bottom: 16px;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.error-msg svg {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  margin-top: 1px;
+}
+
+.error-msg__text {
+  flex: 1;
+}
+
+.error-msg--standard {
+  background: rgba(225, 112, 85, 0.15);
+  border: 1px solid rgba(225, 112, 85, 0.3);
+  color: var(--danger);
+}
+
+.error-msg--warning {
+  background: rgba(253, 203, 110, 0.12);
+  border: 1px solid rgba(253, 203, 110, 0.25);
+  color: var(--warning);
+}
+
+.error-msg--locked {
+  background: rgba(225, 112, 85, 0.15);
+  border: 1px solid rgba(225, 112, 85, 0.3);
+  color: var(--danger);
+}
+
+.error-msg__countdown {
+  font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--danger);
+  display: block;
+  margin-top: 6px;
+  letter-spacing: -0.02em;
+}
+
+.error-msg__countdown-label {
+  font-family: inherit;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-weight: 400;
+  display: block;
+  margin-top: 2px;
+}
+
+.form-group input.input-locked {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-primary:disabled {
+  background: var(--surface2);
+  box-shadow: none;
+  cursor: not-allowed;
+  opacity: 0.5;
 }
 
 .form-group {

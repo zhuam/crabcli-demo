@@ -62,17 +62,74 @@ export async function handleAuth(req: IncomingMessage, res: ServerResponse, body
       return json(res, 400, { error: 'Password is required' });
     }
 
-    const user = db.prepare('SELECT id, name, passwordHash, createdAt FROM users WHERE name = ?').get(name.trim()) as { id: string; name: string; passwordHash: string | null; createdAt: number } | undefined;
+    const username = name.trim();
+
+    // Check if user exists first (do NOT count attempts for non-existent users)
+    const user = db.prepare('SELECT id, name, passwordHash, createdAt FROM users WHERE name = ?').get(username) as { id: string; name: string; passwordHash: string | null; createdAt: number } | undefined;
     if (!user) {
       return json(res, 404, { error: 'User not found' });
     }
 
-    // If user has a password, verify it. Otherwise accept password-less login (legacy accounts).
-    if (user.passwordHash) {
-      if (hashPassword(password) !== user.passwordHash) {
-        return json(res, 401, { error: 'Incorrect password' });
-      }
+    // Check lock status before authentication
+    const attempt = db.prepare('SELECT failCount, lockedUntil FROM login_attempts WHERE username = ?').get(username) as { failCount: number; lockedUntil: number } | undefined;
+    if (attempt && attempt.lockedUntil > Date.now()) {
+      const retryAfterSeconds = Math.ceil((attempt.lockedUntil - Date.now()) / 1000);
+      return json(res, 423, {
+        error: 'Account is temporarily locked',
+        lockedUntil: attempt.lockedUntil,
+        retryAfterSeconds
+      });
     }
+
+    // If lock has expired, clean up the record
+    if (attempt && attempt.lockedUntil > 0 && attempt.lockedUntil <= Date.now()) {
+      db.prepare('DELETE FROM login_attempts WHERE username = ?').run(username);
+    }
+
+    // Verify password
+    const passwordCorrect = user.passwordHash
+      ? hashPassword(password) === user.passwordHash
+      : true; // legacy passwordless accounts
+
+    if (!passwordCorrect) {
+      // Increment fail count
+      const currentFailCount = (attempt && attempt.lockedUntil <= Date.now()) ? attempt.failCount : (attempt?.failCount || 0);
+      const newFailCount = currentFailCount + 1;
+
+      if (newFailCount >= 5) {
+        // Lock the account for 10 minutes
+        const lockedUntil = Date.now() + 10 * 60 * 1000;
+        db.prepare(
+          'INSERT INTO login_attempts (username, failCount, lockedUntil) VALUES (?, ?, ?) ON CONFLICT(username) DO UPDATE SET failCount = ?, lockedUntil = ?'
+        ).run(username, newFailCount, lockedUntil, newFailCount, lockedUntil);
+
+        return json(res, 423, {
+          error: 'Account is temporarily locked',
+          lockedUntil,
+          retryAfterSeconds: 10 * 60
+        });
+      }
+
+      // Update fail count
+      db.prepare(
+        'INSERT INTO login_attempts (username, failCount, lockedUntil) VALUES (?, ?, 0) ON CONFLICT(username) DO UPDATE SET failCount = ?, lockedUntil = 0'
+      ).run(username, newFailCount, newFailCount);
+
+      // Progressive warning at 3-4 failures
+      if (newFailCount >= 3) {
+        return json(res, 401, {
+          error: 'Incorrect password',
+          warning: true,
+          message: 'Multiple failed attempts will lock your account.'
+        });
+      }
+
+      // Standard failure for 1-2 attempts
+      return json(res, 401, { error: 'Incorrect password' });
+    }
+
+    // Successful login — clear any attempt records
+    db.prepare('DELETE FROM login_attempts WHERE username = ?').run(username);
 
     const token = jwt.sign({ userId: user.id, name: user.name, createdAt: user.createdAt }, JWT_SECRET, { expiresIn: '7d' });
     setAuthCookie(res, token);

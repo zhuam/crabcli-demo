@@ -47,6 +47,15 @@ db.exec(`
 
   CREATE INDEX IF NOT EXISTS scores_game_score ON scores(gameId, score DESC);
   CREATE INDEX IF NOT EXISTS users_name ON users(name);
+
+  CREATE TABLE IF NOT EXISTS login_attempts (
+    username TEXT PRIMARY KEY,
+    failCount INTEGER NOT NULL DEFAULT 0,
+    lockedUntil INTEGER NOT NULL DEFAULT 0
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_login_attempts_locked
+    ON login_attempts(lockedUntil) WHERE lockedUntil > 0;
 `);
 
 // Migration: add passwordHash column if missing
