@@ -301,6 +301,20 @@
       "rating": 4.0
     },
     {
+      "id": "pet-run-io",
+      "name": "Pet Run.io",
+      "description": "萌宠多人跑酷 · 8 萌宠 · 跑赢前三 · 解锁皮肤",
+      "category": "action",
+      "tags": ["singleplayer", "runner", "pets", "io"],
+      "thumbnail": "/games/097-pet-run-io/thumb.png",
+      "path": "/games/097-pet-run-io/",
+      "hasServer": false,
+      "players": "1",
+      "version": "1.0.0",
+      "featured": true,
+      "rating": 4.4
+    },
+    {
       "id": "solar-snake",
       "name": "Solar Snake",
       "description": "宇宙版贪吃蛇，吃星变长，碰撞结束",
