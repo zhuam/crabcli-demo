@@ -49,6 +49,7 @@
       display: flex; align-items: center; justify-content: center;
       box-shadow: 0 0 40px rgba(255,215,0,0.4);
       position: relative; margin: 0 auto;
+      transition: background 0.3s ease, box-shadow 0.3s ease;
     }
     .title-icon::before, .title-icon::after {
       content: ''; position: absolute; width: 12px; height: 12px;
@@ -197,6 +198,27 @@
       0% { opacity: 1; transform: translateX(-50%) scale(1.4); }
       100% { opacity: 0; transform: translateX(-50%) scale(1) translateY(-20px); }
     }
+
+    /* ── Customize selector on title screen ── */
+    .customize-section { display: flex; flex-direction: column; gap: 10px; align-items: center; }
+    .customize-row { display: flex; gap: 12px; align-items: center; }
+    .customize-label { font-size: 10px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--text-muted); min-width: 48px; }
+    .swatch {
+      width: 36px; height: 36px; border-radius: 50%; border: 2px solid transparent;
+      cursor: pointer; position: relative; transition: transform 150ms ease, border-color 150ms ease;
+    }
+    .swatch:hover { transform: scale(1.1); }
+    .swatch.selected { border-color: var(--focus-ring); box-shadow: 0 0 8px rgba(0,255,255,0.4); }
+    .swatch.locked { opacity: 0.35; cursor: default; }
+    .swatch.locked:hover { transform: none; }
+    .swatch-lock {
+      position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+      font-size: 12px; color: rgba(255,255,255,0.7);
+    }
+    .swatch-unlock-hint {
+      position: absolute; bottom: -16px; left: 50%; transform: translateX(-50%);
+      font-size: 8px; color: var(--text-muted); white-space: nowrap; letter-spacing: 0.05em;
+    }
   </style>
 </head>
 <body>
@@ -215,6 +237,16 @@
   <h1 class="title-text">SOLAR<br>SNAKE</h1>
   <p class="title-subtitle">宇宙版贪吃蛇</p>
   <button class="btn-primary" id="startBtn" autofocus>START</button>
+  <div class="customize-section" id="customizeSection">
+    <div class="customize-row">
+      <span class="customize-label">Skin</span>
+      <div id="skinSwatches" style="display:flex;gap:10px"></div>
+    </div>
+    <div class="customize-row">
+      <span class="customize-label">Scene</span>
+      <div id="sceneSwatches" style="display:flex;gap:10px"></div>
+    </div>
+  </div>
   <p class="title-best" id="titleBest">Best: <span>0</span></p>
 </div>
 
@@ -275,6 +307,21 @@
   var OPPOSITE = {UP: 'DOWN', DOWN: 'UP', LEFT: 'RIGHT', RIGHT: 'LEFT'};
   var DIR_VEC = {UP: {x: 0, y: -1}, DOWN: {x: 0, y: 1}, LEFT: {x: -1, y: 0}, RIGHT: {x: 1, y: 0}};
 
+  // ── Skins & Scenes ──
+  var SKINS = [
+    { id: 'solar', name: 'Solar', head: '#FFD700', body: '#FF6B35', glow: '#FFD700', unlock: 0 },
+    { id: 'nebula', name: 'Nebula', head: '#8B5CF6', body: '#6366F1', glow: '#8B5CF6', unlock: 100 },
+    { id: 'aurora', name: 'Aurora', head: '#10B981', body: '#34D399', glow: '#10B981', unlock: 300 },
+    { id: 'crimson', name: 'Crimson', head: '#EF4444', body: '#F97316', glow: '#EF4444', unlock: 500 },
+    { id: 'frost', name: 'Frost', head: '#60A5FA', body: '#93C5FD', glow: '#60A5FA', unlock: 800 }
+  ];
+  var SCENES = [
+    { id: 'deepspace', name: 'Deep Space', bg: '#0a0e27', grid: 'rgba(255,255,255,0.025)', wall: 'rgba(59,130,246,0.15)', unlock: 0 },
+    { id: 'nebulacloud', name: 'Nebula Cloud', bg: '#1a0a2e', grid: 'rgba(139,92,246,0.03)', wall: 'rgba(139,92,246,0.2)', unlock: 200 },
+    { id: 'solarflare', name: 'Solar Flare', bg: '#1a0f00', grid: 'rgba(255,165,0,0.02)', wall: 'rgba(255,165,0,0.2)', unlock: 400 },
+    { id: 'aurorafield', name: 'Aurora Field', bg: '#0a1a0e', grid: 'rgba(16,185,129,0.03)', wall: 'rgba(16,185,129,0.2)', unlock: 600 }
+  ];
+
   // ── DOM refs ──
   var titleScreen = document.getElementById('titleScreen');
   var playScreen = document.getElementById('playScreen');
@@ -311,6 +358,8 @@
   var particles = [];
   var screenShake = {x: 0, y: 0, active: false, start: 0};
   var prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var selectedSkin = loadSkinSelection();
+  var selectedScene = loadSceneSelection();
 
   updateMuteBtn();
   updateTitleBest();
@@ -319,7 +368,7 @@
   function initBg() {
     bgCanvas.width = window.innerWidth;
     bgCanvas.height = window.innerHeight;
-    bgCtx.fillStyle = '#0a0e27';
+    bgCtx.fillStyle = selectedScene.bg;
     bgCtx.fillRect(0, 0, bgCanvas.width, bgCanvas.height);
     for (var i = 0; i < 120; i++) {
       var alpha = Math.random() * 0.5 + 0.15;
@@ -328,6 +377,10 @@
       bgCtx.arc(Math.random() * bgCanvas.width, Math.random() * bgCanvas.height, Math.random() * 1.5 + 0.3, 0, Math.PI * 2);
       bgCtx.fill();
     }
+    // Update CSS variables to match skin/scene
+    document.documentElement.style.setProperty('--bg-deep', selectedScene.bg);
+    document.documentElement.style.setProperty('--snake-head', selectedSkin.head);
+    document.documentElement.style.setProperty('--snake-body', selectedSkin.body);
   }
   initBg();
   window.addEventListener('resize', initBg);
@@ -403,6 +456,28 @@
     } catch {}
   }
 
+  function loadSkinSelection() {
+    try {
+      var id = localStorage.getItem('solar-snake-skin') || 'solar';
+      for (var i = 0; i < SKINS.length; i++) { if (SKINS[i].id === id) return SKINS[i]; }
+    } catch {}
+    return SKINS[0];
+  }
+  function saveSkinSelection(skin) {
+    try { localStorage.setItem('solar-snake-skin', skin.id); } catch {}
+  }
+  function loadSceneSelection() {
+    try {
+      var id = localStorage.getItem('solar-snake-scene') || 'deepspace';
+      for (var i = 0; i < SCENES.length; i++) { if (SCENES[i].id === id) return SCENES[i]; }
+    } catch {}
+    return SCENES[0];
+  }
+  function saveSceneSelection(scene) {
+    try { localStorage.setItem('solar-snake-scene', scene.id); } catch {}
+  }
+  function isUnlocked(item) { return loadHighScore() >= item.unlock; }
+
   // ── Mute ──
   var muteBtn = document.getElementById('muteBtn');
   muteBtn.addEventListener('click', function() {
@@ -437,6 +512,7 @@
 
   function updateTitleBest() {
     titleBest.querySelector('span').textContent = loadHighScore();
+    buildSwatches();
   }
 
   function updateHUD() {
@@ -600,11 +676,11 @@
     }
 
     // Clear + background
-    ctx.fillStyle = '#0a0e27';
+    ctx.fillStyle = selectedScene.bg;
     ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
 
     // Subtle grid lines
-    ctx.strokeStyle = 'rgba(255,255,255,0.025)';
+    ctx.strokeStyle = selectedScene.grid;
     ctx.lineWidth = 0.5;
     for (var i = 0; i <= GRID; i++) {
       ctx.beginPath(); ctx.moveTo(i * CELL, 0); ctx.lineTo(i * CELL, CANVAS_SIZE); ctx.stroke();
@@ -612,7 +688,7 @@
     }
 
     // Wall border
-    ctx.strokeStyle = 'rgba(59,130,246,0.15)';
+    ctx.strokeStyle = selectedScene.wall;
     ctx.lineWidth = 2;
     ctx.strokeRect(1, 1, CANVAS_SIZE - 2, CANVAS_SIZE - 2);
 
@@ -622,12 +698,14 @@
     }
 
     // Snake body
+    var headC = hexToRgb(selectedSkin.head);
+    var bodyC = hexToRgb(selectedSkin.body);
     for (var j = snake.length - 1; j >= 1; j--) {
       var seg = snake[j];
       var t = j / (snake.length - 1);
-      var r = 255;
-      var g = Math.round(215 - t * 108);
-      var b = Math.round(53 * t);
+      var r = Math.round(headC.r + (bodyC.r - headC.r) * t);
+      var g = Math.round(headC.g + (bodyC.g - headC.g) * t);
+      var b = Math.round(headC.b + (bodyC.b - headC.b) * t);
       ctx.fillStyle = 'rgb(' + r + ',' + g + ',' + b + ')';
       drawRoundRect(seg.x * CELL + 2, seg.y * CELL + 2, CELL - 4, CELL - 4, 3);
       ctx.fill();
@@ -639,9 +717,9 @@
       ctx.save();
       if (!prefersReduced) {
         ctx.shadowBlur = 8;
-        ctx.shadowColor = '#FFD700';
+        ctx.shadowColor = selectedSkin.glow;
       }
-      ctx.fillStyle = '#FFD700';
+      ctx.fillStyle = selectedSkin.head;
       drawRoundRect(head.x * CELL + 1, head.y * CELL + 1, CELL - 2, CELL - 2, 4);
       ctx.fill();
       ctx.restore();
@@ -667,6 +745,11 @@
     renderParticles();
 
     ctx.restore();
+  }
+
+  function hexToRgb(hex) {
+    var c = hex.replace('#', '');
+    return { r: parseInt(c.substring(0, 2), 16), g: parseInt(c.substring(2, 4), 16), b: parseInt(c.substring(4, 6), 16) };
   }
 
   function drawRoundRect(x, y, w, h, r) {
@@ -872,11 +955,84 @@
   // ── Init title screen ──
   showScreen('TITLE');
 
+  // ── Build skin/scene swatches ──
+  function buildSwatches() {
+    var skinContainer = document.getElementById('skinSwatches');
+    var sceneContainer = document.getElementById('sceneSwatches');
+    skinContainer.innerHTML = '';
+    sceneContainer.innerHTML = '';
+    var hs = loadHighScore();
+
+    SKINS.forEach(function(skin) {
+      var el = document.createElement('div');
+      el.className = 'swatch' + (skin.id === selectedSkin.id ? ' selected' : '') + (hs < skin.unlock ? ' locked' : '');
+      el.style.background = 'linear-gradient(135deg, ' + skin.head + ', ' + skin.body + ')';
+      el.setAttribute('role', 'button');
+      el.setAttribute('aria-label', skin.name + (hs < skin.unlock ? ' (unlock at ' + skin.unlock + ')' : ''));
+      el.title = skin.name + (hs < skin.unlock ? ' — unlock at ' + skin.unlock : '');
+      if (hs < skin.unlock) {
+        el.innerHTML = '<span class="swatch-lock">🔒</span><span class="swatch-unlock-hint">' + skin.unlock + '</span>';
+      }
+      el.addEventListener('click', function() {
+        if (hs < skin.unlock) return;
+        selectedSkin = skin;
+        saveSkinSelection(skin);
+        buildSwatches();
+        initBg();
+      });
+      skinContainer.appendChild(el);
+    });
+
+    SCENES.forEach(function(scene) {
+      var el = document.createElement('div');
+      el.className = 'swatch' + (scene.id === selectedScene.id ? ' selected' : '') + (hs < scene.unlock ? ' locked' : '');
+      el.style.background = scene.bg;
+      el.style.border = scene.id === selectedScene.id ? '2px solid var(--focus-ring)' : '2px solid rgba(255,255,255,0.15)';
+      el.setAttribute('role', 'button');
+      el.setAttribute('aria-label', scene.name + (hs < scene.unlock ? ' (unlock at ' + scene.unlock + ')' : ''));
+      el.title = scene.name + (hs < scene.unlock ? ' — unlock at ' + scene.unlock : '');
+      if (hs < scene.unlock) {
+        el.innerHTML = '<span class="swatch-lock">🔒</span><span class="swatch-unlock-hint">' + scene.unlock + '</span>';
+      }
+      el.addEventListener('click', function() {
+        if (hs < scene.unlock) return;
+        selectedScene = scene;
+        saveSceneSelection(scene);
+        buildSwatches();
+        initBg();
+      });
+      sceneContainer.appendChild(el);
+    });
+  }
+  buildSwatches();
+
+  // Update title icon gradient to match selected skin
+  function updateTitleIcon() {
+    var icon = document.querySelector('.title-icon');
+    if (icon) {
+      icon.style.background = 'radial-gradient(circle at 40% 40%, ' + selectedSkin.head + ', ' + selectedSkin.body + ')';
+      icon.style.boxShadow = '0 0 40px ' + selectedSkin.head + '66';
+    }
+    var titleText = document.querySelector('.title-text');
+    if (titleText) {
+      titleText.style.color = selectedSkin.head;
+      titleText.style.textShadow = '0 0 24px ' + selectedSkin.head + '80';
+    }
+  }
+  updateTitleIcon();
+
+  // Re-render preview when skin/scene changes
+  var _origBuildSwatches = buildSwatches;
+  buildSwatches = function() {
+    _origBuildSwatches();
+    updateTitleIcon();
+  };
+
   // Render a static preview on the game canvas for the playing screen
   (function renderPreview() {
-    ctx.fillStyle = '#0a0e27';
+    ctx.fillStyle = selectedScene.bg;
     ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
-    ctx.strokeStyle = 'rgba(255,255,255,0.025)';
+    ctx.strokeStyle = selectedScene.grid;
     ctx.lineWidth = 0.5;
     for (var i = 0; i <= GRID; i++) {
       ctx.beginPath(); ctx.moveTo(i * CELL, 0); ctx.lineTo(i * CELL, CANVAS_SIZE); ctx.stroke();
@@ -884,15 +1040,20 @@
     }
     // Draw a static snake
     var preview = [{x:10,y:10},{x:9,y:10},{x:8,y:10},{x:7,y:10},{x:6,y:10},{x:6,y:9},{x:6,y:8}];
+    var headC = hexToRgb(selectedSkin.head);
+    var bodyC = hexToRgb(selectedSkin.body);
     for (var j = preview.length - 1; j >= 1; j--) {
       var seg = preview[j];
       var t = j / (preview.length - 1);
-      ctx.fillStyle = 'rgb(255,' + Math.round(215 - t * 108) + ',' + Math.round(53 * t) + ')';
+      var r = Math.round(headC.r + (bodyC.r - headC.r) * t);
+      var g = Math.round(headC.g + (bodyC.g - headC.g) * t);
+      var b = Math.round(headC.b + (bodyC.b - headC.b) * t);
+      ctx.fillStyle = 'rgb(' + r + ',' + g + ',' + b + ')';
       drawRoundRect(seg.x * CELL + 2, seg.y * CELL + 2, CELL - 4, CELL - 4, 3);
       ctx.fill();
     }
-    ctx.fillStyle = '#FFD700';
-    if (!prefersReduced) { ctx.shadowBlur = 8; ctx.shadowColor = '#FFD700'; }
+    ctx.fillStyle = selectedSkin.head;
+    if (!prefersReduced) { ctx.shadowBlur = 8; ctx.shadowColor = selectedSkin.glow; }
     drawRoundRect(preview[0].x * CELL + 1, preview[0].y * CELL + 1, CELL - 2, CELL - 2, 4);
     ctx.fill();
     ctx.shadowBlur = 0;
