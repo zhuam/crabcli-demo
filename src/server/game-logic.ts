@@ -17,7 +17,9 @@ export interface Room {
   timer: ReturnType<typeof setTimeout> | null;
   timeLeft: number;
   questionStartTime: number;
+  questionEndTime: number;
   countdownTick: ReturnType<typeof setInterval> | null;
+  countdownEndTime: number;
 }
 
 export const rooms = new Map<string, Room>();
@@ -36,7 +38,9 @@ export function createRoom(): Room {
     timer: null,
     timeLeft: 0,
     questionStartTime: 0,
+    questionEndTime: 0,
     countdownTick: null,
+    countdownEndTime: 0,
   };
   rooms.set(id, room);
   return room;
@@ -125,6 +129,11 @@ function revealAnswer(room: Room) {
     if (!player.alive) continue;
     const ws = room.sockets.get(pid);
     if (!ws) continue;
+    const answer = room.answers.get(pid);
+    const elapsedMs = answer ? answer.timestamp - room.questionStartTime : GAME_CONFIG.SECONDS_PER_QUESTION * 1000;
+    const isCorrect = answer && answer.optionIndex === q.correctIndex;
+    const secondsRemaining = Math.max(0, GAME_CONFIG.SECONDS_PER_QUESTION - elapsedMs / 1000);
+    const pointsEarned = isCorrect ? GAME_CONFIG.POINTS_CORRECT + Math.round(secondsRemaining * GAME_CONFIG.POINTS_SPEED_BONUS) : 0;
     send(ws, {
       type: 'answer_result',
       correctIndex: q.correctIndex,
@@ -132,6 +141,8 @@ function revealAnswer(room: Room) {
       yourScore: player.score,
       yourRank: player.rank,
       isEliminated: false,
+      elapsedMs,
+      pointsEarned,
     });
   }
   broadcast(room, { type: 'room_update', roomState: getRoomState(room) });
@@ -157,17 +168,19 @@ function startQuestion(room: Room) {
     timeLeft: room.timeLeft,
   });
   broadcast(room, { type: 'room_update', roomState: getRoomState(room) });
+  room.questionEndTime = Date.now() + GAME_CONFIG.SECONDS_PER_QUESTION * 1000;
   const tickInterval = setInterval(() => {
-    room.timeLeft--;
-    if (room.timeLeft <= 0) { clearInterval(tickInterval); revealAnswer(room); }
+    room.timeLeft = Math.ceil((room.questionEndTime - Date.now()) / 1000);
+    if (room.timeLeft <= 0) { clearInterval(tickInterval); room.timeLeft = 0; revealAnswer(room); }
     else { broadcast(room, { type: 'time_sync', serverTime: Date.now(), timeLeft: room.timeLeft }); }
-  }, 1000);
+  }, 250);
   room.timer = tickInterval as any;
 }
 
 export function startCountdown(room: Room) {
   room.state = 'countdown';
   room.timeLeft = GAME_CONFIG.COUNTDOWN_DURATION;
+  room.countdownEndTime = Date.now() + GAME_CONFIG.COUNTDOWN_DURATION * 1000;
   broadcast(room, { type: 'room_update', roomState: getRoomState(room) });
   let count = GAME_CONFIG.COUNTDOWN_DURATION;
   broadcast(room, { type: 'countdown', value: count });
@@ -176,7 +189,13 @@ export function startCountdown(room: Room) {
     if (count <= 0) {
       if (room.countdownTick) clearInterval(room.countdownTick);
       room.countdownTick = null;
-      startQuestion(room);
+      // Guard: if not enough alive players, end game instead of starting question
+      const alivePlayers = Array.from(room.players.values()).filter(p => p.alive);
+      if (alivePlayers.length < GAME_CONFIG.MIN_PLAYERS) {
+        endGame(room);
+      } else {
+        startQuestion(room);
+      }
     } else { broadcast(room, { type: 'countdown', value: count }); }
   }, 1000);
 }
@@ -254,6 +273,13 @@ export function handleConnection(ws: WebSocket) {
       if (currentRoom.state === 'question') {
         const alivePlayers = Array.from(currentRoom.players.values()).filter(p => p.alive);
         if (alivePlayers.length <= 1) endGame(currentRoom);
+      }
+      if (currentRoom.state === 'countdown') {
+        const alivePlayers = Array.from(currentRoom.players.values()).filter(p => p.alive);
+        if (alivePlayers.length < GAME_CONFIG.MIN_PLAYERS) {
+          if (currentRoom.countdownTick) { clearInterval(currentRoom.countdownTick); currentRoom.countdownTick = null; }
+          endGame(currentRoom);
+        }
       }
       const anyAlive = Array.from(currentRoom.players.values()).some(p => p.alive);
       if (!anyAlive) {

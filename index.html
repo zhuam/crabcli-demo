@@ -83,6 +83,26 @@
     /* Answered indicator */
     .answered-bar { width: 100%; text-align: center; color: var(--text-dim); font-size: 0.85rem; }
 
+    /* Answer progress */
+    .answer-progress { width: 100%; background: var(--surface); border-radius: var(--radius); padding: 12px; margin-top: 8px; }
+    .progress-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px; }
+    .progress-label { font-family: monospace; font-size: 0.75rem; color: var(--primary-light); text-transform: uppercase; letter-spacing: 0.05em; }
+    .progress-count { font-family: monospace; font-size: 0.8rem; font-weight: 600; color: var(--text); }
+    .progress-bar-track { height: 4px; background: var(--surface2); border-radius: 2px; overflow: hidden; }
+    .progress-bar-fill { height: 100%; background: var(--primary-light); border-radius: 2px; transition: width 0.3s ease; }
+
+    /* Score breakdown */
+    .score-breakdown { width: 100%; background: var(--surface); border-radius: var(--radius); padding: 12px; margin-top: 8px; }
+    .score-row { display: flex; justify-content: space-between; align-items: center; padding: 4px 0; }
+    .score-row + .score-row { border-top: 1px solid var(--surface2); }
+    .score-label { color: var(--text-dim); font-size: 0.8rem; }
+    .score-value { font-family: monospace; font-size: 0.85rem; font-weight: 500; }
+    .score-value.base { color: var(--text); }
+    .score-value.speed { color: var(--success); }
+    .score-value.total { color: var(--primary-light); font-size: 1rem; font-weight: 700; }
+    .score-detail { font-family: monospace; font-size: 0.7rem; color: var(--text-dim); }
+    .total-label { font-weight: 500; color: var(--text) !important; }
+
     /* Reveal */
     .reveal-score { font-size: 2rem; font-weight: 800; color: var(--warning); animation: scoreIn 0.3s ease; }
     @keyframes scoreIn { from { transform: translateY(-20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
@@ -151,6 +171,16 @@
       <div class="question-text" id="q-text"></div>
       <div class="options-grid" id="options-grid"></div>
       <div class="answered-bar" id="answered-bar"></div>
+      <div class="answer-progress" id="answer-progress" style="display:none">
+        <div class="progress-header">
+          <span class="progress-label">Answered</span>
+          <span class="progress-count" id="progress-count">0 / 0 players</span>
+        </div>
+        <div class="progress-bar-track">
+          <div class="progress-bar-fill" id="progress-fill" style="width:0%"></div>
+        </div>
+      </div>
+      <div class="score-breakdown" id="score-breakdown" style="display:none"></div>
     </div>
 
     <!-- Results Screen -->

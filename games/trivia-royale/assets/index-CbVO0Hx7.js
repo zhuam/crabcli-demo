@@ -36,7 +36,9 @@
   }
 })();
 const GAME_CONFIG = {
-  SECONDS_PER_QUESTION: 10
+  SECONDS_PER_QUESTION: 10,
+  // top 3 advance / win
+  POINTS_CORRECT: 100
 };
 function recordPlayed(gameId) {
   try {
@@ -72,6 +74,10 @@ const answeredBar = $("answered-bar");
 const resultsTitle = $("results-title");
 const resultsList = $("results-list");
 const highScoreArea = $("high-score-area");
+const answerProgress = $("answer-progress");
+const progressFill = $("progress-fill");
+const progressCount = $("progress-count");
+const scoreBreakdown = $("score-breakdown");
 const playAgainBtn = $("play-again-btn");
 let ws = null;
 let playerId = "";
@@ -80,7 +86,11 @@ let currentQuestionId = "";
 let selectedOption = -1;
 let hasAnswered = false;
 let timerInterval = null;
+let rafId = null;
 let timeLeft = 0;
+let questionEndTime = 0;
+let totalPlayers = 0;
+let answeredCount = 0;
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 function playTone(freq, duration, type = "sine", volume = 0.15) {
   try {
@@ -186,6 +196,11 @@ function handleServerMessage(msg) {
       break;
     case "room_update":
       renderPlayerList(msg.roomState.players);
+      if (msg.roomState.state === "question") {
+        totalPlayers = msg.roomState.players.filter((p) => p.alive).length;
+        answeredCount = msg.roomState.players.filter((p) => p.alive && p.lastAnswerIndex !== -1).length;
+        renderAnswerProgress();
+      }
       break;
     case "countdown":
       showScreen("countdown");
@@ -201,17 +216,23 @@ function handleServerMessage(msg) {
       currentQuestionId = msg.question.id;
       hasAnswered = false;
       selectedOption = -1;
+      totalPlayers = 0;
+      answeredCount = 0;
       qCounter.textContent = `Q${msg.questionIndex + 1}/${msg.totalQuestions}`;
       qText.textContent = msg.question.text;
       renderOptions(msg.question.options);
       startTimer(msg.timeLeft);
+      hideAnswerProgress();
+      hideScoreBreakdown();
       break;
     case "time_sync":
       updateTimer(msg.timeLeft);
       break;
     case "answer_result":
       clearTimer();
-      revealAnswer(msg.correctIndex, msg.yourScore, msg.yourRank);
+      msg.elapsedMs;
+      msg.pointsEarned;
+      revealAnswer(msg.correctIndex, msg.yourScore, msg.yourRank, msg.elapsedMs, msg.pointsEarned);
       msg.yourScore;
       msg.yourRank;
       if (selectedOption === msg.correctIndex) {
@@ -248,6 +269,30 @@ function escapeHtml(str) {
 function renderPlayerList(players) {
   playerListEl.innerHTML = players.map((p) => `<span class="player-chip">${escapeHtml(p.name)}</span>`).join("");
 }
+function renderAnswerProgress() {
+  if (!answerProgress) return;
+  answerProgress.style.display = "block";
+  if (progressCount) progressCount.textContent = `${answeredCount} / ${totalPlayers} players`;
+  if (progressFill) progressFill.style.width = `${answeredCount / Math.max(1, totalPlayers) * 100}%`;
+}
+function hideAnswerProgress() {
+  if (answerProgress) answerProgress.style.display = "none";
+}
+function renderScoreBreakdown(elapsedMs, pointsEarned) {
+  if (!scoreBreakdown) return;
+  scoreBreakdown.style.display = "block";
+  const basePoints = GAME_CONFIG.POINTS_CORRECT;
+  const speedBonus = Math.max(0, pointsEarned - basePoints);
+  const elapsedSec = (elapsedMs / 1e3).toFixed(1);
+  scoreBreakdown.innerHTML = `
+    <div class="score-row"><span class="score-label">Base points</span><span class="score-value base">+${basePoints}</span></div>
+    ${pointsEarned > 0 ? `<div class="score-row"><span class="score-label">Speed bonus</span><span class="score-value speed">+${speedBonus} <span class="score-detail">(${elapsedSec}s)</span></span></div>` : ""}
+    <div class="score-row"><span class="score-label total-label">Total this round</span><span class="score-value total">+${pointsEarned}</span></div>
+  `;
+}
+function hideScoreBreakdown() {
+  if (scoreBreakdown) scoreBreakdown.style.display = "none";
+}
 function renderOptions(options) {
   const labels = ["A", "B", "C", "D"];
   const isDesktop = !("ontouchstart" in window);
@@ -281,7 +326,7 @@ function selectAnswer(index) {
     timestamp: Date.now()
   });
 }
-function revealAnswer(correctIndex, score, rank) {
+function revealAnswer(correctIndex, score, rank, elapsedMs, pointsEarned) {
   optionsGrid.querySelectorAll(".option-btn").forEach((btn, i) => {
     if (i === correctIndex) {
       btn.classList.add("reveal-correct");
@@ -289,9 +334,16 @@ function revealAnswer(correctIndex, score, rank) {
       btn.classList.add("wrong");
     }
   });
+  renderScoreBreakdown(elapsedMs, pointsEarned);
   const scorePopup = document.createElement("div");
   scorePopup.className = "reveal-score";
-  scorePopup.textContent = `${score} pts • Rank #${rank}`;
+  (elapsedMs / 1e3).toFixed(1);
+  const speedBonus = Math.max(0, pointsEarned - GAME_CONFIG.POINTS_CORRECT);
+  if (pointsEarned > 0 && speedBonus > 0) {
+    scorePopup.textContent = `+${pointsEarned} pts • Rank #${rank}`;
+  } else {
+    scorePopup.textContent = `${score} pts • Rank #${rank}`;
+  }
   const questionScreen = $("screen-question");
   questionScreen.appendChild(scorePopup);
   setTimeout(() => scorePopup.remove(), 2500);
@@ -314,24 +366,43 @@ function renderResults(rankings, winnerId, yourRank, yourScore) {
 }
 const CIRCLE_CIRCUMFERENCE = 150.8;
 function startTimer(seconds) {
+  clearTimer();
   timeLeft = seconds;
+  questionEndTime = Date.now() + seconds * 1e3;
   updateTimerDisplay();
-  if (timerInterval) clearInterval(timerInterval);
+  function tick() {
+    const remaining = Math.max(0, questionEndTime - Date.now());
+    const newTimeLeft = Math.ceil(remaining / 1e3);
+    if (newTimeLeft !== timeLeft) {
+      const prev = timeLeft;
+      timeLeft = newTimeLeft;
+      updateTimerDisplay();
+      if (timeLeft <= 3 && timeLeft > 0 && prev > timeLeft) {
+        sfxTick();
+        timerRing.classList.add("urgent");
+      }
+    }
+    if (remaining > 0) {
+      rafId = requestAnimationFrame(tick);
+    } else {
+      timeLeft = 0;
+      updateTimerDisplay();
+      rafId = null;
+    }
+  }
+  rafId = requestAnimationFrame(tick);
   timerInterval = setInterval(() => {
-    timeLeft--;
+    const remaining = Math.max(0, questionEndTime - Date.now());
+    timeLeft = Math.ceil(remaining / 1e3);
+    updateTimerDisplay();
     if (timeLeft <= 0) {
       clearTimer();
-      timeLeft = 0;
-    }
-    updateTimerDisplay();
-    if (timeLeft <= 3 && timeLeft > 0) {
-      sfxTick();
-      timerRing.classList.add("urgent");
     }
   }, 1e3);
 }
 function updateTimer(seconds) {
   timeLeft = seconds;
+  questionEndTime = Date.now() + seconds * 1e3;
   updateTimerDisplay();
 }
 function updateTimerDisplay() {
@@ -345,6 +416,10 @@ function clearTimer() {
   if (timerInterval) {
     clearInterval(timerInterval);
     timerInterval = null;
+  }
+  if (rafId !== null) {
+    cancelAnimationFrame(rafId);
+    rafId = null;
   }
 }
 document.addEventListener("keydown", (e) => {

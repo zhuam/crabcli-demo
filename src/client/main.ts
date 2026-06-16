@@ -38,6 +38,10 @@ const answeredBar = $<HTMLDivElement>('answered-bar');
 const resultsTitle = $<HTMLDivElement>('results-title');
 const resultsList = $<HTMLDivElement>('results-list');
 const highScoreArea = $<HTMLDivElement>('high-score-area');
+const answerProgress = $<HTMLDivElement>('answer-progress');
+const progressFill = $<HTMLDivElement>('progress-fill');
+const progressCount = $<HTMLSpanElement>('progress-count');
+const scoreBreakdown = $<HTMLDivElement>('score-breakdown');
 const playAgainBtn = $<HTMLButtonElement>('play-again-btn');
 
 // ─── State ───
@@ -50,7 +54,13 @@ let currentQuestionId = '';
 let selectedOption = -1;
 let hasAnswered = false;
 let timerInterval: ReturnType<typeof setInterval> | null = null;
+let rafId: number | null = null;
 let timeLeft = 0;
+let questionEndTime = 0;
+let totalPlayers = 0;
+let answeredCount = 0;
+let lastElapsedMs = 0;
+let lastPointsEarned = 0;
 
 // ─── Sound ───
 const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
@@ -155,6 +165,12 @@ function handleServerMessage(msg: ServerMessage) {
 
     case 'room_update':
       renderPlayerList(msg.roomState.players);
+      // Update answer progress during question phase
+      if (msg.roomState.state === 'question') {
+        totalPlayers = msg.roomState.players.filter(p => p.alive).length;
+        answeredCount = msg.roomState.players.filter(p => p.alive && p.lastAnswerIndex !== -1).length;
+        renderAnswerProgress();
+      }
       break;
 
     case 'countdown':
@@ -172,10 +188,14 @@ function handleServerMessage(msg: ServerMessage) {
       currentQuestionId = msg.question.id;
       hasAnswered = false;
       selectedOption = -1;
+      totalPlayers = 0;
+      answeredCount = 0;
       qCounter.textContent = `Q${msg.questionIndex + 1}/${msg.totalQuestions}`;
       qText.textContent = msg.question.text;
       renderOptions(msg.question.options);
       startTimer(msg.timeLeft);
+      hideAnswerProgress();
+      hideScoreBreakdown();
       break;
 
     case 'time_sync':
@@ -184,7 +204,9 @@ function handleServerMessage(msg: ServerMessage) {
 
     case 'answer_result':
       clearTimer();
-      revealAnswer(msg.correctIndex, msg.yourScore, msg.yourRank);
+      lastElapsedMs = msg.elapsedMs;
+      lastPointsEarned = msg.pointsEarned;
+      revealAnswer(msg.correctIndex, msg.yourScore, msg.yourRank, msg.elapsedMs, msg.pointsEarned);
       myScore = msg.yourScore;
       myRank = msg.yourRank;
       if (selectedOption === msg.correctIndex) {
@@ -227,6 +249,34 @@ function renderPlayerList(players: Player[]) {
   playerListEl.innerHTML = players
     .map(p => `<span class="player-chip">${escapeHtml(p.name)}</span>`)
     .join('');
+}
+
+function renderAnswerProgress() {
+  if (!answerProgress) return;
+  answerProgress.style.display = 'block';
+  if (progressCount) progressCount.textContent = `${answeredCount} / ${totalPlayers} players`;
+  if (progressFill) progressFill.style.width = `${(answeredCount / Math.max(1, totalPlayers)) * 100}%`;
+}
+
+function hideAnswerProgress() {
+  if (answerProgress) answerProgress.style.display = 'none';
+}
+
+function renderScoreBreakdown(elapsedMs: number, pointsEarned: number) {
+  if (!scoreBreakdown) return;
+  scoreBreakdown.style.display = 'block';
+  const basePoints = GAME_CONFIG.POINTS_CORRECT;
+  const speedBonus = Math.max(0, pointsEarned - basePoints);
+  const elapsedSec = (elapsedMs / 1000).toFixed(1);
+  scoreBreakdown.innerHTML = `
+    <div class="score-row"><span class="score-label">Base points</span><span class="score-value base">+${basePoints}</span></div>
+    ${pointsEarned > 0 ? `<div class="score-row"><span class="score-label">Speed bonus</span><span class="score-value speed">+${speedBonus} <span class="score-detail">(${elapsedSec}s)</span></span></div>` : ''}
+    <div class="score-row"><span class="score-label total-label">Total this round</span><span class="score-value total">+${pointsEarned}</span></div>
+  `;
+}
+
+function hideScoreBreakdown() {
+  if (scoreBreakdown) scoreBreakdown.style.display = 'none';
 }
 
 function renderOptions(options: [string, string, string, string]) {
@@ -272,7 +322,7 @@ function selectAnswer(index: number) {
   });
 }
 
-function revealAnswer(correctIndex: number, score: number, rank: number) {
+function revealAnswer(correctIndex: number, score: number, rank: number, elapsedMs: number, pointsEarned: number) {
   optionsGrid.querySelectorAll('.option-btn').forEach((btn, i) => {
     if (i === correctIndex) {
       btn.classList.add('reveal-correct');
@@ -281,10 +331,19 @@ function revealAnswer(correctIndex: number, score: number, rank: number) {
     }
   });
 
+  // Show score breakdown
+  renderScoreBreakdown(elapsedMs, pointsEarned);
+
   // Show score popup briefly
   const scorePopup = document.createElement('div');
   scorePopup.className = 'reveal-score';
-  scorePopup.textContent = `${score} pts • Rank #${rank}`;
+  const elapsedSec = (elapsedMs / 1000).toFixed(1);
+  const speedBonus = Math.max(0, pointsEarned - GAME_CONFIG.POINTS_CORRECT);
+  if (pointsEarned > 0 && speedBonus > 0) {
+    scorePopup.textContent = `+${pointsEarned} pts • Rank #${rank}`;
+  } else {
+    scorePopup.textContent = `${score} pts • Rank #${rank}`;
+  }
   const questionScreen = $('screen-question');
   questionScreen.appendChild(scorePopup);
   setTimeout(() => scorePopup.remove(), 2500);
@@ -312,25 +371,47 @@ function renderResults(rankings: Player[], winnerId: string, yourRank: number, y
 const CIRCLE_CIRCUMFERENCE = 150.8; // 2 * PI * 24
 
 function startTimer(seconds: number) {
+  clearTimer();
   timeLeft = seconds;
+  questionEndTime = Date.now() + seconds * 1000;
   updateTimerDisplay();
-  if (timerInterval) clearInterval(timerInterval);
+  // Use rAF for smooth countdown animation
+  function tick() {
+    const remaining = Math.max(0, questionEndTime - Date.now());
+    const newTimeLeft = Math.ceil(remaining / 1000);
+    if (newTimeLeft !== timeLeft) {
+      const prev = timeLeft;
+      timeLeft = newTimeLeft;
+      updateTimerDisplay();
+      if (timeLeft <= 3 && timeLeft > 0 && prev > timeLeft) {
+        sfxTick();
+        timerRing.classList.add('urgent');
+      }
+    }
+    if (remaining > 0) {
+      rafId = requestAnimationFrame(tick);
+    } else {
+      timeLeft = 0;
+      updateTimerDisplay();
+      rafId = null;
+    }
+  }
+  rafId = requestAnimationFrame(tick);
+  // Also keep a setInterval as fallback for when tab is backgrounded (rAF is throttled)
   timerInterval = setInterval(() => {
-    timeLeft--;
+    const remaining = Math.max(0, questionEndTime - Date.now());
+    timeLeft = Math.ceil(remaining / 1000);
+    updateTimerDisplay();
     if (timeLeft <= 0) {
       clearTimer();
-      timeLeft = 0;
-    }
-    updateTimerDisplay();
-    if (timeLeft <= 3 && timeLeft > 0) {
-      sfxTick();
-      timerRing.classList.add('urgent');
     }
   }, 1000);
 }
 
 function updateTimer(seconds: number) {
+  // Recalibrate wall-clock end time from server sync
   timeLeft = seconds;
+  questionEndTime = Date.now() + seconds * 1000;
   updateTimerDisplay();
 }
 
@@ -346,6 +427,10 @@ function clearTimer() {
   if (timerInterval) {
     clearInterval(timerInterval);
     timerInterval = null;
+  }
+  if (rafId !== null) {
+    cancelAnimationFrame(rafId);
+    rafId = null;
   }
 }
 

@@ -113,14 +113,30 @@ export const questionBank: Question[] = [
 ];
 
 /**
+ * Cryptographically secure Fisher-Yates shuffle.
+ * Uses crypto.getRandomValues for unbiased randomness.
+ */
+export function shuffle<T>(arr: T[]): T[] {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const buf = new Uint32Array(1);
+    crypto.getRandomValues(buf);
+    const j = buf[0] % (i + 1);
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+/**
  * Select random questions from the bank for a game round.
+ * Uses Fisher-Yates shuffle with crypto.getRandomValues for fairness.
  */
 export function selectQuestions(count: number, category?: string): Question[] {
   let pool = questionBank;
   if (category && category !== 'all') {
     pool = questionBank.filter(q => q.category === category);
   }
-  const shuffled = [...pool].sort(() => Math.random() - 0.5);
+  const shuffled = shuffle(pool);
   return shuffled.slice(0, Math.min(count, shuffled.length));
 }
 

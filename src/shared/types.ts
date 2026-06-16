@@ -53,7 +53,7 @@ export type ServerMessage =
   | { type: 'joined'; playerId: string; roomId: string; name: string }
   | { type: 'room_update'; roomState: RoomState }
   | { type: 'question'; question: Question; questionIndex: number; totalQuestions: number; timeLeft: number }
-  | { type: 'answer_result'; correctIndex: number; players: Player[]; yourScore: number; yourRank: number; isEliminated: boolean }
+  | { type: 'answer_result'; correctIndex: number; players: Player[]; yourScore: number; yourRank: number; isEliminated: boolean; elapsedMs: number; pointsEarned: number }
   | { type: 'game_over'; rankings: Player[]; winnerId: string; yourRank: number; yourScore: number }
   | { type: 'countdown'; value: number }
   | { type: 'error'; code: string; message: string }
