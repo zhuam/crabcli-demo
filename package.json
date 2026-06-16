@@ -11,7 +11,8 @@
     "start": "NODE_ENV=production tsx src/gateway/server.ts",
     "test:lemonade": "node tests/lemonade.test.mjs",
     "test:login-rate-limit": "node tests/login-rate-limit-unit.test.mjs",
-    "test:login-rate-limit:integration": "node tests/login-rate-limit.test.mjs"
+    "test:login-rate-limit:integration": "node tests/login-rate-limit.test.mjs",
+    "test:trivia-improvements": "tsx tests/trivia-improvements.test.ts"
   },
   "dependencies": {
     "ws": "^8.16.0",
