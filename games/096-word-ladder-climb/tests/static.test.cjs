@@ -34,6 +34,19 @@ function extractFunction(name) {
   return js.slice(m.index, end);
 }
 
+function extractConstObject(name) {
+  const re = new RegExp(`const\\s+${name}\\s*=\\s*\\{`);
+  const m = js.match(re);
+  if (!m) return null;
+  let i = js.indexOf('{', m.index), depth = 1, end = i + 1;
+  while (depth && end < js.length) {
+    if (js[end] === '{' || js[end] === '[') depth++;
+    if (js[end] === '}' || js[end] === ']') depth--;
+    end++;
+  }
+  return js.slice(m.index, end + 1);
+}
+
 group('AC1 - first screen playable, no tutorial gate');
 ok('direct game UI is present', /id="guessInput"/.test(html) && /id="guessForm"/.test(html) && /id="ladderTrack"/.test(html));
 ok('no tutorial overlay copy', !/tutorial|how to play|教程弹窗/i.test(html));
@@ -80,6 +93,7 @@ group('Word ladder validation logic');
 const normalizeSrc = extractFunction('normalizeWord');
 const diffSrc = extractFunction('diffCount');
 const validateSrc = extractFunction('validateGuess');
+const configSrc = extractConstObject('CONFIG');
 ok('validation helpers extractable', normalizeSrc && diffSrc && validateSrc);
 if (normalizeSrc && diffSrc && validateSrc) {
   const ctx = { String, Math };
@@ -91,6 +105,24 @@ if (normalizeSrc && diffSrc && validateSrc) {
   ok('rejects multi-letter jump', ctx.validateGuess('peek', 'pace', theme, ['pace']).ok === false);
   ok('rejects missing dictionary word', ctx.validateGuess('pane', 'pace', theme, ['pace']).ok === false);
   ok('rejects duplicate used word', ctx.validateGuess('pack', 'pace', theme, ['pace', 'pack']).reason.includes('Already used'));
+}
+
+group('Theme progression integrity');
+ok('CONFIG object extractable for theme validation', !!configSrc);
+if (normalizeSrc && diffSrc && validateSrc && configSrc) {
+  const ctx = { String, Math };
+  vm.createContext(ctx);
+  vm.runInContext(`${configSrc}; this.CONFIG = CONFIG;\n${normalizeSrc}\n${diffSrc}\n${validateSrc}`, ctx);
+  ok('ships at least three progression themes', ctx.CONFIG.THEMES.length >= 3);
+  for (const theme of ctx.CONFIG.THEMES) {
+    ok(`${theme.id}: start and target match path ends`, theme.path[0] === theme.start && theme.path[theme.path.length - 1] === theme.target);
+    ok(`${theme.id}: all path words are in theme dictionary`, theme.path.every(word => theme.words.includes(word)));
+    ok(`${theme.id}: path rungs are one-letter transitions`, theme.path.slice(1).every((word, idx) => ctx.diffCount(word, theme.path[idx]) === 1));
+    ok(`${theme.id}: canonical path is accepted by validator`, theme.path.slice(1).every((word, idx) => {
+      const used = theme.path.slice(0, idx + 1);
+      return ctx.validateGuess(word.toUpperCase(), theme.path[idx], theme, used).ok;
+    }));
+  }
 }
 
 group('Registry integration');
