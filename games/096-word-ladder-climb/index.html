@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
+  <meta name="theme-color" content="#3B82F6" />
+  <title>Word Ladder Climb · 改字攀登</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="/games/shared/game-frame.css" />
+</head>
+<body>
+  <a href="/" class="back-to-hub" onclick="window.recordPlayed && window.recordPlayed('word-ladder-climb')">← Arcade</a>
+
+  <main class="page" id="app">
+    <header class="topbar" role="banner">
+      <div class="brand">
+        <div class="mark" aria-hidden="true">W</div>
+        <div>
+          <h1>Word Ladder Climb</h1>
+          <p>改一个字母，向目标词攀登</p>
+        </div>
+      </div>
+      <div class="pills" aria-label="本局状态">
+        <div class="pill" id="themePill">主题词库：Sky Camp</div>
+        <div class="pill" id="bestPill">本地最高分 0</div>
+        <div class="pill">键盘 + 触屏</div>
+        <button id="muteBtn" class="pill pill-button" type="button" aria-label="静音切换" aria-pressed="false">🔊 音效</button>
+      </div>
+    </header>
+
+    <section class="layout">
+      <article class="panel" aria-labelledby="playHeading">
+        <div class="head">
+          <div>
+            <h2 id="playHeading">Climb to <span id="targetTitle">PEAK</span></h2>
+            <p class="micro">首屏直接开局；无需教程</p>
+          </div>
+          <div class="timer" aria-live="polite">
+            <span id="timerValue">03:00</span>
+            <small>剩余时间 / 180 秒</small>
+          </div>
+        </div>
+
+        <div class="game">
+          <div class="ladder" id="ladderTrack" aria-label="词梯路径"></div>
+
+          <div class="console">
+            <section class="rule" aria-label="玩法规则">
+              <strong>只改一个字母</strong>
+              <p>输入一个真实主题词，必须与当前词只差一位。Enter 提交；无效词会保留输入并说明原因。</p>
+            </section>
+
+            <form class="input-row" id="guessForm">
+              <label class="sr-only" for="guessInput">输入下一个词</label>
+              <input id="guessInput" class="guess" autocomplete="off" autocapitalize="characters" spellcheck="false" inputmode="latin" maxlength="4" aria-describedby="feedbackText" />
+              <button id="submitBtn" class="primary" type="submit">验证并攀爬</button>
+            </form>
+
+            <div class="feedback" role="status" aria-live="polite">
+              <span class="dot" id="feedbackDot" aria-hidden="true"></span>
+              <span id="feedbackText">从 START 开始：改一个字母，爬到 TOP。</span>
+            </div>
+
+            <section class="touch" aria-label="触屏和鼠标输入">
+              <p class="micro">触屏 / 鼠标输入</p>
+              <div class="slot-row" id="slotRow"></div>
+              <div class="keyboard-row" id="keyboardRow"></div>
+            </section>
+
+            <div class="stats" aria-label="分数统计">
+              <div class="stat"><b id="scoreValue">0</b><span>当前分</span></div>
+              <div class="stat"><b id="stepValue">0/6</b><span>已攀爬</span></div>
+              <div class="stat"><b id="invalidValue">0</b><span>无效尝试</span></div>
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <aside class="side">
+        <section class="card">
+          <h3>Feedback Map</h3>
+          <p>关键反馈围绕输入验证：成功锁定梯级、错误给出单一原因、胜负结算写入本地最佳成绩。</p>
+          <div class="list">
+            <div class="item"><span>Valid rung</span><span>two-note + light pulse</span></div>
+            <div class="item"><span>Invalid word</span><span>low buzz + warning pulse</span></div>
+            <div class="item"><span>Victory</span><span>fanfare + success pattern</span></div>
+            <div class="item"><span>Failure</span><span>falling tone + fail pattern</span></div>
+          </div>
+        </section>
+
+        <section class="card">
+          <h3>Progression</h3>
+          <p>主题词库作为成长目标：Sky Camp、Kitchen Heat、Neon City。每局短、可快速重开。</p>
+          <div class="bar" aria-hidden="true"><div class="fill" id="themeProgress"></div></div>
+          <button id="hintBtn" class="secondary wide" type="button">提示：比较差异</button>
+          <button id="newThemeBtn" class="secondary wide" type="button">换主题词库</button>
+        </section>
+      </aside>
+    </section>
+  </main>
+
+  <div id="resultModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="resultTitle" hidden>
+    <div class="modal-card">
+      <div id="resultTone" class="result-card win">
+        <div class="result-top">
+          <strong id="resultTitle">Summit reached</strong>
+          <span class="score" id="resultScore">0</span>
+        </div>
+        <p id="resultSummary">路径会显示在这里。</p>
+      </div>
+      <div class="result-stats">
+        <div class="result-stat"><span>最终路径</span><b id="resultPath">-</b></div>
+        <div class="result-stat"><span>本地最高分</span><b id="resultBest">0</b></div>
+        <div class="result-stat new-best" id="newBestRow" hidden><span>新纪录已保存</span></div>
+      </div>
+      <div class="restart">
+        <button id="restartBtn" class="primary restart-btn" type="button">再来一局</button>
+        <button id="modalThemeBtn" class="secondary restart-btn" type="button">换主题词库</button>
+      </div>
+      <p class="modal-hint">Enter / Space 也可以从结算页快速再来一局。</p>
+    </div>
+  </div>
+
+  <script>
+    window.recordPlayed = function recordPlayed(gameId) {
+      try {
+        const recent = JSON.parse(localStorage.getItem('recentlyPlayed') || '[]');
+        const filtered = recent.filter(p => p.id !== gameId);
+        filtered.unshift({ id: gameId, playedAt: Date.now() });
+        localStorage.setItem('recentlyPlayed', JSON.stringify(filtered.slice(0, 10)));
+      } catch {}
+    };
+  </script>
+  <script src="app.js"></script>
+</body>
+</html>

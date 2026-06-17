@@ -338,6 +338,18 @@
       "players": "1",
       "version": "1.0.0",
       "rating": 4.0
+    },
+    {
+      "id": "word-ladder-climb",
+      "name": "Word Ladder Climb",
+      "description": "改一个字母连成新词，沿词梯爬到顶层目标词",
+      "category": "puzzle",
+      "tags": ["singleplayer", "word", "puzzle", "short-session"],
+      "path": "/games/096-word-ladder-climb/",
+      "hasServer": false,
+      "players": "1",
+      "version": "1.0.0",
+      "rating": 4.2
     }
   ],
   "categories": [
