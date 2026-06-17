@@ -251,6 +251,49 @@ ok('back-to-hub link present (game-frame.css class)',
    /class="back-to-hub"|back-to-hub/.test(html) || /\/games\/shared\/game-frame\.css/.test(html));
 
 /* =====================================================================
+ * Issue #97 · P0/P1/HIGH fix coverage (developer pass)
+ * ===================================================================== */
+group('Issue #97 · P0 mute icon visibility');
+ok('mute glyph rendered as SVG icon (not just ♪/⊘ char)',
+   /\.mute-on::before\s*\{[^}]*background-image\s*:\s*url\(/.test(html) &&
+   /\.mute-off::before\s*\{[^}]*background-image\s*:\s*url\(/.test(html));
+ok('mute button advertises aria-pressed (toggle semantics)',
+   /setAttribute\(\s*['"]aria-pressed['"]/.test(js));
+ok('mute button gets data-state="muted" when active',
+   /dataset\.state\s*=\s*['"]muted['"]/.test(js));
+ok('mute icon-btn has visible muted styling',
+   /\.hud-icon-btn\[data-state="muted"\]/.test(html));
+
+group('Issue #97 · P0 tap-zone onboarding overlay');
+ok('zone-overlay element rendered in play-screen', /id="zone-overlay"/.test(html));
+ok('zone-overlay has TOP/JUMP and BOTTOM/SLIDE labels',
+   /zone-label\s+up[\s\S]{0,200}上半屏|TOP HALF/.test(html) &&
+   /zone-label\s+down[\s\S]{0,200}下半屏|BOTTOM HALF/.test(html));
+ok('zone-overlay shown on play start, faded after ~2s',
+   /\$\(\s*['"]zone-overlay['"]\s*\)[\s\S]{0,200}classList\.add\(\s*['"]show['"]\s*\)[\s\S]{0,400}setTimeout\([\s\S]*?classList\.remove\(\s*['"]show['"]\s*\)[\s\S]*?,\s*2000\s*\)/.test(js));
+ok('zone-overlay is pointer-events:none (does not block taps)',
+   /\.zone-overlay\s*\{[^}]*pointer-events\s*:\s*none/.test(html));
+
+group('Issue #97 · P1 segmented rubber-band');
+ok('rubber-band has ≥3 segments (strong/mild drag + strong/mild catchup)',
+   /gap\s*>\s*480[\s\S]{0,200}gap\s*>\s*220[\s\S]{0,200}gap\s*<\s*-480[\s\S]{0,200}gap\s*<\s*-220/.test(js));
+ok('rubber-band leaves ±220m "real race" untouched (no else clause inside gap test)',
+   !/gap\s*<\s*-220[\s\S]{0,40}else\b/.test(js));
+
+group('Issue #97 · HIGH dt clamp + visibility resync');
+ok('frame loop clamps dt to ≤0.1s', /Math\.min\(\s*0\.1\s*,/.test(js));
+ok('frame loop caps accumulator (post-stall safety)',
+   /acc\s*>\s*0\.25[\s\S]{0,40}acc\s*=\s*0\.25/.test(js));
+ok('visibilitychange listener resets lastTs on resume',
+   /addEventListener\(\s*['"]visibilitychange['"][\s\S]{0,400}lastTs\s*=\s*0/.test(js));
+
+group('Issue #97 · replay cooldown contract (locked)');
+ok('replay button has 1.5s cooldown bar (…:after width 100% transition)',
+   /\.btn-primary\[disabled\]::after[\s\S]{0,200}transition\s*:\s*width\s+1\.5s/.test(html) &&
+   /\.btn-primary\[disabled\]\.cooling::after[\s\S]{0,80}width\s*:\s*100%/.test(html));
+ok('cooldown released after exactly 1500ms', /setTimeout\([\s\S]*?btn\.disabled\s*=\s*false[\s\S]*?,\s*1500\s*\)/.test(js));
+
+/* =====================================================================
  * Summary
  * ===================================================================== */
 console.log('\n' + '='.repeat(56));
