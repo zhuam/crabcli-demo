@@ -16,6 +16,20 @@
       "rating": 4.5
     },
     {
+      "id": "idle-dungeon-heroes",
+      "name": "Idle Dungeon Heroes",
+      "description": "英雄自动闯关挂机，派遣、装备、升级并在三分钟内通关副本",
+      "category": "idle",
+      "tags": ["singleplayer", "idle", "rpg", "short-session"],
+      "thumbnail": "/games/094-idle-dungeon-heroes/thumb.png",
+      "path": "/games/094-idle-dungeon-heroes/",
+      "hasServer": false,
+      "players": "1",
+      "version": "1.0.0",
+      "featured": true,
+      "rating": 4.4
+    },
+    {
       "id": "idle-lemonade",
       "name": "Idle Lemonade Stand",
       "description": "Build your lemonade empire one cup at a time",

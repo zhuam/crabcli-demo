@@ -10,6 +10,7 @@
     "preview": "vite preview",
     "start": "NODE_ENV=production tsx src/gateway/server.ts",
     "test:lemonade": "node tests/lemonade.test.mjs",
+    "test:idle-dungeon": "node games/094-idle-dungeon-heroes/tests/static.test.cjs",
     "test:word-ladder": "node games/096-word-ladder-climb/tests/static.test.cjs",
     "test:pet-run-io": "node games/097-pet-run-io/tests/static.test.cjs && node games/097-pet-run-io/tests/behavior.test.cjs && node games/097-pet-run-io/tests/regression.test.cjs",
     "test:login-rate-limit": "node tests/login-rate-limit-unit.test.mjs",

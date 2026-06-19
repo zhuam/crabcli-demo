@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0250CC" />
+  <title>Idle Dungeon Heroes · 挂机地下城英雄</title>
+  <link rel="stylesheet" href="/games/shared/game-frame.css" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <a href="/" class="back-to-hub" onclick="window.recordPlayed && window.recordPlayed('idle-dungeon-heroes')">← Arcade</a>
+
+  <script>
+    window.recordPlayed = function recordPlayed(gameId) {
+      try {
+        const recent = JSON.parse(localStorage.getItem('recentlyPlayed') || '[]');
+        const filtered = recent.filter(p => p.id !== gameId);
+        filtered.unshift({ id: gameId, playedAt: Date.now() });
+        localStorage.setItem('recentlyPlayed', JSON.stringify(filtered.slice(0, 10)));
+      } catch {}
+    };
+  </script>
+
+  <div class="page-shell" id="app">
+    <section class="game-frame" aria-label="Idle Dungeon Heroes game">
+      <header class="topbar">
+        <div class="brand">
+          <div class="brand-mark" aria-hidden="true">ID</div>
+          <div>
+            <h1>Idle Dungeon Heroes</h1>
+            <p>英雄自动闯关挂机</p>
+          </div>
+        </div>
+
+        <div class="hud" aria-live="polite">
+          <div class="hud-card"><span>副本</span><strong id="roomDisplay">第 1 / 6 层</strong></div>
+          <div class="hud-card timer"><span>倒计时</span><strong id="timerDisplay">3:00</strong></div>
+          <div class="hud-card"><span>金币</span><strong id="goldDisplay">0</strong></div>
+          <div class="hud-card best"><span>最高分</span><strong id="bestDisplay">0</strong></div>
+        </div>
+
+        <button id="muteBtn" class="mute-btn" type="button" aria-label="静音切换" aria-pressed="false">🔊 音效</button>
+      </header>
+
+      <main class="play-screen">
+        <section class="battle-zone" aria-label="地下城战斗区">
+          <div class="start-strip">
+            <div>
+              <div class="eyebrow">短局放置 RPG · 无教程即开玩</div>
+              <h2>派遣英雄，穿上套装，三分钟通关。</h2>
+              <p>战斗自动推进。点击派遣与升级，拖装备到英雄，或用键盘 1/2/3、E、U、Space 快速操作。</p>
+            </div>
+            <button id="dispatchBtn" class="primary-action" type="button">派遣英雄</button>
+          </div>
+
+          <div class="battle-board">
+            <div id="roomTrack" class="room-track" aria-label="房间进度"></div>
+
+            <div class="combat-lane">
+              <div class="party-stack">
+                <div class="section-label"><span>Party</span><span id="partyPower">战力 0</span></div>
+                <div id="partyList"></div>
+              </div>
+
+              <div class="monster-card" id="monsterCard">
+                <div>
+                  <div class="section-label"><span id="monsterStage">Room 1</span><span id="monsterTimer">自动战斗</span></div>
+                  <h3 id="monsterName">Goblin Gate</h3>
+                </div>
+                <div class="monster-figure" id="monsterFigure" aria-hidden="true">G</div>
+                <div>
+                  <div class="damage-float" id="damageFloat" hidden>-0</div>
+                  <div class="bar" aria-label="怪物生命"><i id="monsterHpBar" style="width: 100%"></i></div>
+                  <p id="monsterHpText">HP 60 / 60</p>
+                </div>
+              </div>
+
+              <div class="loot-stack" id="lootDropZone">
+                <div class="section-label"><span>Loot</span><span>拖拽 / 点击装备</span></div>
+                <div id="lootList"></div>
+              </div>
+            </div>
+
+            <div class="control-hints" aria-label="操作提示">
+              <div class="hint"><kbd>点击</kbd> 派遣 / 升级</div>
+              <div class="hint"><kbd>拖拽</kbd> 装备到英雄</div>
+              <div class="hint"><kbd>1 2 3</kbd> 选择英雄</div>
+              <div class="hint"><kbd>E / U / R</kbd> 装备 / 升级 / 重开</div>
+            </div>
+          </div>
+        </section>
+
+        <aside class="side-panel" aria-label="英雄与成长">
+          <div class="panel-card">
+            <h2>远征进度</h2>
+            <p id="objectiveText">击败全部 6 个副本房间即可胜利。</p>
+            <div class="mini-progress" id="miniProgress" aria-hidden="true"></div>
+          </div>
+
+          <div class="panel-card">
+            <h3>英雄升级</h3>
+            <p>升级提升自动 DPS 与生命。新英雄随房间通关解锁。</p>
+            <div id="upgradeList" class="upgrade-list"></div>
+          </div>
+
+          <div class="panel-card inventory-card">
+            <h3>装备背包</h3>
+            <p id="equipHelp">点击装备再点英雄，或拖到英雄卡。套装 2/3 件触发加成。</p>
+            <button id="autoEquipBtn" class="secondary-action" type="button">一键装备最佳</button>
+          </div>
+
+          <div class="panel-card log-card">
+            <h3>战斗日志</h3>
+            <ol id="battleLog"></ol>
+          </div>
+        </aside>
+      </main>
+    </section>
+
+    <div id="resultModal" class="result-modal" role="dialog" aria-modal="true" aria-labelledby="resultTitle" hidden>
+      <div class="result-card">
+        <div id="resultBadge" class="result-badge" aria-hidden="true">🏆</div>
+        <h2 id="resultTitle">副本通关！</h2>
+        <p id="resultCopy">英雄小队带着闪亮套装凯旋。</p>
+        <div class="result-grid">
+          <div><span>得分</span><strong id="resultScore">0</strong></div>
+          <div><span>最深层数</span><strong id="resultRoom">1 / 6</strong></div>
+          <div><span>用时</span><strong id="resultTime">0:00</strong></div>
+          <div><span>纪录</span><strong id="resultBest">0</strong></div>
+        </div>
+        <p id="newBestText" class="new-best" hidden>新纪录！已保存到本地。</p>
+        <button id="restartBtn" class="restart-btn" type="button" aria-label="再来一局">再来一局</button>
+        <p class="modal-hint">按 Enter / Space / R 也可再来一局</p>
+      </div>
+    </div>
+
+    <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
