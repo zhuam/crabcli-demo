@@ -86,6 +86,17 @@ async function testGameRegistry() {
   const featuredGames = body.games.filter(g => g.featured);
   assert(featuredGames.length > 0, `Has featured games (got ${featuredGames.length})`);
 
+  // Availability metadata used by the hub status filter and badges
+  const playableGames = body.games.filter(g => g.status === 'playable' && g.playable === true);
+  const comingSoonGames = body.games.filter(g => g.status === 'coming-soon' && g.playable === false);
+  assert(playableGames.length > 0, `Has playable games (got ${playableGames.length})`);
+  assert(comingSoonGames.length > 0, `Has coming soon games (got ${comingSoonGames.length})`);
+  assert(body.games.every(g => ['playable', 'coming-soon'].includes(g.status)), 'Every game has a valid availability status');
+  assert(body.games.every(g => g.availabilityLabel === (g.playable ? 'Playable' : 'Coming Soon')), 'Every game has matching availability label');
+  assert(body.games.find(g => g.id === 'trivia-royale')?.status === 'playable', 'trivia-royale is marked playable');
+  assert(body.games.find(g => g.id === 'idle-lemonade')?.status === 'playable', 'idle-lemonade is marked playable');
+  assert(body.games.find(g => g.id === 'cosmic-shooter')?.status === 'coming-soon', 'cosmic-shooter is marked coming soon');
+
   // Check categories endpoint
   const { body: catBody, status: catStatus } = await req('/api/games/categories');
   assert(catStatus === 200, 'Categories endpoint returns 200');
@@ -106,18 +117,26 @@ async function testStaticFiles() {
   assert(hubHtml.includes('CrabCLI Arcade'), 'Hub page title contains "CrabCLI Arcade"');
   assert(hubHtml.includes('hub.js'), 'Hub page references hub.js');
   assert(hubHtml.includes('hub.css'), 'Hub page references hub.css');
+  assert(hubHtml.includes('id="status-filter"'), 'Hub page has availability status filter');
+  assert(hubHtml.includes('id="quick-access"'), 'Hub page has quick access section');
 
   // Hub CSS
   const cssRes = await fetch(`${BASE}/hub/hub.css`);
   assert(cssRes.status === 200, 'Hub CSS returns 200');
   const cssText = await cssRes.text();
   assert(cssText.includes('--color-accent') || cssText.includes('--primary'), 'CSS contains theme variables');
+  assert(cssText.includes('.status-badge'), 'CSS contains status badge styles');
+  assert(cssText.includes('.quick-access'), 'CSS contains quick access styles');
 
   // Hub JS
   const jsRes = await fetch(`${BASE}/hub/hub.js`);
   assert(jsRes.status === 200, 'Hub JS returns 200');
   const jsText = await jsRes.text();
   assert(jsText.includes('loadRegistry'), 'JS has loadRegistry function');
+  assert(jsText.includes('currentStatus'), 'JS tracks availability filter state');
+  assert(jsText.includes('renderQuickAccess'), 'JS has quick access rendering');
+  assert(jsText.includes('document.querySelectorAll(`.fav-btn[data-game="${gameId}"]`)'), 'JS syncs favorite buttons across card surfaces');
+  assert(jsText.includes('status-badge status-${getGameStatus(game)}'), 'JS renders status badge classes');
 
   // Implemented game: trivia-royale
   const triviaRes = await fetch(`${BASE}/games/trivia-royale/`);
@@ -133,6 +152,11 @@ async function testStaticFiles() {
   const cosmicHtml = await cosmicRes.text();
   assert(cosmicHtml.includes('Coming Soon'), 'Coming Soon page has badge');
   assert(cosmicHtml.includes('Cosmic Shooter'), 'Coming Soon page has game name');
+  assert(cosmicHtml.includes('Defend the galaxy from waves of pixel aliens'), 'Coming Soon page has game description');
+
+  // Registered but unbuilt game assets should not be masked by the Coming Soon shell
+  const cosmicAssetRes = await fetch(`${BASE}/games/cosmic-shooter/style.css`);
+  assert(cosmicAssetRes.status === 404, 'Missing asset for Coming Soon game returns 404');
 
   // 404 for unknown game
   const unknownRes = await fetch(`${BASE}/games/unknown-game/`);
