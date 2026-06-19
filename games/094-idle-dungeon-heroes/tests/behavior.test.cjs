@@ -85,7 +85,7 @@ function createSandbox({ now = 1_000, best = null } = {}) {
     'partyList', 'partyPower', 'monsterStage', 'monsterTimer', 'monsterName', 'monsterFigure', 'monsterHpBar',
     'monsterHpText', 'damageFloat', 'lootList', 'miniProgress', 'upgradeList', 'autoEquipBtn', 'battleLog',
     'resultModal', 'resultBadge', 'resultTitle', 'resultCopy', 'resultScore', 'resultRoom', 'resultTime',
-    'resultBest', 'newBestText', 'restartBtn', 'toast'
+    'resultBest', 'newBestText', 'restartBtn', 'toast', 'equipGrid'
   ];
   const elements = Object.fromEntries(ids.map(id => [id, new MockElement(id)]));
   const lsInitial = {
@@ -148,6 +148,7 @@ group('1. Boot and initial playability');
   ok('later heroes are locked at boot', !game.state.heroes.mira.unlocked && !game.state.heroes.bronn.unlocked);
   ok('initial inventory has starter equipment for no-tutorial play', game.state.inventory.length === 2);
   ok('first render paints HUD values', elements.roomDisplay.textContent === '第 1 / 6 层' && elements.timerDisplay.textContent === '3:00');
+  ok('first render paints design-aligned equipment slots', /data-slot="weapon"/.test(elements.equipGrid.innerHTML) && /Drop target/.test(elements.equipGrid.innerHTML));
 }
 
 /* =====================================================================

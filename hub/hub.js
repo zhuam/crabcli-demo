@@ -30,6 +30,12 @@
     puzzle: '🧩', idle: '🏪', action: '⚡',
     strategy: '♟️', casual: '🎯', all: '🎮'
   };
+  const GAME_ICONS = {
+    'idle-dungeon-heroes': '⚔️'
+  };
+  function gameIcon(game) {
+    return GAME_ICONS[game.id] || CATEGORY_ICONS[game.category] || '🎮';
+  }
 
   // ─── DOM refs ───
   const $ = (sel) => document.querySelector(sel);
@@ -482,7 +488,7 @@
       const isFav = favoriteIds.has(game.id);
       return `
         <a class="quick-card" href="/games/${game.id}/" data-game="${game.id}">
-          <span class="quick-icon">${CATEGORY_ICONS[game.category] || '🎮'}</span>
+          <span class="quick-icon">${gameIcon(game)}</span>
           <span class="quick-copy">
             <strong>${escapeHtml(game.name)}</strong>
             <small>${escapeHtml(game.players || '1')} player${(game.players || '1') !== '1' ? 's' : ''}</small>
@@ -509,7 +515,7 @@
           <button class="fav-btn ${isFav ? 'active' : ''}" data-game="${game.id}" data-featured="true" aria-label="${isFav ? 'Remove from favorites' : 'Save to favorites'}" onclick="event.preventDefault(); event.stopPropagation();">
             ${isFav ? '&#10084;' : '&#9825;'}
           </button>
-          <div class="game-icon">${CATEGORY_ICONS[game.category] || '🎮'}</div>
+          <div class="game-icon">${gameIcon(game)}</div>
           <div class="game-name">${escapeHtml(game.name)}</div>
           <div class="game-desc">${escapeHtml(game.description)}</div>
           <div class="game-meta">
@@ -594,10 +600,10 @@
 
     gameCount.textContent = `${filteredGames.length} game${filteredGames.length !== 1 ? 's' : ''}`;
     gamesGrid.innerHTML = visibleGames.map(game => {
-      const catIcon = CATEGORY_ICONS[game.category] || '🎮';
+      const catIcon = gameIcon(game);
       const isFav = favoriteIds.has(game.id);
       return `
-        <a class="game-card ${getGameStatus(game) === 'coming-soon' ? 'is-coming-soon' : ''}" href="/games/${game.id}/" aria-label="${escapeHtml(game.name)} - ${statusLabel(game)}">
+        <a class="game-card ${getGameStatus(game) === 'coming-soon' ? 'is-coming-soon' : ''} ${game.id === 'idle-dungeon-heroes' ? 'game-card-dungeon' : ''}" href="/games/${game.id}/" aria-label="${escapeHtml(game.name)} - ${statusLabel(game)}">
           <button class="fav-btn ${isFav ? 'active' : ''}" data-game="${game.id}" aria-label="${isFav ? 'Remove from favorites' : 'Save to favorites'}" onclick="event.preventDefault(); event.stopPropagation();">
             ${isFav ? '&#10084;' : '&#9825;'}
           </button>

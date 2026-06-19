@@ -92,30 +92,60 @@
         </section>
 
         <aside class="side-panel" aria-label="英雄与成长">
-          <div class="panel-card">
-            <h2>远征进度</h2>
-            <p id="objectiveText">击败全部 6 个副本房间即可胜利。</p>
+          <div class="panel-card loop-card">
+            <h2>核心循环</h2>
+            <p id="objectiveText">英雄派遣 → 装备掉落 → 升级战力。击败全部 6 个副本房间即可胜利。</p>
             <div class="mini-progress" id="miniProgress" aria-hidden="true"></div>
           </div>
 
           <div class="panel-card">
-            <h3>英雄升级</h3>
-            <p>升级提升自动 DPS 与生命。新英雄随房间通关解锁。</p>
+            <h3>升级面板</h3>
+            <p>按钮直接显示收益，强调 5-10 秒内的反馈变化。新英雄随房间通关解锁。</p>
             <div id="upgradeList" class="upgrade-list"></div>
           </div>
 
           <div class="panel-card inventory-card">
-            <h3>装备背包</h3>
+            <h3>套装与槽位</h3>
             <p id="equipHelp">点击装备再点英雄，或拖到英雄卡。套装 2/3 件触发加成。</p>
+            <div id="equipGrid" class="equip-grid" aria-label="当前英雄装备槽位"></div>
+            <ul class="feedback-list" aria-label="反馈说明">
+              <li><strong>Equip snap</strong><span>金属音 + 轻震动</span></li>
+              <li><strong>Boss clear</strong><span>胜利音 + 双脉冲</span></li>
+              <li><strong>Invalid drop</strong><span>拒绝音 + 抖动</span></li>
+            </ul>
             <button id="autoEquipBtn" class="secondary-action" type="button">一键装备最佳</button>
           </div>
 
+          <div class="result-preview" aria-label="胜利与失败结算预览">
+            <h2>副本通关！</h2>
+            <p>失败时同一位置显示“远征失败”，主按钮保持一致。</p>
+            <div class="result-stats">
+              <div><span>Clear time</span><strong>≤ 3:00</strong></div>
+              <div><span>Record</span><strong>本地保存</strong></div>
+            </div>
+          </div>
+
           <div class="panel-card log-card">
-            <h3>战斗日志</h3>
+            <h3>反馈日志</h3>
             <ol id="battleLog"></ol>
           </div>
         </aside>
       </main>
+
+      <section class="notes-section" aria-label="实现要点">
+        <article class="note">
+          <h3>3 秒内进入游玩</h3>
+          <p>默认自动战斗已运行，玩家无需读教程即可看到房间推进、伤害数字、掉落装备和派遣按钮。</p>
+        </article>
+        <article class="note">
+          <h3>两类以上输入</h3>
+          <p>鼠标/触屏负责点击与拖拽，键盘负责选择英雄、装备、升级和再来一局；拖拽不是唯一通路。</p>
+        </article>
+        <article class="note">
+          <h3>本地记录可见</h3>
+          <p>HUD 与结算卡都展示最高分；胜利或失败均写入 idle_dungeon_heroes_best。</p>
+        </article>
+      </section>
     </section>
 
     <div id="resultModal" class="result-modal" role="dialog" aria-modal="true" aria-labelledby="resultTitle" hidden>

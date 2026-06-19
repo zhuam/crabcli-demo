@@ -42,7 +42,7 @@
     muteBtn: $('muteBtn'), dispatchBtn: $('dispatchBtn'), roomTrack: $('roomTrack'), partyList: $('partyList'), partyPower: $('partyPower'),
     monsterStage: $('monsterStage'), monsterTimer: $('monsterTimer'), monsterName: $('monsterName'), monsterFigure: $('monsterFigure'),
     monsterHpBar: $('monsterHpBar'), monsterHpText: $('monsterHpText'), damageFloat: $('damageFloat'), lootList: $('lootList'),
-    miniProgress: $('miniProgress'), upgradeList: $('upgradeList'), autoEquipBtn: $('autoEquipBtn'), battleLog: $('battleLog'),
+    miniProgress: $('miniProgress'), upgradeList: $('upgradeList'), equipGrid: $('equipGrid'), autoEquipBtn: $('autoEquipBtn'), battleLog: $('battleLog'),
     resultModal: $('resultModal'), resultBadge: $('resultBadge'), resultTitle: $('resultTitle'), resultCopy: $('resultCopy'), resultScore: $('resultScore'),
     resultRoom: $('resultRoom'), resultTime: $('resultTime'), resultBest: $('resultBest'), newBestText: $('newBestText'), restartBtn: $('restartBtn'), toast: $('toast')
   };
@@ -330,7 +330,7 @@
     const hp = Math.max(0, state.monsterHp);
     els.monsterHpBar.style.width = `${Math.max(0, Math.min(100, hp / maxHp * 100))}%`;
     els.monsterHpText.textContent = `HP ${Math.ceil(hp)} / ${maxHp}`;
-    renderRooms(); renderHeroes(); renderLoot(); renderUpgrades(); renderLog();
+    renderRooms(); renderHeroes(); renderLoot(); renderEquipmentSlots(); renderUpgrades(); renderLog();
   }
   function renderRooms() {
     els.roomTrack.innerHTML = CONFIG.DUNGEONS.map((room, i) => `<div class="room ${room.boss ? 'boss' : ''} ${i < state.roomIndex ? 'done' : ''} ${i === state.roomIndex ? 'active' : ''}"><strong>${i + 1}. ${room.name}</strong><span>${room.boss ? 'Boss' : 'Auto battle'} · HP ${room.hp}</span></div>`).join('');
@@ -372,6 +372,19 @@
       card.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); state.selectedEquipId = uid; equipItem(uid, state.selectedHeroId); } });
       card.addEventListener('dragstart', e => { e.dataTransfer.setData('text/plain', uid); state.selectedEquipId = uid; });
       card.addEventListener('pointerdown', () => { state.selectedEquipId = uid; });
+    });
+  }
+  function renderEquipmentSlots() {
+    const hero = selectedHero();
+    els.equipGrid.innerHTML = ['weapon', 'armor', 'relic'].map(slot => {
+      const item = hero.equipment[slot];
+      const label = slot === 'weapon' ? 'Weapon' : slot === 'armor' ? 'Armor' : 'Relic';
+      return `<button class="slot" type="button" data-slot="${slot}" aria-label="${label} slot for ${hero.name}"><strong>${label}</strong><span>${item ? item.name : 'Drop target'}</span></button>`;
+    }).join('');
+    els.equipGrid.querySelectorAll('[data-slot]').forEach(slot => {
+      slot.addEventListener('click', () => { if (state.selectedEquipId) equipItem(state.selectedEquipId, hero.id); else toast('先选择一件掉落装备'); });
+      slot.addEventListener('dragover', e => e.preventDefault());
+      slot.addEventListener('drop', e => { e.preventDefault(); equipItem(e.dataTransfer.getData('text/plain'), hero.id); });
     });
   }
   function renderUpgrades() {

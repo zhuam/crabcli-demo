@@ -11,6 +11,8 @@ const html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
 const js = fs.readFileSync(path.join(ROOT, 'app.js'), 'utf8');
 const css = fs.readFileSync(path.join(ROOT, 'style.css'), 'utf8');
 const registry = fs.readFileSync(path.resolve(ROOT, '../registry.json'), 'utf8');
+const hubJs = fs.readFileSync(path.resolve(ROOT, '../../hub/hub.js'), 'utf8');
+const hubCss = fs.readFileSync(path.resolve(ROOT, '../../hub/hub.css'), 'utf8');
 
 let passed = 0;
 let failed = 0;
@@ -55,8 +57,11 @@ group('Game loop and progression');
 ok('six dungeon rooms including boss configured', /(id:\s*'[^']+'[\s\S]*?){6}/.test(js) && /boss:\s*true/.test(js));
 ok('hero unlock and set bonus logic present', /unlockRoom/.test(js) && /room\.unlock/.test(js) && /setBonus/.test(js) && /countSets\(/.test(js));
 ok('equipment supports click fallback and auto equip', /selectedEquipId/.test(js) && /autoEquipBest/.test(js) && /一键装备最佳/.test(html));
+ok('design artifact side panel sections implemented', /核心循环/.test(html) && /套装与槽位/.test(html) && /feedback-list/.test(html) && /notes-section/.test(html));
+ok('runtime renders equipment slot drop targets', /function renderEquipmentSlots/.test(js) && /data-slot/.test(js) && /Drop target/.test(js));
 ok('responsive design and reduced motion included', /@media \(max-width: 760px\)/.test(css) && /prefers-reduced-motion/.test(css));
 ok('registry includes idle-dungeon-heroes', /"id":\s*"idle-dungeon-heroes"/.test(registry) && /"path":\s*"\/games\/094-idle-dungeon-heroes\/"/.test(registry));
+ok('hub gives Game 094 a discoverable custom icon and polished card style', /'idle-dungeon-heroes':\s*'⚔️'/.test(hubJs) && /game-card-dungeon/.test(hubJs) && /\.game-card-dungeon/.test(hubCss));
 
 if (failed) {
   console.error(`\n${failed} failed, ${passed} passed`);
