@@ -10,7 +10,7 @@
   <div id="app">
     <!-- Guest Welcome Banner -->
     <div id="guest-banner" class="guest-banner" style="display:none;">
-      <span>Welcome to CrabCLI Arcade! Browse games or <a id="banner-signin" href="#">Sign In</a> to track your scores.</span>
+      <span>Welcome to CrabCLI Arcade! Browse games first, then <a id="banner-signin" href="#">Sign In</a> to save favorites, scores, and release notifications.</span>
       <button id="banner-close" class="banner-close" aria-label="Dismiss">&times;</button>
     </div>
 
@@ -52,6 +52,15 @@
         <!-- Populated by JS -->
       </nav>
 
+      <!-- Quick Access -->
+      <section class="quick-access" id="quick-access" style="display:none;">
+        <div class="quick-access-head">
+          <h2 class="section-title" id="quick-access-title">Quick Access</h2>
+          <span class="quick-access-subtitle" id="quick-access-subtitle">Playable picks ready to launch</span>
+        </div>
+        <div class="quick-access-list" id="quick-access-list"></div>
+      </section>
+
       <!-- Featured Section -->
       <section class="featured" id="featured-section" style="display:none;">
         <h2 class="section-title">⭐ Featured Games</h2>
@@ -65,7 +74,12 @@
         <div class="games-header">
           <h2 class="section-title" id="games-title">All Games</h2>
           <div class="sort-controls">
-            <select id="sort-select" class="sort-select">
+            <select id="status-filter" class="sort-select" aria-label="Filter by availability">
+              <option value="all">All statuses</option>
+              <option value="playable">Playable</option>
+              <option value="coming-soon">Coming Soon</option>
+            </select>
+            <select id="sort-select" class="sort-select" aria-label="Sort games">
               <option value="popular">🔥 Popular</option>
               <option value="newest">🕐 Newest</option>
               <option value="rating">⭐ Rating</option>

@@ -20,6 +20,15 @@ const REGISTRY = JSON.parse(readFileSync(resolve(PROJECT_ROOT, 'games/registry.j
 // ─── Game directory resolver ───
 const GAMES_DIR = resolve(PROJECT_ROOT, 'games');
 
+function escapeHtml(value: unknown): string {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 function findGameDir(gameId: string): string | null {
   // Scan games/ for a directory containing the game ID
   if (existsSync(GAMES_DIR)) {
@@ -34,6 +43,51 @@ function findGameDir(gameId: string): string | null {
     }
   }
   return null;
+}
+
+function isGamePlayable(game: any): boolean {
+  const configuredPath = typeof game.path === 'string' ? game.path : '';
+  const gameDir = findGameDir(game.id);
+  if (!gameDir) return false;
+
+  if (configuredPath.startsWith('/games/')) {
+    const configuredDir = resolve(PROJECT_ROOT, configuredPath.slice(1));
+    const configuredIndex = resolve(configuredDir, 'index.html');
+    if (existsSync(configuredIndex)) return true;
+  }
+
+  return existsSync(resolve(gameDir, 'index.html'));
+}
+
+function gameWithAvailability(game: any) {
+  const playable = game.status ? game.status === 'playable' : isGamePlayable(game);
+  const icon = REGISTRY.categories.find((cat: any) => cat.id === game.category)?.icon || '🎮';
+  return {
+    ...game,
+    icon: game.icon || icon,
+    status: playable ? 'playable' : 'coming-soon',
+    playable,
+    availabilityLabel: playable ? 'Playable' : 'Coming Soon',
+  };
+}
+
+function registryWithAvailability() {
+  return {
+    ...REGISTRY,
+    games: REGISTRY.games.map(gameWithAvailability),
+  };
+}
+
+function renderComingSoon(game: any): string {
+  const htmlPath = resolve(PROJECT_ROOT, 'hub/coming-soon.html');
+  const template = existsSync(htmlPath)
+    ? readFileSync(htmlPath, 'utf-8')
+    : '<!doctype html><title>Coming Soon</title><h1>__GAME_NAME__</h1><p>__GAME_DESC__</p><a href="/">Back to Arcade</a>';
+  const icon = REGISTRY.categories.find((cat: any) => cat.id === game.category)?.icon || '🎮';
+  return template
+    .replace(/__GAME_ICON__/g, escapeHtml(icon))
+    .replace(/__GAME_NAME__/g, escapeHtml(game.name || game.id))
+    .replace(/__GAME_DESC__/g, escapeHtml(game.description || 'This game is planned and will be available soon.'));
 }
 
 // ─── MIME types ───
@@ -103,7 +157,7 @@ const server = createServer(async (req, res) => {
 
     // API: Game list
     if (pathname === '/api/games') {
-      return json(res, 200, REGISTRY);
+      return json(res, 200, registryWithAvailability());
     }
 
     // API: Categories
@@ -150,6 +204,7 @@ const server = createServer(async (req, res) => {
         const gameId = parts[1];
         const subPath = parts.slice(2).join('/') || 'index.html';
 
+        const game = REGISTRY.games.find((g: any) => g.id === gameId);
         const gameDir = findGameDir(gameId);
         if (gameDir) {
           const filePath = resolve(gameDir, subPath);
@@ -157,6 +212,11 @@ const server = createServer(async (req, res) => {
             return json(res, 403, { error: 'Forbidden' });
           }
           if (serveFile(res, filePath)) return;
+        }
+
+        if (game && subPath === 'index.html') {
+          res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-cache' });
+          return res.end(renderComingSoon(game));
         }
 
         // If game dir not found, return 404 with game ID

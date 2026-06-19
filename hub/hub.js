@@ -7,6 +7,7 @@
   let filteredGames = [];
   let currentCategory = 'all';
   let currentSort = 'popular';
+  let currentStatus = 'all';
   let currentUser = null;
   let authAction = 'login'; // 'login' or 'register'
   let searchQuery = '';
@@ -38,9 +39,14 @@
   const categoriesNav = $('#categories');
   const featuredSection = $('#featured-section');
   const featuredList = $('#featured-list');
+  const quickAccess = $('#quick-access');
+  const quickAccessTitle = $('#quick-access-title');
+  const quickAccessSubtitle = $('#quick-access-subtitle');
+  const quickAccessList = $('#quick-access-list');
   const gamesGrid = $('#games-grid');
   const gamesTitle = $('#games-title');
   const sortSelect = $('#sort-select');
+  const statusFilter = $('#status-filter');
   const gameCount = $('#game-count');
   const totalGames = $('#total-games');
   const authArea = $('#auth-area');
@@ -92,6 +98,7 @@
     checkGuestBanner();
     await checkAuth();
     renderCategories();
+    renderQuickAccess();
     renderFeatured();
     applyFilters();
     bindEvents();
@@ -194,14 +201,15 @@
         } else {
           favoriteIds.delete(gameId);
         }
-        // Update heart button
-        const btn = document.querySelector(`.fav-btn[data-game="${gameId}"]`);
-        if (btn) {
+        // Update all heart buttons for this game across cards, featured, and quick access
+        document.querySelectorAll(`.fav-btn[data-game="${gameId}"]`).forEach(btn => {
           btn.classList.toggle('active', data.favorite);
           btn.classList.add('pulse');
           setTimeout(() => btn.classList.remove('pulse'), 300);
           btn.innerHTML = data.favorite ? '&#10084;' : '&#9825;';
-        }
+          btn.setAttribute('aria-label', data.favorite ? 'Remove from favorites' : 'Save to favorites');
+        });
+        renderQuickAccess();
         // If in favorites category, re-render
         if (currentCategory === 'favorites') {
           applyFilters();
@@ -302,7 +310,7 @@
     profileFavList.querySelectorAll('.profile-fav-item').forEach(item => {
       item.addEventListener('click', () => {
         const gameId = item.dataset.game;
-        window.location.href = `/games/${gameId}/`;
+        navigateToGame(gameId);
       });
     });
   }
@@ -419,15 +427,71 @@
   // ─── Categories ───
   function renderCategories() {
     const chips = registry.categories.map(cat => `
-      <button class="cat-chip ${cat.id === 'all' ? 'active' : ''}" data-category="${cat.id}">
+      <button class="cat-chip ${cat.id === currentCategory ? 'active' : ''}" data-category="${cat.id}">
         ${cat.icon || CATEGORY_ICONS[cat.id] || '🎮'} ${cat.name}
       </button>
     `).join('');
-    // Add favorites chip for logged-in users
     const favChip = currentUser
-      ? `<button class="cat-chip" data-category="favorites">❤️ Favorites</button>`
+      ? `<button class="cat-chip ${currentCategory === 'favorites' ? 'active' : ''}" data-category="favorites">❤️ Favorites</button>`
       : '';
     categoriesNav.innerHTML = chips + favChip;
+  }
+
+  function bindFavoriteButtons(root) {
+    root.querySelectorAll('.fav-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        toggleFavorite(btn.dataset.game);
+      });
+    });
+  }
+
+  function getGameStatus(game) {
+    return game.playable || game.status === 'playable' ? 'playable' : 'coming-soon';
+  }
+
+  function statusLabel(game) {
+    return getGameStatus(game) === 'playable' ? 'Playable' : 'Coming Soon';
+  }
+
+  function navigateToGame(gameId) {
+    window.location.href = `/games/${encodeURIComponent(gameId)}/`;
+  }
+
+  function renderQuickAccess() {
+    if (!quickAccess || !quickAccessList) return;
+    const playable = registry.games.filter(g => getGameStatus(g) === 'playable');
+    const favoriteGames = playable.filter(g => favoriteIds.has(g.id));
+    const source = (currentUser && favoriteGames.length > 0 ? favoriteGames : playable)
+      .slice()
+      .sort((a, b) => Number(Boolean(b.featured)) - Number(Boolean(a.featured)) || (b.rating || 0) - (a.rating || 0))
+      .slice(0, 4);
+
+    if (source.length === 0) {
+      quickAccess.style.display = 'none';
+      return;
+    }
+
+    quickAccess.style.display = 'block';
+    quickAccessTitle.textContent = currentUser && favoriteGames.length > 0 ? 'Favorites Quick Access' : 'Quick Access';
+    quickAccessSubtitle.textContent = currentUser && favoriteGames.length > 0
+      ? 'Your saved playable games'
+      : 'Playable picks ready to launch';
+    quickAccessList.innerHTML = source.map(game => {
+      const isFav = favoriteIds.has(game.id);
+      return `
+        <a class="quick-card" href="/games/${game.id}/" data-game="${game.id}">
+          <span class="quick-icon">${CATEGORY_ICONS[game.category] || '🎮'}</span>
+          <span class="quick-copy">
+            <strong>${escapeHtml(game.name)}</strong>
+            <small>${escapeHtml(game.players || '1')} player${(game.players || '1') !== '1' ? 's' : ''}</small>
+          </span>
+          <button class="fav-btn ${isFav ? 'active' : ''}" data-game="${game.id}" aria-label="${isFav ? 'Remove from favorites' : 'Save to favorites'}" onclick="event.preventDefault(); event.stopPropagation();">${isFav ? '&#10084;' : '&#9825;'}</button>
+        </a>
+      `;
+    }).join('');
+    bindFavoriteButtons(quickAccessList);
   }
 
   // ─── Featured ───
@@ -441,14 +505,15 @@
     featuredList.innerHTML = featured.map(game => {
       const isFav = favoriteIds.has(game.id);
       return `
-        <a class="featured-card" href="/games/${game.id}/">
-          <button class="fav-btn ${isFav ? 'active' : ''}" data-game="${game.id}" data-featured="true" onclick="event.preventDefault(); event.stopPropagation();">
+        <a class="featured-card ${getGameStatus(game) === 'coming-soon' ? 'is-coming-soon' : ''}" href="/games/${game.id}/">
+          <button class="fav-btn ${isFav ? 'active' : ''}" data-game="${game.id}" data-featured="true" aria-label="${isFav ? 'Remove from favorites' : 'Save to favorites'}" onclick="event.preventDefault(); event.stopPropagation();">
             ${isFav ? '&#10084;' : '&#9825;'}
           </button>
           <div class="game-icon">${CATEGORY_ICONS[game.category] || '🎮'}</div>
           <div class="game-name">${escapeHtml(game.name)}</div>
           <div class="game-desc">${escapeHtml(game.description)}</div>
           <div class="game-meta">
+            <span class="status-badge status-${getGameStatus(game)}">${statusLabel(game)}</span>
             <span>${game.players || '1'} player${(game.players || '1') !== '1' ? 's' : ''}</span>
             ${game.rating ? `<span>⭐ ${game.rating}</span>` : ''}
           </div>
@@ -456,14 +521,7 @@
       `;
     }).join('');
 
-    // Bind featured fav buttons
-    featuredList.querySelectorAll('.fav-btn').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        toggleFavorite(btn.dataset.game);
-      });
-    });
+    bindFavoriteButtons(featuredList);
   }
 
   // ─── Filter & Sort ───
@@ -479,6 +537,11 @@
       filteredGames = filteredGames.filter(g => g.category === currentCategory);
     }
 
+    // Availability filter
+    if (currentStatus !== 'all') {
+      filteredGames = filteredGames.filter(g => getGameStatus(g) === currentStatus);
+    }
+
     // Search filter
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
@@ -486,6 +549,8 @@
         g.name.toLowerCase().includes(q) ||
         g.description.toLowerCase().includes(q) ||
         g.category.toLowerCase().includes(q) ||
+        statusLabel(g).toLowerCase().includes(q) ||
+        getGameStatus(g).replace('-', ' ').includes(q) ||
         (g.tags && g.tags.some(t => t.toLowerCase().includes(q)))
       );
     }
@@ -532,30 +597,26 @@
       const catIcon = CATEGORY_ICONS[game.category] || '🎮';
       const isFav = favoriteIds.has(game.id);
       return `
-        <a class="game-card" href="/games/${game.id}/">
-          <button class="fav-btn ${isFav ? 'active' : ''}" data-game="${game.id}" onclick="event.preventDefault(); event.stopPropagation();">
+        <a class="game-card ${getGameStatus(game) === 'coming-soon' ? 'is-coming-soon' : ''}" href="/games/${game.id}/" aria-label="${escapeHtml(game.name)} - ${statusLabel(game)}">
+          <button class="fav-btn ${isFav ? 'active' : ''}" data-game="${game.id}" aria-label="${isFav ? 'Remove from favorites' : 'Save to favorites'}" onclick="event.preventDefault(); event.stopPropagation();">
             ${isFav ? '&#10084;' : '&#9825;'}
           </button>
           <div class="game-icon">${catIcon}</div>
-          <div class="game-name" title="${escapeHtml(game.name)}">${escapeHtml(game.name)}</div>
+          <div class="card-title-row">
+            <div class="game-name" title="${escapeHtml(game.name)}">${escapeHtml(game.name)}</div>
+            <span class="status-badge status-${getGameStatus(game)}">${statusLabel(game)}</span>
+          </div>
           <div class="game-desc">${escapeHtml(game.description)}</div>
           <div class="game-tags">
             <span class="tag tag-${game.category}">${game.category}</span>
             ${game.rating ? `<span class="game-rating">⭐ ${game.rating}</span>` : ''}
           </div>
-          <div class="game-players">👥 ${game.players || '1'}</div>
+          <div class="game-players">${getGameStatus(game) === 'playable' ? '▶ Launch' : '⏳ View release page'} · 👥 ${game.players || '1'}</div>
         </a>
       `;
     }).join('');
 
-    // Bind fav buttons
-    gamesGrid.querySelectorAll('.fav-btn').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        toggleFavorite(btn.dataset.game);
-      });
-    });
+    bindFavoriteButtons(gamesGrid);
   }
 
   function updateLoadMore() {
@@ -586,6 +647,7 @@
     mobileSearchBar.classList.remove('visible');
     mobileSearchBar.style.display = 'none';
     mobileSearchInput.value = '';
+    if (searchInput) searchInput.value = '';
     searchQuery = '';
     applyFilters();
   }
@@ -635,6 +697,14 @@
           if (searchInput) searchInput.value = searchQuery;
           applyFilters();
         }, 300);
+      });
+    }
+
+    // Availability filter
+    if (statusFilter) {
+      statusFilter.addEventListener('change', () => {
+        currentStatus = statusFilter.value;
+        applyFilters();
       });
     }
 
@@ -747,6 +817,8 @@
         await loadFavorites();
         renderUserBadge();
         renderCategories();
+        renderQuickAccess();
+        renderFeatured();
         checkGuestBanner();
         closeAuthModal();
         // If was on favorites category, re-apply
