@@ -378,6 +378,18 @@
       "version": "1.0.0",
       "featured": true,
       "rating": 4.5
+    },
+    {
+      "id": "guess-number",
+      "name": "猜数字",
+      "description": "猜 1-100 之间的数字，看看几次能猜对",
+      "category": "casual",
+      "tags": ["singleplayer", "puzzle", "minimal"],
+      "path": "/games/guess-number/",
+      "hasServer": false,
+      "players": "1",
+      "version": "1.0.0",
+      "rating": 4.0
     }
   ],
   "categories": [

@@ -1,0 +1,674 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>猜数字 — 1–100</title>
+  <meta name="description" content="猜 1-100 之间的数字，每次会提示太高或太低，看看几次能猜对。" />
+  <style>
+    /* ============================================================
+       猜数字 · modern-minimal  (matching dice game style)
+       Single-file HTML game. No deps.
+       ============================================================ */
+
+    :root {
+      --color-bg:       oklch(0.99 0 0);
+      --color-surface:  oklch(1.00 0 0);
+      --color-border:   oklch(0.92 0 0);
+      --color-text:     oklch(0.20 0 0);
+      --color-muted:    oklch(0.55 0 0);
+      --color-accent:   oklch(0.55 0.18 250);
+      --color-success:  oklch(0.60 0.18 150);
+      --color-warm:     oklch(0.65 0.16 70);
+
+      --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+
+      --radius-md: 8px;
+      --radius-lg: 22px;
+      --radius-pill: 999px;
+
+      --max-width: 440px;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --color-bg:      oklch(0.16 0 0);
+        --color-surface: oklch(0.22 0 0);
+        --color-border:  oklch(0.28 0 0);
+        --color-text:    oklch(0.96 0 0);
+        --color-muted:   oklch(0.65 0 0);
+        --color-accent:  oklch(0.72 0.16 250);
+        --color-success: oklch(0.65 0.16 150);
+        --color-warm:    oklch(0.70 0.14 70);
+      }
+    }
+
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      background: var(--color-bg);
+      color: var(--color-text);
+      font-family: var(--font-sans);
+      font-size: 16px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .visually-hidden {
+      position: absolute;
+      clip: rect(0 0 0 0);
+      width: 1px; height: 1px;
+      overflow: hidden;
+      white-space: nowrap;
+    }
+
+    /* top bar */
+    .top {
+      padding: 20px 28px;
+      border-bottom: 1px solid var(--color-border);
+      font-size: 14px;
+      color: var(--color-muted);
+      letter-spacing: 0.02em;
+    }
+    .top b { color: var(--color-text); font-weight: 600; }
+
+    /* stage */
+    .stage {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 48px 24px;
+      width: 100%;
+      max-width: var(--max-width);
+      margin: 0 auto;
+    }
+
+    /* game title */
+    .game-title {
+      font-size: 28px;
+      font-weight: 700;
+      margin: 0 0 4px;
+      letter-spacing: -0.01em;
+      text-align: center;
+    }
+    .game-subtitle {
+      font-size: 14px;
+      color: var(--color-muted);
+      margin: 0 0 32px;
+      text-align: center;
+    }
+
+    /* range indicator */
+    .range-indicator {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      width: 100%;
+      margin-bottom: 24px;
+      font-size: 14px;
+      font-weight: 500;
+    }
+    .range-indicator .low,
+    .range-indicator .high {
+      flex-shrink: 0;
+      color: var(--color-muted);
+    }
+    .range-bar {
+      flex: 1;
+      height: 6px;
+      background: var(--color-border);
+      border-radius: 3px;
+      position: relative;
+      overflow: hidden;
+    }
+    .range-bar-fill {
+      height: 100%;
+      background: var(--color-accent);
+      border-radius: 3px;
+      transition: width 300ms ease;
+      width: 100%;
+    }
+
+    /* guess input area */
+    .guess-area {
+      display: flex;
+      gap: 10px;
+      width: 100%;
+      margin-bottom: 20px;
+    }
+    .guess-input {
+      flex: 1;
+      appearance: none;
+      border: 1px solid var(--color-border);
+      background: var(--color-surface);
+      color: var(--color-text);
+      font: inherit;
+      font-size: 18px;
+      font-weight: 500;
+      padding: 12px 16px;
+      border-radius: var(--radius-md);
+      outline: none;
+      transition: border-color 150ms ease;
+      text-align: center;
+    }
+    .guess-input:focus {
+      border-color: var(--color-accent);
+      box-shadow: 0 0 0 3px oklch(0.55 0.18 250 / 0.15);
+    }
+    .guess-input::placeholder {
+      color: var(--color-muted);
+      font-weight: 400;
+      font-size: 15px;
+    }
+    .guess-input:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    /* buttons */
+    .btn {
+      appearance: none;
+      border: 1px solid var(--color-border);
+      background: var(--color-text);
+      color: var(--color-bg);
+      font: inherit;
+      font-weight: 600;
+      font-size: 15px;
+      letter-spacing: 0.02em;
+      padding: 12px 24px;
+      border-radius: var(--radius-pill);
+      cursor: pointer;
+      transition: transform 120ms ease, opacity 120ms ease, background 120ms ease;
+      white-space: nowrap;
+    }
+    .btn:hover  { transform: translateY(-1px); }
+    .btn:active { transform: translateY(0); }
+    .btn:focus-visible {
+      outline: 2px solid var(--color-accent);
+      outline-offset: 3px;
+    }
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+    .btn-guess {
+      min-width: 80px;
+    }
+    .btn-new {
+      background: transparent;
+      color: var(--color-text);
+      border-color: var(--color-border);
+      margin-top: 12px;
+    }
+    .btn-new:hover {
+      background: var(--color-border);
+    }
+
+    /* hint / message */
+    .message {
+      width: 100%;
+      min-height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 20px;
+      font-size: 18px;
+      font-weight: 600;
+      text-align: center;
+      border-radius: var(--radius-md);
+      padding: 12px 16px;
+      transition: background 200ms ease, color 200ms ease;
+    }
+    .message.hint-low {
+      background: oklch(0.55 0.18 250 / 0.10);
+      color: var(--color-accent);
+    }
+    .message.hint-high {
+      background: oklch(0.65 0.16 70 / 0.12);
+      color: var(--color-warm);
+    }
+    .message.hint-win {
+      background: oklch(0.60 0.18 150 / 0.12);
+      color: var(--color-success);
+    }
+    .message.hint-error {
+      background: oklch(0.60 0.20 30 / 0.10);
+      color: oklch(0.60 0.20 30);
+    }
+    .message.hint-idle {
+      background: transparent;
+      color: var(--color-muted);
+    }
+
+    /* attempts counter */
+    .stats {
+      display: flex;
+      gap: 24px;
+      width: 100%;
+      margin-bottom: 20px;
+      justify-content: center;
+    }
+    .stat-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .stat-value {
+      font-size: 28px;
+      font-weight: 700;
+      line-height: 1.2;
+    }
+    .stat-label {
+      font-size: 12px;
+      color: var(--color-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    /* guess history */
+    .history-section {
+      width: 100%;
+      border-top: 1px solid var(--color-border);
+      padding-top: 16px;
+      margin-top: 4px;
+    }
+    .history-header {
+      font-size: 13px;
+      color: var(--color-muted);
+      margin: 0 0 10px;
+      font-weight: 500;
+    }
+    .history-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
+    .history-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 13px;
+      font-weight: 500;
+      padding: 4px 10px;
+      border-radius: var(--radius-pill);
+      background: var(--color-border);
+      color: var(--color-text);
+      transition: transform 100ms ease;
+    }
+    .history-chip.low {
+      background: oklch(0.55 0.18 250 / 0.12);
+      color: var(--color-accent);
+    }
+    .history-chip.high {
+      background: oklch(0.65 0.16 70 / 0.12);
+      color: var(--color-warm);
+    }
+    .history-chip.win {
+      background: oklch(0.60 0.18 150 / 0.15);
+      color: var(--color-success);
+    }
+    .history-chip .chip-arrow {
+      font-size: 11px;
+      opacity: 0.7;
+    }
+
+    /* congratulatory animation */
+    @keyframes celebratePulse {
+      0%   { transform: scale(1); }
+      50%  { transform: scale(1.06); }
+      100% { transform: scale(1); }
+    }
+    @keyframes celebrateBounce {
+      0%, 100% { transform: translateY(0); }
+      30%      { transform: translateY(-12px); }
+      50%      { transform: translateY(-6px); }
+      70%      { transform: translateY(-10px); }
+    }
+    @keyframes sparkle {
+      0%   { opacity: 0; transform: translateY(0) scale(0.5); }
+      50%  { opacity: 1; transform: translateY(-40px) scale(1); }
+      100% { opacity: 0; transform: translateY(-80px) scale(0.5); }
+    }
+
+    .celebrate .stat-value {
+      animation: celebrateBounce 600ms ease;
+    }
+    .celebrate .message {
+      animation: celebratePulse 500ms ease 2;
+    }
+
+    .sparkle-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 100;
+    }
+    .sparkle {
+      position: absolute;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      animation: sparkle 1s ease-out forwards;
+    }
+
+    /* keyboard hint */
+    .kbd-hint {
+      margin: 16px 0 0;
+      font-size: 13px;
+      color: var(--color-muted);
+    }
+    .kbd-hint kbd {
+      font: inherit;
+      font-size: 12px;
+      padding: 2px 6px;
+      border: 1px solid var(--color-border);
+      border-bottom-width: 2px;
+      border-radius: 4px;
+      background: var(--color-surface);
+      color: var(--color-text);
+    }
+
+    /* mobile */
+    @media (max-width: 480px) {
+      .stage { padding: 32px 16px; }
+      .top { padding: 16px 20px; }
+      .game-title { font-size: 24px; }
+      .guess-area { flex-direction: column; }
+      .btn-guess { width: 100%; }
+      .stats { gap: 16px; }
+    }
+
+    /* reduced motion */
+    @media (prefers-reduced-motion: reduce) {
+      .btn { transition: none; }
+      .range-bar-fill { transition: none; }
+      .celebrate .stat-value,
+      .celebrate .message { animation: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <header class="top">
+    <div class="brand"><b>猜数字</b> · 1–100</div>
+  </header>
+
+  <main class="stage" aria-label="猜数字游戏">
+    <h1 class="game-title">猜数字</h1>
+    <p class="game-subtitle">我选好了一个 1–100 之间的数字，猜猜看！</p>
+
+    <!-- range indicator -->
+    <div class="range-indicator" aria-hidden="true">
+      <span class="low">1</span>
+      <div class="range-bar">
+        <div id="rangeFill" class="range-bar-fill"></div>
+      </div>
+      <span class="high">100</span>
+    </div>
+
+    <!-- message area -->
+    <div id="message" class="message hint-idle" role="status" aria-live="polite">
+      输入数字开始猜
+    </div>
+
+    <!-- input area -->
+    <div class="guess-area">
+      <input
+        id="guessInput"
+        class="guess-input"
+        type="number"
+        min="1"
+        max="100"
+        placeholder="1–100"
+        autofocus
+        aria-label="输入你猜的数字"
+      />
+      <button id="guessBtn" class="btn btn-guess" type="button">猜</button>
+    </div>
+
+    <!-- stats -->
+    <div class="stats" id="stats">
+      <div class="stat-item">
+        <span class="stat-value" id="attemptCount">0</span>
+        <span class="stat-label">已猜次数</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-value" id="remainRange">100</span>
+        <span class="stat-label">剩余范围</span>
+      </div>
+    </div>
+
+    <!-- guess history -->
+    <div class="history-section" id="historySection">
+      <p class="history-header">猜过的数字</p>
+      <ul class="history-list" id="historyList"></ul>
+    </div>
+
+    <!-- new game button -->
+    <button id="newGameBtn" class="btn btn-new" type="button">新一局</button>
+
+    <p class="kbd-hint" aria-hidden="true">按 <kbd>Enter</kbd> 提交</p>
+  </main>
+
+  <div id="sparkleContainer" class="sparkle-container" aria-hidden="true"></div>
+
+  <script>
+    (function () {
+      'use strict';
+
+      // ---- DOM refs ----
+      var guessInput    = document.getElementById('guessInput');
+      var guessBtn      = document.getElementById('guessBtn');
+      var newGameBtn    = document.getElementById('newGameBtn');
+      var messageEl     = document.getElementById('message');
+      var attemptCount  = document.getElementById('attemptCount');
+      var remainRange   = document.getElementById('remainRange');
+      var historyList   = document.getElementById('historyList');
+      var rangeFill     = document.getElementById('rangeFill');
+      var sparkleContainer = document.getElementById('sparkleContainer');
+      var stageEl       = document.querySelector('.stage');
+
+      // ---- game state ----
+      var target    = 0;
+      var attempts  = 0;
+      var guesses   = [];
+      var gameOver  = false;
+      var lowBound  = 1;
+      var highBound = 100;
+
+      // ---- helpers ----
+      function randomInt(min, max) {
+        var crypto = window.crypto || window.msCrypto;
+        var range = max - min + 1;
+        if (crypto && typeof crypto.getRandomValues === 'function') {
+          var buf = new Uint8Array(1);
+          do { crypto.getRandomValues(buf); } while (buf[0] >= Math.floor(256 / range) * range);
+          return min + (buf[0] % range);
+        }
+        return min + Math.floor(Math.random() * range);
+      }
+
+      function setMessage(text, className) {
+        messageEl.textContent = text;
+        messageEl.className = 'message ' + (className || 'hint-idle');
+      }
+
+      function updateStats() {
+        attemptCount.textContent = attempts;
+        var range = highBound - lowBound + 1;
+        remainRange.textContent = range > 0 ? range : 1;
+        // range bar: how much of 1-100 remains unknown
+        var pct = Math.max(0, Math.min(100, ((highBound - lowBound + 1) / 100) * 100));
+        rangeFill.style.width = pct + '%';
+      }
+
+      function renderHistory() {
+        var html = '';
+        for (var i = 0; i < guesses.length; i++) {
+          var g = guesses[i];
+          var cls = 'history-chip';
+          var arrow = '';
+          if (g.result === 'low') {
+            cls += ' low';
+            arrow = '<span class="chip-arrow">&#8593;</span>'; // up arrow = too low, go higher
+          } else if (g.result === 'high') {
+            cls += ' high';
+            arrow = '<span class="chip-arrow">&#8595;</span>'; // down arrow = too high, go lower
+          } else {
+            cls += ' win';
+          }
+          html += '<li class="' + cls + '">' + g.value + arrow + '</li>';
+        }
+        historyList.innerHTML = html || '<li style="color:var(--color-muted);font-size:13px">暂无记录</li>';
+      }
+
+      // ---- sparkle effect ----
+      var SPARKLE_COLORS = [
+        'oklch(0.60 0.18 150 / 0.8)',  // green
+        'oklch(0.55 0.18 250 / 0.8)',  // blue
+        'oklch(0.65 0.16 70  / 0.8)',  // warm
+        'oklch(0.70 0.18 330 / 0.8)',  // pink
+        'oklch(0.80 0.15 80  / 0.8)',  // gold
+      ];
+
+      function createSparkles() {
+        var count = 40;
+        for (var i = 0; i < count; i++) {
+          var el = document.createElement('div');
+          el.className = 'sparkle';
+          el.style.left = (10 + Math.random() * 80) + '%';
+          el.style.top = (20 + Math.random() * 60) + '%';
+          el.style.background = SPARKLE_COLORS[Math.floor(Math.random() * SPARKLE_COLORS.length)];
+          el.style.width = el.style.height = (4 + Math.random() * 8) + 'px';
+          el.style.animationDelay = (Math.random() * 0.8) + 's';
+          sparkleContainer.appendChild(el);
+        }
+        setTimeout(function () {
+          sparkleContainer.innerHTML = '';
+        }, 1800);
+      }
+
+      // ---- core game logic ----
+      function initGame() {
+        target = randomInt(1, 100);
+        attempts = 0;
+        guesses = [];
+        gameOver = false;
+        lowBound = 1;
+        highBound = 100;
+
+        guessInput.disabled = false;
+        guessBtn.disabled = false;
+        guessInput.value = '';
+        guessInput.focus();
+        stageEl.classList.remove('celebrate');
+
+        setMessage('输入数字开始猜', 'hint-idle');
+        updateStats();
+        renderHistory();
+      }
+
+      function handleGuess() {
+        if (gameOver) {
+          setMessage('游戏已结束，点击"新一局"重新开始', 'hint-idle');
+          return;
+        }
+
+        var raw = guessInput.value.trim();
+        if (raw === '') {
+          setMessage('请输入一个数字', 'hint-error');
+          guessInput.focus();
+          return;
+        }
+
+        var n = Number(raw);
+        if (!Number.isInteger(n) || n < 1 || n > 100) {
+          setMessage('请输入 1–100 之间的整数', 'hint-error');
+          guessInput.value = '';
+          guessInput.focus();
+          return;
+        }
+
+        attempts++;
+        guessInput.value = '';
+        guessInput.focus();
+
+        var result, msg, cls;
+
+        if (n === target) {
+          result = 'win';
+          gameOver = true;
+          guessInput.disabled = true;
+          guessBtn.disabled = true;
+          msg = '恭喜你猜对了！就是 ' + target + ' ，用了 ' + attempts + ' 次！';
+          cls = 'hint-win';
+          stageEl.classList.add('celebrate');
+          createSparkles();
+        } else if (n < target) {
+          result = 'low';
+          if (n > lowBound) lowBound = n;
+          msg = '太低了，再大一点';
+          cls = 'hint-low';
+        } else {
+          result = 'high';
+          if (n < highBound) highBound = n;
+          msg = '太高了，再小一点';
+          cls = 'hint-high';
+        }
+
+        guesses.push({ value: n, result: result });
+        setMessage(msg, cls);
+        updateStats();
+        renderHistory();
+      }
+
+      // ---- event binding ----
+      guessBtn.addEventListener('click', handleGuess);
+
+      guessInput.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          handleGuess();
+        }
+      });
+
+      // Validate on input: clear non-numeric, clamp 1-100
+      guessInput.addEventListener('input', function () {
+        var raw = guessInput.value;
+        if (raw === '') return;
+        var n = Number(raw);
+        if (isNaN(n)) {
+          guessInput.value = '';
+        }
+      });
+
+      newGameBtn.addEventListener('click', initGame);
+
+      // Global Space / Enter shortcut when not typing in input
+      document.addEventListener('keydown', function (e) {
+        if (e.key !== ' ' && e.key !== 'Enter') return;
+        var t = e.target;
+        var tag = (t && t.tagName) ? t.tagName.toLowerCase() : '';
+        if (tag === 'input' || tag === 'textarea' || (t && t.isContentEditable)) return;
+        if (t === guessBtn) return;
+        e.preventDefault();
+        handleGuess();
+      });
+
+      // ---- start ----
+      initGame();
+    })();
+  </script>
+</body>
+</html>
