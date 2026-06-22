@@ -364,6 +364,20 @@
       "players": "1",
       "version": "1.0.0",
       "rating": 4.2
+    },
+    {
+      "id": "knight-vs-slime",
+      "name": "Knight vs Slime",
+      "description": "骑士在洞穴击退史莱姆，攻击→闪避→拾取，击败 Boss 通关",
+      "category": "action",
+      "tags": ["singleplayer", "action", "roguelite", "short-session"],
+      "thumbnail": "/games/095-knight-vs-slime/thumb.png",
+      "path": "/games/095-knight-vs-slime/",
+      "hasServer": false,
+      "players": "1",
+      "version": "1.0.0",
+      "featured": true,
+      "rating": 4.5
     }
   ],
   "categories": [
