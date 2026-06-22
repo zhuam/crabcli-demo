@@ -1,0 +1,1020 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>猜单词 — Hangman</title>
+  <meta name="description" content="猜出隐藏的英文单词，每次猜错会减少一次机会，看看你能猜对几个！" />
+  <style>
+    /* ============================================================
+       猜单词 · Hangman  (matching guess-number style)
+       Single-file HTML game. No deps.
+       ============================================================ */
+
+    :root {
+      --color-bg:       oklch(0.99 0 0);
+      --color-surface:  oklch(1.00 0 0);
+      --color-border:   oklch(0.92 0 0);
+      --color-text:     oklch(0.20 0 0);
+      --color-muted:    oklch(0.55 0 0);
+      --color-accent:   oklch(0.55 0.18 250);
+      --color-success:  oklch(0.60 0.18 150);
+      --color-warm:     oklch(0.65 0.16 70);
+      --color-error:    oklch(0.60 0.20 30);
+      --color-gallows:  oklch(0.40 0 0);
+
+      --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      --font-mono: 'SF Mono', 'Fira Code', 'JetBrains Mono', 'Cascadia Code', monospace;
+
+      --radius-md: 8px;
+      --radius-lg: 22px;
+      --radius-pill: 999px;
+
+      --max-width: 480px;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --color-bg:      oklch(0.16 0 0);
+        --color-surface: oklch(0.22 0 0);
+        --color-border:  oklch(0.28 0 0);
+        --color-text:    oklch(0.96 0 0);
+        --color-muted:   oklch(0.65 0 0);
+        --color-accent:  oklch(0.72 0.16 250);
+        --color-success: oklch(0.65 0.16 150);
+        --color-warm:    oklch(0.70 0.14 70);
+        --color-error:   oklch(0.70 0.18 30);
+        --color-gallows: oklch(0.75 0 0);
+      }
+    }
+
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      background: var(--color-bg);
+      color: var(--color-text);
+      font-family: var(--font-sans);
+      font-size: 16px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .visually-hidden {
+      position: absolute;
+      clip: rect(0 0 0 0);
+      width: 1px; height: 1px;
+      overflow: hidden;
+      white-space: nowrap;
+    }
+
+    /* top bar */
+    .top {
+      padding: 20px 28px;
+      border-bottom: 1px solid var(--color-border);
+      font-size: 14px;
+      color: var(--color-muted);
+      letter-spacing: 0.02em;
+    }
+    .top b { color: var(--color-text); font-weight: 600; }
+
+    /* stage */
+    .stage {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 32px 24px;
+      width: 100%;
+      max-width: var(--max-width);
+      margin: 0 auto;
+    }
+
+    /* game title */
+    .game-title {
+      font-size: 28px;
+      font-weight: 700;
+      margin: 0 0 4px;
+      letter-spacing: -0.01em;
+      text-align: center;
+    }
+    .game-subtitle {
+      font-size: 14px;
+      color: var(--color-muted);
+      margin: 0 0 24px;
+      text-align: center;
+    }
+
+    /* hangman stick figure */
+    .hangman-area {
+      width: 160px;
+      height: 180px;
+      margin: 0 auto 20px;
+      position: relative;
+    }
+    .hangman-area svg {
+      width: 100%;
+      height: 100%;
+    }
+    .hangman-part {
+      stroke: var(--color-gallows);
+      stroke-width: 3;
+      fill: none;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      opacity: 0;
+      transition: opacity 300ms ease;
+    }
+    .hangman-part.show {
+      opacity: 1;
+    }
+    .hangman-gallows {
+      stroke: var(--color-muted);
+      stroke-width: 3;
+      fill: none;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    /* word display */
+    .word-display {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      justify-content: center;
+      margin-bottom: 24px;
+      min-height: 52px;
+    }
+    .word-letter {
+      width: 36px;
+      height: 44px;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      font-family: var(--font-mono);
+      font-size: 26px;
+      font-weight: 700;
+      border-bottom: 3px solid var(--color-text);
+      color: var(--color-text);
+      transition: color 200ms ease, border-color 200ms ease;
+    }
+    .word-letter.space {
+      border-bottom: none;
+      width: 18px;
+    }
+    .word-letter.revealed {
+      color: var(--color-accent);
+      border-bottom-color: var(--color-accent);
+    }
+    .word-letter.revealed.wrong {
+      color: var(--color-error);
+      border-bottom-color: var(--color-error);
+    }
+
+    /* message */
+    .message {
+      width: 100%;
+      min-height: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 16px;
+      font-size: 16px;
+      font-weight: 600;
+      text-align: center;
+      border-radius: var(--radius-md);
+      padding: 10px 16px;
+      transition: background 200ms ease, color 200ms ease;
+    }
+    .message.hint-idle {
+      background: transparent;
+      color: var(--color-muted);
+    }
+    .message.hint-correct {
+      background: oklch(0.60 0.18 150 / 0.12);
+      color: var(--color-success);
+    }
+    .message.hint-wrong {
+      background: oklch(0.60 0.20 30 / 0.10);
+      color: var(--color-error);
+    }
+    .message.hint-win {
+      background: oklch(0.60 0.18 150 / 0.12);
+      color: var(--color-success);
+    }
+    .message.hint-lose {
+      background: oklch(0.60 0.20 30 / 0.10);
+      color: var(--color-error);
+    }
+    .message.hint-info {
+      background: oklch(0.55 0.18 250 / 0.10);
+      color: var(--color-accent);
+    }
+
+    /* status bar */
+    .status-bar {
+      display: flex;
+      gap: 24px;
+      width: 100%;
+      margin-bottom: 16px;
+      justify-content: center;
+    }
+    .stat-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .stat-value {
+      font-size: 28px;
+      font-weight: 700;
+      line-height: 1.2;
+    }
+    .stat-value.remaining-good {
+      color: var(--color-accent);
+    }
+    .stat-value.remaining-warn {
+      color: var(--color-warm);
+    }
+    .stat-value.remaining-danger {
+      color: var(--color-error);
+    }
+    .stat-label {
+      font-size: 12px;
+      color: var(--color-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    /* hint button area */
+    .hint-area {
+      width: 100%;
+      margin-bottom: 16px;
+      display: flex;
+      justify-content: center;
+    }
+    .btn-hint {
+      appearance: none;
+      border: 1px solid var(--color-border);
+      background: transparent;
+      color: var(--color-muted);
+      font: inherit;
+      font-weight: 500;
+      font-size: 13px;
+      padding: 8px 20px;
+      border-radius: var(--radius-pill);
+      cursor: pointer;
+      transition: transform 120ms ease, color 120ms ease, border-color 120ms ease;
+    }
+    .btn-hint:hover {
+      color: var(--color-text);
+      border-color: var(--color-text);
+      transform: translateY(-1px);
+    }
+    .btn-hint:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    /* letter keyboard */
+    .keyboard {
+      width: 100%;
+      margin-bottom: 16px;
+    }
+    .keyboard-row {
+      display: flex;
+      gap: 4px;
+      justify-content: center;
+      margin-bottom: 4px;
+    }
+    .key {
+      appearance: none;
+      width: 32px;
+      height: 40px;
+      border: 1px solid var(--color-border);
+      background: var(--color-surface);
+      color: var(--color-text);
+      font: inherit;
+      font-family: var(--font-mono);
+      font-size: 14px;
+      font-weight: 600;
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      transition: background 120ms ease, color 120ms ease, transform 80ms ease, opacity 120ms ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .key:hover {
+      background: var(--color-border);
+      transform: translateY(-1px);
+    }
+    .key:active {
+      transform: translateY(0);
+    }
+    .key:disabled {
+      cursor: default;
+      transform: none;
+    }
+    .key.used-correct {
+      background: oklch(0.60 0.18 150 / 0.15);
+      color: var(--color-success);
+      border-color: var(--color-success);
+      opacity: 0.6;
+      pointer-events: none;
+    }
+    .key.used-wrong {
+      background: oklch(0.60 0.20 30 / 0.10);
+      color: var(--color-error);
+      border-color: transparent;
+      opacity: 0.5;
+      pointer-events: none;
+    }
+
+    /* guessed letters list */
+    .wrong-letters-area {
+      width: 100%;
+      min-height: 24px;
+      margin-bottom: 16px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      justify-content: center;
+    }
+    .wrong-letter-chip {
+      font-family: var(--font-mono);
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--color-error);
+      padding: 2px 8px;
+      border-radius: var(--radius-pill);
+      background: oklch(0.60 0.20 30 / 0.08);
+      transition: transform 100ms ease;
+    }
+
+    /* buttons */
+    .btn {
+      appearance: none;
+      border: 1px solid var(--color-border);
+      background: var(--color-text);
+      color: var(--color-bg);
+      font: inherit;
+      font-weight: 600;
+      font-size: 15px;
+      letter-spacing: 0.02em;
+      padding: 12px 24px;
+      border-radius: var(--radius-pill);
+      cursor: pointer;
+      transition: transform 120ms ease, opacity 120ms ease, background 120ms ease;
+      white-space: nowrap;
+    }
+    .btn:hover  { transform: translateY(-1px); }
+    .btn:active { transform: translateY(0); }
+    .btn:focus-visible {
+      outline: 2px solid var(--color-accent);
+      outline-offset: 3px;
+    }
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+    .btn-new {
+      background: transparent;
+      color: var(--color-text);
+      border-color: var(--color-border);
+    }
+    .btn-new:hover {
+      background: var(--color-border);
+    }
+
+    /* category hint */
+    .category-hint {
+      font-size: 13px;
+      color: var(--color-muted);
+      margin-bottom: 8px;
+      text-align: center;
+    }
+
+    /* celebration */
+    @keyframes celebrateBounce {
+      0%, 100% { transform: translateY(0); }
+      30%      { transform: translateY(-12px); }
+      50%      { transform: translateY(-6px); }
+      70%      { transform: translateY(-10px); }
+    }
+    @keyframes sparkle {
+      0%   { opacity: 0; transform: translateY(0) scale(0.5); }
+      50%  { opacity: 1; transform: translateY(-40px) scale(1); }
+      100% { opacity: 0; transform: translateY(-80px) scale(0.5); }
+    }
+    @keyframes letterPop {
+      0%   { transform: scale(1); }
+      50%  { transform: scale(1.25); }
+      100% { transform: scale(1); }
+    }
+
+    .celebrate .word-letter.revealed {
+      animation: letterPop 400ms ease;
+    }
+    .word-letter.pop {
+      animation: letterPop 300ms ease;
+    }
+
+    .sparkle-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 100;
+    }
+    .sparkle {
+      position: absolute;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      animation: sparkle 1s ease-out forwards;
+    }
+
+    /* keyboard hint */
+    .kbd-hint {
+      margin: 12px 0 0;
+      font-size: 13px;
+      color: var(--color-muted);
+    }
+    .kbd-hint kbd {
+      font: inherit;
+      font-size: 12px;
+      padding: 2px 6px;
+      border: 1px solid var(--color-border);
+      border-bottom-width: 2px;
+      border-radius: 4px;
+      background: var(--color-surface);
+      color: var(--color-text);
+    }
+
+    /* mobile */
+    @media (max-width: 480px) {
+      .stage { padding: 24px 12px; }
+      .top { padding: 16px 20px; }
+      .game-title { font-size: 24px; }
+      .word-letter { width: 30px; height: 38px; font-size: 22px; }
+      .key { width: 28px; height: 36px; font-size: 12px; }
+      .status-bar { gap: 16px; }
+      .hangman-area { width: 130px; height: 150px; }
+    }
+    @media (max-width: 360px) {
+      .word-letter { width: 24px; height: 34px; font-size: 18px; gap: 3px; }
+      .key { width: 24px; height: 32px; font-size: 11px; }
+      .keyboard-row { gap: 3px; }
+    }
+
+    /* reduced motion */
+    @media (prefers-reduced-motion: reduce) {
+      .btn { transition: none; }
+      .key { transition: none; }
+      .celebrate .word-letter.revealed,
+      .word-letter.pop { animation: none; }
+      .hangman-part { transition: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <header class="top">
+    <div class="brand"><b>猜单词</b> · Hangman</div>
+  </header>
+
+  <main class="stage" aria-label="猜单词游戏">
+    <h1 class="game-title">猜单词</h1>
+    <p class="game-subtitle">每次猜一个字母，猜错 6 次就输了！</p>
+
+    <!-- category hint -->
+    <div id="categoryHint" class="category-hint"></div>
+
+    <!-- hangman drawing -->
+    <div class="hangman-area" aria-hidden="true">
+      <svg viewBox="0 0 160 180" xmlns="http://www.w3.org/2000/svg">
+        <!-- gallows base -->
+        <line class="hangman-gallows" x1="20" y1="170" x2="140" y2="170" />
+        <line class="hangman-gallows" x1="60" y1="170" x2="60" y2="10" />
+        <line class="hangman-gallows" x1="60" y1="10" x2="120" y2="10" />
+        <line class="hangman-gallows" x1="120" y1="10" x2="120" y2="32" />
+        <!-- rope -->
+        <line class="hangman-part" id="part-rope" x1="120" y1="32" x2="120" y2="48" />
+        <!-- head -->
+        <circle class="hangman-part" id="part-head" cx="120" cy="60" r="12" />
+        <!-- body -->
+        <line class="hangman-part" id="part-body" x1="120" y1="72" x2="120" y2="112" />
+        <!-- left arm -->
+        <line class="hangman-part" id="part-left-arm" x1="120" y1="80" x2="100" y2="96" />
+        <!-- right arm -->
+        <line class="hangman-part" id="part-right-arm" x1="120" y1="80" x2="140" y2="96" />
+        <!-- left leg -->
+        <line class="hangman-part" id="part-left-leg" x1="120" y1="112" x2="102" y2="140" />
+        <!-- right leg -->
+        <line class="hangman-part" id="part-right-leg" x1="120" y1="112" x2="138" y2="140" />
+      </svg>
+    </div>
+
+    <!-- word display -->
+    <div id="wordDisplay" class="word-display" role="status" aria-live="polite"></div>
+
+    <!-- message -->
+    <div id="message" class="message hint-idle" role="status" aria-live="polite">
+      按键盘上的字母键开始猜
+    </div>
+
+    <!-- wrong letters -->
+    <div id="wrongLettersArea" class="wrong-letters-area" aria-label="猜错的字母"></div>
+
+    <!-- status bar -->
+    <div class="status-bar" id="stats">
+      <div class="stat-item">
+        <span class="stat-value" id="remainingCount">6</span>
+        <span class="stat-label">剩余次数</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-value" id="scoreCount">0</span>
+        <span class="stat-label">得分</span>
+      </div>
+    </div>
+
+    <!-- hint button -->
+    <div class="hint-area">
+      <button id="hintBtn" class="btn-hint" type="button">💡 提示</button>
+    </div>
+
+    <!-- on-screen keyboard -->
+    <div class="keyboard" id="keyboard" role="group" aria-label="字母键盘">
+      <div class="keyboard-row">
+        <button class="key" data-letter="Q">Q</button>
+        <button class="key" data-letter="W">W</button>
+        <button class="key" data-letter="E">E</button>
+        <button class="key" data-letter="R">R</button>
+        <button class="key" data-letter="T">T</button>
+        <button class="key" data-letter="Y">Y</button>
+        <button class="key" data-letter="U">U</button>
+        <button class="key" data-letter="I">I</button>
+        <button class="key" data-letter="O">O</button>
+        <button class="key" data-letter="P">P</button>
+      </div>
+      <div class="keyboard-row">
+        <button class="key" data-letter="A">A</button>
+        <button class="key" data-letter="S">S</button>
+        <button class="key" data-letter="D">D</button>
+        <button class="key" data-letter="F">F</button>
+        <button class="key" data-letter="G">G</button>
+        <button class="key" data-letter="H">H</button>
+        <button class="key" data-letter="J">J</button>
+        <button class="key" data-letter="K">K</button>
+        <button class="key" data-letter="L">L</button>
+      </div>
+      <div class="keyboard-row">
+        <button class="key" data-letter="Z">Z</button>
+        <button class="key" data-letter="X">X</button>
+        <button class="key" data-letter="C">C</button>
+        <button class="key" data-letter="V">V</button>
+        <button class="key" data-letter="B">B</button>
+        <button class="key" data-letter="N">N</button>
+        <button class="key" data-letter="M">M</button>
+      </div>
+    </div>
+
+    <!-- action buttons -->
+    <button id="newGameBtn" class="btn btn-new" type="button">新一局</button>
+
+    <p class="kbd-hint" aria-hidden="true">按字母键 或 点击键盘猜字母</p>
+  </main>
+
+  <div id="sparkleContainer" class="sparkle-container" aria-hidden="true"></div>
+
+  <script>
+    (function () {
+      'use strict';
+
+      // ---- word bank (40+ words) ----
+      var WORD_BANK = [
+        // animals
+        { word: 'PANDA',    hint: '动物（黑白相间）' },
+        { word: 'DOLPHIN',  hint: '动物（海洋聪明）' },
+        { word: 'GIRAFFE',  hint: '动物（脖子最长）' },
+        { word: 'PENGUIN',  hint: '动物（不会飞但会游泳）' },
+        { word: 'ELEPHANT', hint: '动物（体型最大）' },
+        { word: 'KANGAROO', hint: '动物（用跳代替走）' },
+        { word: 'CHEETAH',  hint: '动物（跑得最快）' },
+        { word: 'OCTOPUS',  hint: '动物（八条触手）' },
+        // food
+        { word: 'PIZZA',    hint: '食物（意式烤饼）' },
+        { word: 'BURGER',   hint: '食物（夹肉面包）' },
+        { word: 'SUSHI',    hint: '食物（日式米饭卷）' },
+        { word: 'POPCORN',  hint: '食物（电影院标配）' },
+        { word: 'WAFFLE',   hint: '食物（格子状早餐）' },
+        // nature
+        { word: 'GALAXY',   hint: '天文（浩瀚星空）' },
+        { word: 'VOLCANO',  hint: '地质（会喷岩浆）' },
+        { word: 'DESERT',   hint: '地理（非常干燥）' },
+        { word: 'FOREST',   hint: '地理（树木茂盛）' },
+        { word: 'OCEAN',    hint: '地理（占地球70%）' },
+        { word: 'ISLAND',   hint: '地理（四面环水）' },
+        { word: 'CANYON',   hint: '地理（深谷地貌）' },
+        // sports
+        { word: 'SOCCER',   hint: '运动（踢的球）' },
+        { word: 'TENNIS',   hint: '运动（网拍击球）' },
+        { word: 'HOCKEY',   hint: '运动（冰上曲棍）' },
+        { word: 'BOWLING',  hint: '运动（球瓶全倒）' },
+        // daily
+        { word: 'GUITAR',   hint: '乐器（六根弦）' },
+        { word: 'PIANO',    hint: '乐器（黑白琴键）' },
+        { word: 'CAMERA',   hint: '设备（捕捉影像）' },
+        { word: 'WINDOW',   hint: '房屋（采光通风）' },
+        { word: 'BRIDGE',   hint: '建筑（跨越河流）' },
+        { word: 'CASTLE',   hint: '建筑（国王住所）' },
+        { word: 'CLOCK',    hint: '物品（显示时间）' },
+        // more varied
+        { word: 'JUNGLE',   hint: '环境（热带密林）' },
+        { word: 'PLANET',   hint: '天文（绕太阳转）' },
+        { word: 'ROCKET',   hint: '航天（飞向太空）' },
+        { word: 'DIAMOND',  hint: '宝石（最坚硬）' },
+        { word: 'PUZZLE',   hint: '游戏（拼图思考）' },
+        { word: 'TORNADO',  hint: '天气（旋转风暴）' },
+        { word: 'CIRCUS',   hint: '娱乐（马戏团表演）' },
+        { word: 'PYTHON',   hint: '编程（语言/蛇）' },
+        { word: 'NINJA',    hint: '职业（日本忍者）' },
+        { word: 'PIRATE',   hint: '职业（海上劫匪）' },
+        { word: 'WIZARD',   hint: '传说（魔法师）' },
+        { word: 'DRAGON',   hint: '传说（喷火巨兽）' },
+        { word: 'KNIGHT',   hint: '传说（身穿铠甲）' },
+      ];
+
+      var MAX_WRONG = 6;
+
+      // ---- DOM refs ----
+      var wordDisplay      = document.getElementById('wordDisplay');
+      var messageEl        = document.getElementById('message');
+      var remainingCount   = document.getElementById('remainingCount');
+      var scoreCount       = document.getElementById('scoreCount');
+      var wrongLettersArea = document.getElementById('wrongLettersArea');
+      var keyboardEl       = document.getElementById('keyboard');
+      var newGameBtn       = document.getElementById('newGameBtn');
+      var hintBtn          = document.getElementById('hintBtn');
+      var categoryHint     = document.getElementById('categoryHint');
+      var sparkleContainer = document.getElementById('sparkleContainer');
+      var stageEl          = document.querySelector('.stage');
+
+      var SPARKLE_COLORS = [
+        'oklch(0.60 0.18 150 / 0.8)',
+        'oklch(0.55 0.18 250 / 0.8)',
+        'oklch(0.65 0.16 70  / 0.8)',
+        'oklch(0.70 0.18 330 / 0.8)',
+        'oklch(0.80 0.15 80  / 0.8)',
+      ];
+
+      // ---- game state ----
+      var currentEntry   = null;  // { word, hint }
+      var guessedLetters = {};    // { 'A': true, 'B': false, ... } false = wrong
+      var wrongCount     = 0;
+      var gameOver       = false;
+      var score          = 0;
+
+      // ---- helpers ----
+      function pickRandom(arr) {
+        var i = Math.floor(Math.random() * arr.length);
+        return arr[i];
+      }
+
+      function setMessage(text, className) {
+        messageEl.textContent = text;
+        messageEl.className = 'message ' + (className || 'hint-idle');
+      }
+
+      function updateRemaining() {
+        var rem = MAX_WRONG - wrongCount;
+        remainingCount.textContent = rem;
+        remainingCount.className = 'stat-value';
+        if (rem <= 1) {
+          remainingCount.classList.add('remaining-danger');
+        } else if (rem <= 3) {
+          remainingCount.classList.add('remaining-warn');
+        } else {
+          remainingCount.classList.add('remaining-good');
+        }
+      }
+
+      function updateScore() {
+        scoreCount.textContent = score;
+      }
+
+      // ---- hangman SVG parts ----
+      var HANGMAN_PARTS = [
+        'part-rope',
+        'part-head',
+        'part-body',
+        'part-left-arm',
+        'part-right-arm',
+        'part-left-leg',
+        'part-right-leg',
+      ];
+
+      function updateHangman() {
+        for (var i = 0; i < HANGMAN_PARTS.length; i++) {
+          var el = document.getElementById(HANGMAN_PARTS[i]);
+          if (el) {
+            el.classList.toggle('show', i < wrongCount);
+          }
+        }
+      }
+
+      // ---- word display ----
+      function renderWord() {
+        if (!currentEntry) return;
+        var word = currentEntry.word;
+        var html = '';
+        for (var i = 0; i < word.length; i++) {
+          var ch = word[i];
+          if (ch === ' ') {
+            html += '<span class="word-letter space"></span>';
+          } else {
+            var revealed = guessedLetters[ch] === true;
+            html += '<span class="word-letter' + (revealed ? ' revealed' : '') + '" data-index="' + i + '">' +
+                    (revealed ? ch : '') +
+                    '</span>';
+          }
+        }
+        wordDisplay.innerHTML = html;
+      }
+
+      function popLetter(index) {
+        var spans = wordDisplay.querySelectorAll('.word-letter');
+        if (spans[index]) {
+          spans[index].classList.add('pop');
+        }
+      }
+
+      // ---- wrong letters display ----
+      function renderWrongLetters() {
+        var wrongs = [];
+        for (var l in guessedLetters) {
+          if (guessedLetters[l] === false) {
+            wrongs.push(l);
+          }
+        }
+        if (wrongs.length === 0) {
+          wrongLettersArea.innerHTML = '';
+          return;
+        }
+        var html = '';
+        for (var i = 0; i < wrongs.length; i++) {
+          html += '<span class="wrong-letter-chip">' + wrongs[i] + '</span>';
+        }
+        wrongLettersArea.innerHTML = html;
+      }
+
+      // ---- keyboard ----
+      var keyboardKeys = {};
+
+      function initKeyboard() {
+        var keys = keyboardEl.querySelectorAll('.key');
+        for (var i = 0; i < keys.length; i++) {
+          var k = keys[i];
+          (function (keyEl) {
+            keyEl.addEventListener('click', function () {
+              var letter = keyEl.getAttribute('data-letter');
+              if (letter) handleGuess(letter);
+            });
+          })(k);
+          var letter = k.getAttribute('data-letter');
+          if (letter) keyboardKeys[letter] = k;
+        }
+      }
+
+      function updateKeyboard() {
+        for (var l in guessedLetters) {
+          var key = keyboardKeys[l];
+          if (!key) continue;
+          key.className = 'key';
+          if (guessedLetters[l] === true) {
+            key.classList.add('used-correct');
+          } else {
+            key.classList.add('used-wrong');
+          }
+          key.disabled = true;
+        }
+      }
+
+      function resetKeyboard() {
+        var keys = keyboardEl.querySelectorAll('.key');
+        for (var i = 0; i < keys.length; i++) {
+          keys[i].className = 'key';
+          keys[i].disabled = false;
+        }
+      }
+
+      // ---- sparkles ----
+      function createSparkles() {
+        var count = 40;
+        for (var i = 0; i < count; i++) {
+          var el = document.createElement('div');
+          el.className = 'sparkle';
+          el.style.left = (10 + Math.random() * 80) + '%';
+          el.style.top = (20 + Math.random() * 60) + '%';
+          el.style.background = SPARKLE_COLORS[Math.floor(Math.random() * SPARKLE_COLORS.length)];
+          el.style.width = el.style.height = (4 + Math.random() * 8) + 'px';
+          el.style.animationDelay = (Math.random() * 0.8) + 's';
+          sparkleContainer.appendChild(el);
+        }
+        setTimeout(function () {
+          sparkleContainer.innerHTML = '';
+        }, 1800);
+      }
+
+      // ---- hint ----
+      var hintUsedForCurrentWord = false;
+      var hintRevealedIndex = -1;
+
+      function useHint() {
+        if (!currentEntry || gameOver || hintUsedForCurrentWord) return;
+        var word = currentEntry.word;
+        // Find unrevealed letters
+        var unrevealed = [];
+        for (var i = 0; i < word.length; i++) {
+          var ch = word[i];
+          if (ch !== ' ' && guessedLetters[ch] !== true) {
+            if (unrevealed.indexOf(ch) === -1) {
+              unrevealed.push(ch);
+            }
+          }
+        }
+        if (unrevealed.length === 0) {
+          setMessage('所有字母已猜出，请继续完成！', 'hint-info');
+          return;
+        }
+        // Reveal one random unrevealed letter
+        var hintLetter = unrevealed[Math.floor(Math.random() * unrevealed.length)];
+        // Deep copy guessedLetters and set the letter as guessed
+        guessedLetters[hintLetter] = true;
+        hintUsedForCurrentWord = true;
+        setMessage('提示：字母 ' + hintLetter + ' ✓', 'hint-correct');
+        renderWord();
+        updateKeyboard();
+        // Pop animation for the revealed letters
+        for (var j = 0; j < word.length; j++) {
+          if (word[j] === hintLetter) {
+            popLetter(j);
+          }
+        }
+        // Check if the hint just finished the game
+        checkWinLose();
+      }
+
+      // ---- core game ----
+      function initGame() {
+        currentEntry = pickRandom(WORD_BANK);
+        guessedLetters = {};
+        wrongCount = 0;
+        gameOver = false;
+        hintUsedForCurrentWord = false;
+
+        categoryHint.textContent = '💡 ' + currentEntry.hint;
+        hintBtn.disabled = false;
+
+        renderWord();
+        updateHangman();
+        updateRemaining();
+        renderWrongLetters();
+        resetKeyboard();
+        stageEl.classList.remove('celebrate');
+        setMessage('猜一个字母，开始！', 'hint-idle');
+      }
+
+      function checkWinLose() {
+        if (!currentEntry) return false;
+        var word = currentEntry.word;
+
+        // Check win: every non-space letter guessed correctly
+        var allGuessed = true;
+        for (var i = 0; i < word.length; i++) {
+          var ch = word[i];
+          if (ch !== ' ' && guessedLetters[ch] !== true) {
+            allGuessed = false;
+            break;
+          }
+        }
+
+        if (allGuessed) {
+          gameOver = true;
+          score++;
+          updateScore();
+          setMessage('🎉 恭喜！你猜对了单词 ' + word + '！', 'hint-win');
+          stageEl.classList.add('celebrate');
+          createSparkles();
+          disableAllKeys();
+          hintBtn.disabled = true;
+          return true;
+        }
+
+        if (wrongCount >= MAX_WRONG) {
+          gameOver = true;
+          setMessage('😢 游戏结束！单词是 ' + word + '，再接再厉！', 'hint-lose');
+          // Reveal all letters
+          for (var j = 0; j < word.length; j++) {
+            var c = word[j];
+            if (c !== ' ') {
+              guessedLetters[c] = true;
+            }
+          }
+          renderWord();
+          disableAllKeys();
+          hintBtn.disabled = true;
+          return true;
+        }
+
+        return false;
+      }
+
+      function disableAllKeys() {
+        var keys = keyboardEl.querySelectorAll('.key');
+        for (var i = 0; i < keys.length; i++) {
+          keys[i].disabled = true;
+        }
+      }
+
+      function handleGuess(letter) {
+        if (gameOver || !currentEntry) return;
+
+        letter = letter.toUpperCase();
+        if (letter.length !== 1 || letter < 'A' || letter > 'Z') return;
+
+        // Already guessed
+        if (guessedLetters[letter] !== undefined) {
+          setMessage('字母 ' + letter + ' 已经猜过了', 'hint-info');
+          return;
+        }
+
+        var word = currentEntry.word;
+
+        if (word.indexOf(letter) !== -1) {
+          // Correct guess
+          guessedLetters[letter] = true;
+          // Pop animation for each occurrence
+          for (var i = 0; i < word.length; i++) {
+            if (word[i] === letter) {
+              popLetter(i);
+            }
+          }
+          setMessage('✓ ' + letter + ' 是对的！', 'hint-correct');
+        } else {
+          // Wrong guess
+          guessedLetters[letter] = false;
+          wrongCount++;
+          setMessage('✗ ' + letter + ' 不在单词中', 'hint-wrong');
+          updateHangman();
+        }
+
+        renderWord();
+        updateRemaining();
+        updateKeyboard();
+        renderWrongLetters();
+
+        checkWinLose();
+      }
+
+      // ---- keyboard input ----
+      function handleKeydown(e) {
+        if (gameOver) {
+          // Allow Enter to start new game when game is over
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            initGame();
+          }
+          return;
+        }
+
+        var key = e.key;
+        if (key.length === 1 && key >= 'a' && key <= 'z' || key >= 'A' && key <= 'Z') {
+          e.preventDefault();
+          handleGuess(key.toUpperCase());
+        }
+      }
+
+      // ---- new game ----
+      function startNewGame() {
+        initGame();
+      }
+
+      // ---- event binding ----
+      document.addEventListener('keydown', handleKeydown);
+      newGameBtn.addEventListener('click', startNewGame);
+      hintBtn.addEventListener('click', useHint);
+
+      // ---- init ----
+      initKeyboard();
+      initGame();
+    })();
+  </script>
+</body>
+</html>

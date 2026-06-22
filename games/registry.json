@@ -390,6 +390,18 @@
       "players": "1",
       "version": "1.0.0",
       "rating": 4.0
+    },
+    {
+      "id": "word-guess",
+      "name": "猜单词",
+      "description": "猜出隐藏的英文单词，每次猜错减少一次机会，Hangman 风格",
+      "category": "puzzle",
+      "tags": ["singleplayer", "word", "puzzle", "hangman"],
+      "path": "/games/word-guess/",
+      "hasServer": false,
+      "players": "1",
+      "version": "1.0.0",
+      "rating": 4.0
     }
   ],
   "categories": [
