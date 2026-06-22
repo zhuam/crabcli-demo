@@ -1428,6 +1428,15 @@
       function onKeyDown(e) {
         keys[e.key.toLowerCase()] = true;
 
+        // Restart from result (check before dodge, so Space restarts instead of dodging)
+        if (game && game.screen === 'result') {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            restartGame();
+            return;
+          }
+        }
+
         if (e.key === ' ') {
           e.preventDefault();
           if (game && game.screen === 'battle') {
@@ -1445,14 +1454,6 @@
           e.preventDefault();
           titleScreen.classList.add('hidden');
           startBattle();
-        }
-
-        // Restart from result
-        if (game && game.screen === 'result') {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            restartGame();
-          }
         }
       }
 
@@ -1538,7 +1539,7 @@
           e.preventDefault();
           const t = e.changedTouches[0];
           touchId = t.identifier;
-          onPointerDown({ type: 'touchstart', clientX: t.clientX, clientY: t.clientY, preventDefault: () => {} });
+          onPointerDown({ type: 'touchstart', clientX: t.clientX, clientY: t.clientY, changedTouches: [t], preventDefault: () => {} });
           // Two-finger = dodge
           if (e.touches.length >= 2 && game && game.screen === 'battle') {
             inputDodge = true;
