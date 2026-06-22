@@ -1,10 +1,14 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-framework="glass-arcade-v1">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>CrabCLI Arcade — Game Hub</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/hub/hub.css" />
+  <link rel="stylesheet" href="/hub/hub-v3.css" />
 </head>
 <body>
   <div id="app">
@@ -16,100 +20,79 @@
 
     <!-- Header -->
     <header class="header" id="header">
-      <div class="header-left">
-        <a href="/" class="logo">🦀 CrabCLI Arcade</a>
+      <div class="header-brand">
+        <svg class="brand-icon" width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="14" cy="14" r="12" stroke="url(#cg)" stroke-width="1.8" fill="rgba(108,92,231,0.15)"/><path d="M9 16c0-4 10-4 10 0M11 12l-2-3M17 12l2-3M14 8v4M14 16v4" stroke="url(#cg)" stroke-width="1.6" stroke-linecap="round"/><defs><linearGradient id="cg" x1="4" y1="4" x2="24" y2="24"><stop stop-color="#6C5CE7"/><stop offset="1" stop-color="#FD79A8"/></linearGradient></defs></svg>
+        <span>CrabCLI Arcade</span>
       </div>
-      <div class="header-center">
-        <div class="search-box">
-          <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
-          </svg>
-          <input id="search-input" type="text" placeholder="Search games..." autocomplete="off" />
+      <div class="search-container">
+        <div class="search-input-wrap">
+          <span class="search-icon">🔍</span>
+          <input type="text" id="search-input" placeholder="Search games..." autocomplete="off" aria-label="Search games">
+          <button class="search-clear" id="search-clear">✕</button>
         </div>
-        <button id="mobile-search-btn" class="search-icon-btn" aria-label="Search">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
-          </svg>
-        </button>
+        <div class="search-overlay" id="search-overlay">
+          <div id="search-overlay-content"></div>
+        </div>
       </div>
-      <div class="header-right">
-        <div id="auth-area">
-          <button id="auth-btn" class="btn btn-ghost">👤 Sign In</button>
-        </div>
+      <div class="header-actions" id="auth-area">
+        <button class="header-btn" id="fav-header-btn" title="Favorites">❤️</button>
+        <button class="header-btn" id="auth-btn" title="Profile">👤</button>
       </div>
     </header>
 
-    <!-- Mobile Search Bar (expanded) -->
+    <!-- Mobile Search Bar -->
     <div id="mobile-search-bar" class="mobile-search-bar" style="display:none;">
       <input id="mobile-search-input" class="search-input-full" type="text" placeholder="Search games..." autocomplete="off" />
       <button id="mobile-search-close" class="mobile-search-close" aria-label="Close search">&times;</button>
     </div>
 
-    <!-- Main Content -->
-    <main class="main">
-      <!-- Categories -->
-      <nav class="categories" id="categories">
-        <!-- Populated by JS -->
-      </nav>
-
-      <!-- Quick Access -->
-      <section class="quick-access" id="quick-access" style="display:none;">
-        <div class="quick-access-head">
-          <h2 class="section-title" id="quick-access-title">Quick Access</h2>
-          <span class="quick-access-subtitle" id="quick-access-subtitle">Playable picks ready to launch</span>
+    <!-- Hero Carousel -->
+    <section class="hero-section" id="hero-section">
+      <div class="hero-carousel" id="hero-carousel">
+        <div id="hero-slides"></div>
+        <div class="hero-controls">
+          <div class="hero-dots" id="hero-dots"></div>
+          <button class="hero-nav-btn" id="hero-prev" aria-label="Previous">‹</button>
+          <button class="hero-nav-btn" id="hero-next" aria-label="Next">›</button>
         </div>
-        <div class="quick-access-list" id="quick-access-list"></div>
-      </section>
+      </div>
+    </section>
 
-      <!-- Featured Section -->
-      <section class="featured" id="featured-section" style="display:none;">
-        <h2 class="section-title">⭐ Featured Games</h2>
-        <div class="featured-list" id="featured-list">
-          <!-- Populated by JS -->
-        </div>
-      </section>
+    <!-- Category Shelf -->
+    <section class="category-shelf">
+      <div class="category-scroll" id="category-scroll"></div>
+    </section>
 
-      <!-- Games Grid -->
-      <section class="games-section">
-        <div class="games-header">
-          <h2 class="section-title" id="games-title">All Games</h2>
-          <div class="sort-controls">
-            <select id="status-filter" class="sort-select" aria-label="Filter by availability">
-              <option value="all">All statuses</option>
-              <option value="playable">Playable</option>
-              <option value="coming-soon">Coming Soon</option>
-            </select>
-            <select id="sort-select" class="sort-select" aria-label="Sort games">
-              <option value="popular">🔥 Popular</option>
-              <option value="newest">🕐 Newest</option>
-              <option value="rating">⭐ Rating</option>
-              <option value="az">🔤 A-Z</option>
-            </select>
-            <span id="game-count" class="game-count"></span>
-          </div>
-        </div>
+    <!-- Controls Bar -->
+    <div class="controls-bar">
+      <span class="results-count" id="results-count">0 games</span>
+      <div class="sort-chips" id="sort-chips">
+        <button class="sort-chip active" data-sort="popular">🔥 Popular</button>
+        <button class="sort-chip" data-sort="newest">🕐 Newest</button>
+        <button class="sort-chip" data-sort="rating">⭐ Rating</button>
+        <button class="sort-chip" data-sort="az">🔤 A-Z</button>
+      </div>
+    </div>
 
-        <!-- Loading Skeleton -->
-        <div id="skeleton-container" class="games-grid" style="display:none;">
-          <!-- 8 skeleton cards rendered by JS -->
-        </div>
-
-        <div class="games-grid" id="games-grid">
-          <!-- Populated by JS -->
-        </div>
-
-        <!-- Load More Button -->
-        <div class="load-more-wrap" id="load-more-wrap" style="display:none;">
-          <button id="load-more-btn" class="load-more-btn">Load More</button>
-        </div>
-      </section>
-    </main>
-
-    <!-- Footer -->
-    <footer class="footer">
-      <p>🦀 CrabCLI Arcade — <span id="total-games">0</span> games and counting</p>
-    </footer>
+    <!-- Games Grid -->
+    <section class="games-section">
+      <div class="games-grid" id="games-grid"></div>
+      <div class="load-more-wrap" id="load-more-wrap" style="display:none;">
+        <button class="load-more-btn" id="load-more-btn">Show 8 more</button>
+      </div>
+    </section>
   </div>
+
+  <!-- Toast Container -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <!-- Mobile Bottom Nav -->
+  <nav class="mobile-bottom-nav" id="mobile-nav">
+    <button class="nav-tab active" data-tab="home"><span class="nav-icon">🏠</span><span class="nav-label">Home</span></button>
+    <button class="nav-tab" data-tab="search"><span class="nav-icon">🔍</span><span class="nav-label">Search</span></button>
+    <button class="nav-tab" data-tab="favorites"><span class="nav-icon">❤️</span><span class="nav-label">Favorites</span></button>
+    <button class="nav-tab" data-tab="profile"><span class="nav-icon">👤</span><span class="nav-label">Profile</span></button>
+  </nav>
 
   <!-- Auth Modal -->
   <div id="auth-modal" class="modal-overlay" style="display:none;">
@@ -162,6 +145,6 @@
     </div>
   </div>
 
-  <script src="/hub/hub.js"></script>
+  <script src="/hub/hub.js" type="text/javascript"></script>
 </body>
 </html>
