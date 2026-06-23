@@ -1,150 +1,1402 @@
 <!DOCTYPE html>
-<html lang="en" data-framework="glass-arcade-v1">
+<html lang="zh-CN">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>CrabCLI Arcade — Game Hub</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/hub/hub.css" />
-  <link rel="stylesheet" href="/hub/hub-v3.css" />
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CrabCLI 游戏大厅</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ===== Glassmorphism DS Variables ===== */
+:root {
+  --primary: #1856FF;
+  --primary-glow: rgba(24, 86, 255, 0.4);
+  --secondary: #3A344E;
+  --success: #07CA6B;
+  --warning: #E89558;
+  --danger: #EA2143;
+  --gold: #FFD700;
+  --gold-glow: rgba(255, 215, 0, 0.3);
+  --surface: rgba(255, 255, 255, 0.06);
+  --surface-hover: rgba(255, 255, 255, 0.10);
+  --surface-active: rgba(255, 255, 255, 0.14);
+  --text-primary: #F0F2FF;
+  --text-secondary: rgba(240, 242, 255, 0.75);
+  --text-dim: rgba(240, 242, 255, 0.45);
+  --border-light: rgba(255, 255, 255, 0.08);
+  --border-glow: rgba(24, 86, 255, 0.25);
+  --bg-deep: #080C1A;
+  --bg-gradient-1: #0D1233;
+  --bg-gradient-2: #1A0F2E;
+  --bg-gradient-3: #0A1628;
+  --glass-blur: blur(20px);
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  --shadow-card: 0 8px 32px rgba(0,0,0,0.3);
+  --shadow-glow: 0 0 30px rgba(24, 86, 255, 0.15);
+  --font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+  --transition-fast: 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-med: 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: var(--font-family);
+  background: var(--bg-deep);
+  color: var(--text-primary);
+  min-height: 100vh;
+  overflow-x: hidden;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ===== Animated Background ===== */
+#bg-canvas {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+#bg-canvas::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 80% 60% at 10% 20%, rgba(24, 86, 255, 0.08), transparent),
+    radial-gradient(ellipse 60% 50% at 90% 80%, rgba(106, 13, 173, 0.10), transparent),
+    radial-gradient(ellipse 50% 40% at 50% 50%, rgba(0, 20, 80, 0.12), transparent);
+}
+.star {
+  position: absolute;
+  width: 2px;
+  height: 2px;
+  background: rgba(255,255,255,0.5);
+  border-radius: 50%;
+  animation: twinkle var(--dur, 3s) ease-in-out infinite alternate;
+}
+@keyframes twinkle {
+  0% { opacity: 0.2; transform: scale(0.8); }
+  100% { opacity: 1; transform: scale(1.2); }
+}
+.orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  pointer-events: none;
+  opacity: 0.3;
+  animation: orbFloat 20s ease-in-out infinite alternate;
+}
+.orb-1 {
+  width: 500px; height: 500px;
+  background: radial-gradient(circle, rgba(24,86,255,0.15), transparent);
+  top: -10%; left: -5%;
+  animation-duration: 25s;
+}
+.orb-2 {
+  width: 400px; height: 400px;
+  background: radial-gradient(circle, rgba(106,13,173,0.12), transparent);
+  bottom: -5%; right: -5%;
+  animation-duration: 20s;
+  animation-delay: -5s;
+}
+.orb-3 {
+  width: 300px; height: 300px;
+  background: radial-gradient(circle, rgba(255,215,0,0.06), transparent);
+  top: 40%; left: 50%;
+  animation-duration: 30s;
+  animation-delay: -10s;
+}
+@keyframes orbFloat {
+  0% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(30px, -20px) scale(1.05); }
+  66% { transform: translate(-20px, 15px) scale(0.95); }
+  100% { transform: translate(15px, -10px) scale(1.02); }
+}
+
+/* ===== Layout ===== */
+#app {
+  position: relative;
+  z-index: 1;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 24px 60px;
+}
+
+/* ===== Top Navigation ===== */
+.top-nav {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--border-light);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: rgba(8, 12, 26, 0.85);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  margin-bottom: 32px;
+}
+.top-nav .brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--text-primary);
+  text-decoration: none;
+  white-space: nowrap;
+}
+.top-nav .brand-icon {
+  width: 36px; height: 36px;
+  background: linear-gradient(135deg, var(--primary), #6A0DAD);
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  font-weight: 700;
+  color: #fff;
+}
+.nav-links {
+  display: flex;
+  gap: 4px;
+  margin-left: 16px;
+}
+.nav-link {
+  padding: 8px 16px;
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+  transition: var(--transition-fast);
+  cursor: pointer;
+  background: none;
+  border: none;
+  font-family: var(--font-family);
+}
+.nav-link:hover { color: var(--text-primary); background: var(--surface); }
+.nav-link.active {
+  color: #fff;
+  background: rgba(24, 86, 255, 0.15);
+  box-shadow: inset 0 -2px 0 var(--primary);
+}
+.search-container {
+  position: relative;
+  flex: 1;
+  max-width: 360px;
+  margin-left: auto;
+}
+.search-input {
+  width: 100%;
+  padding: 10px 16px 10px 40px;
+  background: var(--surface);
+  border: 1px solid var(--border-light);
+  border-radius: 100px;
+  color: var(--text-primary);
+  font-size: 14px;
+  font-family: var(--font-family);
+  transition: var(--transition-fast);
+  outline: none;
+}
+.search-input::placeholder { color: var(--text-dim); }
+.search-input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-glow);
+  background: rgba(255,255,255,0.08);
+}
+.search-icon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-dim);
+  font-size: 16px;
+  pointer-events: none;
+}
+.auth-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 20px;
+  border-radius: 100px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: var(--font-family);
+  border: none;
+  cursor: pointer;
+  transition: var(--transition-fast);
+  text-decoration: none;
+  white-space: nowrap;
+}
+.btn-primary {
+  background: var(--primary);
+  color: #fff;
+  box-shadow: 0 4px 15px var(--primary-glow);
+}
+.btn-primary:hover {
+  background: #2A6AFF;
+  box-shadow: 0 6px 25px var(--primary-glow);
+  transform: translateY(-1px);
+}
+.btn-ghost {
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1px solid var(--border-light);
+}
+.btn-ghost:hover { background: var(--surface); color: var(--text-primary); }
+.btn-gold {
+  background: linear-gradient(135deg, #FFD700, #FFA500);
+  color: #1a1a2e;
+  box-shadow: 0 4px 15px var(--gold-glow);
+}
+.btn-gold:hover {
+  box-shadow: 0 6px 25px var(--gold-glow);
+  transform: translateY(-1px);
+}
+
+/* ===== Hero Section ===== */
+.hero-section {
+  position: relative;
+  margin-bottom: 40px;
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+  min-height: 380px;
+  background: linear-gradient(135deg, #0F1A3A, #1A1040);
+  border: 1px solid var(--border-light);
+}
+.hero-slide {
+  display: none;
+  padding: 48px 48px 40px;
+  position: relative;
+  min-height: 380px;
+  align-items: flex-end;
+  gap: 32px;
+}
+.hero-slide.active { display: flex; }
+.hero-bg-glow {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.hero-bg-glow .glow {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(100px);
+  opacity: 0.4;
+}
+.hero-content {
+  flex: 1;
+  position: relative;
+  z-index: 1;
+}
+.hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 14px;
+  background: var(--gold);
+  color: #1a1a2e;
+  border-radius: 100px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 16px;
+}
+.hero-title {
+  font-size: 36px;
+  font-weight: 800;
+  line-height: 1.2;
+  margin-bottom: 12px;
+  color: #fff;
+}
+.hero-desc {
+  font-size: 16px;
+  color: var(--text-secondary);
+  max-width: 480px;
+  margin-bottom: 20px;
+  line-height: 1.6;
+}
+.hero-meta {
+  display: flex;
+  gap: 24px;
+  margin-bottom: 20px;
+  font-size: 13px;
+  color: var(--text-dim);
+}
+.hero-meta span {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.hero-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+.hero-art {
+  flex: 0 0 220px;
+  height: 220px;
+  border-radius: var(--radius-lg);
+  position: relative;
+  z-index: 1;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 64px;
+  background: linear-gradient(135deg, rgba(24,86,255,0.2), rgba(106,13,173,0.2));
+  border: 1px solid var(--border-light);
+}
+.hero-dots {
+  position: absolute;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 8px;
+  z-index: 2;
+}
+.hero-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.2);
+  border: none;
+  cursor: pointer;
+  transition: var(--transition-fast);
+  padding: 0;
+}
+.hero-dot.active { background: var(--primary); width: 24px; border-radius: 4px; }
+
+/* ===== Section Headers ===== */
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+.section-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.section-title .emoji { font-size: 24px; }
+.section-more {
+  color: var(--text-dim);
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+  cursor: pointer;
+  transition: var(--transition-fast);
+  background: none;
+  border: none;
+  font-family: var(--font-family);
+  padding: 4px 12px;
+  border-radius: var(--radius-sm);
+}
+.section-more:hover { color: var(--primary); background: rgba(24,86,255,0.08); }
+
+/* ===== Trending Horizontal Scroll ===== */
+.trending-section { margin-bottom: 40px; }
+.trending-scroll {
+  display: flex;
+  gap: 16px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  padding: 4px 0 8px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.trending-scroll::-webkit-scrollbar { display: none; }
+.trending-card {
+  flex: 0 0 220px;
+  scroll-snap-align: start;
+  background: var(--surface);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  cursor: pointer;
+  transition: var(--transition-med);
+  text-decoration: none;
+  color: inherit;
+  display: block;
+}
+.trending-card:hover {
+  transform: translateY(-4px);
+  background: var(--surface-hover);
+  border-color: var(--border-glow);
+  box-shadow: var(--shadow-glow);
+}
+.trending-card-cover {
+  height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 40px;
+  position: relative;
+  overflow: hidden;
+}
+.trending-card-cover .hot-badge {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  padding: 2px 10px;
+  background: var(--danger);
+  color: #fff;
+  border-radius: 100px;
+  font-size: 11px;
+  font-weight: 700;
+}
+.trending-card-body {
+  padding: 12px 14px 14px;
+}
+.trending-card-body h4 {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.trending-card-body .meta {
+  display: flex;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--text-dim);
+}
+.trending-card-body .stars {
+  color: var(--gold);
+  font-size: 12px;
+}
+
+/* ===== New Releases ===== */
+.new-section { margin-bottom: 40px; }
+.new-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+.new-card {
+  background: var(--surface);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  cursor: pointer;
+  transition: var(--transition-med);
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  text-decoration: none;
+  color: inherit;
+}
+.new-card:hover {
+  background: var(--surface-hover);
+  border-color: var(--border-glow);
+  transform: translateY(-2px);
+}
+.new-card-icon {
+  width: 48px; height: 48px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  flex-shrink: 0;
+  background: rgba(24,86,255,0.1);
+}
+.new-card-info h4 {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+.new-card-info .tag {
+  font-size: 12px;
+  color: var(--text-dim);
+}
+.new-badge {
+  padding: 2px 8px;
+  background: var(--success);
+  color: #fff;
+  border-radius: 100px;
+  font-size: 10px;
+  font-weight: 700;
+  margin-left: 8px;
+}
+
+/* ===== Category Pills ===== */
+.category-section { margin-bottom: 40px; }
+.category-pills {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  padding: 2px 0;
+}
+.category-pills::-webkit-scrollbar { display: none; }
+.category-pill {
+  flex-shrink: 0;
+  padding: 10px 22px;
+  border-radius: 100px;
+  background: var(--surface);
+  border: 1px solid var(--border-light);
+  color: var(--text-secondary);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: var(--transition-fast);
+  font-family: var(--font-family);
+  white-space: nowrap;
+}
+.category-pill:hover { background: var(--surface-hover); color: var(--text-primary); }
+.category-pill.active {
+  background: rgba(24, 86, 255, 0.2);
+  border-color: var(--primary);
+  color: #fff;
+  box-shadow: 0 0 15px var(--primary-glow);
+}
+
+/* ===== Filter Bar ===== */
+.filter-bar {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 24px;
+  padding: 16px 20px;
+  background: var(--surface);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+}
+.filter-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.filter-label {
+  font-size: 13px;
+  color: var(--text-dim);
+  font-weight: 500;
+  white-space: nowrap;
+}
+.tag-chip {
+  padding: 5px 12px;
+  border-radius: 100px;
+  font-size: 12px;
+  font-weight: 500;
+  background: transparent;
+  border: 1px solid var(--border-light);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: var(--transition-fast);
+  font-family: var(--font-family);
+}
+.tag-chip:hover { border-color: var(--primary); color: var(--text-primary); }
+.tag-chip.active {
+  background: rgba(24,86,255,0.15);
+  border-color: var(--primary);
+  color: #fff;
+}
+.filter-divider {
+  width: 1px;
+  height: 24px;
+  background: var(--border-light);
+}
+.sort-select {
+  padding: 6px 12px;
+  background: transparent;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-family: var(--font-family);
+  cursor: pointer;
+  outline: none;
+}
+.sort-select:focus { border-color: var(--primary); }
+.sort-select option { background: #1a1a2e; color: #fff; }
+.filter-results-count {
+  margin-left: auto;
+  font-size: 13px;
+  color: var(--text-dim);
+}
+
+/* ===== Game Grid ===== */
+.game-grid-section { margin-bottom: 40px; }
+.game-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 18px;
+}
+.game-card {
+  background: var(--surface);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  cursor: pointer;
+  transition: var(--transition-med);
+  position: relative;
+  text-decoration: none;
+  color: inherit;
+  display: block;
+}
+.game-card:hover {
+  transform: translateY(-6px);
+  background: var(--surface-hover);
+  border-color: var(--border-glow);
+  box-shadow: 0 12px 40px rgba(24,86,255,0.12);
+}
+.game-card-cover {
+  height: 150px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 48px;
+  position: relative;
+  overflow: hidden;
+}
+.game-card-cover::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, transparent 50%, rgba(8,12,26,0.6));
+  pointer-events: none;
+}
+.game-card-cover .status-badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  padding: 3px 10px;
+  border-radius: 100px;
+  font-size: 11px;
+  font-weight: 700;
+  z-index: 2;
+  backdrop-filter: blur(8px);
+}
+.status-badge.playable {
+  background: rgba(7, 202, 107, 0.2);
+  color: var(--success);
+  border: 1px solid rgba(7, 202, 107, 0.3);
+}
+.status-badge.coming-soon {
+  background: rgba(232, 149, 88, 0.2);
+  color: var(--warning);
+  border: 1px solid rgba(232, 149, 88, 0.3);
+}
+.game-card-cover .hot-badge {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 2;
+  font-size: 14px;
+}
+.game-card-body {
+  padding: 14px 16px 16px;
+}
+.game-card-body h3 {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.game-card-body p {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin-bottom: 10px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.game-card-tags {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+.game-card-tags .tag {
+  padding: 2px 8px;
+  background: rgba(255,255,255,0.04);
+  border-radius: 100px;
+  font-size: 11px;
+  color: var(--text-dim);
+}
+.game-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 10px;
+  border-top: 1px solid var(--border-light);
+}
+.game-card-footer .rating {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  color: var(--gold);
+  font-weight: 600;
+}
+.game-card-footer .players {
+  font-size: 12px;
+  color: var(--text-dim);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.game-card-footer .fav-btn {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  font-size: 18px;
+  transition: var(--transition-fast);
+  padding: 4px;
+  line-height: 1;
+}
+.game-card-footer .fav-btn:hover { color: var(--danger); transform: scale(1.15); }
+.game-card-footer .fav-btn.active { color: var(--danger); }
+
+/* ===== Play overlay ===== */
+.play-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(8,12,26,0.75);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: var(--transition-med);
+  z-index: 3;
+  border-radius: var(--radius-md);
+}
+.game-card:hover .play-overlay { opacity: 1; }
+.play-btn-icon {
+  width: 56px; height: 56px;
+  border-radius: 50%;
+  background: var(--primary);
+  border: none;
+  color: #fff;
+  font-size: 24px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 30px var(--primary-glow);
+  transition: var(--transition-fast);
+  animation: pulseGlow 2s ease-in-out infinite;
+}
+.play-btn-icon:hover { transform: scale(1.1); }
+@keyframes pulseGlow {
+  0%, 100% { box-shadow: 0 0 20px var(--primary-glow); }
+  50% { box-shadow: 0 0 40px var(--primary-glow), 0 0 60px rgba(24,86,255,0.1); }
+}
+
+/* ===== Pagination ===== */
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 32px;
+}
+.page-btn {
+  padding: 8px 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-light);
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 14px;
+  cursor: pointer;
+  transition: var(--transition-fast);
+  font-family: var(--font-family);
+}
+.page-btn:hover { background: var(--surface); color: var(--text-primary); }
+.page-btn.active {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
+}
+.page-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+/* ===== Auth Modal ===== */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  backdrop-filter: blur(8px);
+  z-index: 200;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.25s ease;
+}
+.modal-overlay.open { display: flex; }
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.modal {
+  background: linear-gradient(135deg, #12122A, #1A1040);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-lg);
+  padding: 36px 32px 28px;
+  width: 100%;
+  max-width: 400px;
+  position: relative;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+}
+.modal-close {
+  position: absolute;
+  top: 14px;
+  right: 16px;
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  font-size: 20px;
+  cursor: pointer;
+  padding: 4px;
+  line-height: 1;
+}
+.modal-title {
+  font-size: 24px;
+  font-weight: 700;
+  text-align: center;
+  margin-bottom: 4px;
+}
+.modal-subtitle {
+  text-align: center;
+  color: var(--text-dim);
+  font-size: 14px;
+  margin-bottom: 24px;
+}
+.form-group {
+  margin-bottom: 16px;
+}
+.form-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+}
+.form-input {
+  width: 100%;
+  padding: 12px 16px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-size: 14px;
+  font-family: var(--font-family);
+  transition: var(--transition-fast);
+  outline: none;
+}
+.form-input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-glow);
+}
+.form-input::placeholder { color: var(--text-dim); }
+.form-submit {
+  width: 100%;
+  padding: 12px;
+  margin-top: 8px;
+}
+.form-switch {
+  text-align: center;
+  margin-top: 16px;
+  font-size: 14px;
+  color: var(--text-dim);
+}
+.form-switch a {
+  color: var(--primary);
+  cursor: pointer;
+  text-decoration: none;
+  font-weight: 600;
+}
+.form-switch a:hover { text-decoration: underline; }
+
+/* ===== User Badge ===== */
+.user-badge {
+  display: none;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 12px 4px 4px;
+  background: var(--surface);
+  border: 1px solid var(--border-light);
+  border-radius: 100px;
+  cursor: pointer;
+  transition: var(--transition-fast);
+}
+.user-badge.visible { display: inline-flex; }
+.user-badge:hover { background: var(--surface-hover); }
+.user-avatar {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--primary), #6A0DAD);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: #fff;
+}
+.user-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+/* ===== Footer ===== */
+.footer {
+  margin-top: 60px;
+  padding: 24px 0;
+  border-top: 1px solid var(--border-light);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.footer-text {
+  font-size: 13px;
+  color: var(--text-dim);
+}
+.footer-links {
+  display: flex;
+  gap: 16px;
+}
+.footer-links a {
+  color: var(--text-dim);
+  text-decoration: none;
+  font-size: 13px;
+  transition: var(--transition-fast);
+}
+.footer-links a:hover { color: var(--text-primary); }
+
+/* ===== Toast ===== */
+.toast-container {
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  z-index: 300;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.toast {
+  padding: 12px 20px;
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--border-light);
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 500;
+  animation: slideIn 0.3s ease, fadeOut 0.3s ease 2.7s forwards;
+  box-shadow: var(--shadow-card);
+}
+.toast.success { border-left: 3px solid var(--success); }
+.toast.error { border-left: 3px solid var(--danger); }
+.toast.info { border-left: 3px solid var(--primary); }
+@keyframes slideIn {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+@keyframes fadeOut {
+  to { opacity: 0; transform: translateX(50px); }
+}
+
+/* ===== Stats Bar ===== */
+.stats-bar {
+  display: flex;
+  gap: 32px;
+  padding: 20px 0;
+  margin-bottom: 40px;
+  border-bottom: 1px solid var(--border-light);
+}
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.stat-number {
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+}
+.stat-number.accent { color: var(--primary); }
+.stat-number.gold { color: var(--gold); }
+.stat-label {
+  font-size: 13px;
+  color: var(--text-dim);
+}
+
+/* ===== Mobile Bottom Nav ===== */
+.mobile-bottom-nav {
+  display: none;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: rgba(8,12,26,0.95);
+  backdrop-filter: var(--glass-blur);
+  border-top: 1px solid var(--border-light);
+  z-index: 150;
+  padding: 8px 0 env(safe-area-inset-bottom, 8px);
+  justify-content: space-around;
+}
+.mobile-nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  font-size: 10px;
+  cursor: pointer;
+  padding: 4px 12px;
+  font-family: var(--font-family);
+  transition: var(--transition-fast);
+}
+.mobile-nav-item .icon { font-size: 20px; }
+.mobile-nav-item.active { color: var(--primary); }
+
+/* ===== Loading / Error States ===== */
+.loading-state, .empty-state {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  text-align: center;
+  color: var(--text-dim);
+}
+.loading-state .spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--border-light);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin-bottom: 16px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.empty-state .empty-icon { font-size: 48px; margin-bottom: 12px; }
+.empty-state .empty-title { font-size: 18px; font-weight: 600; color: var(--text-primary); margin-bottom: 6px; }
+.empty-state .empty-desc { font-size: 14px; }
+
+/* ===== Skeleton ===== */
+.skeleton {
+  background: linear-gradient(90deg, var(--surface) 25%, var(--surface-hover) 50%, var(--surface) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+  border-radius: var(--radius-sm);
+}
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+.skeleton-card {
+  background: var(--surface);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+.skeleton-cover {
+  height: 150px;
+  background: linear-gradient(90deg, var(--surface) 25%, var(--surface-hover) 50%, var(--surface) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+.skeleton-body {
+  padding: 14px 16px 16px;
+}
+.skeleton-line {
+  height: 12px;
+  margin-bottom: 8px;
+  background: linear-gradient(90deg, var(--surface) 25%, var(--surface-hover) 50%, var(--surface) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+  border-radius: var(--radius-sm);
+}
+.skeleton-line:last-child { width: 60%; }
+
+/* ===== Responsive ===== */
+@media (max-width: 920px) {
+  #app { padding: 0 16px 80px; }
+  .top-nav { gap: 12px; }
+  .nav-links { display: none; }
+  .search-container { max-width: 200px; }
+  .hero-slide { padding: 28px 24px; flex-direction: column; min-height: 320px; }
+  .hero-slide.active { flex-direction: column-reverse; }
+  .hero-title { font-size: 26px; }
+  .hero-art { flex: 0 0 120px; height: 120px; font-size: 40px; }
+  .new-grid { grid-template-columns: repeat(2, 1fr); }
+  .game-grid { grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 14px; }
+  .mobile-bottom-nav { display: flex; }
+  .stats-bar { gap: 16px; flex-wrap: wrap; }
+  .filter-bar { flex-direction: column; align-items: stretch; gap: 10px; }
+  .filter-results-count { margin-left: 0; }
+  .trending-card { flex: 0 0 180px; }
+}
+
+@media (max-width: 480px) {
+  .hero-title { font-size: 22px; }
+  .hero-slide { padding: 20px 16px; min-height: 280px; }
+  .section-title { font-size: 18px; }
+  .game-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .game-card-cover { height: 110px; font-size: 36px; }
+  .game-card-body { padding: 10px 12px 12px; }
+  .game-card-body h3 { font-size: 14px; }
+  .new-grid { grid-template-columns: 1fr; }
+  .search-container { max-width: 140px; }
+  .auth-actions .btn { padding: 8px 14px; font-size: 13px; }
+  .stats-bar { gap: 12px; }
+  .stat-number { font-size: 22px; }
+}
+</style>
 </head>
 <body>
-  <div id="app">
-    <!-- Guest Welcome Banner -->
-    <div id="guest-banner" class="guest-banner" style="display:none;">
-      <span>Welcome to CrabCLI Arcade! Browse games first, then <a id="banner-signin" href="#">Sign In</a> to save favorites, scores, and release notifications.</span>
-      <button id="banner-close" class="banner-close" aria-label="Dismiss">&times;</button>
-    </div>
 
-    <!-- Header -->
-    <header class="header" id="header">
-      <div class="header-brand">
-        <svg class="brand-icon" width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="14" cy="14" r="12" stroke="url(#cg)" stroke-width="1.8" fill="rgba(108,92,231,0.15)"/><path d="M9 16c0-4 10-4 10 0M11 12l-2-3M17 12l2-3M14 8v4M14 16v4" stroke="url(#cg)" stroke-width="1.6" stroke-linecap="round"/><defs><linearGradient id="cg" x1="4" y1="4" x2="24" y2="24"><stop stop-color="#6C5CE7"/><stop offset="1" stop-color="#FD79A8"/></linearGradient></defs></svg>
-        <span>CrabCLI Arcade</span>
-      </div>
-      <div class="search-container">
-        <div class="search-input-wrap">
-          <span class="search-icon">🔍</span>
-          <input type="text" id="search-input" placeholder="Search games..." autocomplete="off" aria-label="Search games">
-          <button class="search-clear" id="search-clear">✕</button>
+<!-- ===== Animated Background ===== -->
+<div id="bg-canvas">
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="orb orb-3"></div>
+</div>
+
+<!-- ===== Toast Container ===== -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- ===== Auth Modal ===== -->
+<div class="modal-overlay" id="authModal">
+  <div class="modal">
+    <button class="modal-close" onclick="window.gameHub && window.gameHub.closeAuth()">✕</button>
+    <div id="authFormContainer">
+      <div id="loginForm">
+        <div class="modal-title">🎮 欢迎回来</div>
+        <div class="modal-subtitle">登录以同步收藏和游戏记录</div>
+        <div class="form-group">
+          <label class="form-label">用户名</label>
+          <input class="form-input" type="text" placeholder="输入用户名" id="loginUser">
         </div>
-        <div class="search-overlay" id="search-overlay">
-          <div id="search-overlay-content"></div>
+        <div class="form-group">
+          <label class="form-label">密码</label>
+          <input class="form-input" type="password" placeholder="输入密码" id="loginPass">
         </div>
-      </div>
-      <div class="header-actions" id="auth-area">
-        <button class="header-btn" id="fav-header-btn" title="Favorites">❤️</button>
-        <button class="header-btn" id="auth-btn" title="Profile">👤</button>
-      </div>
-    </header>
-
-    <!-- Mobile Search Bar -->
-    <div id="mobile-search-bar" class="mobile-search-bar" style="display:none;">
-      <input id="mobile-search-input" class="search-input-full" type="text" placeholder="Search games..." autocomplete="off" />
-      <button id="mobile-search-close" class="mobile-search-close" aria-label="Close search">&times;</button>
-    </div>
-
-    <!-- Hero Carousel -->
-    <section class="hero-section" id="hero-section">
-      <div class="hero-carousel" id="hero-carousel">
-        <div id="hero-slides"></div>
-        <div class="hero-controls">
-          <div class="hero-dots" id="hero-dots"></div>
-          <button class="hero-nav-btn" id="hero-prev" aria-label="Previous">‹</button>
-          <button class="hero-nav-btn" id="hero-next" aria-label="Next">›</button>
+        <div id="authError" class="toast" style="display:none;margin-bottom:12px;"></div>
+        <button class="btn btn-primary form-submit" id="loginBtn">登录</button>
+        <div class="form-switch">
+          还没有账号？ <a onclick="window.gameHub && window.gameHub.showRegister()">注册</a>
         </div>
       </div>
-    </section>
-
-    <!-- Category Shelf -->
-    <section class="category-shelf">
-      <div class="category-scroll" id="category-scroll"></div>
-    </section>
-
-    <!-- Controls Bar -->
-    <div class="controls-bar">
-      <span class="results-count" id="results-count">0 games</span>
-      <div class="sort-chips" id="sort-chips">
-        <button class="sort-chip active" data-sort="popular">🔥 Popular</button>
-        <button class="sort-chip" data-sort="newest">🕐 Newest</button>
-        <button class="sort-chip" data-sort="rating">⭐ Rating</button>
-        <button class="sort-chip" data-sort="az">🔤 A-Z</button>
+      <div id="registerForm" style="display:none">
+        <div class="modal-title">🎮 创建账号</div>
+        <div class="modal-subtitle">加入 CrabCLI，发现更多乐趣</div>
+        <div class="form-group">
+          <label class="form-label">用户名</label>
+          <input class="form-input" type="text" placeholder="设置用户名" id="regUser">
+        </div>
+        <div class="form-group">
+          <label class="form-label">密码</label>
+          <input class="form-input" type="password" placeholder="设置密码" id="regPass">
+        </div>
+        <div class="form-group">
+          <label class="form-label">确认密码</label>
+          <input class="form-input" type="password" placeholder="再次输入密码" id="regPass2">
+        </div>
+        <button class="btn btn-primary form-submit" id="registerBtn">注册</button>
+        <div class="form-switch">
+          已有账号？ <a onclick="window.gameHub && window.gameHub.showLogin()">登录</a>
+        </div>
       </div>
     </div>
-
-    <!-- Games Grid -->
-    <section class="games-section">
-      <div class="games-grid" id="games-grid"></div>
-      <div class="load-more-wrap" id="load-more-wrap" style="display:none;">
-        <button class="load-more-btn" id="load-more-btn">Show 8 more</button>
-      </div>
-    </section>
   </div>
+</div>
 
-  <!-- Toast Container -->
-  <div class="toast-container" id="toast-container"></div>
+<!-- ===== App ===== -->
+<div id="app">
 
-  <!-- Mobile Bottom Nav -->
-  <nav class="mobile-bottom-nav" id="mobile-nav">
-    <button class="nav-tab active" data-tab="home"><span class="nav-icon">🏠</span><span class="nav-label">Home</span></button>
-    <button class="nav-tab" data-tab="search"><span class="nav-icon">🔍</span><span class="nav-label">Search</span></button>
-    <button class="nav-tab" data-tab="favorites"><span class="nav-icon">❤️</span><span class="nav-label">Favorites</span></button>
-    <button class="nav-tab" data-tab="profile"><span class="nav-icon">👤</span><span class="nav-label">Profile</span></button>
+  <!-- ===== Top Navigation ===== -->
+  <nav class="top-nav">
+    <a href="/" class="brand">
+      <span class="brand-icon">C</span>
+      <span>CrabCLI</span>
+    </a>
+    <div class="nav-links">
+      <button class="nav-link active" data-tab="home">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 7.5L8 2l6 5.5"/><path d="M3.5 7v6h3v-3.5h3V13h3V7"/></svg> 首页
+      </button>
+      <button class="nav-link" data-tab="browse">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="5" height="5" rx="1"/><rect x="9" y="2" width="5" height="5" rx="1"/><rect x="2" y="9" width="5" height="5" rx="1"/><rect x="9" y="9" width="5" height="5" rx="1"/></svg> 全部游戏
+      </button>
+      <button class="nav-link" data-tab="favorites">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3.5C6.5 1.5 3.5 2 3.5 5s4.5 6 4.5 6 4.5-3 4.5-6-3-3.5-4.5-1.5z"/></svg> 收藏
+      </button>
+    </div>
+    <div class="search-container" style="max-width:300px;">
+      <span class="search-icon">🔍</span>
+      <input class="search-input" id="searchInput" placeholder="搜索游戏...">
+    </div>
+    <div class="auth-actions">
+      <div class="user-badge" id="userBadge">
+        <div class="user-avatar" id="userAvatar">U</div>
+        <span class="user-name" id="userName">用户</span>
+      </div>
+      <button class="btn btn-primary" id="authBtn">登录</button>
+    </div>
   </nav>
 
-  <!-- Auth Modal -->
-  <div id="auth-modal" class="modal-overlay" style="display:none;">
-    <div class="modal">
-      <div class="modal-header">
-        <h2 id="modal-title">Sign In</h2>
-        <button id="modal-close" class="modal-close">&times;</button>
-      </div>
-      <div class="modal-body">
-        <div id="auth-error" class="error-msg" style="display:none;"></div>
-        <form id="auth-form">
-          <div class="form-group">
-            <label for="username-input">Username</label>
-            <input id="username-input" type="text" placeholder="Enter your username" required maxlength="32" autocomplete="username" />
-          </div>
-          <div class="form-group">
-            <label for="password-input">Password</label>
-            <input id="password-input" type="password" placeholder="4+ characters" required minlength="4" autocomplete="current-password" />
-          </div>
-          <div class="auth-tabs">
-            <button type="button" class="auth-tab active" data-action="login">Sign In</button>
-            <button type="button" class="auth-tab" data-action="register">Create Account</button>
-          </div>
-          <button type="submit" id="auth-submit" class="btn btn-primary">Sign In</button>
-        </form>
-      </div>
+  <!-- ===== Stats Bar ===== -->
+  <div class="stats-bar" id="statsBar">
+    <div class="stat-item">
+      <span class="stat-number accent" id="statGames">--</span>
+      <span class="stat-label">🎮 游戏总数</span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-number" id="statPlayable">--</span>
+      <span class="stat-label">✅ 可游玩</span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-number gold" id="statHot">--</span>
+      <span class="stat-label">🔥 热门推荐</span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-number" id="statCategories">--</span>
+      <span class="stat-label">📂 游戏分类</span>
     </div>
   </div>
 
-  <!-- Profile Panel (dropdown) -->
-  <div id="profile-panel" class="profile-panel" style="display:none;">
-    <div class="profile-header" id="profile-header">
-      <div class="user-avatar-lg" id="profile-avatar">?</div>
-      <div>
-        <div class="profile-name" id="profile-name"></div>
-        <div class="profile-since" id="profile-since"></div>
-      </div>
+  <!-- ===== Hero Section ===== -->
+  <section class="hero-section" id="heroSection">
+    <div id="heroSlides"></div>
+    <div class="hero-dots" id="heroDots"></div>
+  </section>
+
+  <!-- ===== Trending Section ===== -->
+  <section class="trending-section" id="trendingSection">
+    <div class="section-header">
+      <h2 class="section-title"><span class="emoji">🔥</span> 热门游戏</h2>
     </div>
-    <div class="profile-stats" id="profile-stats">
-      <div class="profile-stat"><div class="profile-stat-value" id="stat-games">0</div><div class="profile-stat-label">Games</div></div>
-      <div class="profile-stat"><div class="profile-stat-value" id="stat-scores">0</div><div class="profile-stat-label">Scores</div></div>
-      <div class="profile-stat"><div class="profile-stat-value" id="stat-favorites">0</div><div class="profile-stat-label">Favorites</div></div>
+    <div class="trending-scroll" id="trendingScroll"></div>
+  </section>
+
+  <!-- ===== New Releases ===== -->
+  <section class="new-section" id="newSection">
+    <div class="section-header">
+      <h2 class="section-title"><span class="emoji">🆕</span> 新游上线</h2>
     </div>
-    <div class="profile-favorites" id="profile-favorites">
-      <div class="profile-section-label">Favorites</div>
-      <div id="profile-fav-list"></div>
+    <div class="new-grid" id="newGrid"></div>
+  </section>
+
+  <!-- ===== Category Section ===== -->
+  <section class="category-section">
+    <div class="section-header">
+      <h2 class="section-title"><span class="emoji">📂</span> 游戏分类</h2>
     </div>
-    <div class="profile-signout">
-      <button id="profile-signout">Sign Out</button>
+    <div class="category-pills" id="categoryPills"></div>
+  </section>
+
+  <!-- ===== Filter Bar ===== -->
+  <div class="filter-bar">
+    <div class="filter-group">
+      <span class="filter-label">筛选</span>
+      <button class="tag-chip active" data-filter="all">全部</button>
+      <button class="tag-chip" data-filter="singleplayer">单人</button>
+      <button class="tag-chip" data-filter="multiplayer">多人</button>
+      <button class="tag-chip" data-filter="competitive">竞技</button>
+      <button class="tag-chip" data-filter="relax">放松</button>
     </div>
+    <div class="filter-divider"></div>
+    <div class="filter-group">
+      <span class="filter-label">排序</span>
+      <select class="sort-select" id="sortSelect">
+        <option value="popular">🔥 热门</option>
+        <option value="newest">🕐 最新</option>
+        <option value="rating">⭐ 评分</option>
+        <option value="alpha">🔤 A-Z</option>
+      </select>
+    </div>
+    <div class="filter-divider"></div>
+    <div class="filter-group">
+      <span class="filter-label">难度</span>
+      <button class="tag-chip active" data-difficulty="all">全部</button>
+      <button class="tag-chip" data-difficulty="easy">简单</button>
+      <button class="tag-chip" data-difficulty="medium">中等</button>
+      <button class="tag-chip" data-difficulty="hard">困难</button>
+    </div>
+    <span class="filter-results-count" id="resultsCount">加载中...</span>
   </div>
 
-  <script src="/hub/hub.js" type="text/javascript"></script>
+  <!-- ===== Game Grid ===== -->
+  <section class="game-grid-section">
+    <div class="game-grid" id="gameGrid"></div>
+    <div class="pagination" id="pagination">
+      <button class="page-btn" id="prevPage" disabled>← 上一页</button>
+      <span id="pageNumbers"></span>
+      <button class="page-btn" id="nextPage">下一页 →</button>
+    </div>
+  </section>
+
+  <!-- ===== Footer ===== -->
+  <footer class="footer">
+    <div class="footer-text">© 2026 CrabCLI Arcade · 游戏大厅 v2</div>
+    <div class="footer-links">
+      <a href="#">关于我们</a>
+      <a href="#">游戏接入</a>
+      <a href="#">帮助</a>
+      <a href="#">隐私政策</a>
+    </div>
+  </footer>
+</div>
+
+<!-- ===== Mobile Bottom Nav ===== -->
+<nav class="mobile-bottom-nav" id="mobileNav">
+  <button class="mobile-nav-item active" data-mtab="home">
+    <span class="icon">🏠</span>
+    <span>首页</span>
+  </button>
+  <button class="mobile-nav-item" data-mtab="search">
+    <span class="icon">🔍</span>
+    <span>搜索</span>
+  </button>
+  <button class="mobile-nav-item" data-mtab="games">
+    <span class="icon">🎮</span>
+    <span>游戏</span>
+  </button>
+  <button class="mobile-nav-item" data-mtab="favorites">
+    <span class="icon">❤️</span>
+    <span>收藏</span>
+  </button>
+  <button class="mobile-nav-item" data-mtab="profile">
+    <span class="icon">👤</span>
+    <span>我的</span>
+  </button>
+</nav>
+
+<script src="/hub/hub.js"></script>
 </body>
 </html>

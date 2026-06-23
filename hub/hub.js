@@ -1,176 +1,574 @@
-// CrabCLI Arcade — Hub Client Logic (v3 Glassmorphism)
+/* ====================================================
+   CrabCLI Arcade — Game Hub v2 (API-driven)
+   ==================================================== */
 (function() {
   'use strict';
 
   // ─── State ───
-  let registry = { games: [], categories: [] };
+  let games = [];
+  let categories = [];
   let filteredGames = [];
   let currentCategory = 'all';
+  let currentFilter = 'all';    // tag filter: all, singleplayer, multiplayer, competitive, relax
+  let currentDifficulty = 'all'; // all, easy, medium, hard
   let currentSort = 'popular';
-  let currentUser = null;
-  let authAction = 'login';
   let searchQuery = '';
-  let searchTimeout = null;
-
-  // Lockout state
-  let lockoutTimer = null;
-  let lockoutRetryAfter = 0;
-
-  // Pagination
-  const PAGE_SIZE = 24;
-  let visibleCount = PAGE_SIZE;
-
-  // Favorites
+  let currentPage = 1;
+  const PAGE_SIZE = 12;
+  let currentUser = null;
   let favoriteIds = new Set();
-
-  // Hero carousel
   let heroIndex = 0;
   let heroTimer = null;
 
-  // ─── Category icons (matches registry) ───
-  const CATEGORY_ICONS = {
-    puzzle: '🧩', idle: '🏪', action: '⚡',
-    strategy: '♟️', casual: '🎯', all: '🎮'
-  };
-  const CATEGORY_GRADIENTS = {
-    puzzle: 'var(--cat-puzzle)',
-    idle: 'var(--cat-idle)',
-    action: 'var(--cat-action)',
-    strategy: 'var(--cat-strategy)',
-    casual: 'var(--cat-casual)'
-  };
-  const GAME_ICONS = {
-    'idle-dungeon-heroes': '⚔️'
-  };
-  function gameIcon(game) {
-    return GAME_ICONS[game.id] || CATEGORY_ICONS[game.category] || '🎮';
-  }
-  function getCatGradient(cat) {
-    return CATEGORY_GRADIENTS[cat] || 'var(--cat-puzzle)';
-  }
-
   // ─── DOM refs ───
-  const $ = (sel) => document.querySelector(sel);
-  const $$ = (sel) => document.querySelectorAll(sel);
-  const el = (id) => document.getElementById(id);
+  const $ = id => document.getElementById(id);
+  const $$ = sel => document.querySelectorAll(sel);
+  const qs = (el, sel) => (el || document).querySelector(sel);
+  const qsa = (el, sel) => (el || document).querySelectorAll(sel);
 
-  const searchInput = el('search-input');
-  const searchClear = el('search-clear');
-  const searchOverlay = el('search-overlay');
-  const searchOverlayContent = el('search-overlay-content');
-  const categoryScroll = el('category-scroll');
-  const heroSlides = el('hero-slides');
-  const heroDots = el('hero-dots');
-  const gamesGrid = el('games-grid');
-  const resultsCount = el('results-count');
-  const loadMoreWrap = el('load-more-wrap');
-  const loadMoreBtn = el('load-more-btn');
-  const authArea = el('auth-area');
-  const authModal = el('auth-modal');
-  const modalTitle = el('modal-title');
-  const modalClose = el('modal-close');
-  const authForm = el('auth-form');
-  const authSubmit = el('auth-submit');
-  const authError = el('auth-error');
-  const usernameInput = el('username-input');
-  const passwordInput = el('password-input');
+  const gameGrid = $('gameGrid');
+  const resultsCount = $('resultsCount');
+  const prevPage = $('prevPage');
+  const nextPage = $('nextPage');
+  const pageNumbers = $('pageNumbers');
+  const searchInput = $('searchInput');
+  const heroSlides = $('heroSlides');
+  const heroDots = $('heroDots');
+  const heroSection = $('heroSection');
+  const trendingScroll = $('trendingScroll');
+  const newGrid = $('newGrid');
+  const categoryPills = $('categoryPills');
+  const sortSelect = $('sortSelect');
+  const toastContainer = $('toastContainer');
+  const authModal = $('authModal');
+  const authBtn = $('authBtn');
+  const userBadge = $('userBadge');
+  const userName = $('userName');
+  const userAvatar = $('userAvatar');
+  const loginBtn = $('loginBtn');
+  const registerBtn = $('registerBtn');
+  const authError = $('authError');
+  const mobileNav = $('mobileNav');
 
-  // Profile panel
-  const profilePanel = el('profile-panel');
-  const profileAvatar = el('profile-avatar');
-  const profileName = el('profile-name');
-  const profileSince = el('profile-since');
-  const profileSignout = el('profile-signout');
-  const profileFavList = el('profile-fav-list');
-  const statGames = el('stat-games');
-  const statScores = el('stat-scores');
-  const statFavorites = el('stat-favorites');
-  let profileOpen = false;
+  // ─── Tag / Difficulty label mapping ───
+  const TAG_LABELS = {
+    singleplayer: '单人', multiplayer: '多人', competitive: '竞技', relax: '放松',
+    puzzle: '益智', action: '动作', strategy: '策略', casual: '休闲',
+    idle: '放置', board: '桌游', rpg: 'RPG', word: '文字',
+    arcade: '街机', classic: '经典', shooter: '射击', racing: '赛车',
+    roguelike: 'Roguelike', runner: '跑酷', pvp: 'PVP', cards: '卡牌',
+    logic: '逻辑', simulation: '模拟', management: '管理', clicker: '点击',
+    retro: '复古', snake: '贪吃蛇', space: '太空', 'io': 'IO',
+    hangman: '猜词', match3: '三消', tower: '塔防', defense: '防御',
+    platformer: '平台', ai: 'AI', puzzle: '解谜', minimal: '极简',
+    number: '数字', 'short-session': '短局', adventure: '冒险',
+    reading: '阅读', productivity: '效率', utility: '工具', roguelite: 'Roguelite',
+    pets: '宠物', trivia: '问答', websocket: 'WebSocket'
+  };
 
-  // Mobile
-  const mobileSearchBtn = el('auth-btn');
-  const mobileSearchBar = el('mobile-search-bar');
-  const mobileSearchInput = el('mobile-search-input');
-  const mobileSearchClose = el('mobile-search-close');
-  const mobileNav = el('mobile-nav');
+  function tagLabel(t) { return TAG_LABELS[t] || t; }
 
-  // Toast
-  const toastContainer = el('toast-container');
-
-  // Guest banner
-  const guestBanner = el('guest-banner');
-  const guestBannerSignin = el('banner-signin');
-  const guestBannerCloseBtn = el('banner-close');
-
-  // ─── Boot ───
-  async function init() {
-    showSkeleton();
-    await loadRegistry();
-    hideSkeleton();
-    checkGuestBanner();
-    await checkAuth();
-    renderHero();
-    renderCategories();
-    applyFilters();
-    setupEvents();
-    setupSearch();
-    setupSortChips();
-    setupMobileNav();
+  // ─── Stars helper ───
+  function starsHTML(rating) {
+    if (!rating && rating !== 0) return '';
+    const full = Math.floor(rating);
+    const half = (rating - full) >= 0.5 ? 1 : 0;
+    const empty = 5 - full - half;
+    return '<span class="stars">' + '★'.repeat(full) + (half ? '★' : '') + '☆'.repeat(empty) + '</span>';
   }
 
-  // ─── Toast System ───
-  function showToast(message, type, duration) {
+  // ─── Toast ───
+  function showToast(msg, type, duration) {
     type = type || 'info';
     duration = duration || 3000;
-    const toast = document.createElement('div');
-    toast.className = 'toast toast-' + type;
     const icons = { success: '✓', error: '✕', info: 'ℹ' };
-    toast.innerHTML = '<span style="font-weight:700">' + (icons[type] || 'ℹ') + '</span> ' + message;
+    const toast = document.createElement('div');
+    toast.className = 'toast ' + type;
+    toast.innerHTML = '<span style="font-weight:700">' + (icons[type] || 'ℹ') + '</span> ' + escapeHtml(msg);
     toastContainer.appendChild(toast);
-    setTimeout(function() {
-      toast.classList.add('toast-exit');
-      setTimeout(function() { if (toast.parentNode) toast.remove(); }, 200);
-    }, duration);
+    setTimeout(function() { if (toast.parentNode) toast.remove(); }, duration);
   }
 
   // ─── Skeleton ───
   function showSkeleton() {
-    gamesGrid.innerHTML = '';
-    gamesGrid.style.display = 'grid';
-    var html = '';
-    for (var i = 0; i < 8; i++) {
-      html += '<div class="skeleton-card"><div class="skeleton-cover"></div><div class="skeleton-body"><div class="skeleton-line"></div><div class="skeleton-line"></div></div></div>';
+    gameGrid.innerHTML = '';
+    let html = '';
+    for (let i = 0; i < 8; i++) {
+      html += '<div class="skeleton-card"><div class="skeleton-cover"></div><div class="skeleton-body"><div class="skeleton-line"></div><div class="skeleton-line" style="width:60%"></div></div></div>';
     }
-    gamesGrid.innerHTML = html;
+    gameGrid.innerHTML = html;
+    resultsCount.textContent = '加载中...';
   }
 
-  function hideSkeleton() {
-    // skeleton is replaced when renderGames runs
-  }
-
-  // ─── Load Registry ───
-  async function loadRegistry() {
+  // ─── Data Loading ───
+  async function loadData() {
+    showSkeleton();
     try {
       var res = await fetch('/api/games');
       if (!res.ok) throw new Error('HTTP ' + res.status);
-      registry = await res.json();
+      var data = await res.json();
+      games = data.games || [];
+      categories = data.categories || [];
+
+      // Compute stats
+      var playable = games.filter(function(g) { return g.status === 'playable' || g.playable; });
+      var hot = games.filter(function(g) { return g.featured; });
+      $('statGames').textContent = games.length;
+      $('statPlayable').textContent = playable.length;
+      $('statHot').textContent = hot.length;
+      $('statCategories').textContent = categories.length > 0 ? categories.length - 1 : (function() { // minus "all"
+        var set = new Set(); games.forEach(function(g) { if (g.category) set.add(g.category); }); return set.size;
+      })();
+
+      renderCategories();
+      renderHero(hot);
+      renderTrending(games);
+      renderNewReleases(games);
+      applyFilters();
+      bindEvents();
     } catch (err) {
-      console.error('Failed to load game registry:', err);
-      gamesGrid.innerHTML = '<div class="empty-state"><div class="empty-icon">🔌</div><div class="empty-title">Failed to load games</div><div class="empty-desc">Please refresh the page to try again.</div></div>';
-      gamesGrid.style.display = 'grid';
+      console.error('Failed to load games:', err);
+      gameGrid.innerHTML = '<div class="empty-state"><div class="empty-icon">🔌</div><div class="empty-title">加载失败</div><div class="empty-desc">无法连接游戏服务器，请刷新重试。</div></div>';
+      resultsCount.textContent = '加载失败';
     }
   }
 
-  // ─── Guest Banner ───
-  function checkGuestBanner() {
-    if (!currentUser && !localStorage.getItem('guestBannerDismissed')) {
-      guestBanner.style.display = 'flex';
-    } else {
-      guestBanner.style.display = 'none';
+  // ─── Category Gradients ───
+  function getCatGradient(cat) {
+    var map = {
+      puzzle: 'linear-gradient(135deg, #6C5CE7, #A29BFE)',
+      idle: 'linear-gradient(135deg, #00B894, #55EFC4)',
+      action: 'linear-gradient(135deg, #E17055, #FD79A8)',
+      strategy: 'linear-gradient(135deg, #FDCB6E, #F39C12)',
+      casual: 'linear-gradient(135deg, #00D2FF, #6C5CE7)'
+    };
+    return map[cat] || 'linear-gradient(135deg, rgba(24,86,255,0.3), rgba(106,13,173,0.3))';
+  }
+
+  function getCatIcon(cat) {
+    if (!cat) return '🎮';
+    for (var i = 0; i < categories.length; i++) {
+      if (categories[i].id === cat) return categories[i].icon || '🎮';
     }
+    return '🎮';
+  }
+
+  function getCatName(cat) {
+    if (!cat) return '';
+    for (var i = 0; i < categories.length; i++) {
+      if (categories[i].id === cat) return categories[i].name || cat;
+    }
+    return cat;
+  }
+
+  function getGameIcon(game) {
+    if (game.icon) return game.icon;
+    return getCatIcon(game.category);
+  }
+
+  // ─── Hero Carousel ───
+  function renderHero(featuredGames) {
+    if (!featuredGames || featuredGames.length === 0) {
+      // Pick top 3 by rating
+      featuredGames = [].concat(games).sort(function(a, b) { return (b.rating || 0) - (a.rating || 0); }).slice(0, 3);
+    }
+    if (!featuredGames || featuredGames.length === 0) { heroSection.style.display = 'none'; return; }
+    heroSection.style.display = 'block';
+
+    var labels = ['🔥 热门推荐', '🆕 新游上线', '🏆 评分最高'];
+    heroSlides.innerHTML = featuredGames.map(function(g, i) {
+      var label = labels[i % labels.length];
+      var catName = getCatName(g.category);
+      var icon = getGameIcon(g);
+      return '<div class="hero-slide' + (i === 0 ? ' active' : '') + '" data-slide="' + i + '">' +
+        '<div class="hero-bg-glow"><div class="glow" style="width:300px;height:300px;background:rgba(24,86,255,0.12);top:10%;left:20%;"></div><div class="glow" style="width:200px;height:200px;background:rgba(106,13,173,0.15);bottom:10%;right:20%;"></div></div>' +
+        '<div class="hero-content">' +
+          '<div class="hero-badge">' + label + '</div>' +
+          '<h1 class="hero-title">' + escapeHtml(g.name) + '</h1>' +
+          '<p class="hero-desc">' + escapeHtml(g.description || '') + '</p>' +
+          '<div class="hero-meta">' +
+            '<span>⭐ ' + (g.rating || 'N/A') + '</span>' +
+            '<span>👥 ' + (g.players || 'N/A') + ' 人在玩</span>' +
+            '<span>🎯 ' + catName + '</span>' +
+          '</div>' +
+          '<div class="hero-actions">' +
+            '<a class="btn btn-gold" href="' + (g.path || '/games/' + g.id + '/') + '">▶ 立即游玩</a>' +
+          '</div>' +
+        '</div>' +
+        '<div class="hero-art" style="background:' + getCatGradient(g.category) + '">' + icon + '</div>' +
+      '</div>';
+    }).join('');
+
+    heroDots.innerHTML = featuredGames.map(function(_, i) {
+      return '<button class="hero-dot' + (i === 0 ? ' active' : '') + '" data-slide="' + i + '"></button>';
+    }).join('');
+
+    // Bind hero dots
+    heroDots.querySelectorAll('.hero-dot').forEach(function(dot) {
+      dot.addEventListener('click', function() {
+        clearInterval(heroTimer);
+        goToHero(parseInt(dot.dataset.slide));
+        startHeroAuto();
+      });
+    });
+
+    heroIndex = 0;
+    startHeroAuto();
+  }
+
+  function goToHero(idx) {
+    var slides = heroSlides.querySelectorAll('.hero-slide');
+    var dots = heroDots.querySelectorAll('.hero-dot');
+    slides.forEach(function(s, i) { s.classList.toggle('active', i === idx); });
+    dots.forEach(function(d, i) { d.classList.toggle('active', i === idx); });
+    heroIndex = idx;
+  }
+
+  function startHeroAuto() {
+    clearInterval(heroTimer);
+    heroTimer = setInterval(function() {
+      var slides = heroSlides.querySelectorAll('.hero-slide');
+      if (slides.length === 0) return;
+      var next = (heroIndex + 1) % slides.length;
+      goToHero(next);
+    }, 5000);
+  }
+
+  // ─── Trending Section ───
+  function renderTrending(allGames) {
+    var trending = [].concat(allGames).sort(function(a, b) { return (b.rating || 0) - (a.rating || 0); }).slice(0, 8);
+    if (trending.length === 0) { $('trendingSection').style.display = 'none'; return; }
+    $('trendingSection').style.display = 'block';
+
+    trendingScroll.innerHTML = trending.map(function(g) {
+      var icon = getGameIcon(g);
+      var stars = starsHTML(g.rating);
+      var isHot = g.featured || (g.rating && g.rating >= 4.3);
+      return '<a class="trending-card" href="' + (g.path || '/games/' + g.id + '/') + '">' +
+        '<div class="trending-card-cover" style="background:' + getCatGradient(g.category) + '">' +
+          icon +
+          (isHot ? '<span class="hot-badge">HOT</span>' : '') +
+        '</div>' +
+        '<div class="trending-card-body">' +
+          '<h4>' + escapeHtml(g.name) + '</h4>' +
+          '<div class="stars">' + stars + '</div>' +
+          '<div class="meta"><span>' + getCatName(g.category) + '</span><span>·</span><span>👥 ' + (g.players || 'N/A') + '</span></div>' +
+        '</div>' +
+      '</a>';
+    }).join('');
+  }
+
+  // ─── New Releases ───
+  function renderNewReleases(allGames) {
+    // Sort by version descending (highest version = newest)
+    var sorted = [].concat(allGames).sort(function(a, b) {
+      var va = (a.version || '0.0.0').split('.').map(Number);
+      var vb = (b.version || '0.0.0').split('.').map(Number);
+      for (var i = 0; i < 3; i++) {
+        if ((va[i] || 0) !== (vb[i] || 0)) return (vb[i] || 0) - (va[i] || 0);
+      }
+      return 0;
+    });
+    var newest = sorted.slice(0, 4);
+    if (newest.length === 0) { $('newSection').style.display = 'none'; return; }
+    $('newSection').style.display = 'block';
+
+    var maxVersion = newest[0] && newest[0].version;
+    newGrid.innerHTML = newest.map(function(g) {
+      var isNew = g.version === maxVersion;
+      var icon = getGameIcon(g);
+      return '<a class="new-card" href="' + (g.path || '/games/' + g.id + '/') + '">' +
+        '<div class="new-card-icon" style="background:' + (isNew ? 'rgba(7,202,107,0.12)' : 'rgba(24,86,255,0.12)') + '">' + icon + '</div>' +
+        '<div class="new-card-info">' +
+          '<h4>' + escapeHtml(g.name) + (isNew ? ' <span class="new-badge">NEW</span>' : '') + '</h4>' +
+          '<div class="tag">' + getCatName(g.category) + '</div>' +
+        '</div>' +
+      '</a>';
+    }).join('');
+  }
+
+  // ─── Categories ───
+  function renderCategories() {
+    if (!categories || categories.length === 0) {
+      // Derive from games
+      var catSet = {};
+      games.forEach(function(g) { if (g.category) catSet[g.category] = true; });
+      categories = [{ id: 'all', name: '全部', icon: '🎮' }];
+      Object.keys(catSet).forEach(function(c) {
+        categories.push({ id: c, name: c.charAt(0).toUpperCase() + c.slice(1), icon: '🎮' });
+      });
+    }
+
+    // Ensure 'all' is first
+    var allCat = categories.find(function(c) { return c.id === 'all'; });
+    var others = categories.filter(function(c) { return c.id !== 'all'; });
+
+    categoryPills.innerHTML = (allCat ? [allCat] : [{ id: 'all', name: '全部', icon: '🎮' }]).concat(others).map(function(cat) {
+      var count = cat.id === 'all' ? games.length : games.filter(function(g) { return g.category === cat.id; }).length;
+      return '<button class="category-pill' + (currentCategory === cat.id ? ' active' : '') + '" data-cat="' + cat.id + '">' +
+        (cat.icon || getCatIcon(cat.id)) + ' ' + cat.name + ' (' + count + ')</button>';
+    }).join('');
+  }
+
+  // ─── Filter, Sort, Paginate ───
+  function applyFilters() {
+    var list = [].concat(games);
+
+    // Category filter
+    if (currentCategory !== 'all') {
+      list = list.filter(function(g) { return g.category === currentCategory; });
+    }
+
+    // Tag filter (g.tags is an array of strings)
+    if (currentFilter !== 'all') {
+      list = list.filter(function(g) {
+        return g.tags && g.tags.some(function(t) { return t.indexOf(currentFilter) !== -1; });
+      });
+    }
+
+    // Difficulty filter (based on rating)
+    if (currentDifficulty === 'easy') {
+      list = list.filter(function(g) { return (g.rating || 0) < 3.8; });
+    } else if (currentDifficulty === 'medium') {
+      list = list.filter(function(g) { return (g.rating || 0) >= 3.8 && (g.rating || 0) < 4.4; });
+    } else if (currentDifficulty === 'hard') {
+      list = list.filter(function(g) { return (g.rating || 0) >= 4.4; });
+    }
+
+    // Search
+    if (searchQuery.trim()) {
+      var q = searchQuery.toLowerCase();
+      list = list.filter(function(g) {
+        return (g.name && g.name.toLowerCase().indexOf(q) !== -1) ||
+               (g.description && g.description.toLowerCase().indexOf(q) !== -1) ||
+               (g.tags && g.tags.some(function(t) { return t.toLowerCase().indexOf(q) !== -1; })) ||
+               (g.category && g.category.toLowerCase().indexOf(q) !== -1);
+      });
+    }
+
+    // Sort
+    if (currentSort === 'popular') {
+      list.sort(function(a, b) {
+        var pa = typeof a.players === 'number' ? a.players : (typeof a.players === 'string' ? parseInt(a.players) || 0 : 0);
+        var pb = typeof b.players === 'number' ? b.players : (typeof b.players === 'string' ? parseInt(b.players) || 0 : 0);
+        if (pb !== pa) return pb - pa;
+        return (b.rating || 0) - (a.rating || 0);
+      });
+    } else if (currentSort === 'newest') {
+      list.sort(function(a, b) {
+        var va = (a.version || '0.0.0').split('.').map(Number);
+        var vb = (b.version || '0.0.0').split('.').map(Number);
+        for (var i = 0; i < 3; i++) {
+          if ((va[i] || 0) !== (vb[i] || 0)) return (vb[i] || 0) - (va[i] || 0);
+        }
+        return 0;
+      });
+    } else if (currentSort === 'rating') {
+      list.sort(function(a, b) { return (b.rating || 0) - (a.rating || 0); });
+    } else if (currentSort === 'alpha') {
+      list.sort(function(a, b) { return (a.name || '').localeCompare(b.name || 'zh'); });
+    }
+
+    filteredGames = list;
+    var total = list.length;
+    var totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+    if (currentPage > totalPages) currentPage = totalPages;
+    var start = (currentPage - 1) * PAGE_SIZE;
+    var page = list.slice(start, start + PAGE_SIZE);
+
+    resultsCount.textContent = '显示 ' + total + ' 款游戏';
+
+    if (total === 0) {
+      gameGrid.innerHTML = '<div class="empty-state"><div class="empty-icon">🔍</div><div class="empty-title">未找到游戏</div><div class="empty-desc">' +
+        (currentCategory !== 'all' ? '切换分类试试？' : '换个关键词搜索？') + '</div></div>';
+    } else {
+      gameGrid.innerHTML = page.map(renderCard).join('');
+    }
+
+    renderPagination(totalPages);
+  }
+
+  function renderCard(g) {
+    var isFav = favoriteIds.has(g.id);
+    var isHot = (g.rating || 0) >= 4.3 && (typeof g.players === 'number' ? g.players : parseInt(g.players) || 0) >= 500;
+    var statusClass = (g.status === 'playable' || g.playable) ? 'playable' : 'coming-soon';
+    var statusLabel = (g.status === 'playable' || g.playable) ? '可游玩' : '即将上线';
+    var icon = getGameIcon(g);
+    var catName = getCatName(g.category);
+    var desc = g.description || '';
+    var gameUrl = g.path || '/games/' + g.id + '/';
+    var players = typeof g.players === 'number' ? g.players : (parseInt(g.players) || 0);
+    var playersDisplay = players >= 1000 ? (players / 1000).toFixed(1) + 'k' : players;
+
+    return '<a class="game-card" href="' + gameUrl + '" data-game-id="' + g.id + '">' +
+      '<div class="game-card-cover" style="background:' + getCatGradient(g.category) + '">' +
+        (isHot ? '<span class="hot-badge">🔥</span>' : '') +
+        '<span class="status-badge ' + statusClass + '">' + statusLabel + '</span>' +
+        '<span style="position:relative;z-index:1;">' + icon + '</span>' +
+      '</div>' +
+      '<div class="play-overlay"><button class="play-btn-icon">▶</button></div>' +
+      '<div class="game-card-body">' +
+        '<h3>' + escapeHtml(g.name) + '</h3>' +
+        '<p>' + escapeHtml(desc) + '</p>' +
+        '<div class="game-card-tags">' +
+          (g.tags ? g.tags.slice(0, 3).map(function(t) { return '<span class="tag">' + tagLabel(t) + '</span>'; }).join('') : '') +
+        '</div>' +
+        '<div class="game-card-footer">' +
+          '<div class="rating">' + starsHTML(g.rating) + ' ' + (g.rating || '') + '</div>' +
+          '<div class="players">👥 ' + playersDisplay + '</div>' +
+          '<button class="fav-btn' + (isFav ? ' active' : '') + '" data-game-id="' + g.id + '">' + (isFav ? '❤️' : '🤍') + '</button>' +
+        '</div>' +
+      '</div>' +
+    '</a>';
+  }
+
+  function renderPagination(totalPages) {
+    prevPage.disabled = currentPage <= 1;
+    nextPage.disabled = currentPage >= totalPages;
+
+    var html = '';
+    for (var i = 1; i <= totalPages; i++) {
+      html += '<button class="page-btn' + (i === currentPage ? ' active' : '') + '" data-page="' + i + '">' + i + '</button>';
+    }
+    pageNumbers.innerHTML = html;
+  }
+
+  function goToPage(n) {
+    currentPage = n;
+    applyFilters();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  // ─── Search ───
+  function setupSearch() {
+    var timeout = null;
+    searchInput.addEventListener('input', function() {
+      clearTimeout(timeout);
+      timeout = setTimeout(function() {
+        searchQuery = searchInput.value;
+        currentPage = 1;
+        applyFilters();
+      }, 200);
+    });
+
+    // Keyboard shortcut
+    document.addEventListener('keydown', function(e) {
+      if (e.key === '/' && !['INPUT', 'TEXTAREA'].includes(e.target.tagName)) {
+        e.preventDefault();
+        searchInput.focus();
+      }
+      if (e.key === 'Escape') {
+        closeAuth();
+      }
+    });
   }
 
   // ─── Auth ───
+  function openAuth() {
+    authModal.classList.add('open');
+    $('loginForm').style.display = 'block';
+    $('registerForm').style.display = 'none';
+    authError.style.display = 'none';
+  }
+
+  window.gameHub = window.gameHub || {};
+  window.gameHub.closeAuth = function() { authModal.classList.remove('open'); };
+  window.gameHub.showRegister = function() {
+    $('loginForm').style.display = 'none';
+    $('registerForm').style.display = 'block';
+    authError.style.display = 'none';
+  };
+  window.gameHub.showLogin = function() {
+    $('registerForm').style.display = 'none';
+    $('loginForm').style.display = 'block';
+    authError.style.display = 'none';
+  };
+
+  function closeAuth() {
+    authModal.classList.remove('open');
+  }
+
+  function showAuthError(msg) {
+    authError.textContent = msg;
+    authError.style.display = 'block';
+  }
+
+  function hideAuthError() {
+    authError.style.display = 'none';
+  }
+
+  async function handleLogin() {
+    var user = $('loginUser').value.trim();
+    var pass = $('loginPass').value;
+    if (!user) { showAuthError('请输入用户名'); return; }
+    if (!pass || pass.length < 4) { showAuthError('密码至少4位'); return; }
+
+    hideAuthError();
+    loginBtn.disabled = true;
+    loginBtn.textContent = '登录中...';
+
+    try {
+      var res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: user, password: pass })
+      });
+      var data = await res.json();
+      if (res.ok) {
+        currentUser = data.user;
+        closeAuth();
+        renderUserBadge();
+        await loadFavorites();
+        applyFilters();
+        showToast('欢迎回来，' + escapeHtml(currentUser.name), 'success');
+      } else {
+        showAuthError(data.error || '登录失败');
+      }
+    } catch (err) {
+      showAuthError('网络错误，请重试');
+    } finally {
+      loginBtn.disabled = false;
+      loginBtn.textContent = '登录';
+    }
+  }
+
+  async function handleRegister() {
+    var user = $('regUser').value.trim();
+    var pass = $('regPass').value;
+    var pass2 = $('regPass2').value;
+    if (!user || !pass) { showAuthError('请填写完整信息'); return; }
+    if (pass !== pass2) { showAuthError('两次密码不一致'); return; }
+    if (pass.length < 4) { showAuthError('密码至少4位'); return; }
+
+    hideAuthError();
+    registerBtn.disabled = true;
+    registerBtn.textContent = '注册中...';
+
+    try {
+      var res = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: user, password: pass })
+      });
+      var data = await res.json();
+      if (res.ok) {
+        currentUser = data.user;
+        closeAuth();
+        renderUserBadge();
+        await loadFavorites();
+        applyFilters();
+        showToast('注册成功，欢迎 ' + escapeHtml(currentUser.name), 'success');
+      } else {
+        showAuthError(data.error || '注册失败');
+      }
+    } catch (err) {
+      showAuthError('网络错误，请重试');
+    } finally {
+      registerBtn.disabled = false;
+      registerBtn.textContent = '注册';
+    }
+  }
+
   async function checkAuth() {
     try {
       var res = await fetch('/api/auth/me');
@@ -179,33 +577,59 @@
         currentUser = data.user;
         renderUserBadge();
         await loadFavorites();
-        checkGuestBanner();
       } else {
-        currentUser = null;
         renderGuestBadge();
       }
     } catch (e) {
-      currentUser = null;
       renderGuestBadge();
     }
   }
 
+  function renderUserBadge() {
+    if (!currentUser) { renderGuestBadge(); return; }
+    var initial = (currentUser.name || 'U')[0].toUpperCase();
+    userBadge.classList.add('visible');
+    userAvatar.textContent = initial;
+    userName.textContent = currentUser.name;
+    authBtn.style.display = 'none';
+  }
+
+  function renderGuestBadge() {
+    userBadge.classList.remove('visible');
+    authBtn.style.display = 'inline-flex';
+    authBtn.textContent = '登录';
+  }
+
+  async function handleLogout() {
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' });
+    } catch (e) { /* ignore */ }
+    currentUser = null;
+    favoriteIds.clear();
+    renderGuestBadge();
+    applyFilters();
+    showToast('已退出登录', 'info');
+  }
+
+  // ─── Favorites ───
   async function loadFavorites() {
     if (!currentUser) return;
     try {
       var res = await fetch('/api/favorites');
       if (res.ok) {
         var data = await res.json();
-        favoriteIds = new Set(data.favorites || []);
+        var ids = data.favorites || [];
+        favoriteIds = new Set(ids);
       }
     } catch (err) {
       console.error('Failed to load favorites:', err);
     }
   }
 
-  async function toggleFavorite(gameId) {
+  async function toggleFavorite(gameId, btn) {
     if (!currentUser) {
-      openAuthModal('login');
+      openAuth();
+      showToast('请先登录以收藏游戏', 'info');
       return;
     }
     try {
@@ -214,806 +638,221 @@
         var data = await res.json();
         if (data.favorite) {
           favoriteIds.add(gameId);
+          if (btn) { btn.classList.add('active'); btn.textContent = '❤️'; }
+          showToast('已收藏', 'success', 1500);
         } else {
           favoriteIds.delete(gameId);
+          if (btn) { btn.classList.remove('active'); btn.textContent = '🤍'; }
+          showToast('已取消收藏', 'info', 1500);
         }
-        // Update all fav buttons
-        $$('.game-card-fav[data-game-id="' + gameId + '"]').forEach(function(btn) {
-          btn.classList.toggle('active', data.favorite);
-          btn.textContent = data.favorite ? '❤️' : '🤍';
-        });
-        if (currentCategory === 'favorites') applyFilters();
-        showToast(data.favorite ? 'Added to favorites!' : 'Removed from favorites', data.favorite ? 'success' : 'info', 2000);
       }
     } catch (err) {
-      console.error('Failed to toggle favorite:', err);
+      console.error('Toggle favorite error:', err);
+      showToast('操作失败', 'error');
     }
   }
 
-  function renderUserBadge() {
-    if (!currentUser) return;
-    var initial = (currentUser.name || '?')[0].toUpperCase();
-    authArea.innerHTML =
-      '<button class="header-btn" id="fav-header-btn" title="Favorites">❤️</button>' +
-      '<div class="user-badge" id="user-menu-btn">' +
-        '<div class="user-avatar">' + initial + '</div>' +
-        '<span class="user-name">' + escapeHtml(currentUser.name) + '</span>' +
-      '</div>';
-    el('user-menu-btn').addEventListener('click', function(e) {
-      e.stopPropagation();
-      toggleProfilePanel();
-    });
-    el('fav-header-btn').addEventListener('click', function() {
-      currentCategory = 'favorites';
+  // ─── Event Binding ───
+  function bindEvents() {
+    // Category pills
+    categoryPills.addEventListener('click', function(e) {
+      var pill = e.target.closest('.category-pill');
+      if (!pill) return;
+      var cat = pill.dataset.cat;
+      if (!cat) return;
+      currentCategory = cat;
+      currentPage = 1;
+      categoryPills.querySelectorAll('.category-pill').forEach(function(p) { p.classList.remove('active'); });
+      pill.classList.add('active');
       applyFilters();
-      renderCategories();
-      updateNavTabs();
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    });
-  }
-
-  function renderGuestBadge() {
-    authArea.innerHTML =
-      '<button class="header-btn" id="fav-header-btn" title="Favorites">❤️</button>' +
-      '<button class="header-btn" id="auth-btn" title="Profile">👤</button>';
-    el('auth-btn').addEventListener('click', function() { openAuthModal('login'); });
-    el('fav-header-btn').addEventListener('click', function() {
-      currentCategory = 'favorites';
-      applyFilters();
-      renderCategories();
-      updateNavTabs();
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    });
-    if (profileOpen) closeProfilePanel();
-  }
-
-  function toggleProfilePanel() {
-    if (profileOpen) closeProfilePanel();
-    else openProfilePanel();
-  }
-
-  async function openProfilePanel() {
-    if (!currentUser) return;
-    profileOpen = true;
-    profilePanel.style.display = 'block';
-    var initial = (currentUser.name || '?')[0].toUpperCase();
-    profileAvatar.textContent = initial;
-    profileName.textContent = currentUser.name;
-    if (currentUser.createdAt) {
-      var date = new Date(currentUser.createdAt);
-      profileSince.textContent = 'Member since ' + date.toLocaleDateString();
-    }
-    try {
-      var scoresRes = await fetch('/api/scores?userId=' + currentUser.id).catch(function() { return null; });
-      if (scoresRes && scoresRes.ok) {
-        var scoresData = await scoresRes.json();
-        var scores = scoresData.scores || [];
-        statGames.textContent = new Set(scores.map(function(s) { return s.gameId; })).size;
-        statScores.textContent = scores.length;
+      // Switch nav tab
+      if (cat === 'favorites') {
+        setActiveNavTab('favorites');
       } else {
-        statGames.textContent = '0';
-        statScores.textContent = '0';
+        setActiveNavTab('browse');
       }
-    } catch (e) {
-      statGames.textContent = '0';
-      statScores.textContent = '0';
-    }
-    statFavorites.textContent = favoriteIds.size;
-    renderProfileFavorites();
-    setTimeout(function() {
-      document.addEventListener('click', closeProfilePanelOutside);
-    }, 0);
-  }
-
-  function renderProfileFavorites() {
-    if (favoriteIds.size === 0) {
-      profileFavList.innerHTML = '<div class="profile-fav-empty">No favorites yet.</div>';
-      return;
-    }
-    var favGames = registry.games.filter(function(g) { return favoriteIds.has(g.id); });
-    profileFavList.innerHTML = favGames.map(function(g) {
-      return '<div class="profile-fav-item" data-game="' + g.id + '">' + escapeHtml(g.name) + '</div>';
-    }).join('');
-    profileFavList.querySelectorAll('.profile-fav-item').forEach(function(item) {
-      item.addEventListener('click', function() {
-        var gameId = item.dataset.game;
-        navigateToGame(gameId);
-      });
     });
-  }
 
-  function closeProfilePanel() {
-    profileOpen = false;
-    profilePanel.style.display = 'none';
-    document.removeEventListener('click', closeProfilePanelOutside);
-  }
-
-  function closeProfilePanelOutside(e) {
-    if (!profilePanel.contains(e.target) && e.target.id !== 'user-menu-btn' && !e.target.closest('#user-menu-btn')) {
-      closeProfilePanel();
-    }
-  }
-
-  async function signOut() {
-    document.cookie = 'token=; Path=/; Max-Age=0';
-    currentUser = null;
-    favoriteIds.clear();
-    closeProfilePanel();
-    renderGuestBadge();
-    if (currentCategory === 'favorites') {
-      currentCategory = 'all';
-      applyFilters();
-    }
-    showToast('Signed out successfully', 'info');
-  }
-
-  function openAuthModal(action) {
-    authAction = action || 'login';
-    authModal.style.display = 'flex';
-    authError.style.display = 'none';
-    authError.className = 'error-msg';
-    modalTitle.textContent = authAction === 'login' ? 'Sign In' : 'Create Account';
-    authSubmit.textContent = authAction === 'login' ? 'Sign In' : 'Create Account';
-    authSubmit.disabled = false;
-    usernameInput.classList.remove('input-locked');
-    usernameInput.readOnly = false;
-    if (passwordInput) {
-      passwordInput.classList.remove('input-locked');
-      passwordInput.readOnly = false;
-    }
-    $$('.auth-tab').forEach(function(tab) {
-      tab.classList.toggle('active', tab.dataset.action === authAction);
-    });
-    usernameInput.value = '';
-    if (passwordInput) passwordInput.value = '';
-    usernameInput.focus();
-  }
-
-  function closeAuthModal() {
-    authModal.style.display = 'none';
-    clearLockoutTimer();
-  }
-
-  function clearLockoutTimer() {
-    if (lockoutTimer) {
-      clearInterval(lockoutTimer);
-      lockoutTimer = null;
-    }
-    lockoutRetryAfter = 0;
-  }
-
-  function startLockoutCountdown(retryAfterSeconds) {
-    clearLockoutTimer();
-    lockoutRetryAfter = retryAfterSeconds;
-    authSubmit.disabled = true;
-    usernameInput.classList.add('input-locked');
-    usernameInput.readOnly = true;
-    if (passwordInput) {
-      passwordInput.classList.add('input-locked');
-      passwordInput.readOnly = true;
-    }
-    lockoutTimer = setInterval(function() {
-      lockoutRetryAfter -= 1;
-      if (lockoutRetryAfter <= 0) {
-        clearLockoutTimer();
-        authError.style.display = 'none';
-        authError.className = 'error-msg';
-        authSubmit.disabled = false;
-        usernameInput.classList.remove('input-locked');
-        usernameInput.readOnly = false;
-        if (passwordInput) {
-          passwordInput.classList.remove('input-locked');
-          passwordInput.readOnly = false;
+    // Tag filter chips
+    $$('.tag-chip[data-filter]').forEach(function(chip) {
+      chip.addEventListener('click', function() {
+        var filter = chip.dataset.filter;
+        if (filter === 'all') {
+          $$('.tag-chip[data-filter]').forEach(function(c) { c.classList.remove('active'); });
+          chip.classList.add('active');
+          currentFilter = 'all';
+        } else {
+          $('.tag-chip[data-filter="all"]').classList.remove('active');
+          chip.classList.toggle('active');
+          var active = [];
+          $$('.tag-chip[data-filter].active').forEach(function(c) { active.push(c.dataset.filter); });
+          currentFilter = active.length > 0 ? active[0] : 'all';
         }
-        return;
-      }
-      var mins = Math.floor(lockoutRetryAfter / 60);
-      var secs = lockoutRetryAfter % 60;
-      authError.innerHTML =
-        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;flex-shrink:0;margin-top:1px"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>' +
-        '<span class="error-msg__text">Account temporarily locked due to multiple failed attempts.' +
-        '<span class="error-msg__countdown">' + mins + ':' + String(secs).padStart(2, '0') + '</span>' +
-        '<span class="error-msg__countdown-label">until you can try again</span>' +
-        '</span>';
-      authError.style.display = 'flex';
-    }, 1000);
-    var mins = Math.floor(lockoutRetryAfter / 60);
-    var secs = lockoutRetryAfter % 60;
-    authError.className = 'error-msg error-msg--locked';
-    authError.innerHTML =
-      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;flex-shrink:0;margin-top:1px"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>' +
-      '<span class="error-msg__text">Account temporarily locked due to multiple failed attempts.' +
-      '<span class="error-msg__countdown">' + mins + ':' + String(secs).padStart(2, '0') + '</span>' +
-      '<span class="error-msg__countdown-label">until you can try again</span>' +
-      '</span>';
-    authError.style.display = 'flex';
-  }
+        currentPage = 1;
+        applyFilters();
+      });
+    });
 
-  // ─── Hero Carousel ───
-  function renderHero() {
-    var featured = registry.games.filter(function(g) { return g.featured; });
-    if (!featured.length) {
-      el('hero-section').style.display = 'none';
-      return;
-    }
-    el('hero-section').style.display = 'block';
+    // Difficulty chips
+    $$('.tag-chip[data-difficulty]').forEach(function(chip) {
+      chip.addEventListener('click', function() {
+        $$('.tag-chip[data-difficulty]').forEach(function(c) { c.classList.remove('active'); });
+        chip.classList.add('active');
+        currentDifficulty = chip.dataset.difficulty;
+        currentPage = 1;
+        applyFilters();
+      });
+    });
 
-    heroSlides.innerHTML = featured.map(function(g, i) {
-      var catName = '';
-      registry.categories.forEach(function(c) { if (c.id === g.category) catName = c.name; });
-      return '<div class="hero-slide' + (i === 0 ? ' active' : '') + '" data-index="' + i + '">' +
-        '<div class="hero-bg" style="background:' + getCatGradient(g.category) + '"></div>' +
-        '<div class="hero-bg-gradient"></div>' +
-        '<div class="hero-content">' +
-          '<span class="hero-category-tag">' + catName + '</span>' +
-          '<h1 class="hero-title">' + escapeHtml(g.name) + '</h1>' +
-          '<p class="hero-desc">' + escapeHtml(g.description) + '</p>' +
-          '<div class="hero-meta">' +
-            '<span class="hero-stars">' + starsHTML(g.rating) + ' ' + g.rating + '</span>' +
-            '<span class="hero-players">👥 ' + g.players + '</span>' +
-          '</div>' +
-          '<a class="hero-btn" href="/games/' + g.id + '/">▶ Play Now</a>' +
-        '</div>' +
-      '</div>';
-    }).join('');
-
-    heroDots.innerHTML = featured.map(function(_, i) {
-      return '<button class="hero-dot' + (i === 0 ? ' active' : '') + '" data-index="' + i + '" aria-label="Slide ' + (i+1) + '"></button>';
-    }).join('');
-  }
-
-  function goHero(dir) {
-    var slides = heroSlides.querySelectorAll('.hero-slide');
-    var dots = heroDots.querySelectorAll('.hero-dot');
-    var total = slides.length;
-    var idx = heroIndex + dir;
-    if (idx < 0) idx = total - 1;
-    if (idx >= total) idx = 0;
-    goToHero(idx);
-  }
-
-  function goToHero(idx) {
-    var slides = heroSlides.querySelectorAll('.hero-slide');
-    var dots = heroDots.querySelectorAll('.hero-dot');
-    slides.forEach(function(s) { s.classList.remove('active'); });
-    dots.forEach(function(d) { d.classList.remove('active'); });
-    if (slides[idx]) slides[idx].classList.add('active');
-    if (dots[idx]) dots[idx].classList.add('active');
-    heroIndex = idx;
-  }
-
-  function startHeroAuto() {
-    clearInterval(heroTimer);
-    heroTimer = setInterval(function() { goHero(1); }, 6000);
-    var carousel = el('hero-carousel');
-    carousel.addEventListener('mouseenter', function() { clearInterval(heroTimer); });
-    carousel.addEventListener('mouseleave', startHeroAuto);
-  }
-
-  // ─── Categories ───
-  function renderCategories() {
-    var cats = registry.categories || [];
-    categoryScroll.innerHTML = cats.map(function(cat) {
-      var count = cat.id === 'all' ? registry.games.length : registry.games.filter(function(g) { return g.category === cat.id; }).length;
-      return '<button class="category-tile' + (currentCategory === cat.id ? ' active' : '') + '" data-cat="' + cat.id + '">' +
-        '<span class="cat-icon">' + (cat.icon || CATEGORY_ICONS[cat.id] || '🎮') + '</span>' +
-        '<span class="cat-name">' + cat.name + '</span>' +
-        '<span class="cat-count">' + count + ' games</span>' +
-      '</button>';
-    }).join('');
-
-    // Favorites tile if logged in
-    if (currentUser) {
-      var favTile = document.createElement('button');
-      favTile.className = 'category-tile' + (currentCategory === 'favorites' ? ' active' : '');
-      favTile.dataset.cat = 'favorites';
-      favTile.innerHTML = '<span class="cat-icon">❤️</span><span class="cat-name">Favorites</span><span class="cat-count">' + favoriteIds.size + ' games</span>';
-      categoryScroll.appendChild(favTile);
-    }
-  }
-
-  // ─── Sort Chips ───
-  function setupSortChips() {
-    el('sort-chips').addEventListener('click', function(e) {
-      var chip = e.target.closest('.sort-chip');
-      if (!chip) return;
-      el('sort-chips').querySelectorAll('.sort-chip').forEach(function(c) { c.classList.remove('active'); });
-      chip.classList.add('active');
-      currentSort = chip.dataset.sort;
+    // Sort
+    sortSelect.addEventListener('change', function() {
+      currentSort = sortSelect.value;
+      currentPage = 1;
       applyFilters();
     });
-  }
 
-  // ─── Filter & Sort ───
-  function applyFilters() {
-    filteredGames = [].concat(registry.games);
+    // Pagination
+    prevPage.addEventListener('click', function() {
+      if (currentPage > 1) { currentPage--; applyFilters(); }
+    });
+    nextPage.addEventListener('click', function() {
+      var total = Math.ceil(filteredGames.length / PAGE_SIZE);
+      if (currentPage < total) { currentPage++; applyFilters(); }
+    });
+    pageNumbers.addEventListener('click', function(e) {
+      var btn = e.target.closest('.page-btn');
+      if (btn && btn.dataset.page) goToPage(parseInt(btn.dataset.page));
+    });
 
-    if (currentCategory === 'favorites') {
-      filteredGames = filteredGames.filter(function(g) { return favoriteIds.has(g.id); });
-    } else if (currentCategory !== 'all') {
-      filteredGames = filteredGames.filter(function(g) { return g.category === currentCategory; });
-    }
-
-    if (searchQuery.trim()) {
-      var q = searchQuery.toLowerCase();
-      filteredGames = filteredGames.filter(function(g) {
-        return g.name.toLowerCase().indexOf(q) !== -1 ||
-               g.description.toLowerCase().indexOf(q) !== -1 ||
-               g.category.toLowerCase().indexOf(q) !== -1 ||
-               (g.tags && g.tags.some(function(t) { return t.toLowerCase().indexOf(q) !== -1; }));
-      });
-    }
-
-    switch (currentSort) {
-      case 'popular':
-        filteredGames.sort(function(a, b) { return (b.rating || 0) - (a.rating || 0); });
-        break;
-      case 'newest':
-        filteredGames.sort(function(a, b) { return (b.version || '').localeCompare(a.version || ''); });
-        break;
-      case 'rating':
-        filteredGames.sort(function(a, b) { return (b.rating || 0) - (a.rating || 0); });
-        break;
-      case 'az':
-        filteredGames.sort(function(a, b) { return a.name.localeCompare(b.name); });
-        break;
-    }
-
-    visibleCount = PAGE_SIZE;
-    renderGames();
-    updateLoadMore();
-  }
-
-  function starsHTML(rating) {
-    if (!rating) return '';
-    var full = Math.floor(rating);
-    var half = rating % 1 >= 0.5 ? 1 : 0;
-    var empty = 5 - full - half;
-    return '★'.repeat(full) + (half ? '½' : '') + '☆'.repeat(empty);
-  }
-
-  function renderGames() {
-    var visibleGames = filteredGames.slice(0, visibleCount);
-
-    if (visibleGames.length === 0 && filteredGames.length === 0) {
-      gamesGrid.innerHTML = '<div class="empty-state"><div class="empty-icon">🔍</div><div class="empty-title">No games found</div><div class="empty-desc">' +
-        (currentCategory === 'favorites' ? 'You haven\'t favorited any games yet. Click 🤍 on a game card!' : (searchQuery ? 'No results for "' + escapeHtml(searchQuery) + '"' : 'Try a different category')) +
-        '</div></div>';
-      resultsCount.textContent = '0 games';
-      return;
-    }
-
-    resultsCount.textContent = filteredGames.length + ' game' + (filteredGames.length !== 1 ? 's' : '');
-
-    var html = '';
-    for (var i = 0; i < visibleGames.length; i++) {
-      var g = visibleGames[i];
-      var isFav = favoriteIds.has(g.id);
-      var catName = '';
-      registry.categories.forEach(function(c) { if (c.id === g.category) catName = c.name; });
-      var delay = (i % 24) * 30;
-
-      html += '<a class="game-card" href="/games/' + g.id + '/" data-game-id="' + g.id + '" style="animation-delay:' + delay + 'ms">' +
-        '<div class="game-card-cover" style="background:' + getCatGradient(g.category) + '">' +
-          '<span class="cover-icon">' + gameIcon(g) + '</span>' +
-          '<div class="play-overlay"><div class="play-btn-circle">▶</div></div>' +
-        '</div>' +
-        '<div class="game-card-body">' +
-          '<div class="game-card-title-row">' +
-            '<span class="game-card-title" title="' + escapeAttr(g.name) + '">' + escapeHtml(g.name) + '</span>' +
-            '<button class="game-card-fav' + (isFav ? ' active' : '') + '" data-game-id="' + g.id + '" aria-label="Toggle favorite">' + (isFav ? '❤️' : '🤍') + '</button>' +
-          '</div>' +
-          '<div class="game-card-desc">' + escapeHtml(g.description) + '</div>' +
-          '<div class="game-card-meta">' +
-            '<span class="card-tag">' + catName + '</span>' +
-            (g.rating ? '<span class="card-stars">' + starsHTML(g.rating) + '</span>' : '') +
-            '<span class="card-players">👥 ' + g.players + '</span>' +
-          '</div>' +
-        '</div>' +
-      '</a>';
-    }
-    gamesGrid.innerHTML = html;
-
-    // Bind favorite buttons
-    gamesGrid.querySelectorAll('.game-card-fav').forEach(function(btn) {
-      btn.addEventListener('click', function(e) {
+    // Game grid event delegation (favorites)
+    gameGrid.addEventListener('click', function(e) {
+      var favBtn = e.target.closest('.fav-btn');
+      if (favBtn) {
         e.preventDefault();
         e.stopPropagation();
-        toggleFavorite(btn.dataset.gameId);
-      });
-    });
-  }
-
-  function updateLoadMore() {
-    if (visibleCount >= filteredGames.length) {
-      loadMoreWrap.style.display = 'none';
-      return;
-    }
-    loadMoreWrap.style.display = 'block';
-    var remaining = filteredGames.length - visibleCount;
-    var nextBatch = Math.min(PAGE_SIZE, remaining);
-    loadMoreBtn.textContent = 'Show ' + nextBatch + ' more';
-  }
-
-  function loadMore() {
-    visibleCount += PAGE_SIZE;
-    renderGames();
-    updateLoadMore();
-  }
-
-  function navigateToGame(gameId) {
-    window.location.href = '/games/' + encodeURIComponent(gameId) + '/';
-  }
-
-  // ─── Search ───
-  function setupSearch() {
-    searchInput.addEventListener('input', function() {
-      clearTimeout(searchTimeout);
-      var q = searchInput.value;
-      if (searchClear) searchClear.classList.toggle('visible', q.length > 0);
-
-      searchTimeout = setTimeout(function() {
-        searchQuery = q;
-        applyFilters();
-        renderSearchOverlay(q);
-      }, 150);
+        toggleFavorite(favBtn.dataset.gameId, favBtn);
+      }
     });
 
-    if (searchClear) {
-      searchClear.addEventListener('click', function() {
-        searchInput.value = '';
+    // Auth
+    authBtn.addEventListener('click', openAuth);
+
+    // Close modal on overlay click
+    authModal.addEventListener('click', function(e) {
+      if (e.target === authModal) closeAuth();
+    });
+
+    // Login/Register buttons
+    loginBtn.addEventListener('click', handleLogin);
+    registerBtn.addEventListener('click', handleRegister);
+
+    // Allow Enter key on auth inputs
+    $('loginPass').addEventListener('keydown', function(e) { if (e.key === 'Enter') handleLogin(); });
+    $('regPass2').addEventListener('keydown', function(e) { if (e.key === 'Enter') handleRegister(); });
+
+    // User badge click → logout
+    userBadge.addEventListener('click', function() {
+      if (confirm('退出登录?')) handleLogout();
+    });
+
+    // Mobile nav
+    mobileNav.addEventListener('click', function(e) {
+      var item = e.target.closest('.mobile-nav-item');
+      if (!item) return;
+      var tab = item.dataset.mtab;
+      if (tab === 'home') {
+        currentCategory = 'all';
+        currentFilter = 'all';
         searchQuery = '';
-        searchClear.classList.remove('visible');
-        applyFilters();
-        closeSearchOverlay();
-        searchInput.focus();
-      });
-    }
-
-    searchInput.addEventListener('focus', function() {
-      if (searchInput.value.trim()) renderSearchOverlay(searchInput.value);
-    });
-
-    searchInput.addEventListener('blur', function() {
-      setTimeout(closeSearchOverlay, 200);
-    });
-
-    // Keyboard shortcut: "/" to focus search
-    document.addEventListener('keydown', function(e) {
-      if (e.key === '/') {
-        var tag = document.activeElement ? document.activeElement.tagName : '';
-        if (tag !== 'INPUT' && tag !== 'TEXTAREA') {
-          e.preventDefault();
-          searchInput.focus();
-        }
-      }
-      if (e.key === 'Escape') {
-        closeSearchOverlay();
-        searchInput.blur();
-        if (authModal.style.display !== 'none') closeAuthModal();
-        else if (profileOpen) closeProfilePanel();
-      }
-    });
-  }
-
-  function renderSearchOverlay(query) {
-    if (!query.trim()) { closeSearchOverlay(); return; }
-    if (!searchOverlay) return;
-
-    var q = query.toLowerCase();
-    var matchedGames = registry.games.filter(function(g) {
-      return g.name.toLowerCase().indexOf(q) !== -1 || g.description.toLowerCase().indexOf(q) !== -1;
-    }).slice(0, 5);
-
-    var matchedCats = (registry.categories || []).filter(function(c) {
-      return c.id !== 'all' && c.name.toLowerCase().indexOf(q) !== -1;
-    });
-
-    if (!matchedGames.length && !matchedCats.length) {
-      searchOverlayContent.innerHTML = '<div class="search-overlay-empty">No results for "' + escapeHtml(query) + '"</div>';
-      searchOverlay.classList.add('active');
-      return;
-    }
-
-    var html = '';
-    if (matchedGames.length) {
-      html += '<div class="search-overlay-section"><div class="search-overlay-section-title">Games</div>';
-      matchedGames.forEach(function(g) {
-        var catName = '';
-        registry.categories.forEach(function(c) { if (c.id === g.category) catName = c.name; });
-        var highlightedName = g.name.replace(new RegExp(escapeRegex(q), 'gi'), function(m) {
-          return '<strong style="color:var(--primary)">' + m + '</strong>';
-        });
-        html += '<div class="search-overlay-item" data-game-id="' + g.id + '">' +
-          '<div class="item-cover" style="background:' + getCatGradient(g.category) + '">' + gameIcon(g) + '</div>' +
-          '<div class="item-info"><div class="item-name">' + highlightedName + '</div><div class="item-category">' + catName + '</div></div>' +
-        '</div>';
-      });
-      html += '</div>';
-    }
-
-    if (matchedCats.length) {
-      html += '<div class="search-overlay-section"><div class="search-overlay-section-title">Categories</div>';
-      matchedCats.forEach(function(c) {
-        html += '<div class="search-overlay-item" data-cat="' + c.id + '"><div class="item-info"><div class="item-name">' + (c.icon || CATEGORY_ICONS[c.id] || '🎮') + ' ' + c.name + '</div></div></div>';
-      });
-      html += '</div>';
-    }
-
-    html += '<div class="search-overlay-section" style="border-top:1px solid var(--glass-border);padding-top:8px;margin-top:4px">' +
-      '<div class="search-overlay-item" style="color:var(--primary);font-weight:500;font-size:0.8rem" data-view-all>' +
-        '<span>→ View all results</span>' +
-      '</div>' +
-    '</div>';
-
-    searchOverlayContent.innerHTML = html;
-    searchOverlay.classList.add('active');
-
-    // Bind overlay clicks
-    searchOverlayContent.querySelectorAll('[data-game-id]').forEach(function(item) {
-      item.addEventListener('click', function() {
-        var id = item.dataset.gameId;
-        navigateToGame(id);
-        closeSearchOverlay();
-      });
-    });
-    searchOverlayContent.querySelectorAll('[data-cat]').forEach(function(item) {
-      item.addEventListener('click', function() {
-        currentCategory = item.dataset.cat;
+        searchInput.value = '';
+        currentPage = 1;
         applyFilters();
         renderCategories();
-        closeSearchOverlay();
-      });
+        setActiveMobileTab(item);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      } else if (tab === 'search') {
+        searchInput.focus();
+      } else if (tab === 'games') {
+        currentCategory = 'all';
+        currentPage = 1;
+        applyFilters();
+        renderCategories();
+        setActiveMobileTab(item);
+        document.querySelector('.nav-link[data-tab="browse"]').click();
+      } else if (tab === 'favorites') {
+        if (!currentUser) { openAuth(); return; }
+        currentCategory = 'favorites';
+        currentPage = 1;
+        applyFilters();
+        renderCategories();
+        setActiveMobileTab(item);
+      } else if (tab === 'profile') {
+        if (currentUser) {
+          var initial = (currentUser.name || 'U')[0].toUpperCase();
+          showToast('已登录: ' + escapeHtml(currentUser.name) + ' (点击头像可退出)', 'info');
+        } else {
+          openAuth();
+        }
+      }
     });
-    var viewAll = searchOverlayContent.querySelector('[data-view-all]');
-    if (viewAll) viewAll.addEventListener('click', closeSearchOverlay);
-  }
 
-  function closeSearchOverlay() {
-    if (searchOverlay) searchOverlay.classList.remove('active');
-  }
-
-  function escapeRegex(str) {
-    return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  }
-
-  // ─── Mobile Bottom Nav ───
-  function setupMobileNav() {
-    if (!mobileNav) return;
-    mobileNav.addEventListener('click', function(e) {
-      var tab = e.target.closest('.nav-tab');
-      if (!tab) return;
-
-      mobileNav.querySelectorAll('.nav-tab').forEach(function(t) { t.classList.remove('active'); });
-      tab.classList.add('active');
-
-      switch (tab.dataset.tab) {
-        case 'home':
+    // Top nav tabs
+    $$('.nav-link').forEach(function(nl) {
+      nl.addEventListener('click', function() {
+        $$('.nav-link').forEach(function(n) { n.classList.remove('active'); });
+        nl.classList.add('active');
+        var tab = nl.dataset.tab;
+        if (tab === 'home') {
           currentCategory = 'all';
+          currentFilter = 'all';
           searchQuery = '';
           searchInput.value = '';
+          currentPage = 1;
           applyFilters();
           renderCategories();
           window.scrollTo({ top: 0, behavior: 'smooth' });
-          break;
-        case 'search':
-          searchInput.focus();
-          break;
-        case 'favorites':
+        } else if (tab === 'browse') {
+          currentCategory = 'all';
+          currentPage = 1;
+          applyFilters();
+          renderCategories();
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        } else if (tab === 'favorites') {
+          if (!currentUser) { openAuth(); return; }
           currentCategory = 'favorites';
+          currentPage = 1;
           applyFilters();
           renderCategories();
-          break;
-        case 'profile':
-          if (currentUser) {
-            toggleProfilePanel();
-          } else {
-            openAuthModal('login');
-          }
-          break;
-      }
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+      });
     });
   }
 
-  function updateNavTabs() {
-    // Helper to sync nav tabs with current state
+  function setActiveMobileTab(item) {
+    mobileNav.querySelectorAll('.mobile-nav-item').forEach(function(i) { i.classList.remove('active'); });
+    if (item) item.classList.add('active');
   }
 
-  // ─── Events ───
-  function setupEvents() {
-    // Category scroll delegation
-    if (categoryScroll) {
-      categoryScroll.addEventListener('click', function(e) {
-        var tile = e.target.closest('.category-tile');
-        if (!tile) return;
-        currentCategory = tile.dataset.cat;
-        categoryScroll.querySelectorAll('.category-tile').forEach(function(t) { t.classList.remove('active'); });
-        tile.classList.add('active');
-        applyFilters();
-        // Update mobile nav
-        if (mobileNav) {
-          mobileNav.querySelectorAll('.nav-tab').forEach(function(t) { t.classList.remove('active'); });
-          var homeTab = mobileNav.querySelector('[data-tab="home"]');
-          if (homeTab) homeTab.classList.add('active');
-        }
-      });
-    }
-
-    // Hero controls
-    var heroPrev = el('hero-prev');
-    var heroNext = el('hero-next');
-    if (heroPrev) heroPrev.addEventListener('click', function() { clearInterval(heroTimer); goHero(-1); });
-    if (heroNext) heroNext.addEventListener('click', function() { clearInterval(heroTimer); goHero(1); });
-    if (heroDots) {
-      heroDots.addEventListener('click', function(e) {
-        var dot = e.target.closest('.hero-dot');
-        if (dot) {
-          clearInterval(heroTimer);
-          goToHero(parseInt(dot.dataset.index));
-        }
-      });
-    }
-    // Start auto-play after hero renders
-    if (registry.games.filter(function(g) { return g.featured; }).length > 0) {
-      startHeroAuto();
-    }
-
-    // Load more
-    if (loadMoreBtn) {
-      loadMoreBtn.addEventListener('click', loadMore);
-    }
-
-    // Guest banner
-    if (guestBannerCloseBtn) {
-      guestBannerCloseBtn.addEventListener('click', function() {
-        guestBanner.style.display = 'none';
-        localStorage.setItem('guestBannerDismissed', '1');
-      });
-    }
-    if (guestBannerSignin) {
-      guestBannerSignin.addEventListener('click', function(e) {
-        e.preventDefault();
-        openAuthModal('login');
-      });
-    }
-
-    // Auth modal
-    if (modalClose) modalClose.addEventListener('click', closeAuthModal);
-    if (authModal) {
-      authModal.addEventListener('click', function(e) {
-        if (e.target === authModal) closeAuthModal();
-      });
-    }
-
-    // Auth tabs
-    $$('.auth-tab').forEach(function(tab) {
-      tab.addEventListener('click', function() {
-        authAction = tab.dataset.action;
-        modalTitle.textContent = authAction === 'login' ? 'Sign In' : 'Create Account';
-        authSubmit.textContent = authAction === 'login' ? 'Sign In' : 'Create Account';
-        $$('.auth-tab').forEach(function(t) { t.classList.remove('active'); });
-        tab.classList.add('active');
-        authError.style.display = 'none';
-        if (passwordInput) {
-          passwordInput.setAttribute('autocomplete', authAction === 'login' ? 'current-password' : 'new-password');
-        }
-      });
-    });
-
-    // Auth form submit
-    if (authForm) {
-      authForm.addEventListener('submit', async function(e) {
-        e.preventDefault();
-        var name = usernameInput.value.trim();
-        var password = passwordInput ? passwordInput.value : '';
-        if (!name) return;
-        if (!password || password.length < 4) {
-          authError.textContent = 'Password must be at least 4 characters';
-          authError.className = 'error-msg error-msg--standard';
-          authError.style.display = 'flex';
-          return;
-        }
-        if (lockoutTimer) return;
-        authSubmit.disabled = true;
-        authSubmit.textContent = 'Loading...';
-        authError.style.display = 'none';
-        authError.className = 'error-msg';
-
-        try {
-          var endpoint = authAction === 'login' ? '/api/auth/login' : '/api/auth/register';
-          var res = await fetch(endpoint, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name: name, password: password }),
-          });
-          var data = await res.json();
-          if (!res.ok) {
-            if (res.status === 423 && data.retryAfterSeconds) {
-              startLockoutCountdown(data.retryAfterSeconds);
-              authSubmit.textContent = authAction === 'login' ? 'Sign In' : 'Create Account';
-              return;
-            }
-            if (data.warning) {
-              authError.className = 'error-msg error-msg--warning';
-              authError.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;flex-shrink:0;margin-top:1px"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>' +
-                '<span class="error-msg__text">' + escapeHtml(data.error) + ' ' + escapeHtml(data.message || '') + '</span>';
-              authError.style.display = 'flex';
-            } else {
-              authError.className = 'error-msg error-msg--standard';
-              authError.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;flex-shrink:0;margin-top:1px"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>' +
-                '<span class="error-msg__text">' + escapeHtml(data.error || 'Something went wrong') + '</span>';
-              authError.style.display = 'flex';
-            }
-            return;
-          }
-          currentUser = data.user;
-          await loadFavorites();
-          renderUserBadge();
-          renderCategories();
-          checkGuestBanner();
-          closeAuthModal();
-          if (currentCategory === 'favorites') applyFilters();
-          showToast('Signed in as ' + escapeHtml(currentUser.name), 'success', 3000);
-        } catch (err) {
-          authError.className = 'error-msg error-msg--standard';
-          authError.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;flex-shrink:0;margin-top:1px"><line x1="1" y1="1" x2="23" y2="23"/><path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55"/><path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39"/><path d="M10.71 5.05A16 16 0 0 1 22.56 9"/><path d="M1.42 9a15.91 15.91 0 0 1 4.7-2.88"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>' +
-            '<span class="error-msg__text">Network error. Please try again.</span>';
-          authError.style.display = 'flex';
-        } finally {
-          if (!lockoutTimer) {
-            authSubmit.disabled = false;
-            authSubmit.textContent = authAction === 'login' ? 'Sign In' : 'Create Account';
-          }
-        }
-      });
-    }
-
-    // Profile signout
-    if (profileSignout) {
-      profileSignout.addEventListener('click', signOut);
-    }
-
-    // Mobile search
-    if (mobileSearchBtn) {
-      mobileSearchBtn.addEventListener('click', function(e) {
-        // Only as fallback — header search is visible on mobile with new layout
-        if (window.innerWidth <= 480) {
-          searchInput.focus();
-        }
-      });
-    }
-    if (mobileSearchClose && mobileSearchBar) {
-      mobileSearchClose.addEventListener('click', function() {
-        mobileSearchBar.style.display = 'none';
-        mobileSearchInput.value = '';
-        searchQuery = '';
-        applyFilters();
-      });
-    }
-    if (mobileSearchInput) {
-      mobileSearchInput.addEventListener('input', function() {
-        clearTimeout(searchTimeout);
-        searchTimeout = setTimeout(function() {
-          searchQuery = mobileSearchInput.value;
-          if (searchInput) searchInput.value = searchQuery;
-          applyFilters();
-        }, 300);
-      });
-    }
+  function setActiveNavTab(tab) {
+    $$('.nav-link').forEach(function(n) { n.classList.toggle('active', n.dataset.tab === tab); });
   }
 
   // ─── Utility ───
   function escapeHtml(str) {
+    if (str == null) return '';
     var div = document.createElement('div');
     div.textContent = str;
     return div.innerHTML;
   }
 
-  function escapeAttr(str) {
-    return String(str).replace(/"/g, '&quot;').replace(/'/g, '&#39;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  // ─── Init ───
+  async function init() {
+    setupSearch();
+    await checkAuth();
+    await loadData();
   }
 
-  // ─── Start ───
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
   } else {
