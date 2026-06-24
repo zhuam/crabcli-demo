@@ -442,6 +442,19 @@
       "version": "1.0.0",
       "featured": false,
       "rating": 4.0
+    },
+    {
+      "id": "connect-four-online",
+      "name": "Connect Four Online",
+      "description": "经典四子棋，在线匹配 · 连成四珠获胜",
+      "category": "strategy",
+      "tags": ["multiplayer", "board", "classic", "pvp", "ai", "short-session"],
+      "thumbnail": "/games/063-connect-four-online/thumb.png",
+      "path": "/games/063-connect-four-online/",
+      "hasServer": false,
+      "players": "1-2",
+      "version": "1.0.0",
+      "rating": 4.0
     }
   ],
   "categories": [
