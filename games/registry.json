@@ -402,6 +402,19 @@
       "players": "1",
       "version": "1.0.0",
       "rating": 4.0
+    },
+    {
+      "id": "neon-block-pop",
+      "name": "Neon Block Pop",
+      "description": "霓虹色方块满屏，三连消除获取连击分数",
+      "category": "casual",
+      "tags": ["singleplayer", "casual", "match3", "arcade", "neon"],
+      "thumbnail": "/games/001-neon-block-pop/thumb.png",
+      "path": "/games/001-neon-block-pop/",
+      "hasServer": false,
+      "players": "1",
+      "version": "1.0.0",
+      "rating": 4.3
     }
   ],
   "categories": [

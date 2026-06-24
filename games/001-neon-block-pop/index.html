@@ -1,0 +1,1139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no">
+  <meta name="theme-color" content="#0a0e27">
+  <title>Neon Block Pop</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700;800;900&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../games/shared/game-frame.css">
+  <style>
+    /* ═══════════════════════════════════════════════
+       Neon Block Pop — a single-file HTML game
+       ═══════════════════════════════════════════════ */
+
+    :root {
+      --bg-deep: #0a0e27;
+      --bg-grid: #0d1130;
+      --surface: rgba(255,255,255,0.05);
+      --surface-hover: rgba(255,255,255,0.10);
+      --border: rgba(255,255,255,0.08);
+      --text: #f0f0f0;
+      --text-dim: rgba(255,255,255,0.55);
+      --text-muted: rgba(255,255,255,0.30);
+      --success: #00e676;
+      --danger: #ff5252;
+      --warning: #ffd740;
+      --info: #40c4ff;
+      --font-display: 'Outfit', system-ui, sans-serif;
+      --font-body: 'Inter', system-ui, sans-serif;
+      --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+      --radius-sm: 6px;
+      --radius-md: 12px;
+      --radius-lg: 20px;
+      --radius-xl: 28px;
+      /* Neon block colors — HSL hues for dynamic generation */
+      --col-0: 340; /* neon pink */
+      --col-1: 190; /* neon cyan */
+      --col-2: 80;  /* neon lime */
+      --col-3: 270; /* neon purple */
+      --col-4: 40;  /* neon orange */
+      --col-5: 160; /* neon teal */
+      --col-6: 300; /* neon magenta */
+      --col-7: 220; /* neon blue */
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      background: var(--bg-deep);
+      color: var(--text);
+      font-family: var(--font-body);
+      overflow: hidden;
+      width: 100vw; height: 100vh;
+      display: flex; align-items: center; justify-content: center;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    /* ═══ Screens ═══ */
+    .screen {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      width: 100%; height: 100%;
+      position: fixed; inset: 0;
+    }
+    .screen.active { display: flex; }
+
+    /* ═══ Stars background ═══ */
+    .stars-bg {
+      position: fixed; inset: 0; z-index: 0;
+      background:
+        radial-gradient(2px 2px at 15% 25%, rgba(162,155,254,0.15), transparent),
+        radial-gradient(2px 2px at 35% 65%, rgba(108,92,231,0.1), transparent),
+        radial-gradient(1px 1px at 55% 15%, rgba(162,155,254,0.12), transparent),
+        radial-gradient(2px 2px at 75% 75%, rgba(108,92,231,0.08), transparent),
+        radial-gradient(1px 1px at 8% 85%, rgba(162,155,254,0.1), transparent),
+        radial-gradient(2px 2px at 88% 8%, rgba(108,92,231,0.12), transparent),
+        radial-gradient(1px 1px at 45% 50%, rgba(0,210,255,0.06), transparent),
+        radial-gradient(2px 2px at 92% 55%, rgba(253,121,168,0.08), transparent);
+      pointer-events: none;
+    }
+
+    /* ═══ Title Screen ═══ */
+    .title-screen { justify-content: center; gap: 20px; text-align: center; z-index: 1; }
+    .title-icon {
+      width: 100px; height: 100px; border-radius: 24px;
+      background: linear-gradient(135deg, #ff4081, #7c4dff, #00e5ff);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 48px;
+      box-shadow: 0 0 40px rgba(124,77,255,0.4), 0 0 80px rgba(0,229,255,0.2);
+      position: relative; margin: 0 auto;
+    }
+    @media (prefers-reduced-motion: no-preference) {
+      .title-icon { animation: titleGlow 2.5s ease-in-out infinite alternate; }
+      .title-screen .title-icon { animation: titleGlow 2.5s ease-in-out infinite alternate, titleFloat 3s ease-in-out infinite; }
+    }
+    @keyframes titleGlow {
+      0% { box-shadow: 0 0 40px rgba(124,77,255,0.4); }
+      100% { box-shadow: 0 0 70px rgba(0,229,255,0.6), 0 0 120px rgba(124,77,255,0.3); }
+    }
+    @keyframes titleFloat {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+    }
+    .title-text {
+      font-family: var(--font-display); font-size: 42px; font-weight: 900;
+      background: linear-gradient(135deg, #ff4081, #7c4dff, #00e5ff);
+      background-size: 200% auto;
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+      animation: gradientShift 3s ease infinite;
+      line-height: 1.1; letter-spacing: -0.02em;
+    }
+    @keyframes gradientShift {
+      0%, 100% { background-position: 0% center; }
+      50% { background-position: 100% center; }
+    }
+    .title-subtitle {
+      font-size: 14px; color: var(--text-dim); letter-spacing: 0.04em;
+    }
+    .title-best {
+      font-family: var(--font-mono); font-size: 13px; color: var(--text-muted);
+    }
+    .title-best span { color: var(--warning); font-weight: 700; }
+
+    .btn {
+      font-family: var(--font-display); font-weight: 700; font-size: 17px;
+      border: none; border-radius: 9999px;
+      padding: 14px 44px; min-height: 52px;
+      cursor: pointer;
+      transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease;
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      letter-spacing: 0.03em;
+    }
+    .btn:active { transform: scale(0.96); }
+    .btn:focus-visible { outline: 2px solid #7c4dff; outline-offset: 3px; }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #7c4dff, #00e5ff);
+      color: #fff;
+      box-shadow: 0 4px 20px rgba(124,77,255,0.35);
+    }
+    .btn-primary:hover { box-shadow: 0 6px 30px rgba(124,77,255,0.5); transform: translateY(-2px); }
+    .btn-primary:active { transform: scale(0.96); }
+
+    .btn-secondary {
+      background: var(--surface);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+    .btn-secondary:hover { background: var(--surface-hover); }
+
+    .title-info {
+      display: flex; gap: 20px; font-size: 13px; color: var(--text-dim);
+      flex-wrap: wrap; justify-content: center;
+    }
+    .title-info span { display: flex; align-items: center; gap: 4px; }
+
+    /* ═══ Game Screen ═══ */
+    .game-screen { flex-direction: column; z-index: 1; }
+    .game-header {
+      width: 100%; padding: 10px 16px;
+      display: flex; justify-content: space-between; align-items: center;
+      flex-shrink: 0;
+    }
+    .game-header .back-btn {
+      width: 38px; height: 38px; border-radius: 50%;
+      background: var(--surface); border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; font-size: 18px; color: var(--text-dim);
+      transition: all 0.15s ease;
+    }
+    .game-header .back-btn:hover { background: var(--surface-hover); color: var(--text); }
+    .game-header .back-btn:active { transform: scale(0.9); }
+
+    .game-stats {
+      display: flex; gap: 16px; align-items: center;
+    }
+    .stat-badge {
+      display: flex; align-items: center; gap: 6px;
+      padding: 6px 14px; border-radius: 9999px;
+      background: var(--surface); border: 1px solid var(--border);
+      font-size: 13px; font-weight: 600;
+      font-family: var(--font-mono);
+    }
+    .stat-badge.timer { color: var(--text); min-width: 80px; justify-content: center; }
+    .stat-badge.timer.urgent { color: var(--danger); border-color: rgba(255,82,82,0.3); }
+    .stat-badge.score { color: var(--warning); }
+    .stat-badge.level { color: var(--info); }
+    .stat-badge.combo {
+      color: var(--success);
+      transition: transform 0.15s ease;
+    }
+    .stat-badge.combo.bump { transform: scale(1.3); }
+
+    .timer-bar-wrap {
+      width: 100%; height: 4px; background: rgba(255,255,255,0.06); flex-shrink: 0;
+    }
+    .timer-bar {
+      height: 100%; width: 100%;
+      background: linear-gradient(90deg, #7c4dff, #00e5ff);
+      transition: width 0.3s linear;
+      border-radius: 0 2px 2px 0;
+    }
+    .timer-bar.urgent { background: linear-gradient(90deg, #ff5252, #ff4081); }
+
+    /* ═══ Game Board ═══ */
+    .board-wrap {
+      flex: 1; display: flex; align-items: center; justify-content: center;
+      width: 100%; padding: 4px 8px;
+      overflow: hidden;
+    }
+    .board {
+      position: relative;
+      background: var(--bg-grid);
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border);
+      box-shadow: inset 0 0 30px rgba(0,0,0,0.3);
+    }
+
+    .cell {
+      position: absolute;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: transform 0.12s ease, opacity 0.15s ease;
+      will-change: transform;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .cell::after {
+      content: '';
+      position: absolute; inset: 2px;
+      border-radius: 3px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.25) 0%, transparent 50%);
+      pointer-events: none;
+    }
+    .cell:hover { transform: scale(1.06); z-index: 2; }
+    .cell:active { transform: scale(0.92); }
+    .cell.selected { transform: scale(1.08); z-index: 3; }
+    .cell.popping {
+      animation: popAnim 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    }
+    @keyframes popAnim {
+      0% { transform: scale(1); opacity: 1; }
+      40% { transform: scale(1.3); opacity: 0.8; }
+      100% { transform: scale(0); opacity: 0; }
+    }
+    .cell.dropping { transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1); }
+    .cell.new-block {
+      animation: dropIn 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+    }
+    @keyframes dropIn {
+      0% { transform: translateY(-40px) scale(0.5); opacity: 0; }
+      100% { transform: translateY(0) scale(1); opacity: 1; }
+    }
+
+    /* Glow for each color */
+    .cell.glow { box-shadow: 0 0 12px 3px var(--glow-color); }
+
+    /* ═══ Floating score ═══ */
+    .float-score {
+      position: fixed; pointer-events: none; z-index: 100;
+      font-family: var(--font-display); font-weight: 900;
+      font-size: 28px;
+      animation: floatUp 0.8s ease-out forwards;
+    }
+    @keyframes floatUp {
+      0% { opacity: 1; transform: translateY(0) scale(1); }
+      100% { opacity: 0; transform: translateY(-80px) scale(1.2); }
+    }
+
+    /* ═══ Pause overlay ═══ */
+    .pause-overlay {
+      position: fixed; inset: 0; z-index: 50;
+      background: rgba(10,14,39,0.85);
+      backdrop-filter: blur(8px);
+      display: none; flex-direction: column; align-items: center; justify-content: center; gap: 20px;
+    }
+    .pause-overlay.active { display: flex; }
+    .pause-overlay h2 {
+      font-family: var(--font-display); font-size: 32px; font-weight: 800;
+    }
+
+    /* ═══ Result Screen ═══ */
+    .result-screen { justify-content: center; gap: 16px; text-align: center; z-index: 1; padding: 24px; }
+    .result-icon { font-size: 56px; margin-bottom: 4px; }
+    .result-title {
+      font-family: var(--font-display); font-size: 36px; font-weight: 900;
+    }
+    .result-title.win { background: linear-gradient(135deg, #00e676, #00e5ff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .result-title.lose { color: var(--danger); }
+    .result-score-wrap {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius-lg); padding: 20px 36px;
+      display: flex; flex-direction: column; gap: 6px;
+    }
+    .result-score-label { font-size: 13px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.08em; }
+    .result-score-value { font-family: var(--font-mono); font-size: 42px; font-weight: 700; color: var(--warning); }
+    .result-detail { font-size: 14px; color: var(--text-dim); }
+    .result-detail span { color: var(--text); font-weight: 600; }
+    .result-best-label { font-size: 13px; color: var(--text-muted); margin-bottom: 8px; }
+    .result-best-label b { color: var(--warning); }
+
+    .result-btns { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+
+    /* ═══ Responsive ═══ */
+    @media (max-width: 480px) {
+      .title-text { font-size: 30px; }
+      .title-icon { width: 72px; height: 72px; font-size: 36px; border-radius: 18px; }
+      .btn { font-size: 15px; padding: 12px 32px; min-height: 46px; }
+      .game-header { padding: 8px 10px; }
+      .stat-badge { padding: 4px 10px; font-size: 12px; }
+      .board-wrap { padding: 2px 4px; }
+      .result-score-value { font-size: 34px; }
+      .result-title { font-size: 28px; }
+      .result-score-wrap { padding: 16px 24px; }
+    }
+    @media (min-width: 600px) {
+      .board-wrap { padding: 8px 16px; }
+    }
+    @media (max-height: 640px) {
+      .game-header { padding: 6px 10px; }
+      .stat-badge { padding: 3px 8px; font-size: 11px; }
+      .board-wrap { padding: 2px 4px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+      }
+      .cell { transition: none; }
+      .cell.popping { animation: none; opacity: 0; }
+      .cell.new-block { animation: none; }
+    }
+
+    /* ═══ Combo chain indicator ═══ */
+    .chain-popup {
+      position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+      z-index: 90; pointer-events: none;
+      font-family: var(--font-display); font-weight: 900;
+      text-align: center;
+      animation: chainPop 0.6s ease-out forwards;
+    }
+    @keyframes chainPop {
+      0% { opacity: 1; transform: translate(-50%, -50%) scale(0.5); }
+      30% { opacity: 1; transform: translate(-50%, -50%) scale(1.2); }
+      100% { opacity: 0; transform: translate(-50%, -70%) scale(1); }
+    }
+    .chain-popup .chain-label { font-size: 14px; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.7; }
+    .chain-popup .chain-count { font-size: 48px; }
+  </style>
+</head>
+<body>
+
+<div class="stars-bg"></div>
+
+<!-- ═══ TITLE SCREEN ═══ -->
+<section class="screen title-screen active" id="titleScreen">
+  <div class="title-icon">🧊</div>
+  <h1 class="title-text">NEON BLOCK<br>POP</h1>
+  <p class="title-subtitle">Tap connected blocks of the same color to pop them!</p>
+  <button class="btn btn-primary" id="playBtn">▶ PLAY</button>
+  <div class="title-info">
+    <span>⏱ 60s</span>
+    <span>🎯 Clear groups of 3+</span>
+    <span>🔥 Chain combos</span>
+  </div>
+  <p class="title-best" id="titleBest">Best: <span>0</span></p>
+</section>
+
+<!-- ═══ GAME SCREEN ═══ -->
+<section class="screen game-screen" id="gameScreen">
+  <div class="game-header">
+    <button class="back-btn" id="pauseBtn" aria-label="Pause">⏸</button>
+    <div class="game-stats">
+      <span class="stat-badge level" id="levelDisplay">Lv 1</span>
+      <span class="stat-badge score" id="scoreDisplay">🏆 0</span>
+      <span class="stat-badge combo" id="comboDisplay">🔥 ×1</span>
+    </div>
+  </div>
+  <div class="timer-bar-wrap">
+    <div class="timer-bar" id="timerBar"></div>
+  </div>
+  <div class="board-wrap">
+    <div class="board" id="board"></div>
+  </div>
+</section>
+
+<!-- ═══ PAUSE OVERLAY ═══ -->
+<div class="pause-overlay" id="pauseOverlay">
+  <h2>⏸ PAUSED</h2>
+  <button class="btn btn-primary" id="resumeBtn">▶ RESUME</button>
+  <button class="btn btn-secondary" id="quitBtn">🏠 QUIT</button>
+</div>
+
+<!-- ═══ RESULT SCREEN ═══ -->
+<section class="screen result-screen" id="resultScreen">
+  <div class="result-icon" id="resultIcon">🎉</div>
+  <h2 class="result-title" id="resultTitle">GAME OVER</h2>
+  <div class="result-score-wrap">
+    <span class="result-score-label">Score</span>
+    <span class="result-score-value" id="resultScore">0</span>
+  </div>
+  <p class="result-detail">Level <span id="resultLevel">1</span> · <span id="resultPops">0</span> pops · <span id="resultChains">0</span> chains</p>
+  <p class="result-best-label">🏆 Best: <b id="resultBest">0</b></p>
+  <div class="result-btns">
+    <button class="btn btn-primary" id="retryBtn">🔄 RETRY</button>
+    <button class="btn btn-secondary" id="homeBtn">🏠 HOME</button>
+  </div>
+</section>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ════════════════════════════════════════════════
+     CONSTANTS
+     ════════════════════════════════════════════════ */
+  const COLS = 8;
+  const ROWS = 10;
+  const CELL_GAP = 3;
+  const MIN_GROUP = 3;
+  const GAME_DURATION = 60; // seconds
+  const LEVEL_TARGETS = [0, 500, 1200, 2200, 3500, 5000, 7000, 9500, 12500, 16000, 20000];
+  const BASE_SCORE = 10;
+  const CHAIN_MULTIPLIER = 2;
+  const STORAGE_KEY = 'neon_block_pop_best';
+
+  /* ════════════════════════════════════════════════
+     STATE
+     ════════════════════════════════════════════════ */
+  let state = {
+    grid: [],        // 2D array [row][col] = colorIndex (-1 = empty)
+    colors: 5,       // number of active colors (grows every 5 levels)
+    score: 0,
+    level: 1,
+    timeLeft: GAME_DURATION,
+    combo: 1,
+    totalPops: 0,
+    totalChains: 0,
+    chainCount: 0,    // current chain streak
+    playing: false,
+    paused: false,
+    gameOver: false,
+    animating: false,
+    timer: null,
+    boardWidth: 0,
+    cellSize: 0,
+  };
+
+  /* ════════════════════════════════════════════════
+     DOM refs
+     ════════════════════════════════════════════════ */
+  const $ = s => document.querySelector(s);
+  const el = id => document.getElementById(id);
+  const board = el('board');
+  const timerBar = el('timerBar');
+  const scoreDisplay = el('scoreDisplay');
+  const levelDisplay = el('levelDisplay');
+  const comboDisplay = el('comboDisplay');
+  const titleScreen = el('titleScreen');
+  const gameScreen = el('gameScreen');
+  const resultScreen = el('resultScreen');
+  const pauseOverlay = el('pauseOverlay');
+  const playBtn = el('playBtn');
+  const pauseBtn = el('pauseBtn');
+  const resumeBtn = el('resumeBtn');
+  const quitBtn = el('quitBtn');
+  const retryBtn = el('retryBtn');
+  const homeBtn = el('homeBtn');
+  const resultIcon = el('resultIcon');
+  const resultTitle = el('resultTitle');
+  const resultScore = el('resultScore');
+  const resultLevel = el('resultLevel');
+  const resultPops = el('resultPops');
+  const resultChains = el('resultChains');
+  const resultBest = el('resultBest');
+  const titleBest = el('titleBest');
+
+  /* ════════════════════════════════════════════════
+     AUDIO (Web Audio API — no external files)
+     ════════════════════════════════════════════════ */
+  let audioCtx = null;
+
+  function initAudio() {
+    if (!audioCtx) {
+      try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {}
+    }
+    if (audioCtx && audioCtx.state === 'suspended') {
+      audioCtx.resume().catch(function () {});
+    }
+  }
+
+  function playTone(freq, duration, type, volume) {
+    if (!audioCtx) return;
+    try {
+      var osc = audioCtx.createOscillator();
+      var gain = audioCtx.createGain();
+      osc.type = type || 'square';
+      osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+      gain.gain.setValueAtTime((volume || 0.12) * 0.3, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + (duration || 0.1));
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start();
+      osc.stop(audioCtx.currentTime + (duration || 0.1));
+    } catch (e) {}
+  }
+
+  function playPop(count) {
+    var vol = Math.min(0.15, 0.05 + count * 0.015);
+    playTone(600 + count * 30, 0.08, 'square', vol);
+    setTimeout(function () { playTone(800 + count * 40, 0.06, 'square', vol * 0.6); }, 40);
+  }
+
+  function playChain(level) {
+    var freq = 400 + level * 100;
+    playTone(freq, 0.15, 'sine', 0.12);
+    setTimeout(function () { playTone(freq * 1.5, 0.1, 'sine', 0.08); }, 80);
+  }
+
+  function playGameOver() {
+    [0, 150, 300, 450].forEach(function (d, i) {
+      setTimeout(function () { playTone(500 - i * 80, 0.2, 'triangle', 0.1); }, d);
+    });
+  }
+
+  function playLevelUp() {
+    [0, 100, 200, 350].forEach(function (d, i) {
+      setTimeout(function () { playTone(400 + i * 200, 0.15, 'sine', 0.1); }, d);
+    });
+  }
+
+  function playClick() {
+    playTone(1000, 0.05, 'square', 0.04);
+  }
+
+  /* ════════════════════════════════════════════════
+     VIBRATION
+     ════════════════════════════════════════════════ */
+  function vibrate(ms) {
+    try { if (navigator.vibrate) navigator.vibrate(ms || 10); } catch (e) {}
+  }
+
+  /* ════════════════════════════════════════════════
+     STORAGE
+     ════════════════════════════════════════════════ */
+  function getBest() {
+    try { return parseInt(localStorage.getItem(STORAGE_KEY)) || 0; } catch (e) { return 0; }
+  }
+  function setBest(val) {
+    try { localStorage.setItem(STORAGE_KEY, String(val)); } catch (e) {}
+  }
+  function updateBestUI() {
+    var best = getBest();
+    titleBest.innerHTML = 'Best: <span>' + best + '</span>';
+  }
+
+  /* ════════════════════════════════════════════════
+     BOARD LAYOUT
+     ════════════════════════════════════════════════ */
+  function calcLayout() {
+    var wrap = board.parentElement;
+    var wrapW = wrap.clientWidth - 12;
+    var wrapH = wrap.clientHeight - 12;
+
+    // Board aspect ratio matches (COLS / ROWS)
+    var gapTotalW = (COLS - 1) * CELL_GAP;
+    var gapTotalH = (ROWS - 1) * CELL_GAP;
+
+    // Solve for cell size that fits both dimensions
+    var cellFromW = (wrapW - gapTotalW) / COLS;
+    var cellFromH = (wrapH - gapTotalH) / ROWS;
+    var cellSize = Math.floor(Math.min(cellFromW, cellFromH));
+    cellSize = Math.max(cellSize, 20);
+    cellSize = Math.min(cellSize, 48);
+
+    var boardW = cellSize * COLS + gapTotalW;
+    var boardH = cellSize * ROWS + gapTotalH;
+
+    board.style.width = boardW + 'px';
+    board.style.height = boardH + 'px';
+
+    state.cellSize = cellSize;
+    state.boardWidth = boardW;
+  }
+
+  /* ════════════════════════════════════════════════
+     GRID
+     ════════════════════════════════════════════════ */
+  function createGrid() {
+    var grid = [];
+    var numColors = state.colors;
+    for (var r = 0; r < ROWS; r++) {
+      grid[r] = [];
+      for (var c = 0; c < COLS; c++) {
+        grid[r][c] = Math.floor(Math.random() * numColors);
+      }
+    }
+    // Remove groups of 3+ from initial grid (fair start)
+    var hasGroup = true;
+    while (hasGroup) {
+      hasGroup = false;
+      var visited = [];
+      for (var r = 0; r < ROWS; r++) {
+        visited[r] = [];
+        for (var c = 0; c < COLS; c++) {
+          visited[r][c] = false;
+        }
+      }
+      for (var r = 0; r < ROWS; r++) {
+        for (var c = 0; c < COLS; c++) {
+          if (!visited[r][c] && grid[r][c] >= 0) {
+            var group = floodFill(grid, r, c, grid[r][c], visited);
+            if (group.length >= MIN_GROUP) {
+              hasGroup = true;
+              group.forEach(function (p) { grid[p.r][p.c] = Math.floor(Math.random() * numColors); });
+            }
+          }
+        }
+      }
+    }
+    return grid;
+  }
+
+  /* ════════════════════════════════════════════════
+     FLOOD FILL — find connected cells of same color
+     ════════════════════════════════════════════════ */
+  function floodFill(grid, row, col, color, visitedRef) {
+    var result = [];
+    var stack = [{ r: row, c: col }];
+    var localVisited = visitedRef || [];
+    if (!visitedRef) {
+      for (var r = 0; r < ROWS; r++) {
+        localVisited[r] = [];
+        for (var c = 0; c < COLS; c++) localVisited[r][c] = false;
+      }
+    }
+    localVisited[row][col] = true;
+
+    while (stack.length) {
+      var p = stack.pop();
+      if (p.r < 0 || p.r >= ROWS || p.c < 0 || p.c >= COLS) continue;
+      if (grid[p.r][p.c] !== color) continue;
+
+      result.push({ r: p.r, c: p.c });
+
+      var dirs = [{ r: -1, c: 0 }, { r: 1, c: 0 }, { r: 0, c: -1 }, { r: 0, c: 1 }];
+      for (var d = 0; d < 4; d++) {
+        var nr = p.r + dirs[d].r;
+        var nc = p.c + dirs[d].c;
+        if (nr >= 0 && nr < ROWS && nc >= 0 && nc < COLS && !localVisited[nr][nc]) {
+          localVisited[nr][nc] = true;
+          if (grid[nr][nc] === color) {
+            stack.push({ r: nr, c: nc });
+          }
+        }
+      }
+    }
+    return result;
+  }
+
+  /* ════════════════════════════════════════════════
+     FIND ALL CLICKABLE GROUPS
+     ════════════════════════════════════════════════ */
+  function findAllGroups(grid) {
+    var visited = [];
+    for (var r = 0; r < ROWS; r++) {
+      visited[r] = [];
+      for (var c = 0; c < COLS; c++) visited[r][c] = false;
+    }
+    var groups = [];
+    for (var r = 0; r < ROWS; r++) {
+      for (var c = 0; c < COLS; c++) {
+        if (!visited[r][c] && grid[r][c] >= 0) {
+          var group = floodFill(grid, r, c, grid[r][c], visited);
+          if (group.length >= MIN_GROUP) {
+            groups.push(group);
+          }
+        }
+      }
+    }
+    return groups;
+  }
+
+  /* ════════════════════════════════════════════════
+     DROP BLOCKS — apply gravity and fill empty spots
+     ════════════════════════════════════════════════ */
+  function applyGravity(grid) {
+    var changed = false;
+    for (var c = 0; c < COLS; c++) {
+      var writeRow = ROWS - 1;
+      for (var r = ROWS - 1; r >= 0; r--) {
+        if (grid[r][c] >= 0) {
+          if (r !== writeRow) {
+            grid[writeRow][c] = grid[r][c];
+            grid[r][c] = -1;
+            changed = true;
+          }
+          writeRow--;
+        }
+      }
+      // Fill empty cells at top with new random blocks
+      var numColors = state.colors;
+      for (var r = writeRow; r >= 0; r--) {
+        grid[r][c] = Math.floor(Math.random() * numColors);
+        changed = true;
+      }
+    }
+    return changed;
+  }
+
+  /* ════════════════════════════════════════════════
+     RENDER
+     ════════════════════════════════════════════════ */
+  function render(highlights) {
+    var s = state.cellSize;
+    var gap = CELL_GAP;
+    var html = '';
+    // Track which cells are highlighted
+    var highlightSet = {};
+    if (highlights) {
+      highlights.forEach(function (p) { highlightSet[p.r + '-' + p.c] = true; });
+    }
+    // Also check if any cells should glow (color-hint on mouse over is handled later)
+
+    for (var r = 0; r < ROWS; r++) {
+      for (var c = 0; c < COLS; c++) {
+        var colorIdx = state.grid[r][c];
+        if (colorIdx < 0) continue;
+        var x = c * (s + gap);
+        var y = r * (s + gap);
+        var hue = getComputedStyle(document.documentElement).getPropertyValue('--col-' + colorIdx).trim();
+        var hsl = 'hsl(' + hue + ', 90%, 55%)';
+        var hslLight = 'hsl(' + hue + ', 90%, 65%)';
+        var hslDark = 'hsl(' + hue + ', 80%, 35%)';
+        var selected = highlightSet[r + '-' + c] ? ' selected' : '';
+        var glow = highlightSet[r + '-' + c] ? ' glow' : '';
+        var glowCSS = highlightSet[r + '-' + c] ? '--glow-color:' + hsl + '40;' : '';
+
+        html += '<div class="cell' + selected + glow + '"' +
+          ' style="width:' + s + 'px;height:' + s + 'px;left:' + x + 'px;top:' + y + 'px;' +
+          'background:linear-gradient(135deg,' + hslLight + ',' + hsl + ',' + hslDark + ');' +
+          'box-shadow:0 2px 8px rgba(0,0,0,0.3), inset 0 1px 0 ' + hslLight + '80, inset 0 -1px 0 ' + hslDark + '80;' +
+          glowCSS +
+          '"' +
+          ' data-r="' + r + '" data-c="' + c + '"></div>';
+      }
+    }
+    board.innerHTML = html;
+
+    // Highlight all groups on hover via delegation
+    board.querySelectorAll('.cell').forEach(function (el) {
+      el.addEventListener('mouseenter', function () {
+        var r = parseInt(el.dataset.r);
+        var c = parseInt(el.dataset.c);
+        if (state.animating || state.paused) return;
+        var color = state.grid[r][c];
+        if (color < 0) return;
+        var group = floodFill(state.grid, r, c, color);
+        if (group.length >= MIN_GROUP) {
+          group.forEach(function (p) {
+            var cell = board.querySelector('.cell[data-r="' + p.r + '"][data-c="' + p.c + '"]');
+            if (cell) cell.classList.add('selected', 'glow');
+          });
+        }
+      });
+      el.addEventListener('mouseleave', function () {
+        board.querySelectorAll('.cell.selected, .cell.glow').forEach(function (c) {
+          c.classList.remove('selected', 'glow');
+        });
+      });
+    });
+  }
+
+  /* ════════════════════════════════════════════════
+     UI UPDATES
+     ════════════════════════════════════════════════ */
+  function updateUI() {
+    scoreDisplay.textContent = '🏆 ' + state.score;
+    levelDisplay.textContent = 'Lv ' + state.level;
+    comboDisplay.textContent = '🔥 ×' + state.combo;
+    var pct = (state.timeLeft / GAME_DURATION) * 100;
+    timerBar.style.width = Math.max(0, pct) + '%';
+    timerBar.classList.toggle('urgent', state.timeLeft <= 10);
+    comboDisplay.classList.toggle('bump', state.combo > 1);
+  }
+
+  /* ════════════════════════════════════════════════
+     FLOATING SCORE
+     ════════════════════════════════════════════════ */
+  function showFloatScore(x, y, score, chain) {
+    var el = document.createElement('div');
+    el.className = 'float-score';
+    el.style.left = x + 'px';
+    el.style.top = y + 'px';
+    el.style.color = chain > 1 ? '#ffd740' : '#ffffff';
+    el.textContent = '+' + score + (chain > 1 ? ' x' + chain : '');
+    document.body.appendChild(el);
+    setTimeout(function () { el.remove(); }, 900);
+  }
+
+  /* ════════════════════════════════════════════════
+     CHAIN POPUP
+     ════════════════════════════════════════════════ */
+  function showChainPopup(count) {
+    var el = document.createElement('div');
+    el.className = 'chain-popup';
+    el.innerHTML = '<div class="chain-label">Chain</div><div class="chain-count">' + count + '×</div>';
+    document.body.appendChild(el);
+    setTimeout(function () { el.remove(); }, 700);
+  }
+
+  /* ════════════════════════════════════════════════
+     POP — remove blocks, apply gravity, chain check
+     ════════════════════════════════════════════════ */
+  function popGroup(group, isChain) {
+    var points = group.length * BASE_SCORE;
+    var multiplier = state.combo;
+    var totalPoints = points * multiplier;
+
+    state.score += totalPoints;
+    state.totalPops += group.length;
+    state.chainCount = isChain ? state.chainCount + 1 : 0;
+    if (state.chainCount > 0) state.totalChains++;
+
+    // Update combo
+    if (isChain) {
+      state.combo = Math.min(state.combo + 1, 10);
+    } else {
+      state.combo = 1;
+    }
+
+    // Audio
+    playPop(group.length);
+    vibrate(10);
+
+    // Show floating score at group center
+    var avgR = 0, avgC = 0;
+    group.forEach(function (p) { avgR += p.r; avgC += p.c; });
+    avgR /= group.length; avgC /= group.length;
+    var s = state.cellSize;
+    var gap = CELL_GAP;
+    var offset = board.getBoundingClientRect();
+    var fx = offset.left + avgC * (s + gap) + s / 2;
+    var fy = offset.top + avgR * (s + gap) + s / 4;
+    showFloatScore(fx, fy, totalPoints, multiplier);
+
+    if (isChain && state.chainCount >= 2) {
+      showChainPopup(state.chainCount);
+      playChain(state.chainCount);
+    }
+
+    // Remove blocks
+    group.forEach(function (p) { state.grid[p.r][p.c] = -1; });
+
+    // Animate: mark cells as popping, then apply gravity
+    group.forEach(function (p) {
+      var cell = board.querySelector('.cell[data-r="' + p.r + '"][data-c="' + p.c + '"]');
+      if (cell) { cell.classList.remove('selected', 'glow'); cell.classList.add('popping'); }
+    });
+
+    state.animating = true;
+
+    // After pop animation, apply gravity and check chains
+    setTimeout(function () {
+      applyGravity(state.grid);
+      render();
+      updateUI();
+
+      // Check for chain reactions
+      var groups = findAllGroups(state.grid);
+      var chainFree = true;
+      for (var g = 0; g < groups.length; g++) {
+        if (groups[g].length >= MIN_GROUP) {
+          chainFree = false;
+          break;
+        }
+      }
+
+      if (chainFree) {
+        state.animating = false;
+        // Show available groups
+        highlightAvailable();
+      } else {
+        // Chain reaction!
+        state.animating = true;
+        setTimeout(function () {
+          // Find and pop in chain
+          var chainGroups = findAllGroups(state.grid);
+          if (chainGroups.length) {
+            var biggest = chainGroups[0];
+            for (var g = 1; g < chainGroups.length; g++) {
+              if (chainGroups[g].length > biggest.length) biggest = chainGroups[g];
+            }
+            popGroup(biggest, true);
+          }
+        }, 250);
+      }
+    }, 250);
+  }
+
+  /* ════════════════════════════════════════════════
+     HIGHLIGHT AVAILABLE GROUPS
+     ════════════════════════════════════════════════ */
+  function highlightAvailable() {
+    if (state.gameOver || state.paused) return;
+    // Subtly pulse available groups (just render normally)
+  }
+
+  /* ════════════════════════════════════════════════
+     HANDLE CLICK/TAP
+     ════════════════════════════════════════════════ */
+  function handleCellTap(r, c) {
+    if (state.gameOver || state.paused || state.animating) return;
+    initAudio();
+    playClick();
+
+    var color = state.grid[r][c];
+    if (color < 0) return;
+
+    var group = floodFill(state.grid, r, c, color);
+    if (group.length < MIN_GROUP) {
+      // Small vibration to indicate "can't pop"
+      vibrate(5);
+      return;
+    }
+
+    popGroup(group, false);
+  }
+
+  /* ════════════════════════════════════════════════
+     TIMER
+     ════════════════════════════════════════════════ */
+  function startTimer() {
+    if (state.timer) clearInterval(state.timer);
+    state.timer = setInterval(function () {
+      if (state.paused) return;
+      state.timeLeft--;
+      updateUI();
+      if (state.timeLeft <= 0) {
+        clearInterval(state.timer);
+        state.timer = null;
+        endGame();
+      }
+    }, 1000);
+  }
+
+  /* ════════════════════════════════════════════════
+     LEVEL CHECK
+     ════════════════════════════════════════════════ */
+  function checkLevelUp() {
+    var nextLevel = 1;
+    for (var i = 1; i < LEVEL_TARGETS.length; i++) {
+      if (state.score >= LEVEL_TARGETS[i]) nextLevel = i + 1;
+    }
+    if (nextLevel > state.level) {
+      state.level = nextLevel;
+      // Every 5 levels = unlock new color (cap at 8)
+      var newColorCount = Math.min(5 + Math.floor((state.level - 1) / 5), 8);
+      if (newColorCount > state.colors) {
+        state.colors = newColorCount;
+        playLevelUp();
+        vibrate(50);
+      }
+      updateUI();
+    }
+  }
+
+  /* ════════════════════════════════════════════════
+     END GAME
+     ════════════════════════════════════════════════ */
+  function endGame() {
+    state.gameOver = true;
+    state.playing = false;
+    playGameOver();
+    vibrate([30, 50, 30, 50]);
+
+    // Save best score
+    var best = getBest();
+    if (state.score > best) {
+      setBest(state.score);
+      best = state.score;
+    }
+
+    // Show result screen
+    var isWin = state.timeLeft <= 0; // survived
+    resultIcon.textContent = isWin ? '🎉' : '⏰';
+    resultTitle.textContent = isWin ? 'TIME\'S UP!' : 'GAME OVER';
+    resultTitle.className = 'result-title ' + (isWin ? 'win' : 'lose');
+    resultScore.textContent = state.score;
+    resultLevel.textContent = state.level;
+    resultPops.textContent = state.totalPops;
+    resultChains.textContent = state.totalChains;
+    resultBest.textContent = best;
+
+    showScreen('result');
+  }
+
+  /* ════════════════════════════════════════════════
+     SHOW SCREEN
+     ════════════════════════════════════════════════ */
+  function showScreen(id) {
+    [titleScreen, gameScreen, resultScreen].forEach(function (s) { s.classList.remove('active'); });
+    if (id === 'title') titleScreen.classList.add('active');
+    else if (id === 'game') gameScreen.classList.add('active');
+    else if (id === 'result') resultScreen.classList.add('active');
+    pauseOverlay.classList.remove('active');
+  }
+
+  /* ════════════════════════════════════════════════
+     START GAME
+     ════════════════════════════════════════════════ */
+  function startGame() {
+    state.score = 0;
+    state.level = 1;
+    state.timeLeft = GAME_DURATION;
+    state.combo = 1;
+    state.totalPops = 0;
+    state.totalChains = 0;
+    state.chainCount = 0;
+    state.colors = 5;
+    state.animating = false;
+    state.gameOver = false;
+    state.playing = true;
+    state.paused = false;
+    state.grid = createGrid();
+
+    calcLayout();
+    render();
+    updateUI();
+    showScreen('game');
+
+    if (state.timer) clearInterval(state.timer);
+    startTimer();
+  }
+
+  /* ════════════════════════════════════════════════
+     EVENT BINDING
+     ════════════════════════════════════════════════ */
+
+  // -- Board click/tap --
+  board.addEventListener('click', function (e) {
+    var cell = e.target.closest('.cell');
+    if (!cell) return;
+    var r = parseInt(cell.dataset.r);
+    var c = parseInt(cell.dataset.c);
+    handleCellTap(r, c);
+    checkLevelUp();
+  });
+
+  // -- Touch support --
+  board.addEventListener('touchstart', function (e) {
+    var touch = e.touches[0];
+    var target = document.elementFromPoint(touch.clientX, touch.clientY);
+    var cell = target && target.closest('.cell');
+    if (cell) {
+      e.preventDefault();
+      var r = parseInt(cell.dataset.r);
+      var c = parseInt(cell.dataset.c);
+      handleCellTap(r, c);
+      checkLevelUp();
+    }
+  }, { passive: false });
+
+  // -- Navigation --
+  playBtn.addEventListener('click', function () { initAudio(); startGame(); });
+  retryBtn.addEventListener('click', function () { initAudio(); startGame(); });
+  homeBtn.addEventListener('click', function () { showScreen('title'); updateBestUI(); });
+
+  // -- Pause/Resume --
+  function togglePause() {
+    if (state.gameOver) return;
+    state.paused = !state.paused;
+    pauseOverlay.classList.toggle('active', state.paused);
+  }
+
+  pauseBtn.addEventListener('click', togglePause);
+  resumeBtn.addEventListener('click', togglePause);
+  quitBtn.addEventListener('click', function () {
+    state.paused = false;
+    state.playing = false;
+    state.gameOver = true;
+    if (state.timer) { clearInterval(state.timer); state.timer = null; }
+    pauseOverlay.classList.remove('active');
+    showScreen('title');
+    updateBestUI();
+  });
+
+  // -- Keyboard --
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') {
+      if (state.playing && !state.gameOver) togglePause();
+    }
+    if (e.key === 'Enter' || e.key === ' ') {
+      var active = document.activeElement;
+      if (active && active.tagName === 'BUTTON') return;
+      if (titleScreen.classList.contains('active')) {
+        e.preventDefault();
+        initAudio();
+        startGame();
+      } else if (resultScreen.classList.contains('active')) {
+        e.preventDefault();
+        el('retryBtn').click();
+      }
+    }
+  });
+
+  // -- Window resize --
+  var resizeTimer;
+  window.addEventListener('resize', function () {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(function () {
+      if (state.playing && !state.gameOver) {
+        calcLayout();
+        render();
+      }
+    }, 200);
+  });
+
+  /* ════════════════════════════════════════════════
+     INIT
+     ════════════════════════════════════════════════ */
+  updateBestUI();
+  calcLayout();
+
+  // Pre-calculate a demo grid for the title screen
+  var demoGrid = createGrid();
+  state.grid = demoGrid;
+  render();
+
+})();
+</script>
+</body>
+</html>
