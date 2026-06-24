@@ -429,6 +429,19 @@
       "version": "1.0.0",
       "featured": true,
       "rating": 4.3
+    },
+    {
+      "id": "case-crafters",
+      "name": "Case Crafters",
+      "description": "定制手机壳贴纸印花！拖拽贴纸排版设计，完成订单获评分，解锁新模板",
+      "category": "casual",
+      "tags": ["singleplayer", "design", "creative", "short-session", "casual"],
+      "path": "/games/074-case-crafters/",
+      "hasServer": false,
+      "players": "1",
+      "version": "1.0.0",
+      "featured": false,
+      "rating": 4.0
     }
   ],
   "categories": [

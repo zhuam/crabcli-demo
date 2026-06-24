@@ -1,0 +1,1838 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no">
+  <meta name="theme-color" content="#1a1a2e">
+  <title>Case Crafters</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700;800;900&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../games/shared/game-frame.css">
+  <style>
+    /* ═════════════════════════════════════════════════════════
+       Case Crafters — Design & Customize Phone Cases!
+       ═════════════════════════════════════════════════════════ */
+
+    :root {
+      --bg-deep: #1a1a2e;
+      --bg-grid: #16213e;
+      --surface: rgba(255,255,255,0.06);
+      --surface-hover: rgba(255,255,255,0.11);
+      --surface-active: rgba(255,255,255,0.15);
+      --border: rgba(255,255,255,0.08);
+      --border-strong: rgba(255,255,255,0.18);
+      --text: #f0f0f0;
+      --text-dim: rgba(255,255,255,0.55);
+      --text-muted: rgba(255,255,255,0.30);
+      --success: #00e676;
+      --danger: #ff5252;
+      --warning: #ffd740;
+      --info: #40c4ff;
+      --star: #ffd740;
+      --pink: #ff4081;
+      --purple: #b388ff;
+      --font-display: 'Outfit', system-ui, sans-serif;
+      --font-body: 'Inter', system-ui, sans-serif;
+      --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+      --radius-sm: 6px;
+      --radius-md: 12px;
+      --radius-lg: 20px;
+      --radius-xl: 28px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      background: var(--bg-deep);
+      color: var(--text);
+      font-family: var(--font-body);
+      overflow: hidden;
+      width: 100vw; height: 100vh;
+      display: flex; align-items: center; justify-content: center;
+      touch-action: none;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    /* ═══ Screens ═══ */
+    .screen {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      width: 100%; height: 100%;
+      position: fixed; inset: 0;
+    }
+    .screen.active { display: flex; }
+
+    /* ═══ Title Screen ═══ */
+    .title-screen { justify-content: center; gap: 18px; text-align: center; z-index: 1; padding: 20px; }
+    .title-icon {
+      width: 100px; height: 100px; border-radius: 24px;
+      background: linear-gradient(135deg, #ff4081, #b388ff, #40c4ff);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 48px;
+      box-shadow: 0 0 40px rgba(255,64,129,0.3), 0 0 80px rgba(179,136,255,0.15);
+      position: relative; margin: 0 auto;
+    }
+    @media (prefers-reduced-motion: no-preference) {
+      .title-icon { animation: titleGlow 2.5s ease-in-out infinite alternate; }
+    }
+    @keyframes titleGlow {
+      0% { box-shadow: 0 0 40px rgba(255,64,129,0.3); }
+      100% { box-shadow: 0 0 70px rgba(179,136,255,0.5), 0 0 120px rgba(64,196,255,0.2); }
+    }
+    .title-text {
+      font-family: var(--font-display); font-size: 38px; font-weight: 900;
+      background: linear-gradient(135deg, #ff4081, #b388ff, #40c4ff);
+      background-size: 200% auto;
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+      animation: gradientShift 3s ease infinite;
+      line-height: 1.05; letter-spacing: -0.02em;
+    }
+    @keyframes gradientShift {
+      0%, 100% { background-position: 0% center; }
+      50% { background-position: 100% center; }
+    }
+    .title-subtitle { font-size: 14px; color: var(--text-dim); max-width: 300px; line-height: 1.5; }
+    .title-best {
+      font-family: var(--font-mono); font-size: 13px; color: var(--text-muted);
+    }
+    .title-best span { color: var(--star); font-weight: 700; }
+
+    .btn {
+      font-family: var(--font-display); font-weight: 700; font-size: 17px;
+      border: none; border-radius: 9999px;
+      padding: 14px 44px; min-height: 52px;
+      cursor: pointer;
+      transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease;
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      letter-spacing: 0.03em;
+    }
+    .btn:active { transform: scale(0.96); }
+    .btn:focus-visible { outline: 2px solid #ff4081; outline-offset: 3px; }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #ff4081, #b388ff);
+      color: #fff;
+      box-shadow: 0 4px 20px rgba(255,64,129,0.35);
+    }
+    .btn-primary:hover { box-shadow: 0 6px 30px rgba(255,64,129,0.5); transform: translateY(-2px); }
+    .btn-primary:active { transform: scale(0.96); }
+
+    .btn-secondary {
+      background: var(--surface);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+    .btn-secondary:hover { background: var(--surface-hover); }
+
+    .title-info {
+      display: flex; gap: 16px; font-size: 13px; color: var(--text-dim);
+      flex-wrap: wrap; justify-content: center;
+    }
+    .title-progress {
+      display: flex; gap: 6px; justify-content: center; margin: 2px 0;
+    }
+    .title-tier {
+      padding: 4px 12px; border-radius: 9999px;
+      background: var(--surface); border: 1px solid var(--border);
+      font-size: 11px; color: var(--text-dim);
+    }
+    .title-tier.unlocked {
+      border-color: rgba(179,136,255,0.3);
+      background: rgba(179,136,255,0.1);
+      color: var(--purple);
+    }
+
+    /* ═══ Game Screen ═══ */
+    .game-screen { flex-direction: row; z-index: 1; }
+
+    /* ─── Left Panel: Case Canvas ─── */
+    .canvas-panel {
+      flex: 1; display: flex; flex-direction: column;
+      height: 100%; overflow: hidden;
+      position: relative;
+    }
+    .game-header {
+      width: 100%; padding: 8px 14px;
+      display: flex; justify-content: space-between; align-items: center;
+      flex-shrink: 0; gap: 8px;
+    }
+    .game-header .back-btn {
+      width: 36px; height: 36px; border-radius: 50%;
+      background: var(--surface); border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; font-size: 16px; color: var(--text-dim);
+      transition: all 0.15s ease; flex-shrink: 0;
+    }
+    .game-header .back-btn:hover { background: var(--surface-hover); color: var(--text); }
+
+    .game-stats {
+      display: flex; gap: 8px; align-items: center; flex: 1; justify-content: center;
+    }
+    .stat-badge {
+      display: flex; align-items: center; gap: 5px;
+      padding: 4px 10px; border-radius: 9999px;
+      background: var(--surface); border: 1px solid var(--border);
+      font-size: 12px; font-weight: 600;
+      font-family: var(--font-mono);
+      white-space: nowrap;
+    }
+    .stat-badge.order-num { color: var(--info); }
+    .stat-badge.score { color: var(--success); }
+    .stat-badge.timer {
+      color: var(--warning);
+    }
+    .stat-badge.timer.urgent { color: var(--danger); animation: timerPulse 0.5s ease-in-out infinite alternate; }
+    @keyframes timerPulse { 0% { opacity: 1; } 100% { opacity: 0.5; } }
+
+    .case-wrap {
+      flex: 1; display: flex; align-items: center; justify-content: center;
+      width: 100%; padding: 8px 12px;
+      position: relative; overflow: hidden;
+    }
+    #caseCanvas {
+      display: block;
+      border-radius: var(--radius-lg);
+      background: #1a1a2e;
+      touch-action: none;
+      width: 100%; height: 100%;
+      cursor: default;
+    }
+
+    /* ─── Right Panel: Toolbox ─── */
+    .toolbox {
+      width: 180px; height: 100%; flex-shrink: 0;
+      background: rgba(0,0,0,0.3);
+      border-left: 1px solid var(--border);
+      display: flex; flex-direction: column;
+      overflow: hidden;
+    }
+    .toolbox-section {
+      padding: 8px 10px;
+      flex-shrink: 0;
+    }
+    .toolbox-section-title {
+      font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em;
+      color: var(--text-muted); margin-bottom: 6px; font-weight: 600;
+    }
+
+    /* ─── Order Panel ─── */
+    .order-panel {
+      background: var(--surface); border-bottom: 1px solid var(--border);
+      padding: 10px 12px; flex-shrink: 0;
+    }
+    .order-title {
+      font-family: var(--font-display); font-size: 13px; font-weight: 700;
+      display: flex; align-items: center; gap: 6px; margin-bottom: 4px;
+    }
+    .order-theme {
+      font-size: 15px; font-weight: 700;
+      background: linear-gradient(135deg, var(--pink), var(--purple));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .order-desc {
+      font-size: 11px; color: var(--text-dim); line-height: 1.4;
+    }
+    .order-tags {
+      display: flex; gap: 4px; flex-wrap: wrap; margin-top: 4px;
+    }
+    .order-tag {
+      padding: 2px 8px; border-radius: 9999px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid var(--border);
+      font-size: 10px; color: var(--text-dim);
+    }
+    .order-tag.matched {
+      background: rgba(0,230,118,0.1);
+      border-color: rgba(0,230,118,0.25);
+      color: var(--success);
+    }
+
+    /* ─── Sticker Palette ─── */
+    .sticker-palette {
+      flex: 1; overflow-y: auto;
+      padding: 6px 10px;
+      display: flex; flex-wrap: wrap; gap: 6px;
+      align-content: flex-start;
+    }
+    .sticker-palette::-webkit-scrollbar { width: 3px; }
+    .sticker-palette::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+    .sticker-btn {
+      width: 48px; height: 48px; border-radius: var(--radius-sm);
+      background: var(--surface); border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 26px; cursor: pointer;
+      transition: all 0.12s ease; flex-shrink: 0;
+    }
+    .sticker-btn:hover { background: var(--surface-hover); transform: scale(1.08); }
+    .sticker-btn:active { transform: scale(0.93); }
+    .sticker-btn.locked {
+      opacity: 0.3; filter: grayscale(1); cursor: not-allowed;
+    }
+    .sticker-btn.locked:hover { transform: none; background: var(--surface); }
+
+    /* ─── Toolbox Actions ─── */
+    .tool-actions {
+      padding: 8px 10px; border-top: 1px solid var(--border);
+      display: flex; flex-direction: column; gap: 6px;
+    }
+    .tool-btn {
+      width: 100%; padding: 8px 0;
+      border-radius: var(--radius-sm);
+      background: var(--surface); border: 1px solid var(--border);
+      color: var(--text); font-size: 12px; font-weight: 600;
+      cursor: pointer; transition: all 0.12s ease;
+      display: flex; align-items: center; justify-content: center; gap: 5px;
+      font-family: var(--font-body);
+    }
+    .tool-btn:hover { background: var(--surface-hover); }
+    .tool-btn:active { transform: scale(0.97); }
+    .tool-btn.primary-action {
+      background: linear-gradient(135deg, #ff4081, #b388ff);
+      border: none; color: #fff; font-weight: 700;
+    }
+    .tool-btn.primary-action:hover {
+      box-shadow: 0 3px 12px rgba(255,64,129,0.3);
+    }
+    .tool-btn.danger {
+      border-color: rgba(255,82,82,0.3);
+      color: var(--danger);
+    }
+    .tool-btn.danger:hover { background: rgba(255,82,82,0.1); }
+
+    .tool-btn:disabled {
+      opacity: 0.4; cursor: not-allowed;
+    }
+    .tool-btn:disabled:hover { transform: none; box-shadow: none; }
+
+    /* ─── Sticker count badge ─── */
+    .sticker-count {
+      position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%);
+      padding: 4px 14px; border-radius: 9999px;
+      background: rgba(0,0,0,0.6); backdrop-filter: blur(6px);
+      font-size: 11px; color: var(--text-dim);
+      font-family: var(--font-mono);
+      pointer-events: none; white-space: nowrap;
+    }
+
+    /* ═══ Result Screen ═══ */
+    .result-screen { justify-content: center; gap: 14px; text-align: center; z-index: 2; padding: 20px; }
+    .result-icon { font-size: 56px; margin-bottom: 2px; }
+    .result-title {
+      font-family: var(--font-display); font-size: 32px; font-weight: 900;
+    }
+    .result-title.win { background: linear-gradient(135deg, #00e676, #40c4ff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .result-title.great { background: linear-gradient(135deg, #ffd740, #ff6d00); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .result-title.ok { color: var(--text); }
+    .result-title.lose { color: var(--danger); }
+
+    .result-stars {
+      display: flex; gap: 6px; justify-content: center; font-size: 32px;
+    }
+    .result-star { transition: all 0.3s ease; }
+    .result-star.empty { opacity: 0.2; filter: grayscale(1); }
+    .result-star.filled {
+      animation: starPop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    }
+    .result-star.filled:nth-child(2) { animation-delay: 0.05s; }
+    .result-star.filled:nth-child(3) { animation-delay: 0.1s; }
+    .result-star.filled:nth-child(4) { animation-delay: 0.15s; }
+    .result-star.filled:nth-child(5) { animation-delay: 0.2s; }
+    @keyframes starPop {
+      0% { transform: scale(0); opacity: 0; }
+      60% { transform: scale(1.2); }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    .result-rating-text {
+      font-size: 14px; color: var(--text-dim); margin-bottom: 4px;
+    }
+    .result-score-wrap {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius-lg); padding: 14px 24px;
+      display: flex; flex-direction: column; gap: 4px; min-width: 200px;
+    }
+    .result-order-name { font-size: 16px; font-weight: 700; color: var(--purple); }
+    .result-detail { font-size: 12px; color: var(--text-dim); }
+    .result-best-label { font-size: 12px; color: var(--text-muted); margin: 2px 0; }
+    .result-best-label b { color: var(--star); }
+    .result-unlock {
+      font-size: 13px; color: var(--info); padding: 8px 16px;
+      background: rgba(64,196,255,0.08); border: 1px solid rgba(64,196,255,0.15);
+      border-radius: var(--radius-md);
+    }
+    .result-btns { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+
+    /* ═══ Pause Overlay ═══ */
+    .pause-overlay {
+      position: fixed; inset: 0; z-index: 50;
+      background: rgba(26,26,46,0.85);
+      backdrop-filter: blur(8px);
+      display: none; flex-direction: column; align-items: center; justify-content: center; gap: 18px;
+    }
+    .pause-overlay.active { display: flex; }
+    .pause-overlay h2 { font-family: var(--font-display); font-size: 28px; font-weight: 800; }
+    .pause-overlay .btn { min-width: 180px; }
+
+    /* ═══ Order Intro Overlay ═══ */
+    .order-intro {
+      position: fixed; inset: 0; z-index: 40;
+      background: rgba(26,26,46,0.8);
+      backdrop-filter: blur(6px);
+      display: none; flex-direction: column; align-items: center; justify-content: center; gap: 14px;
+      text-align: center; padding: 24px;
+    }
+    .order-intro.active { display: flex; }
+    .order-intro-icon { font-size: 48px; }
+    .order-intro-title {
+      font-family: var(--font-display); font-size: 24px; font-weight: 800;
+    }
+    .order-intro-theme {
+      font-size: 20px; font-weight: 700;
+      background: linear-gradient(135deg, var(--pink), var(--purple));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .order-intro-desc { font-size: 13px; color: var(--text-dim); max-width: 300px; line-height: 1.5; }
+    .order-intro-req { font-size: 12px; color: var(--text-muted); }
+    .order-intro-req span { color: var(--warning); font-weight: 700; }
+    .order-intro-tags {
+      display: flex; gap: 6px; flex-wrap: wrap; justify-content: center;
+    }
+
+    /* ═══ Hint Tooltip ═══ */
+    .hint-toast {
+      position: fixed; bottom: 60px; left: 50%; transform: translateX(-50%);
+      z-index: 30; pointer-events: none;
+      padding: 8px 20px; border-radius: 9999px;
+      background: rgba(0,0,0,0.7); backdrop-filter: blur(6px);
+      font-size: 12px; color: var(--text-dim);
+      opacity: 0; transition: opacity 0.3s ease;
+    }
+    .hint-toast.show { opacity: 1; }
+
+    /* ═══ Responsive ═══ */
+    @media (max-width: 640px) {
+      .toolbox { width: 140px; }
+      .sticker-btn { width: 40px; height: 40px; font-size: 20px; }
+      .game-stats { gap: 4px; }
+      .stat-badge { padding: 3px 7px; font-size: 10px; }
+    }
+    @media (max-width: 480px) {
+      .game-screen { flex-direction: column; }
+      .toolbox {
+        width: 100%; height: 180px; flex-shrink: 0;
+        border-left: none; border-top: 1px solid var(--border);
+        flex-direction: row; flex-wrap: wrap;
+      }
+      .toolbox-section { padding: 4px 8px; }
+      .order-panel { padding: 6px 10px; }
+      .order-title { font-size: 12px; }
+      .order-theme { font-size: 13px; }
+      .sticker-palette { flex: 1; max-height: 90px; }
+      .tool-actions {
+        flex-direction: row; flex-wrap: wrap;
+        padding: 4px 8px; width: 100%;
+        border-top: none;
+      }
+      .tool-btn { flex: 1; min-width: 60px; padding: 6px 0; font-size: 10px; }
+      .canvas-panel { height: calc(100% - 180px); }
+      .case-wrap { padding: 4px 8px; }
+      .title-text { font-size: 28px; }
+      .title-icon { width: 72px; height: 72px; font-size: 36px; border-radius: 18px; }
+      .btn { font-size: 15px; padding: 12px 32px; min-height: 46px; }
+      .result-title { font-size: 24px; }
+    }
+    @media (max-height: 640px) {
+      .game-header { padding: 4px 10px; }
+      .case-wrap { padding: 4px; }
+      .order-panel { padding: 6px 10px; }
+      .order-desc { font-size: 10px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ═══ TITLE SCREEN ═══ -->
+<section class="screen title-screen active" id="titleScreen">
+  <div class="title-icon">📱</div>
+  <h1 class="title-text">CASE<br>CRAFTERS</h1>
+  <p class="title-subtitle">Design custom phone cases! Drag stickers, match orders, earn ⭐ ratings!</p>
+  <button class="btn btn-primary" id="playBtn">▶ START DESIGNING</button>
+  <div class="title-info">
+    <span>🎨 Drag & drop stickers</span>
+    <span>📋 Match orders</span>
+    <span>⭐ Earn ratings</span>
+  </div>
+  <p class="title-best" id="titleBest">Best Rating: <span>—</span></p>
+  <div class="title-progress" id="titleProgress"></div>
+</section>
+
+<!-- ═══ GAME SCREEN ═══ -->
+<section class="screen game-screen" id="gameScreen">
+  <!-- Canvas Panel -->
+  <div class="canvas-panel">
+    <div class="game-header">
+      <button class="back-btn" id="pauseBtn" aria-label="Pause">⏸</button>
+      <div class="game-stats">
+        <span class="stat-badge order-num" id="orderNumDisplay">📋 #1</span>
+        <span class="stat-badge score" id="scoreDisplay">⭐ 0</span>
+        <span class="stat-badge timer" id="timerDisplay">⏱ 0s</span>
+      </div>
+    </div>
+    <div class="case-wrap">
+      <canvas id="caseCanvas"></canvas>
+      <div class="sticker-count" id="stickerCount">0 stickers placed</div>
+    </div>
+  </div>
+
+  <!-- Toolbox -->
+  <div class="toolbox">
+    <!-- Order -->
+    <div class="order-panel" id="orderPanel">
+      <div class="order-title">📋 Order</div>
+      <div class="order-theme" id="orderTheme">—</div>
+      <div class="order-desc" id="orderDesc">Match the vibe!</div>
+      <div class="order-tags" id="orderTags"></div>
+    </div>
+
+    <!-- Stickers -->
+    <div class="toolbox-section" style="flex-shrink:0;padding-bottom:2px;">
+      <div class="toolbox-section-title">🎯 Stickers</div>
+    </div>
+    <div class="sticker-palette" id="stickerPalette"></div>
+
+    <!-- Actions -->
+    <div class="tool-actions">
+      <button class="tool-btn danger" id="deleteBtn" disabled>🗑 Delete</button>
+      <button class="tool-btn primary-action" id="submitBtn">📦 Submit Design</button>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ RESULT SCREEN ═══ -->
+<section class="screen result-screen" id="resultScreen">
+  <div class="result-icon" id="resultIcon">⭐</div>
+  <h2 class="result-title" id="resultTitle">GREAT!</h2>
+  <div class="result-stars" id="resultStars"></div>
+  <div class="result-rating-text" id="resultRatingText">Customer says: "Amazing!"</div>
+  <div class="result-score-wrap">
+    <div class="result-order-name" id="resultOrderName">—</div>
+    <div class="result-detail" id="resultDetail">Stars: <span>0</span></div>
+  </div>
+  <div class="result-unlock" id="resultUnlock" style="display:none;"></div>
+  <p class="result-best-label" id="resultBestLabel">Best Rating: <b>—</b></p>
+  <div class="result-btns">
+    <button class="btn btn-primary" id="nextBtn">📋 NEXT ORDER</button>
+    <button class="btn btn-secondary" id="homeBtn">🏠 HOME</button>
+  </div>
+</section>
+
+<!-- ═══ ORDER INTRO OVERLAY ═══ -->
+<div class="order-intro" id="orderIntro">
+  <div class="order-intro-icon">📦</div>
+  <div class="order-intro-title">New Order!</div>
+  <div class="order-intro-theme" id="introTheme">Theme Name</div>
+  <div class="order-intro-desc" id="introDesc">The customer wants something special. Use the right stickers and match their vibe!</div>
+  <div class="order-intro-req">Need at least <span id="introMinStickers">3</span> stickers for a good rating</div>
+  <div class="order-intro-tags" id="introTags"></div>
+  <button class="btn btn-primary" id="startOrderBtn">🎨 START DESIGNING</button>
+</div>
+
+<!-- ═══ PAUSE OVERLAY ═══ -->
+<div class="pause-overlay" id="pauseOverlay">
+  <h2>⏸ PAUSED</h2>
+  <button class="btn btn-primary" id="resumeBtn">▶ RESUME</button>
+  <button class="btn btn-secondary" id="quitBtn">🏠 QUIT</button>
+</div>
+
+<!-- ═══ HINT TOAST ═══ -->
+<div class="hint-toast" id="hintToast"></div>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ═══════════════════════════════════════════════════════════════
+     CONSTANTS
+     ═══════════════════════════════════════════════════════════════ */
+  const STORAGE_BEST_KEY = 'case_crafters_best';
+  const STORAGE_PROGRESS_KEY = 'case_crafters_progress';
+  const ORDER_TIME = 90; // seconds per order
+  const MIN_STICKERS_FOR_RATING = 2;
+
+  // ─── Themes / Orders ───
+  const THEMES = [
+    { id: 'cute', name: 'Cute & Fluffy', emoji: '🌸', desc: 'Something adorable! Pink, hearts, and sweet vibes.', tags: ['pink', 'cute', 'heart'], stickerBonus: ['🌸','💖','🐱','🌈','🦋'] },
+    { id: 'summer', name: 'Summer Vibes', emoji: '☀️', desc: 'Warm, bright, and fun — like a day at the beach!', tags: ['bright', 'summer', 'fun'], stickerBonus: ['☀️','🌈','🌸','🍕','⭐'] },
+    { id: 'retro', name: 'Retro Wave', emoji: '🌴', desc: 'Take me back to the 80s! Neon grids and synthwave.', tags: ['neon', 'retro', 'purple'], stickerBonus: ['🌴','🔥','🎵','💎','🚀'] },
+    { id: 'space', name: 'Space Odyssey', emoji: '🚀', desc: 'Out of this world! Stars, planets, and cosmic energy.', tags: ['dark', 'space', 'blue'], stickerBonus: ['🚀','⭐','💎','🌙','🎵'] },
+    { id: 'neon', name: 'Neon Nights', emoji: '💜', desc: 'Electric and vibrant! Glow-in-the-dark style.', tags: ['neon', 'bright', 'purple'], stickerBonus: ['💜','🔥','⚡','💎','🎵'] },
+    { id: 'nature', name: 'Nature Walk', emoji: '🌿', desc: 'Fresh and earthy. Leaves, flowers, and calm energy.', tags: ['green', 'nature', 'calm'], stickerBonus: ['🌿','🌸','🦋','🌙','🌈'] },
+    { id: 'gamer', name: 'Gamer Mode', emoji: '🎮', desc: 'Level up your style! Pixels, energy, and power-ups.', tags: ['neon', 'dark', 'fun'], stickerBonus: ['🎮','⚡','🔥','🚀','💎'] },
+    { id: 'royal', name: 'Royal Elegance', emoji: '👑', desc: 'Fit for royalty! Gold, diamonds, and sophistication.', tags: ['gold', 'elegant', 'purple'], stickerBonus: ['👑','💎','💖','⭐','🌙'] },
+    { id: 'ocean', name: 'Ocean Deep', emoji: '🌊', desc: 'Dive deep! Blues, waves, and underwater mystery.', tags: ['blue', 'calm', 'nature'], stickerBonus: ['🌊','🐱','💎','🌙','🌈'] },
+    { id: 'party', name: 'Party Time!', emoji: '🎉', desc: 'Let\'s celebrate! Confetti, sparkles, and high energy.', tags: ['bright', 'fun', 'colorful'], stickerBonus: ['🎉','🔥','🌟','💜','⭐'] },
+  ];
+
+  // ─── Stickers available ───
+  const ALL_STICKERS = [
+    { emoji: '🌸', name: 'Cherry Blossom', unlockAt: 0 },
+    { emoji: '💖', name: 'Sparkle Heart', unlockAt: 0 },
+    { emoji: '⭐', name: 'Star', unlockAt: 0 },
+    { emoji: '🔥', name: 'Fire', unlockAt: 0 },
+    { emoji: '🌈', name: 'Rainbow', unlockAt: 0 },
+    { emoji: '🎵', name: 'Music Note', unlockAt: 0 },
+    { emoji: '🦋', name: 'Butterfly', unlockAt: 0 },
+    { emoji: '🌙', name: 'Moon', unlockAt: 0 },
+    { emoji: '💎', name: 'Diamond', unlockAt: 0 },
+    { emoji: '🚀', name: 'Rocket', unlockAt: 1 },
+    { emoji: '🌿', name: 'Leaf', unlockAt: 1 },
+    { emoji: '⚡', name: 'Lightning', unlockAt: 1 },
+    { emoji: '🎮', name: 'Gamepad', unlockAt: 2 },
+    { emoji: '👑', name: 'Crown', unlockAt: 2 },
+    { emoji: '💜', name: 'Purple Heart', unlockAt: 2 },
+    { emoji: '🌊', name: 'Wave', unlockAt: 2 },
+    { emoji: '🎉', name: 'Party Popper', unlockAt: 3 },
+    { emoji: '🐱', name: 'Cat', unlockAt: 3 },
+    { emoji: '☀️', name: 'Sun', unlockAt: 3 },
+    { emoji: '🍕', name: 'Pizza', unlockAt: 4 },
+    { emoji: '🌟', name: 'Glowing Star', unlockAt: 4 },
+    { emoji: '💫', name: 'Dizzy Star', unlockAt: 5 },
+    { emoji: '🌴', name: 'Palm Tree', unlockAt: 5 },
+    { emoji: '❄️', name: 'Snowflake', unlockAt: 6 },
+  ];
+
+  // ─── Phone case templates ───
+  const TEMPLATES = [
+    { id: 'clear', name: 'Clear Classic', color: 'rgba(200,200,220,0.15)', border: '#555', unlockAt: 0 },
+    { id: 'midnight', name: 'Midnight', color: 'rgba(10,10,30,0.4)', border: '#334', unlockAt: 1 },
+    { id: 'rose', name: 'Rose Gold', color: 'rgba(255,192,203,0.12)', border: '#c4959a', unlockAt: 2 },
+    { id: 'navy', name: 'Navy Blue', color: 'rgba(20,30,80,0.35)', border: '#3a4a8a', unlockAt: 3 },
+    { id: 'neon', name: 'Neon Glow', color: 'rgba(179,136,255,0.10)', border: '#b388ff', unlockAt: 5 },
+  ];
+
+  // ─── Tier names ───
+  const TIERS = [
+    { min: 0, name: 'Newbie', icon: '🌱' },
+    { min: 3, name: 'Stylist', icon: '🎨' },
+    { min: 6, name: 'Artisan', icon: '✨' },
+    { min: 10, name: 'Master', icon: '👑' },
+    { min: 15, name: 'Legend', icon: '🏆' },
+  ];
+
+  /* ═══════════════════════════════════════════════════════════════
+     STATE
+     ═══════════════════════════════════════════════════════════════ */
+  let state = {
+    // Game
+    score: 0,
+    bestRating: 0,  // best star rating achieved
+    orderIndex: 0,
+    totalOrdersCompleted: 0,
+    playing: false,
+    paused: false,
+
+    // Current order
+    currentTheme: null,
+    timeLeft: ORDER_TIME,
+    timerInterval: null,
+    rating: 0,
+
+    // Case canvas
+    canvas: null,
+    ctx: null,
+    canvasW: 0,
+    canvasH: 0,
+    caseX: 0, caseY: 0,
+    caseW: 0, caseH: 0,
+
+    // Stickers placed on case
+    placedStickers: [], // {emoji, x, y, scale, rotation, themeBonus}
+    selectedSticker: null, // index into placedStickers
+
+    // Drag state
+    isDragging: false,
+    dragStartX: 0, dragStartY: 0,
+    dragOrigX: 0, dragOrigY: 0,
+    isScaling: false,
+    scaleStartDist: 0,
+    scaleOrigScale: 1,
+
+    // Palette dragging — creating new sticker
+    paletteDragging: null, // {emoji, themeBonus}
+    paletteDragX: 0,
+    paletteDragY: 0,
+
+    // Animation
+    particles: [],
+    floatingTexts: [],
+  };
+
+  /* ═══════════════════════════════════════════════════════════════
+     DOM Refs
+     ═══════════════════════════════════════════════════════════════ */
+  const $ = s => document.querySelector(s);
+  const el = id => document.getElementById(id);
+  const titleScreen = el('titleScreen');
+  const gameScreen = el('gameScreen');
+  const resultScreen = el('resultScreen');
+  const pauseOverlay = el('pauseOverlay');
+  const orderIntro = el('orderIntro');
+  const playBtn = el('playBtn');
+  const pauseBtn = el('pauseBtn');
+  const resumeBtn = el('resumeBtn');
+  const quitBtn = el('quitBtn');
+  const nextBtn = el('nextBtn');
+  const homeBtn = el('homeBtn');
+  const submitBtn = el('submitBtn');
+  const deleteBtn = el('deleteBtn');
+  const startOrderBtn = el('startOrderBtn');
+  const orderNumDisplay = el('orderNumDisplay');
+  const scoreDisplay = el('scoreDisplay');
+  const timerDisplay = el('timerDisplay');
+  const orderTheme = el('orderTheme');
+  const orderDesc = el('orderDesc');
+  const orderTags = el('orderTags');
+  const stickerPalette = el('stickerPalette');
+  const stickerCount = el('stickerCount');
+  const canvas = el('caseCanvas');
+  const resultIcon = el('resultIcon');
+  const resultTitle = el('resultTitle');
+  const resultStars = el('resultStars');
+  const resultRatingText = el('resultRatingText');
+  const resultOrderName = el('resultOrderName');
+  const resultDetail = el('resultDetail');
+  const resultUnlock = el('resultUnlock');
+  const resultBestLabel = el('resultBestLabel');
+  const titleBest = el('titleBest');
+  const titleProgress = el('titleProgress');
+  const hintToast = el('hintToast');
+  const introTheme = el('introTheme');
+  const introDesc = el('introDesc');
+  const introMinStickers = el('introMinStickers');
+  const introTags = el('introTags');
+
+  /* ═══════════════════════════════════════════════════════════════
+     AUDIO (Web Audio API)
+     ═══════════════════════════════════════════════════════════════ */
+  let audioCtx = null;
+
+  function initAudio() {
+    if (!audioCtx) {
+      try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {}
+    }
+    if (audioCtx && audioCtx.state === 'suspended') {
+      audioCtx.resume().catch(function () {});
+    }
+  }
+
+  function playTone(freq, duration, type, volume) {
+    if (!audioCtx) return;
+    try {
+      var osc = audioCtx.createOscillator();
+      var gain = audioCtx.createGain();
+      osc.type = type || 'sine';
+      osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+      gain.gain.setValueAtTime((volume || 0.08), audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + (duration || 0.1));
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start();
+      osc.stop(audioCtx.currentTime + (duration || 0.1));
+    } catch (e) {}
+  }
+
+  function playClick() { playTone(1000, 0.05, 'square', 0.04); }
+  function playPlace() { playTone(800, 0.08, 'sine', 0.06); setTimeout(function () { playTone(1000, 0.06, 'sine', 0.04); }, 50); }
+  function playRemove() { playTone(400, 0.08, 'triangle', 0.05); setTimeout(function () { playTone(300, 0.06, 'triangle', 0.04); }, 40); }
+  function playStar() { playTone(1200, 0.08, 'sine', 0.07); }
+  function playSuccess() {
+    [0, 80, 160, 260, 360].forEach(function (d, i) {
+      setTimeout(function () { playTone(500 + i * 100, 0.12, 'sine', 0.07); }, d);
+    });
+  }
+  function playFail() {
+    [0, 120, 200].forEach(function (d, i) {
+      setTimeout(function () { playTone(400, 0.15, 'triangle', 0.06); }, d);
+    });
+  }
+  function playUnlock() {
+    [0, 100, 200, 320, 440].forEach(function (d, i) {
+      setTimeout(function () { playTone(600 + i * 150, 0.1, 'sine', 0.08); }, d);
+    });
+  }
+  function playSubmit() {
+    [0, 50, 100].forEach(function (d, i) {
+      setTimeout(function () { playTone(500 + i * 100, 0.08, 'sine', 0.05); }, d);
+    });
+  }
+
+  /* ═══════════════════════════════════════════════════════════════
+     VIBRATION
+     ═══════════════════════════════════════════════════════════════ */
+  function vibrate(ms) {
+    try { if (navigator.vibrate) navigator.vibrate(ms || 10); } catch (e) {}
+  }
+
+  /* ═══════════════════════════════════════════════════════════════
+     STORAGE
+     ═══════════════════════════════════════════════════════════════ */
+  function getBest() {
+    try { return parseInt(localStorage.getItem(STORAGE_BEST_KEY)) || 0; } catch (e) { return 0; }
+  }
+  function setBest(val) {
+    try { localStorage.setItem(STORAGE_BEST_KEY, String(val)); } catch (e) {}
+  }
+  function getProgress() {
+    try { return parseInt(localStorage.getItem(STORAGE_PROGRESS_KEY)) || 0; } catch (e) { return 0; }
+  }
+  function setProgress(val) {
+    try { localStorage.setItem(STORAGE_PROGRESS_KEY, String(val)); } catch (e) {}
+  }
+
+  function getUnlockedCount() {
+    return getProgress();
+  }
+
+  function getTier(ordersDone) {
+    var t = TIERS[0];
+    for (var i = TIERS.length - 1; i >= 0; i--) {
+      if (ordersDone >= TIERS[i].min) { t = TIERS[i]; break; }
+    }
+    return t;
+  }
+
+  function updateTitleUI() {
+    var best = getBest();
+    titleBest.innerHTML = best > 0 ? 'Best Rating: <span>' + '⭐'.repeat(best) + '</span>' : 'Best Rating: <span>—</span>';
+    var ordersDone = getProgress();
+    var tier = getTier(ordersDone);
+    var html = '';
+    TIERS.forEach(function (t) {
+      var unlocked = ordersDone >= t.min;
+      html += '<span class="title-tier ' + (unlocked ? 'unlocked' : '') + '">'
+        + t.icon + ' ' + t.name + '</span>';
+    });
+    titleProgress.innerHTML = html;
+    renderStickerPalette();
+  }
+
+  /* ═══════════════════════════════════════════════════════════════
+     STICKER PALETTE
+     ═══════════════════════════════════════════════════════════════ */
+  function renderStickerPalette() {
+    var ordersDone = getProgress();
+    var html = '';
+    ALL_STICKERS.forEach(function (s) {
+      var unlocked = ordersDone >= s.unlockAt;
+      html += '<div class="sticker-btn ' + (unlocked ? '' : 'locked') + '" '
+        + 'data-emoji="' + s.emoji + '" '
+        + (unlocked ? '' : 'title="Unlock at ' + s.unlockAt + ' orders (currently ' + ordersDone + ')"')
+        + '>' + (unlocked ? s.emoji : '🔒') + '</div>';
+    });
+    stickerPalette.innerHTML = html;
+
+    // Add drag-from-palette support
+    var buttons = stickerPalette.querySelectorAll('.sticker-btn');
+    for (var i = 0; i < buttons.length; i++) {
+      (function (btn) {
+        if (btn.classList.contains('locked')) return;
+
+        // Mouse drag from palette
+        btn.addEventListener('mousedown', function (e) {
+          e.preventDefault();
+          e.stopPropagation();
+          var emoji = btn.getAttribute('data-emoji');
+          startPaletteDrag(emoji, e.clientX, e.clientY);
+        });
+        // Touch drag from palette
+        btn.addEventListener('touchstart', function (e) {
+          e.preventDefault();
+          e.stopPropagation();
+          var touch = e.touches[0];
+          if (!touch) return;
+          var emoji = btn.getAttribute('data-emoji');
+          startPaletteDrag(emoji, touch.clientX, touch.clientY);
+        }, { passive: false });
+      }(buttons[i]));
+    }
+  }
+
+  function startPaletteDrag(emoji, clientX, clientY) {
+    if (state.paused) return;
+    initAudio();
+    var pos = getCanvasPos(clientX, clientY);
+    // Convert client coords to canvas coords via the canvas
+    var rect = canvas.getBoundingClientRect();
+    var scaleX = state.canvasW / rect.width;
+    var scaleY = state.canvasH / rect.height;
+    var cx = (clientX - rect.left) * scaleX;
+    var cy = (clientY - rect.top) * scaleY;
+
+    // Check if the theme bonus applies
+    var theme = state.currentTheme;
+    var bonus = theme && theme.stickerBonus.indexOf(emoji) !== -1;
+
+    state.paletteDragging = {
+      emoji: emoji,
+      themeBonus: bonus,
+      offsetX: 0,
+      offsetY: 0,
+    };
+    state.isDragging = false; // not moving existing sticker
+    state.selectedSticker = null;
+    playClick();
+  }
+
+  /* ═══════════════════════════════════════════════════════════════
+     CANVAS SETUP
+     ═══════════════════════════════════════════════════════════════ */
+  function resizeCanvas() {
+    var wrap = canvas.parentElement;
+    var w = wrap.clientWidth;
+    var h = wrap.clientHeight;
+    var dpr = window.devicePixelRatio || 1;
+
+    canvas.style.width = w + 'px';
+    canvas.style.height = h + 'px';
+    canvas.width = w * dpr;
+    canvas.height = h * dpr;
+
+    state.canvasW = w;
+    state.canvasH = h;
+
+    // Phone case dimensions (centered, proportional)
+    var caseAspect = 0.5; // phone is roughly half as wide as tall
+    var maxW = w * 0.55;
+    var maxH = h * 0.82;
+    var cw = maxW;
+    var ch = cw / caseAspect;
+    if (ch > maxH) { ch = maxH; cw = ch * caseAspect; }
+
+    state.caseW = cw;
+    state.caseH = ch;
+    state.caseX = (w - cw) / 2;
+    state.caseY = (h - ch) / 2;
+
+    if (state.ctx) {
+      state.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+  }
+
+  /* ═══════════════════════════════════════════════════════════════
+     DRAWING
+     ═══════════════════════════════════════════════════════════════ */
+
+  function drawBackground() {
+    var ctx = state.ctx;
+    var w = state.canvasW;
+    var h = state.canvasH;
+
+    var grad = ctx.createLinearGradient(0, 0, 0, h);
+    grad.addColorStop(0, '#0f0c29');
+    grad.addColorStop(0.5, '#302b63');
+    grad.addColorStop(1, '#1a1a2e');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, w, h);
+
+    // Subtle grid
+    ctx.strokeStyle = 'rgba(255,255,255,0.02)';
+    ctx.lineWidth = 0.5;
+    var gridSize = 30;
+    for (var x = gridSize; x < w; x += gridSize) {
+      ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke();
+    }
+    for (var y = gridSize; y < h; y += gridSize) {
+      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+    }
+  }
+
+  function drawPhoneCase() {
+    var ctx = state.ctx;
+    var x = state.caseX, y = state.caseY;
+    var w = state.caseW, h = state.caseH;
+    var template = getCurrentTemplate();
+
+    // Shadow
+    ctx.shadowColor = 'rgba(0,0,0,0.4)';
+    ctx.shadowBlur = 30;
+    ctx.shadowOffsetY = 8;
+
+    // Case body
+    var radius = w * 0.12;
+    ctx.fillStyle = template.color;
+    ctx.strokeStyle = template.border;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.roundRect(x, y, w, h, radius);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.shadowOffsetY = 0;
+    ctx.stroke();
+
+    // Inner glow
+    ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.roundRect(x + 3, y + 3, w - 6, h - 6, radius - 2);
+    ctx.stroke();
+
+    // Camera bump (top center-left on back)
+    var camR = w * 0.05;
+    ctx.fillStyle = 'rgba(0,0,0,0.3)';
+    ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.arc(x + w * 0.35, y + h * 0.08, camR, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.arc(x + w * 0.45, y + h * 0.08, camR * 0.6, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    // Bottom speaker
+    ctx.fillStyle = 'rgba(0,0,0,0.15)';
+    var speakerW = w * 0.12;
+    var speakerH = h * 0.012;
+    ctx.beginPath();
+    ctx.roundRect(x + (w - speakerW) / 2, y + h - h * 0.06, speakerW, speakerH, 2);
+    ctx.fill();
+  }
+
+  function drawPlacedStickers() {
+    var ctx = state.ctx;
+    var placed = state.placedStickers;
+
+    for (var i = placed.length - 1; i >= 0; i--) {
+      var s = placed[i];
+      ctx.save();
+      ctx.translate(s.x, s.y);
+      ctx.rotate(s.rotation || 0);
+      ctx.scale(s.scale, s.scale);
+
+      // Theme bonus glow
+      if (s.themeBonus) {
+        ctx.shadowColor = '#ffd740';
+        ctx.shadowBlur = 20;
+      }
+
+      ctx.font = (s.scale > 1.2 ? 36 : 28) + 'px serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(s.emoji, 0, 0);
+      ctx.shadowBlur = 0;
+
+      ctx.restore();
+
+      // Selection highlight
+      if (i === state.selectedSticker) {
+        ctx.strokeStyle = '#b388ff';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([4, 4]);
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, 16 * s.scale + 4, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Drag handle indicator
+        ctx.fillStyle = '#b388ff';
+        ctx.beginPath();
+        ctx.arc(s.x, s.y - 16 * s.scale - 8, 4, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+  }
+
+  function drawPaletteDrag() {
+    if (!state.paletteDragging) return;
+    var ctx = state.ctx;
+    var pd = state.paletteDragging;
+
+    ctx.save();
+    ctx.font = '32px serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    ctx.shadowColor = 'rgba(255,255,255,0.3)';
+    ctx.shadowBlur = 15;
+    ctx.fillText(pd.emoji, pd.x, pd.y);
+    ctx.shadowBlur = 0;
+
+    ctx.restore();
+  }
+
+  function drawParticles() {
+    var ctx = state.ctx;
+    for (var i = state.particles.length - 1; i >= 0; i--) {
+      var p = state.particles[i];
+      p.x += p.vx;
+      p.y += p.vy;
+      p.vy += 0.3;
+      p.life -= 0.02;
+      if (p.life <= 0) { state.particles.splice(i, 1); continue; }
+      ctx.globalAlpha = p.life;
+      ctx.fillStyle = p.color;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.size * p.life, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  function drawFloatingTexts() {
+    var ctx = state.ctx;
+    for (var i = state.floatingTexts.length - 1; i >= 0; i--) {
+      var t = state.floatingTexts[i];
+      t.y -= 1.2;
+      t.life -= 0.015;
+      if (t.life <= 0) { state.floatingTexts.splice(i, 1); continue; }
+      ctx.globalAlpha = t.life;
+      ctx.fillStyle = t.color;
+      ctx.font = 'bold ' + t.size + 'px Outfit, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.shadowColor = 'rgba(0,0,0,0.5)';
+      ctx.shadowBlur = 4;
+      ctx.fillText(t.text, t.x, t.y);
+      ctx.shadowBlur = 0;
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  function spawnParticles(x, y, count, color) {
+    for (var i = 0; i < count; i++) {
+      var angle = Math.random() * Math.PI * 2;
+      var speed = 0.5 + Math.random() * 2;
+      state.particles.push({
+        x: x, y: y,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed - 1.5,
+        color: color,
+        size: 3 + Math.random() * 5,
+        life: 0.6 + Math.random() * 0.4,
+      });
+    }
+  }
+
+  function addFloatingText(x, y, text, color, size) {
+    state.floatingTexts.push({
+      x: x, y: y, text: text,
+      color: color || '#fff',
+      size: size || 18,
+      life: 1,
+    });
+  }
+
+  /* ═══════════════════════════════════════════════════════════════
+     MAIN RENDER
+     ═══════════════════════════════════════════════════════════════ */
+  function render() {
+    var ctx = state.ctx;
+    if (!ctx) return;
+    ctx.clearRect(0, 0, state.canvasW, state.canvasH);
+
+    drawBackground();
+    drawPhoneCase();
+    drawPlacedStickers();
+    drawPaletteDrag();
+    drawParticles();
+    drawFloatingTexts();
+
+    // Draw selection hint
+    var sel = state.selectedSticker;
+    if (sel !== null && state.placedStickers[sel]) {
+      ctx.fillStyle = 'rgba(255,255,255,0.3)';
+      ctx.font = '10px Inter, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('Selected — press Delete or use 🗑', state.canvasW / 2, state.canvasH - 8);
+    }
+  }
+
+  /* ═══════════════════════════════════════════════════════════════
+     GAME LOOP
+     ═══════════════════════════════════════════════════════════════ */
+  var lastTime = 0;
+
+  function gameLoop(timestamp) {
+    if (!lastTime) lastTime = timestamp;
+    var dt = (timestamp - lastTime) / 1000;
+    if (dt > 0.05) dt = 0.05;
+    lastTime = timestamp;
+
+    if (!state.paused && state.playing) {
+      // Particles & floating texts animate regardless
+    }
+    render();
+    requestAnimationFrame(gameLoop);
+  }
+
+  /* ═══════════════════════════════════════════════════════════════
+     TIMER
+     ═══════════════════════════════════════════════════════════════ */
+  function startTimer() {
+    clearInterval(state.timerInterval);
+    state.timeLeft = ORDER_TIME;
+    updateTimerUI();
+    state.timerInterval = setInterval(function () {
+      state.timeLeft--;
+      updateTimerUI();
+      if (state.timeLeft <= 0) {
+        // Time's up — auto submit
+        clearInterval(state.timerInterval);
+        showHint('⏰ Time\'s up!');
+        evaluateDesign();
+      }
+    }, 1000);
+  }
+
+  function updateTimerUI() {
+    var t = state.timeLeft;
+    timerDisplay.textContent = '⏱ ' + t + 's';
+    timerDisplay.classList.toggle('urgent', t <= 15);
+  }
+
+  /* ═══════════════════════════════════════════════════════════════
+     ORDER MANAGEMENT
+     ═══════════════════════════════════════════════════════════════ */
+
+  function getCurrentTemplate() {
+    var ordersDone = getProgress();
+    var tpl = TEMPLATES[0];
+    for (var i = TEMPLATES.length - 1; i >= 0; i--) {
+      if (ordersDone >= TEMPLATES[i].unlockAt) { tpl = TEMPLATES[i]; break; }
+    }
+    return tpl;
+  }
+
+  function generateTheme() {
+    var ordersDone = getProgress();
+    // Cycle through themes, using a seeded-ish order
+    var idx = state.orderIndex % THEMES.length;
+    return THEMES[idx];
+  }
+
+  function hasThemeTag(theme, emoji) {
+    if (!theme) return false;
+    return theme.stickerBonus.indexOf(emoji) !== -1;
+  }
+
+  function startNewOrder() {
+    state.currentTheme = generateTheme();
+    state.placedStickers = [];
+    state.selectedSticker = null;
+    state.isDragging = false;
+    state.paletteDragging = null;
+    state.particles = [];
+    state.floatingTexts = [];
+
+    // Show order intro
+    showOrderIntro(state.currentTheme);
+  }
+
+  function showOrderIntro(theme) {
+    introTheme.textContent = theme.emoji + ' ' + theme.name;
+    introDesc.textContent = theme.desc;
+    introMinStickers.textContent = MIN_STICKERS_FOR_RATING;
+    var tagsHtml = '';
+    theme.tags.forEach(function (tag) {
+      tagsHtml += '<span class="order-tag">#' + tag + '</span>';
+    });
+    introTags.innerHTML = tagsHtml;
+    orderIntro.classList.add('active');
+  }
+
+  function beginDesignPhase() {
+    orderIntro.classList.remove('active');
+
+    // Update order panel
+    var theme = state.currentTheme;
+    orderTheme.textContent = theme.emoji + ' ' + theme.name;
+    orderDesc.textContent = theme.desc;
+    var tagsHtml = '';
+    theme.tags.forEach(function (tag) {
+      tagsHtml += '<span class="order-tag">#' + tag + '</span>';
+    });
+    orderTags.innerHTML = tagsHtml;
+
+    orderNumDisplay.textContent = '📋 #' + (state.orderIndex + 1);
+    updateScoreUI();
+    startTimer();
+    updateStickerCountUI();
+    renderStickerPalette();
+    deleteBtn.disabled = true;
+    submitBtn.disabled = false;
+  }
+
+  function evaluateDesign() {
+    clearInterval(state.timerInterval);
+    playSubmit();
+
+    var placed = state.placedStickers;
+    var theme = state.currentTheme;
+    var count = placed.length;
+
+    if (count < MIN_STICKERS_FOR_RATING) {
+      // Penalty for too few stickers
+      state.rating = 1;
+      showResult(1, 'Needs more stickers! Add at least ' + MIN_STICKERS_FOR_RATING + '.');
+      return;
+    }
+
+    // Calculate score based on:
+    // 1. Number of stickers (up to 2 stars)
+    // 2. Theme bonus stickers (up to 2 stars)
+    // 3. Variety / uniqueness (up to 1 star)
+    var starCount = 1; // always at least 1
+
+    // Star 2: Enough stickers
+    if (count >= 3) starCount = 2;
+    if (count >= 5) starCount = 3;
+
+    // Star 3-4: Theme matching
+    var themeMatches = 0;
+    for (var i = 0; i < placed.length; i++) {
+      if (placed[i].themeBonus) themeMatches++;
+    }
+    var themeMatchPct = count > 0 ? themeMatches / count : 0;
+
+    if (themeMatchPct >= 0.5) starCount = Math.max(starCount, 3);
+    if (themeMatchPct >= 0.6) starCount = Math.max(starCount, 4);
+
+    // Star 5: Perfect match — many stickers + >75% theme match
+    if (count >= 6 && themeMatchPct >= 0.75) starCount = 5;
+    else if (count >= 4 && themeMatchPct >= 0.8) starCount = 5;
+    else if (count >= 7 && themeMatchPct >= 0.5) starCount = 5;
+
+    // Clamp to 1-5
+    starCount = Math.max(1, Math.min(5, starCount));
+
+    state.rating = starCount;
+
+    // Customer feedback
+    var feedbacks = {
+      1: ['Needs more effort... 💔', 'Could be better...', 'Not quite there.'],
+      2: ['It\'s okay, I guess.', 'Meh, average work.', 'Could use more flair.'],
+      3: ['Pretty good! 👍', 'Nice work!', 'I like it!'],
+      4: ['Great job! 🌟', 'Almost perfect!', 'Love the design!'],
+      5: ['PERFECT! 🏆', 'Absolutely stunning! 💎', 'Best case ever! 👑', 'You nailed it! ⭐'],
+    };
+    var msgs = feedbacks[starCount] || feedbacks[3];
+    var msg = msgs[Math.floor(Math.random() * msgs.length)];
+
+    // Update score
+    state.score += starCount;
+    state.totalOrdersCompleted++;
+
+    // Save progress (total orders completed)
+    var prevProgress = getProgress();
+    setProgress(state.totalOrdersCompleted);
+
+    // Check for new unlocks
+    var newUnlocks = [];
+    var prevTier = getTier(prevProgress);
+    var newTier = getTier(state.totalOrdersCompleted);
+    if (newTier.min > prevTier.min) {
+      newUnlocks.push(newTier.icon + ' ' + newTier.name + ' tier unlocked!');
+    }
+
+    // Check for new template
+    var prevTpl = TEMPLATES[0];
+    for (var i = TEMPLATES.length - 1; i >= 0; i--) {
+      if (prevProgress >= TEMPLATES[i].unlockAt) { prevTpl = TEMPLATES[i]; break; }
+    }
+    var curTpl = getCurrentTemplate();
+    if (curTpl.id !== prevTpl.id) {
+      newUnlocks.push('📱 New case: ' + curTpl.name);
+    }
+
+    // Check new stickers
+    var prevUnlockedCount = prevProgress;
+    for (var si = 0; si < ALL_STICKERS.length; si++) {
+      if (prevProgress < ALL_STICKERS[si].unlockAt && state.totalOrdersCompleted >= ALL_STICKERS[si].unlockAt) {
+        newUnlocks.push('🎯 ' + ALL_STICKERS[si].emoji + ' ' + ALL_STICKERS[si].name);
+      }
+    }
+
+    // Update best rating
+    var best = getBest();
+    if (starCount > best) {
+      setBest(starCount);
+    }
+
+    // Play appropriate sound
+    if (starCount <= 2) playFail();
+    else if (starCount >= 4) playSuccess();
+    else playClick();
+    if (newUnlocks.length > 0) playUnlock();
+
+    // Vibrate based on rating
+    if (starCount <= 2) vibrate(20);
+    else if (starCount >= 4) vibrate([20, 10, 30]);
+    else vibrate(15);
+
+    showResult(starCount, msg, newUnlocks);
+  }
+
+  /* ═══════════════════════════════════════════════════════════════
+     UI UPDATES
+     ═══════════════════════════════════════════════════════════════ */
+  function updateScoreUI() {
+    scoreDisplay.textContent = '⭐ ' + state.score;
+  }
+
+  function updateStickerCountUI() {
+    var c = state.placedStickers.length;
+    stickerCount.textContent = c + ' sticker' + (c !== 1 ? 's' : '') + ' placed';
+  }
+
+  /* ═══════════════════════════════════════════════════════════════
+     RESULT SCREEN
+     ═══════════════════════════════════════════════════════════════ */
+  function showResult(stars, msg, newUnlocks) {
+    resultIcon.textContent = stars >= 4 ? '🏆' : (stars >= 3 ? '⭐' : '💔');
+    resultTitle.textContent = stars >= 4 ? 'AMAZING!' : (stars >= 3 ? 'GOOD JOB!' : 'KEEP TRYING!');
+    resultTitle.className = 'result-title ' + (stars >= 4 ? 'win' : (stars >= 3 ? 'great' : 'ok'));
+
+    // Stars animation
+    var starsHtml = '';
+    for (var i = 1; i <= 5; i++) {
+      starsHtml += '<span class="result-star ' + (i <= stars ? 'filled' : 'empty') + '">⭐</span>';
+    }
+    resultStars.innerHTML = starsHtml;
+
+    resultRatingText.textContent = 'Customer says: "' + msg + '"';
+
+    resultOrderName.textContent = state.currentTheme ? state.currentTheme.emoji + ' ' + state.currentTheme.name : '—';
+    resultDetail.innerHTML = '⭐ ' + stars + '/5 &nbsp;|&nbsp; 📋 Orders: ' + state.totalOrdersCompleted;
+
+    // Unlocks
+    if (newUnlocks && newUnlocks.length > 0) {
+      resultUnlock.innerHTML = '🎉 <b>New Unlocks!</b><br>' + newUnlocks.join('<br>');
+      resultUnlock.style.display = 'block';
+    } else {
+      resultUnlock.style.display = 'none';
+    }
+
+    var best = getBest();
+    resultBestLabel.innerHTML = 'Best Rating: <b>' + '⭐'.repeat(best) + '</b>';
+
+    showScreen('result');
+  }
+
+  /* ═══════════════════════════════════════════════════════════════
+     SCREEN MANAGEMENT
+     ═══════════════════════════════════════════════════════════════ */
+  function showScreen(id) {
+    [titleScreen, gameScreen, resultScreen].forEach(function (s) { s.classList.remove('active'); });
+    if (id === 'title') titleScreen.classList.add('active');
+    else if (id === 'game') gameScreen.classList.add('active');
+    else if (id === 'result') resultScreen.classList.add('active');
+    pauseOverlay.classList.remove('active');
+    orderIntro.classList.remove('active');
+  }
+
+  /* ═══════════════════════════════════════════════════════════════
+     START / RESET GAME
+     ═══════════════════════════════════════════════════════════════ */
+  function startGame() {
+    state.score = 0;
+    state.orderIndex = 0;
+    state.totalOrdersCompleted = getProgress();
+    state.playing = true;
+    state.paused = false;
+    state.placedStickers = [];
+    state.selectedSticker = null;
+    state.isDragging = false;
+    state.paletteDragging = null;
+    state.particles = [];
+    state.floatingTexts = [];
+
+    resizeCanvas();
+
+    showScreen('game');
+    state.orderIndex = 0;
+    startNewOrder();
+  }
+
+  /* ═══════════════════════════════════════════════════════════════
+     CANVAS INPUT — Coordinate Helpers
+     ═══════════════════════════════════════════════════════════════ */
+  function getCanvasPos(clientX, clientY) {
+    var rect = canvas.getBoundingClientRect();
+    return {
+      x: (clientX - rect.left) * (state.canvasW / rect.width),
+      y: (clientY - rect.top) * (state.canvasH / rect.height),
+    };
+  }
+
+  function isOnPhoneCase(cx, cy) {
+    var margin = 10;
+    return cx >= state.caseX - margin && cx <= state.caseX + state.caseW + margin
+      && cy >= state.caseY - margin && cy <= state.caseY + state.caseH + margin;
+  }
+
+  function findStickerAt(cx, cy) {
+    // Check in reverse order (top-most first)
+    var placed = state.placedStickers;
+    for (var i = placed.length - 1; i >= 0; i--) {
+      var s = placed[i];
+      var dx = cx - s.x;
+      var dy = cy - s.y;
+      var dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist < 20 * s.scale + 4) return i;
+    }
+    return -1;
+  }
+
+  /* ═══════════════════════════════════════════════════════════════
+     INPUT — Mouse
+     ═══════════════════════════════════════════════════════════════ */
+
+  function handlePointerDown(pos) {
+    if (state.paused || !state.playing) return;
+    initAudio();
+
+    // If palette drag is active, try to place on case
+    if (state.paletteDragging) {
+      // Check if we're over the phone case
+      if (isOnPhoneCase(pos.x, pos.y)) {
+        // Place the sticker
+        var pd = state.paletteDragging;
+        state.placedStickers.push({
+          emoji: pd.emoji,
+          x: pos.x,
+          y: pos.y,
+          scale: 1,
+          rotation: 0,
+          themeBonus: !!(pd.themeBonus),
+        });
+        state.selectedSticker = state.placedStickers.length - 1;
+        state.paletteDragging = null;
+        playPlace();
+        vibrate(8);
+        spawnParticles(pos.x, pos.y, 8, '#b388ff');
+        updateStickerCountUI();
+        deleteBtn.disabled = false;
+      } else {
+        // Cancel palette drag
+        state.paletteDragging = null;
+      }
+      return;
+    }
+
+    // Check if we clicked on an existing sticker
+    var idx = findStickerAt(pos.x, pos.y);
+    if (idx >= 0) {
+      state.selectedSticker = idx;
+      state.isDragging = true;
+      state.dragStartX = pos.x;
+      state.dragStartY = pos.y;
+      state.dragOrigX = state.placedStickers[idx].x;
+      state.dragOrigY = state.placedStickers[idx].y;
+      deleteBtn.disabled = false;
+      playClick();
+    } else {
+      state.selectedSticker = null;
+      state.isDragging = false;
+      deleteBtn.disabled = true;
+    }
+  }
+
+  function handlePointerMove(pos) {
+    if (state.paletteDragging) {
+      state.paletteDragging.x = pos.x;
+      state.paletteDragging.y = pos.y;
+      return;
+    }
+
+    if (state.isDragging && state.selectedSticker !== null) {
+      var s = state.placedStickers[state.selectedSticker];
+      var dx = pos.x - state.dragStartX;
+      var dy = pos.y - state.dragStartY;
+      s.x = state.dragOrigX + dx;
+      s.y = state.dragOrigY + dy;
+
+      // Clamp to within phone case
+      var margin = 20 * s.scale;
+      s.x = Math.max(state.caseX + margin, Math.min(state.caseX + state.caseW - margin, s.x));
+      s.y = Math.max(state.caseY + margin, Math.min(state.caseY + state.caseH - margin, s.y));
+    }
+  }
+
+  function handlePointerUp() {
+    if (state.paletteDragging) {
+      // If we haven't placed it by now, cancel
+      state.paletteDragging = null;
+      return;
+    }
+    state.isDragging = false;
+  }
+
+  // ─── Mouse Events ───
+  canvas.addEventListener('mousedown', function (e) {
+    e.preventDefault();
+    var pos = getCanvasPos(e.clientX, e.clientY);
+    handlePointerDown(pos);
+  });
+  document.addEventListener('mousemove', function (e) {
+    var pos = getCanvasPos(e.clientX, e.clientY);
+    handlePointerMove(pos);
+  });
+  document.addEventListener('mouseup', function () {
+    handlePointerUp();
+  });
+  canvas.addEventListener('mouseleave', function () {
+    if (state.isDragging) handlePointerUp();
+  });
+
+  // ─── Touch Events ───
+  canvas.addEventListener('touchstart', function (e) {
+    e.preventDefault();
+    var touch = e.touches[0];
+    if (!touch) return;
+    var pos = getCanvasPos(touch.clientX, touch.clientY);
+    handlePointerDown(pos);
+  }, { passive: false });
+
+  document.addEventListener('touchmove', function (e) {
+    e.preventDefault();
+    var touch = e.touches[0];
+    if (!touch) return;
+    var pos = getCanvasPos(touch.clientX, touch.clientY);
+    handlePointerMove(pos);
+  }, { passive: false });
+
+  document.addEventListener('touchend', function (e) {
+    e.preventDefault();
+    handlePointerUp();
+  }, { passive: false });
+
+  // ─── Mouse Wheel for scaling selected sticker ───
+  canvas.addEventListener('wheel', function (e) {
+    e.preventDefault();
+    if (state.selectedSticker === null) return;
+    var s = state.placedStickers[state.selectedSticker];
+    if (!s) return;
+    var delta = e.deltaY > 0 ? -0.1 : 0.1;
+    s.scale = Math.max(0.4, Math.min(2.5, s.scale + delta));
+    playClick();
+  }, { passive: false });
+
+  // ─── Touch pinch to scale ───
+  var lastPinchDist = 0;
+  canvas.addEventListener('touchstart', function (e) {
+    if (e.touches.length === 2 && state.selectedSticker !== null) {
+      var t1 = e.touches[0], t2 = e.touches[1];
+      lastPinchDist = Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
+    }
+  });
+
+  document.addEventListener('touchmove', function (e) {
+    if (e.touches.length === 2 && state.selectedSticker !== null) {
+      e.preventDefault();
+      var t1 = e.touches[0], t2 = e.touches[1];
+      var dist = Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
+      if (lastPinchDist > 0) {
+        var s = state.placedStickers[state.selectedSticker];
+        if (s) {
+          s.scale = Math.max(0.4, Math.min(2.5, s.scale * (dist / lastPinchDist)));
+        }
+      }
+      lastPinchDist = dist;
+    }
+  }, { passive: false });
+
+  document.addEventListener('touchend', function () { lastPinchDist = 0; });
+
+  /* ═══════════════════════════════════════════════════════════════
+     INPUT — Keyboard
+     ═══════════════════════════════════════════════════════════════ */
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') {
+      if (state.playing && !state.paused && !orderIntro.classList.contains('active')) {
+        togglePause();
+      }
+      return;
+    }
+
+    if (e.key === 'Enter' || e.key === ' ') {
+      if (titleScreen.classList.contains('active')) {
+        e.preventDefault();
+        initAudio();
+        startGame();
+        return;
+      } else if (resultScreen.classList.contains('active')) {
+        e.preventDefault();
+        if (nextBtn.disabled) return;
+        el('nextBtn').click();
+        return;
+      } else if (orderIntro.classList.contains('active')) {
+        e.preventDefault();
+        startOrderBtn.click();
+        return;
+      }
+    }
+
+    // Delete/Backspace to remove selected sticker
+    if ((e.key === 'Delete' || e.key === 'Backspace') && state.selectedSticker !== null) {
+      if (state.playing && !orderIntro.classList.contains('active')) {
+        removeSelectedSticker();
+        e.preventDefault();
+      }
+    }
+
+    // Arrow keys for fine positioning
+    if (state.selectedSticker !== null && state.playing) {
+      var s = state.placedStickers[state.selectedSticker];
+      if (!s) return;
+      var step = e.shiftKey ? 5 : 1;
+      switch (e.key) {
+        case 'ArrowUp': s.y = Math.max(state.caseY + 10, s.y - step); e.preventDefault(); break;
+        case 'ArrowDown': s.y = Math.min(state.caseY + state.caseH - 10, s.y + step); e.preventDefault(); break;
+        case 'ArrowLeft': s.x = Math.max(state.caseX + 10, s.x - step); e.preventDefault(); break;
+        case 'ArrowRight': s.x = Math.min(state.caseX + state.caseW - 10, s.x + step); e.preventDefault(); break;
+      }
+    }
+  });
+
+  /* ═══════════════════════════════════════════════════════════════
+     ACTIONS
+     ═══════════════════════════════════════════════════════════════ */
+  function removeSelectedSticker() {
+    if (state.selectedSticker === null) return;
+    var s = state.placedStickers[state.selectedSticker];
+    if (s) {
+      spawnParticles(s.x, s.y, 6, '#ff5252');
+      playRemove();
+      vibrate(10);
+    }
+    state.placedStickers.splice(state.selectedSticker, 1);
+    state.selectedSticker = null;
+    deleteBtn.disabled = true;
+    updateStickerCountUI();
+  }
+
+  function togglePause() {
+    if (orderIntro.classList.contains('active')) return;
+    state.paused = !state.paused;
+    pauseOverlay.classList.toggle('active', state.paused);
+    if (state.paused) {
+      clearInterval(state.timerInterval);
+    } else {
+      startTimer();
+    }
+  }
+
+  function showHint(msg) {
+    hintToast.textContent = msg;
+    hintToast.classList.add('show');
+    setTimeout(function () { hintToast.classList.remove('show'); }, 2000);
+  }
+
+  /* ═══════════════════════════════════════════════════════════════
+     roundRect polyfill for older browsers
+     ═══════════════════════════════════════════════════════════════ */
+  if (!CanvasRenderingContext2D.prototype.roundRect) {
+    CanvasRenderingContext2D.prototype.roundRect = function (x, y, w, h, r) {
+      if (typeof r === 'number') r = { tl: r, tr: r, br: r, bl: r };
+      else if (typeof r === 'object' && Array.isArray(r)) {
+        r = { tl: r[0]||0, tr: r[1]||0, br: r[2]||0, bl: r[3]||0 };
+      } else if (typeof r !== 'object') r = { tl: 0, tr: 0, br: 0, bl: 0 };
+      var rad = { tl: r.tl||0, tr: r.tr||0, br: r.br||0, bl: r.bl||0 };
+      this.moveTo(x + rad.tl, y);
+      this.lineTo(x + w - rad.tr, y);
+      this.quadraticCurveTo(x + w, y, x + w, y + rad.tr);
+      this.lineTo(x + w, y + h - rad.br);
+      this.quadraticCurveTo(x + w, y + h, x + w - rad.br, y + h);
+      this.lineTo(x + rad.bl, y + h);
+      this.quadraticCurveTo(x, y + h, x, y + h - rad.bl);
+      this.lineTo(x, y + rad.tl);
+      this.quadraticCurveTo(x, y, x + rad.tl, y);
+      this.closePath();
+    };
+  }
+
+  /* ═══════════════════════════════════════════════════════════════
+     EVENT BINDING
+     ═══════════════════════════════════════════════════════════════ */
+  playBtn.addEventListener('click', function () { initAudio(); startGame(); });
+  nextBtn.addEventListener('click', function () {
+    initAudio();
+    state.orderIndex++;
+    startNewOrder();
+  });
+  homeBtn.addEventListener('click', function () {
+    state.playing = false;
+    clearInterval(state.timerInterval);
+    showScreen('title');
+    updateTitleUI();
+  });
+  startOrderBtn.addEventListener('click', function () {
+    beginDesignPhase();
+  });
+
+  // Pause
+  pauseBtn.addEventListener('click', togglePause);
+  resumeBtn.addEventListener('click', togglePause);
+  quitBtn.addEventListener('click', function () {
+    state.paused = false;
+    state.playing = false;
+    clearInterval(state.timerInterval);
+    pauseOverlay.classList.remove('active');
+    showScreen('title');
+    updateTitleUI();
+  });
+
+  // Submit & Delete
+  submitBtn.addEventListener('click', function () {
+    if (state.placedStickers.length < MIN_STICKERS_FOR_RATING) {
+      showHint('Add at least ' + MIN_STICKERS_FOR_RATING + ' stickers!');
+      vibrate(10);
+      return;
+    }
+    clearInterval(state.timerInterval);
+    evaluateDesign();
+  });
+
+  deleteBtn.addEventListener('click', removeSelectedSticker);
+
+  // Window resize
+  var resizeTimer;
+  window.addEventListener('resize', function () {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(function () {
+      if (state.playing) {
+        resizeCanvas();
+      }
+    }, 200);
+  });
+
+  /* ═══════════════════════════════════════════════════════════════
+     INIT
+     ═══════════════════════════════════════════════════════════════ */
+  state.ctx = canvas.getContext('2d');
+  updateTitleUI();
+  resizeCanvas();
+
+  // Start game loop
+  lastTime = performance.now();
+  requestAnimationFrame(gameLoop);
+
+})();
+</script>
+</body>
+</html>
