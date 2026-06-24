@@ -1,0 +1,1346 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
+  <meta name="theme-color" content="#0d0a08" />
+  <title>Pirate Gold Merge</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700;800;900&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../../games/shared/game-frame.css" />
+  <style>
+    /* ═══════════════════════════════════════════════════════
+       Pirate Gold Merge — Drag same-level coins to merge!
+       ═══════════════════════════════════════════════════════ */
+
+    :root {
+      --bg-deep: #0d0a08;
+      --bg-body: #14100c;
+      --surface: rgba(255, 215, 0, 0.06);
+      --surface-hover: rgba(255, 215, 0, 0.12);
+      --border: rgba(255, 215, 0, 0.12);
+      --border-strong: rgba(255, 215, 0, 0.3);
+      --text: #f0e6d3;
+      --text-dim: rgba(240, 230, 211, 0.55);
+      --text-muted: rgba(240, 230, 211, 0.30);
+      --gold: #ffd700;
+      --gold-dark: #b8860b;
+      --success: #4caf50;
+      --danger: #ff5252;
+      --warning: #ffab40;
+      --font-display: 'Outfit', system-ui, sans-serif;
+      --font-body: 'Inter', system-ui, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+      --radius-sm: 6px;
+      --radius-md: 12px;
+      --radius-lg: 20px;
+      --radius-xl: 28px;
+      --board-size: min(85vw, 420px);
+      --cell-gap: 4px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      background: var(--bg-deep);
+      color: var(--text);
+      font-family: var(--font-body);
+      overflow: hidden;
+      height: 100%;
+      width: 100%;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: none;
+      -webkit-touch-callout: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    #app {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* ─── Screens ─── */
+    .screen {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      transition: opacity 0.4s ease, transform 0.4s ease;
+      will-change: opacity, transform;
+    }
+    .screen.hidden {
+      opacity: 0;
+      pointer-events: none;
+      transform: scale(0.96);
+    }
+
+    /* ─── Title Screen ─── */
+    #title-screen {
+      background: radial-gradient(ellipse at 50% 30%, #1a1208 0%, var(--bg-deep) 70%);
+      text-align: center;
+      gap: 0;
+    }
+    .title-icon {
+      font-size: clamp(3rem, 10vw, 5rem);
+      margin-bottom: 4px;
+      filter: drop-shadow(0 4px 20px rgba(255, 215, 0, 0.3));
+      animation: float 3s ease-in-out infinite;
+    }
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+    }
+    .title-content h1 {
+      font-family: var(--font-display);
+      font-weight: 900;
+      font-size: clamp(1.8rem, 6vw, 3rem);
+      line-height: 1.1;
+      color: var(--gold);
+      text-shadow: 0 2px 30px rgba(255, 215, 0, 0.2);
+      margin-bottom: 8px;
+    }
+    .subtitle {
+      color: var(--text-dim);
+      font-size: clamp(0.85rem, 2.2vw, 1rem);
+      max-width: 300px;
+      margin: 0 auto 24px;
+      line-height: 1.5;
+    }
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 14px 40px;
+      border: 2px solid var(--gold);
+      border-radius: 50px;
+      background: linear-gradient(135deg, rgba(255,215,0,0.15), rgba(255,215,0,0.05));
+      color: var(--gold);
+      font-family: var(--font-display);
+      font-weight: 800;
+      font-size: 1.1rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      letter-spacing: 0.5px;
+    }
+    .btn-primary:hover, .btn-primary:active {
+      background: linear-gradient(135deg, rgba(255,215,0,0.3), rgba(255,215,0,0.15));
+      transform: scale(1.05);
+      box-shadow: 0 0 30px rgba(255, 215, 0, 0.2);
+    }
+    .title-high-score {
+      margin-top: 20px;
+      color: var(--text-dim);
+      font-size: 0.85rem;
+    }
+    .title-high-score span {
+      color: var(--gold);
+      font-weight: 700;
+    }
+    .title-instructions {
+      margin-top: 14px;
+      display: flex;
+      gap: 16px;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-muted);
+      font-size: 0.75rem;
+    }
+    .title-instructions span {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    /* ─── Game Screen ─── */
+    #game-screen {
+      background: radial-gradient(ellipse at 50% 20%, #1a1410 0%, var(--bg-deep) 70%);
+      justify-content: flex-start;
+      padding-top: max(env(safe-area-inset-top, 0px) + 48px, 48px);
+      gap: 8px;
+    }
+
+    /* Game Header */
+    #game-header {
+      width: 100%;
+      max-width: var(--board-size);
+      padding: 0 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .score-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .score-label {
+      color: var(--text-dim);
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    .score-value {
+      font-family: var(--font-display);
+      font-size: 1.4rem;
+      font-weight: 900;
+      color: var(--gold);
+    }
+    .score-value.animate {
+      animation: scorePop 0.3s ease;
+    }
+    @keyframes scorePop {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.25); }
+      100% { transform: scale(1); }
+    }
+    .high-score-value {
+      font-family: var(--font-display);
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--text-dim);
+    }
+    .high-score-value span {
+      color: var(--text-muted);
+    }
+
+    /* Progress */
+    #progress-row {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 6px 8px;
+      background: var(--surface);
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border);
+    }
+    .progress-dot {
+      flex: 1;
+      aspect-ratio: 1;
+      max-width: 32px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.85rem;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      transition: all 0.3s ease;
+      position: relative;
+    }
+    .progress-dot.found {
+      border-color: var(--gold);
+      background: rgba(255, 215, 0, 0.15);
+      box-shadow: 0 0 12px rgba(255, 215, 0, 0.15);
+      transform: scale(1.1);
+    }
+    .progress-dot.found::after {
+      content: '';
+      position: absolute;
+      inset: -2px;
+      border-radius: 50%;
+      border: 1px solid rgba(255, 215, 0, 0.2);
+      animation: pulse-ring 2s ease-in-out infinite;
+    }
+    @keyframes pulse-ring {
+      0%, 100% { opacity: 0.5; transform: scale(1); }
+      50% { opacity: 0; transform: scale(1.3); }
+    }
+    .progress-dot.all-found {
+      border-color: var(--success);
+      background: rgba(76, 175, 80, 0.2);
+      box-shadow: 0 0 16px rgba(76, 175, 80, 0.3);
+    }
+
+    /* Board */
+    #board-container {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      padding: 4px;
+      min-height: 0;
+    }
+    #board {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: var(--cell-gap);
+      width: var(--board-size);
+      height: var(--board-size);
+      padding: 6px;
+      background: rgba(0,0,0,0.3);
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border);
+      box-shadow: inset 0 2px 20px rgba(0,0,0,0.5), 0 4px 30px rgba(0,0,0,0.3);
+    }
+
+    .cell {
+      position: relative;
+      border-radius: var(--radius-sm);
+      background: rgba(255, 215, 0, 0.03);
+      border: 1px solid rgba(255, 215, 0, 0.06);
+      transition: background 0.2s, border-color 0.2s;
+      aspect-ratio: 1;
+    }
+    .cell.highlight {
+      background: rgba(255, 215, 0, 0.10);
+      border-color: rgba(255, 215, 0, 0.25);
+    }
+    .cell.drop-target {
+      background: rgba(76, 175, 80, 0.12);
+      border-color: var(--success);
+      box-shadow: inset 0 0 20px rgba(76, 175, 80, 0.1);
+    }
+    .cell.warning {
+      background: rgba(255, 82, 82, 0.06);
+    }
+
+    /* Coins */
+    .coin {
+      position: absolute;
+      inset: 2px;
+      border-radius: var(--radius-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: clamp(1.4rem, 3.5vw, 2rem);
+      cursor: grab;
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+      will-change: transform;
+      z-index: 2;
+    }
+    .coin::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      opacity: 0.12;
+      transition: opacity 0.2s;
+    }
+    .coin::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      border: 1px solid;
+      opacity: 0.3;
+      transition: opacity 0.2s;
+    }
+    .coin:hover {
+      transform: scale(1.06);
+      z-index: 3;
+    }
+    .coin:active {
+      cursor: grabbing;
+    }
+    .coin.dragging {
+      opacity: 0.4;
+      transform: scale(0.9);
+    }
+    .coin.spawn {
+      animation: coinSpawn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    @keyframes coinSpawn {
+      0% { transform: scale(0); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    .coin.merge-out {
+      animation: mergeOut 0.25s ease forwards;
+    }
+    @keyframes mergeOut {
+      0% { transform: scale(1); opacity: 1; }
+      100% { transform: scale(0.3); opacity: 0; }
+    }
+    .coin.merge-in {
+      animation: mergeIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    @keyframes mergeIn {
+      0% { transform: scale(0); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    .coin.legendary {
+      animation: legendaryGlow 1s ease-in-out infinite;
+    }
+    @keyframes legendaryGlow {
+      0%, 100% { box-shadow: 0 0 10px rgba(255, 215, 0, 0.3), 0 0 30px rgba(255, 107, 0, 0.1); }
+      50% { box-shadow: 0 0 20px rgba(255, 215, 0, 0.6), 0 0 50px rgba(255, 107, 0, 0.2); }
+    }
+
+    /* Coin levels */
+    .coin-lv-0::before  { background: #cd7f32; }
+    .coin-lv-0::after   { border-color: #cd7f32; }
+    .coin-lv-0 { background: linear-gradient(135deg, #3d2b1f, #2a1d14); }
+
+    .coin-lv-1::before  { background: #c0c0c0; }
+    .coin-lv-1::after   { border-color: #c0c0c0; }
+    .coin-lv-1 { background: linear-gradient(135deg, #2a2a35, #1a1a25); }
+
+    .coin-lv-2::before  { background: #ffd700; }
+    .coin-lv-2::after   { border-color: #ffd700; }
+    .coin-lv-2 { background: linear-gradient(135deg, #3d3520, #2a2515); }
+
+    .coin-lv-3::before  { background: #ff2153; }
+    .coin-lv-3::after   { border-color: #ff2153; }
+    .coin-lv-3 { background: linear-gradient(135deg, #3d1520, #2a0e18); }
+
+    .coin-lv-4::before  { background: #4fc3ff; }
+    .coin-lv-4::after   { border-color: #4fc3ff; }
+    .coin-lv-4 { background: linear-gradient(135deg, #15203d, #0e1830); }
+
+    .coin-lv-5::before  { background: #ff8c00; }
+    .coin-lv-5::after   { border-color: #ff8c00; }
+    .coin-lv-5 { background: linear-gradient(135deg, #3d2a10, #2a1a08); }
+
+    .coin-lv-6::before  { background: #ffd700; opacity: 0.2; }
+    .coin-lv-6::after   { border-color: #ff6b00; opacity: 0.5; }
+    .coin-lv-6 {
+      background: linear-gradient(135deg, #3d2035, #2a1528);
+      box-shadow: 0 0 15px rgba(255, 215, 0, 0.3), 0 0 30px rgba(255, 107, 0, 0.1);
+    }
+
+    .coin .lv-badge {
+      position: absolute;
+      bottom: 1px;
+      right: 3px;
+      font-size: 0.5rem;
+      font-weight: 700;
+      color: rgba(255,255,255,0.4);
+      font-family: var(--font-mono);
+    }
+
+    /* Drag Ghost */
+    .drag-ghost {
+      position: fixed;
+      pointer-events: none;
+      z-index: 1000;
+      font-size: clamp(2rem, 5vw, 2.8rem);
+      width: clamp(52px, 13vw, 70px);
+      height: clamp(52px, 13vw, 70px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: var(--radius-md);
+      transform: translate(-50%, -50%) scale(1.15);
+      filter: drop-shadow(0 8px 30px rgba(0,0,0,0.5)) drop-shadow(0 0 20px rgba(255, 215, 0, 0.2));
+      transition: none;
+      will-change: transform, left, top;
+    }
+
+    /* Spawn Timer */
+    #game-footer {
+      width: 100%;
+      max-width: var(--board-size);
+      padding: 0 8px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    #spawn-timer {
+      width: 100%;
+      height: 3px;
+      background: rgba(255,255,255,0.08);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+    #spawn-timer-fill {
+      height: 100%;
+      width: 100%;
+      background: linear-gradient(90deg, var(--gold), var(--gold-dark));
+      border-radius: 2px;
+      transform-origin: left;
+      transition: transform 0.1s linear;
+    }
+    #game-status {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.7rem;
+      color: var(--text-muted);
+    }
+    #status-text {
+      font-size: 0.7rem;
+    }
+    #board-count {
+      font-family: var(--font-mono);
+      font-size: 0.65rem;
+    }
+    #board-count.warning-text {
+      color: var(--danger);
+    }
+
+    /* ─── Result Screens ─── */
+    .result-screen {
+      background: radial-gradient(ellipse at 50% 40%, #1a1410 0%, var(--bg-deep) 70%);
+      text-align: center;
+    }
+    .result-icon {
+      font-size: clamp(3.5rem, 12vw, 5rem);
+      margin-bottom: 8px;
+    }
+    .result-screen h1 {
+      font-family: var(--font-display);
+      font-weight: 900;
+      font-size: clamp(2rem, 6vw, 2.8rem);
+      margin-bottom: 6px;
+    }
+    .result-screen h1.win-title {
+      color: var(--gold);
+      text-shadow: 0 0 30px rgba(255, 215, 0, 0.3);
+    }
+    .result-screen h1.lose-title {
+      color: var(--danger);
+    }
+    .result-subtitle {
+      color: var(--text-dim);
+      font-size: clamp(0.85rem, 2vw, 1rem);
+      margin-bottom: 20px;
+    }
+    .result-stats {
+      display: flex;
+      gap: 24px;
+      justify-content: center;
+      margin-bottom: 28px;
+    }
+    .result-stat {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .result-stat-label {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    .result-stat-value {
+      font-family: var(--font-display);
+      font-size: 1.6rem;
+      font-weight: 900;
+      color: var(--gold);
+    }
+    .result-stat-value.new-best {
+      animation: scorePop 0.5s ease infinite;
+      color: var(--success);
+    }
+    .new-best-label {
+      font-size: 0.65rem;
+      color: var(--success);
+      font-weight: 600;
+    }
+
+    /* ─── Keyboard cursor ─── */
+    .cell.cursor {
+      box-shadow: inset 0 0 0 2px var(--gold);
+      z-index: 1;
+    }
+
+    /* ─── Particles ─── */
+    .particle {
+      position: fixed;
+      pointer-events: none;
+      z-index: 999;
+      border-radius: 50%;
+      animation: particleFly 0.6s ease-out forwards;
+    }
+    @keyframes particleFly {
+      0% { opacity: 1; transform: translate(0, 0) scale(1); }
+      100% { opacity: 0; transform: translate(var(--dx), var(--dy)) scale(0); }
+    }
+
+    /* ─── Confetti ─── */
+    .confetti-piece {
+      position: fixed;
+      pointer-events: none;
+      z-index: 998;
+      width: 8px;
+      height: 8px;
+      border-radius: 2px;
+      animation: confettiFall var(--dur, 2s) ease-out forwards;
+    }
+    @keyframes confettiFall {
+      0% { opacity: 1; transform: translateY(-20px) rotate(0deg) scale(1); }
+      100% { opacity: 0; transform: translateY(100vh) rotate(720deg) scale(0.3); }
+    }
+
+    /* ─── Responsive ─── */
+    @media (max-height: 640px) {
+      #game-screen { padding-top: max(env(safe-area-inset-top, 0px) + 40px, 40px); gap: 4px; }
+      .score-value { font-size: 1.1rem; }
+      #progress-row { padding: 3px 6px; }
+      .progress-dot { max-width: 24px; font-size: 0.7rem; }
+      #board { padding: 4px; gap: 3px; }
+    }
+
+    @media (min-width: 768px) {
+      :root { --board-size: 440px; }
+      .coin { font-size: 2rem; }
+      #game-screen { gap: 12px; }
+    }
+
+    @media (pointer: coarse) {
+      .coin:hover { transform: none; }
+    }
+  </style>
+</head>
+<body>
+  <a href="/" class="back-to-hub" aria-label="Back to hub">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
+    <span>Back</span>
+  </a>
+
+  <div id="app">
+
+    <!-- ═══ TITLE SCREEN ═══ -->
+    <div id="title-screen" class="screen">
+      <div class="title-content">
+        <div class="title-icon">🏴‍☠️</div>
+        <h1>Pirate Gold<br>Merge</h1>
+        <p class="subtitle">Drag matching coins together to merge them into legendary treasure! Collect all 7 treasures to win.</p>
+        <button id="play-btn" class="btn-primary">⚓ Play</button>
+        <div class="title-high-score">🏆 High Score: <span id="title-high-score">0</span></div>
+        <div class="title-instructions">
+          <span>🖱️ Drag</span>
+          <span style="opacity:0.3">·</span>
+          <span>⌨️ Arrow Keys</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ GAME SCREEN ═══ -->
+    <div id="game-screen" class="screen hidden">
+      <div id="game-header">
+        <div class="score-row">
+          <div>
+            <div class="score-label">Score</div>
+            <div id="score" class="score-value">0</div>
+          </div>
+          <div style="text-align:right">
+            <div class="score-label">Best</div>
+            <div class="high-score-value">🏆 <span id="in-game-high">0</span></div>
+          </div>
+        </div>
+        <div id="progress-row"></div>
+      </div>
+
+      <div id="board-container">
+        <div id="board"></div>
+      </div>
+
+      <div id="game-footer">
+        <div id="spawn-timer"><div id="spawn-timer-fill"></div></div>
+        <div id="game-status">
+          <span id="status-text">⚓ Drag coins to merge!</span>
+          <span id="board-count">0 / 25</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ WIN SCREEN ═══ -->
+    <div id="win-screen" class="screen hidden result-screen">
+      <div class="result-icon">🏆</div>
+      <h1 class="win-title">Legendary!</h1>
+      <p class="result-subtitle">You found the Legendary Treasure! The seas will sing of your wealth!</p>
+      <div class="result-stats">
+        <div class="result-stat">
+          <span class="result-stat-label">Score</span>
+          <span class="result-stat-value" id="win-score">0</span>
+        </div>
+        <div class="result-stat">
+          <span class="result-stat-label">Best</span>
+          <span class="result-stat-value" id="win-best">0</span>
+        </div>
+      </div>
+      <button id="win-play-again" class="btn-primary">⚓ Play Again</button>
+    </div>
+
+    <!-- ═══ LOSE SCREEN ═══ -->
+    <div id="lose-screen" class="screen hidden result-screen">
+      <div class="result-icon">💀</div>
+      <h1 class="lose-title">Overflow!</h1>
+      <p class="result-subtitle">The board is full of treasure! Try to merge faster next time.</p>
+      <div class="result-stats">
+        <div class="result-stat">
+          <span class="result-stat-label">Score</span>
+          <span class="result-stat-value" id="lose-score">0</span>
+        </div>
+        <div class="result-stat">
+          <span class="result-stat-label">Best</span>
+          <span class="result-stat-value" id="lose-best">0</span>
+        </div>
+      </div>
+      <button id="lose-try-again" class="btn-primary">⚓ Try Again</button>
+    </div>
+
+  </div>
+
+  <script>
+  /* ═══════════════════════════════════════════════════════════
+     Pirate Gold Merge — Game Script
+     ═══════════════════════════════════════════════════════════ */
+
+  (function() {
+    'use strict';
+
+    // ─── Treasures definition ───
+    const TREASURES = [
+      { level: 1, emoji: '\u{1FA99}', name: 'Copper Coin',     cssClass: 'coin-lv-0' },
+      { level: 2, emoji: '\u{1F948}', name: 'Silver Coin',     cssClass: 'coin-lv-1' },  // 🥈
+      { level: 3, emoji: '\u{1F947}', name: 'Gold Coin',       cssClass: 'coin-lv-2' },  // 🥇
+      { level: 4, emoji: '\u{1F48E}', name: 'Ruby',            cssClass: 'coin-lv-3' },  // 💎
+      { level: 5, emoji: '\u{1F4A0}', name: 'Sapphire',        cssClass: 'coin-lv-4' },  // 💠
+      { level: 6, emoji: '\u{1F451}', name: 'Crown',           cssClass: 'coin-lv-5' },  // 👑
+      { level: 7, emoji: '\u{1F3C6}', name: 'Legendary Treasure', cssClass: 'coin-lv-6' }, // 🏆
+    ];
+
+    const BOARD_SIZE = 5;
+    const TOTAL_CELLS = BOARD_SIZE * BOARD_SIZE;
+    const SPAWN_INTERVAL_MS = 12000;
+    const STARTING_ITEMS = 6;
+    const MERGE_POINTS = [0, 10, 25, 50, 100, 200, 500];
+    const STORAGE_KEY = 'pirateGoldMerge_highScore';
+
+    // ─── State ───
+    let board = [];
+    let score = 0;
+    let highScore = parseInt(localStorage.getItem(STORAGE_KEY) || '0', 10);
+    let discovered = new Set();
+    let gameRunning = false;
+    let spawnTimeout = null;
+    let spawnRemaining = SPAWN_INTERVAL_MS;
+    let lastSpawnTick = 0;
+    let animFrameId = null;
+    let keyboardCursor = -1;
+
+    // Drag state
+    let drag = {
+      active: false,
+      sourceIdx: -1,
+      ghostEl: null,
+      startX: 0,
+      startY: 0,
+      offsetX: 0,
+      offsetY: 0,
+    };
+
+    // ─── DOM refs ───
+    const $ = (id) => document.getElementById(id);
+    const titleScreen = $('title-screen');
+    const gameScreen  = $('game-screen');
+    const winScreen   = $('win-screen');
+    const loseScreen  = $('lose-screen');
+    const boardEl     = $('board');
+    const progressRow = $('progress-row');
+    const scoreEl     = $('score');
+    const inGameHigh  = $('in-game-high');
+    const titleHigh   = $('title-high-score');
+    const statusText  = $('status-text');
+    const boardCount  = $('board-count');
+    const timerFill   = $('spawn-timer-fill');
+
+    // ─── Audio ───
+    let audioCtx = null;
+    function getAudio() {
+      if (!audioCtx) {
+        try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch (_) {}
+      }
+      return audioCtx;
+    }
+    function playTone(freq, duration, type, volume) {
+      try {
+        const ctx = getAudio();
+        if (!ctx) return;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = type || 'sine';
+        osc.frequency.value = freq;
+        gain.gain.value = volume || 0.08;
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(ctx.currentTime);
+        osc.stop(ctx.currentTime + duration);
+      } catch (_) {}
+    }
+    function playMergeSound(levelIdx) {
+      const base = 220 + levelIdx * 55;
+      playTone(base, 0.12, 'sine', 0.10);
+      setTimeout(() => playTone(base * 1.5, 0.10, 'sine', 0.07), 60);
+    }
+    function playSpawnSound() {
+      playTone(180, 0.08, 'sine', 0.05);
+    }
+    function playWinSound() {
+      const notes = [523, 659, 784, 1047];
+      notes.forEach((n, i) => setTimeout(() => playTone(n, 0.25, 'sine', 0.10), i * 120));
+      setTimeout(() => { playTone(1319, 0.5, 'sine', 0.12); }, 500);
+    }
+    function playLoseSound() {
+      playTone(300, 0.2, 'sawtooth', 0.06);
+      setTimeout(() => playTone(200, 0.3, 'sawtooth', 0.05), 200);
+    }
+    function playDropError() {
+      playTone(100, 0.1, 'square', 0.04);
+    }
+    function vibrate(ms) {
+      try { if (navigator.vibrate) navigator.vibrate(ms); } catch (_) {}
+    }
+
+    // ─── Screen helpers ───
+    function showScreen(screen) {
+      [titleScreen, gameScreen, winScreen, loseScreen].forEach(s => s.classList.add('hidden'));
+      screen.classList.remove('hidden');
+    }
+
+    // ─── Board rendering ───
+    function buildBoardDOM() {
+      boardEl.innerHTML = '';
+      for (let i = 0; i < TOTAL_CELLS; i++) {
+        const cell = document.createElement('div');
+        cell.className = 'cell';
+        cell.dataset.idx = i;
+        boardEl.appendChild(cell);
+      }
+      keyboardCursor = Math.floor(TOTAL_CELLS / 2);
+    }
+    function renderBoard() {
+      const cells = boardEl.children;
+      let filled = 0;
+      for (let i = 0; i < TOTAL_CELLS; i++) {
+        const cell = cells[i];
+        const itemIdx = board[i];
+        cell.innerHTML = '';
+        cell.classList.remove('cursor', 'highlight', 'drop-target');
+        if (keyboardCursor === i && gameRunning) cell.classList.add('cursor');
+        if (itemIdx !== null) {
+          filled++;
+          const t = TREASURES[itemIdx];
+          const coin = document.createElement('div');
+          coin.className = `coin ${t.cssClass}`;
+          coin.textContent = t.emoji;
+          coin.dataset.idx = i;
+          coin.draggable = false;
+          cell.appendChild(coin);
+        }
+      }
+      boardCount.textContent = `${filled} / ${TOTAL_CELLS}`;
+      boardCount.classList.toggle('warning-text', filled >= Math.floor(TOTAL_CELLS * 0.75));
+
+      // Show warning on cells when nearly full
+      const threshold = Math.floor(TOTAL_CELLS * 0.8);
+      for (let i = 0; i < TOTAL_CELLS; i++) {
+        const cell = cells[i];
+        cell.classList.toggle('warning', filled >= threshold && board[i] === null);
+      }
+    }
+
+    // ─── Progress ───
+    function renderProgress() {
+      progressRow.innerHTML = '';
+      TREASURES.forEach((t, i) => {
+        const dot = document.createElement('div');
+        dot.className = 'progress-dot';
+        dot.textContent = t.emoji;
+        if (discovered.has(i)) {
+          dot.classList.add('found');
+          if (discovered.size === TREASURES.length) dot.classList.add('all-found');
+        }
+        progressRow.appendChild(dot);
+      });
+    }
+
+    function updateScore() {
+      scoreEl.textContent = score;
+      if (score > highScore) {
+        highScore = score;
+        localStorage.setItem(STORAGE_KEY, highScore);
+      }
+      inGameHigh.textContent = highScore;
+    }
+
+    // ─── Spawn logic ───
+    function spawnItem(levelIdx) {
+      const empty = [];
+      for (let i = 0; i < TOTAL_CELLS; i++) {
+        if (board[i] === null) empty.push(i);
+      }
+      if (empty.length === 0) return false;
+      const idx = empty[Math.floor(Math.random() * empty.length)];
+      board[idx] = levelIdx;
+      discovered.add(levelIdx);
+      renderBoard();
+      renderProgress();
+
+      // Animate spawn
+      const cells = boardEl.children;
+      const coin = cells[idx].querySelector('.coin');
+      if (coin) coin.classList.add('spawn');
+
+      playSpawnSound();
+      return true;
+    }
+
+    function getSpawnWeight() {
+      // As score increases, occasionally spawn higher level items
+      if (score > 500 && Math.random() < 0.15) return 1; // silver
+      if (score > 200 && Math.random() < 0.10) return 1;
+      return 0; // copper most of the time
+    }
+
+    function doSpawn() {
+      if (!gameRunning) return;
+      const level = getSpawnWeight();
+      const ok = spawnItem(level);
+      if (!ok) {
+        endGame(false);
+        return;
+      }
+      spawnRemaining = SPAWN_INTERVAL_MS;
+      lastSpawnTick = performance.now();
+      scheduleNextSpawn();
+    }
+
+    function scheduleNextSpawn() {
+      if (spawnTimeout) clearTimeout(spawnTimeout);
+      spawnTimeout = setTimeout(doSpawn, SPAWN_INTERVAL_MS);
+      spawnRemaining = SPAWN_INTERVAL_MS;
+      lastSpawnTick = performance.now();
+    }
+
+    function updateSpawnTimer(now) {
+      if (!gameRunning || !lastSpawnTick) return;
+      const elapsed = now - lastSpawnTick;
+      const remaining = Math.max(0, 1 - elapsed / SPAWN_INTERVAL_MS);
+      timerFill.style.transform = `scaleX(${remaining})`;
+    }
+
+    // ─── Merge logic ───
+    function tryMerge(fromIdx, toIdx) {
+      if (fromIdx === toIdx) return false;
+      const fromItem = board[fromIdx];
+      const toItem = board[toIdx];
+      if (fromItem === null || toItem === null) return false;
+      if (fromItem !== toItem) return false;
+      if (fromItem >= TREASURES.length - 1) return false; // can't merge legendary
+
+      const newLevel = fromItem + 1;
+
+      // Animate old coins disappearing
+      const cells = boardEl.children;
+      const fromCell = cells[fromIdx];
+      const toCell = cells[toIdx];
+      const fromCoin = fromCell.querySelector('.coin');
+      const toCoin = toCell.querySelector('.coin');
+      if (fromCoin) fromCoin.classList.add('merge-out');
+      if (toCoin) toCoin.classList.add('merge-out');
+
+      // Perform merge after short delay (for animation)
+      board[fromIdx] = null;
+      board[toIdx] = newLevel;
+      discovered.add(newLevel);
+
+      const points = MERGE_POINTS[newLevel];
+      score += points;
+      updateScore();
+
+      // Sound + vibration
+      playMergeSound(newLevel);
+      vibrate(20 + newLevel * 10);
+
+      // Particles
+      const cellRect = toCell.getBoundingClientRect();
+      spawnParticles(cellRect.left + cellRect.width / 2, cellRect.top + cellRect.height / 2, newLevel);
+
+      // Check win
+      if (discovered.size === TREASURES.length) {
+        setTimeout(() => endGame(true), 400);
+      }
+
+      renderProgress();
+      setTimeout(() => {
+        renderBoard();
+        // Animate new coin appearing
+        const newCoin = toCell.querySelector('.coin');
+        if (newCoin) newCoin.classList.add('merge-in');
+        if (newLevel === 6) { // Legendary Treasure
+          if (newCoin) newCoin.classList.add('legendary');
+        }
+      }, 200);
+
+      statusText.textContent = `✨ ${TREASURES[newLevel].name} created!`;
+
+      return true;
+    }
+
+    // ─── Particles ───
+    function spawnParticles(x, y, levelIdx) {
+      const colors = ['#ffd700', '#ff8c00', '#ff2153', '#4fc3ff', '#c0c0c0', '#cd7f32'];
+      const count = 8 + levelIdx * 2;
+      for (let i = 0; i < count; i++) {
+        const p = document.createElement('div');
+        p.className = 'particle';
+        const size = 4 + Math.random() * 6;
+        p.style.width = size + 'px';
+        p.style.height = size + 'px';
+        p.style.left = x + 'px';
+        p.style.top = y + 'px';
+        p.style.background = colors[levelIdx % colors.length];
+        p.style.setProperty('--dx', (Math.random() - 0.5) * 120 + 'px');
+        p.style.setProperty('--dy', (Math.random() - 0.5) * 120 + 'px');
+        document.body.appendChild(p);
+        setTimeout(() => p.remove(), 700);
+      }
+    }
+
+    // ─── Confetti ───
+    function spawnConfetti() {
+      const colors = ['#ffd700', '#ff6b00', '#ff2153', '#4fc3ff', '#00e676', '#ffab40', '#c0c0c0'];
+      for (let i = 0; i < 60; i++) {
+        const c = document.createElement('div');
+        c.className = 'confetti-piece';
+        c.style.left = Math.random() * 100 + 'vw';
+        c.style.top = '-10px';
+        c.style.background = colors[Math.floor(Math.random() * colors.length)];
+        c.style.width = (4 + Math.random() * 8) + 'px';
+        c.style.height = (4 + Math.random() * 8) + 'px';
+        c.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+        c.style.setProperty('--dur', (1.5 + Math.random() * 2) + 's');
+        c.style.animationDelay = Math.random() * 1.5 + 's';
+        document.body.appendChild(c);
+        setTimeout(() => c.remove(), 5000);
+      }
+    }
+
+    // ─── End game ───
+    function endGame(won) {
+      if (!gameRunning) return;
+      gameRunning = false;
+      if (spawnTimeout) { clearTimeout(spawnTimeout); spawnTimeout = null; }
+      if (animFrameId) { cancelAnimationFrame(animFrameId); animFrameId = null; }
+
+      const finalScore = score;
+      const isNewBest = finalScore >= highScore && finalScore > 0;
+      if (isNewBest || finalScore > parseInt(localStorage.getItem(STORAGE_KEY) || '0', 10)) {
+        highScore = finalScore;
+        localStorage.setItem(STORAGE_KEY, highScore);
+      }
+
+      if (won) {
+        playWinSound();
+        spawnConfetti();
+        vibrate([100, 50, 100, 50, 200]);
+        $('win-score').textContent = finalScore;
+        $('win-best').textContent = highScore;
+        showScreen(winScreen);
+      } else {
+        playLoseSound();
+        vibrate([100, 80, 100]);
+        $('lose-score').textContent = finalScore;
+        $('lose-best').textContent = highScore;
+        showScreen(loseScreen);
+      }
+    }
+
+    // ─── Drag & Drop (Pointer Events) ───
+    function getCellIdxFromPoint(x, y) {
+      const cells = boardEl.children;
+      for (let i = 0; i < cells.length; i++) {
+        const r = cells[i].getBoundingClientRect();
+        const pad = 6;
+        if (x >= r.left - pad && x <= r.right + pad && y >= r.top - pad && y <= r.bottom + pad) {
+          return i;
+        }
+      }
+      return -1;
+    }
+
+    function clearHighlights() {
+      const cells = boardEl.children;
+      for (let i = 0; i < cells.length; i++) {
+        cells[i].classList.remove('drop-target');
+      }
+    }
+
+    function highlightDropTarget(dropIdx) {
+      clearHighlights();
+      if (dropIdx >= 0 && dropIdx < TOTAL_CELLS) {
+        boardEl.children[dropIdx].classList.add('drop-target');
+      }
+    }
+
+    function onPointerDown(e) {
+      if (!gameRunning) return;
+      const coin = e.target.closest('.coin');
+      if (!coin) return;
+
+      const idx = parseInt(coin.dataset.idx, 10);
+      if (isNaN(idx) || board[idx] === null) return;
+
+      e.preventDefault();
+      const pt = e.touches ? e.touches[0] : e;
+
+      drag.active = true;
+      drag.sourceIdx = idx;
+      drag.startX = pt.clientX;
+      drag.startY = pt.clientY;
+
+      // Dim the source coin
+      const srcCell = boardEl.children[idx];
+      const srcCoin = srcCell.querySelector('.coin');
+      if (srcCoin) srcCoin.classList.add('dragging');
+
+      // Create ghost
+      const t = TREASURES[board[idx]];
+      const ghost = document.createElement('div');
+      ghost.className = `drag-ghost ${t.cssClass}`;
+      ghost.textContent = t.emoji;
+      ghost.style.left = pt.clientX + 'px';
+      ghost.style.top = pt.clientY + 'px';
+      document.body.appendChild(ghost);
+      drag.ghostEl = ghost;
+    }
+
+    function onPointerMove(e) {
+      if (!drag.active || !drag.ghostEl) return;
+      e.preventDefault();
+      const pt = e.touches ? e.touches[0] : e;
+
+      drag.ghostEl.style.left = pt.clientX + 'px';
+      drag.ghostEl.style.top = pt.clientY + 'px';
+
+      // Highlight potential drop target
+      const overIdx = getCellIdxFromPoint(pt.clientX, pt.clientY);
+      if (overIdx >= 0 && overIdx < TOTAL_CELLS && overIdx !== drag.sourceIdx) {
+        const targetItem = board[overIdx];
+        const sourceItem = board[drag.sourceIdx];
+        if (targetItem !== null && targetItem === sourceItem && targetItem < TREASURES.length - 1) {
+          highlightDropTarget(overIdx);
+        } else {
+          clearHighlights();
+        }
+      } else {
+        clearHighlights();
+      }
+    }
+
+    function onPointerUp(e) {
+      if (!drag.active) return;
+      drag.active = false;
+      clearHighlights();
+
+      const pt = e.changedTouches ? e.changedTouches[0] : e;
+      const overIdx = getCellIdxFromPoint(pt.clientX, pt.clientY);
+      let merged = false;
+
+      if (overIdx >= 0 && overIdx < TOTAL_CELLS) {
+        const sItem = board[drag.sourceIdx];
+        const tItem = board[overIdx];
+        // 1) Merge: same type, not max level
+        if (sItem !== null && tItem !== null && sItem === tItem && sItem < TREASURES.length - 1) {
+          merged = tryMerge(drag.sourceIdx, overIdx);
+        }
+        // 2) Move to empty cell
+        else if (sItem !== null && tItem === null && overIdx !== drag.sourceIdx) {
+          board[overIdx] = sItem;
+          board[drag.sourceIdx] = null;
+          renderBoard();
+          merged = true;
+        }
+      }
+
+      // If no merge or move, restore source coin
+      if (!merged) {
+        const srcCell = boardEl.children[drag.sourceIdx];
+        const srcCoin = srcCell ? srcCell.querySelector('.coin') : null;
+        if (srcCoin) srcCoin.classList.remove('dragging');
+        if (drag.sourceIdx !== overIdx) {
+          playDropError();
+        }
+      }
+
+      // Remove ghost
+      if (drag.ghostEl) {
+        drag.ghostEl.remove();
+        drag.ghostEl = null;
+      }
+      drag.sourceIdx = -1;
+    }
+
+    // ─── Keyboard Support ───
+    function onKeyDown(e) {
+      if (!gameRunning) return;
+
+      const key = e.key;
+      let handled = true;
+
+      switch (key) {
+        case 'ArrowUp':
+          keyboardCursor = Math.max(0, keyboardCursor - BOARD_SIZE);
+          renderBoard();
+          break;
+        case 'ArrowDown':
+          keyboardCursor = Math.min(TOTAL_CELLS - 1, keyboardCursor + BOARD_SIZE);
+          renderBoard();
+          break;
+        case 'ArrowLeft':
+          keyboardCursor = Math.max(0, keyboardCursor - 1);
+          renderBoard();
+          break;
+        case 'ArrowRight':
+          keyboardCursor = Math.min(TOTAL_CELLS - 1, keyboardCursor + 1);
+          renderBoard();
+          break;
+        case ' ':
+        case 'Enter':
+          e.preventDefault();
+          handleKeyboardSelect();
+          break;
+        default:
+          handled = false;
+      }
+
+      if (handled) e.preventDefault();
+    }
+
+    let kbSelected = -1;
+    function handleKeyboardSelect() {
+      if (!gameRunning || keyboardCursor < 0) return;
+
+      if (kbSelected === -1) {
+        // Select a coin
+        if (board[keyboardCursor] !== null) {
+          kbSelected = keyboardCursor;
+          const cells = boardEl.children;
+          cells[keyboardCursor].classList.add('highlight');
+          statusText.textContent = `Selected ${TREASURES[board[keyboardCursor]].emoji} — pick a target`;
+        }
+      } else {
+        // Try to merge, move, or cancel
+        if (keyboardCursor === kbSelected) {
+          // Cancel selection
+          const cells = boardEl.children;
+          cells[kbSelected].classList.remove('highlight');
+          kbSelected = -1;
+          statusText.textContent = '⚓ Drag coins to merge!';
+          return;
+        }
+
+        let actionDone = false;
+        // Try merge first
+        if (board[kbSelected] !== null && board[keyboardCursor] !== null &&
+            board[kbSelected] === board[keyboardCursor] &&
+            board[kbSelected] < TREASURES.length - 1) {
+          actionDone = tryMerge(kbSelected, keyboardCursor);
+        }
+        // Move to empty cell
+        else if (board[kbSelected] !== null && board[keyboardCursor] === null) {
+          board[keyboardCursor] = board[kbSelected];
+          board[kbSelected] = null;
+          renderBoard();
+          actionDone = true;
+          statusText.textContent = '🚀 Moved!';
+        }
+
+        const cells = boardEl.children;
+        cells[kbSelected].classList.remove('highlight');
+        kbSelected = -1;
+
+        if (!actionDone) {
+          statusText.textContent = '❌ Cannot place there — try matching coins';
+        }
+      }
+    }
+
+    // ─── Game Lifecycle ───
+    function startGame() {
+      // Reset state
+      board = new Array(TOTAL_CELLS).fill(null);
+      score = 0;
+      discovered = new Set();
+      gameRunning = true;
+      kbSelected = -1;
+      spawnRemaining = SPAWN_INTERVAL_MS;
+      lastSpawnTick = 0;
+
+      updateScore();
+      inGameHigh.textContent = highScore;
+      buildBoardDOM();
+      renderProgress();
+      showScreen(gameScreen);
+
+      // Place starting items
+      for (let i = 0; i < STARTING_ITEMS; i++) {
+        spawnItem(0);
+      }
+
+      statusText.textContent = '⚓ Drag coins to merge!';
+      scheduleNextSpawn();
+      lastSpawnTick = performance.now();
+
+      // Start timer animation
+      if (animFrameId) cancelAnimationFrame(animFrameId);
+      function tick(now) {
+        if (!gameRunning) return;
+        updateSpawnTimer(now);
+        animFrameId = requestAnimationFrame(tick);
+      }
+      animFrameId = requestAnimationFrame(tick);
+    }
+
+    // ─── Event Binding ───
+    function bindEvents() {
+      // Pointer events on board (mouse + touch)
+      boardEl.addEventListener('pointerdown', onPointerDown);
+      window.addEventListener('pointermove', onPointerMove);
+      window.addEventListener('pointerup', onPointerUp);
+      window.addEventListener('pointercancel', onPointerUp);
+
+      // Touch-specific: prevent scrolling
+      boardEl.addEventListener('touchstart', (e) => {
+        if (e.target.closest('.coin')) e.preventDefault();
+      }, { passive: false });
+
+      // Keyboard
+      window.addEventListener('keydown', onKeyDown);
+
+      // Buttons
+      $('play-btn').addEventListener('click', () => {
+        try { getAudio(); } catch (_) {}
+        startGame();
+      });
+      $('win-play-again').addEventListener('click', startGame);
+      $('lose-try-again').addEventListener('click', startGame);
+    }
+
+    // ─── Init ───
+    function init() {
+      titleHigh.textContent = highScore;
+
+      // Build progress icons on title
+      renderProgress();
+
+      // Bind events
+      bindEvents();
+
+      // Show title
+      showScreen(titleScreen);
+    }
+
+    // Kick off
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', init);
+    } else {
+      init();
+    }
+
+  })();
+  </script>
+</body>
+</html>

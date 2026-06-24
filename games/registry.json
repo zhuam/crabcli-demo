@@ -469,6 +469,20 @@
       "version": "1.0.0",
       "featured": true,
       "rating": 4.2
+    },
+    {
+      "id": "pirate-gold-merge",
+      "name": "Pirate Gold Merge",
+      "description": "拖动相同等级的金币合并升级，合成传说级宝藏！",
+      "category": "casual",
+      "tags": ["singleplayer", "merge", "casual", "short-session"],
+      "thumbnail": "/games/004-pirate-gold-merge/thumb.png",
+      "path": "/games/004-pirate-gold-merge/",
+      "hasServer": false,
+      "players": "1",
+      "version": "1.0.0",
+      "featured": true,
+      "rating": 4.0
     }
   ],
   "categories": [
