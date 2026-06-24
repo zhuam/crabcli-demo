@@ -415,6 +415,20 @@
       "players": "1",
       "version": "1.0.0",
       "rating": 4.3
+    },
+    {
+      "id": "stickman-archer-duel",
+      "name": "Stickman Archer Duel",
+      "description": "火柴人对决！拖拽瞄准释放箭矢，计算重力弹道命中对手，三局两胜",
+      "category": "action",
+      "tags": ["singleplayer", "archery", "physics", "pvp-ai", "short-session"],
+      "thumbnail": "/games/002-stickman-archer-duel/thumb.png",
+      "path": "/games/002-stickman-archer-duel/",
+      "hasServer": false,
+      "players": "1",
+      "version": "1.0.0",
+      "featured": true,
+      "rating": 4.3
     }
   ],
   "categories": [

@@ -1,0 +1,1926 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no">
+  <meta name="theme-color" content="#1a1a2e">
+  <title>Stickman Archer Duel</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700;800;900&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../games/shared/game-frame.css">
+  <style>
+    /* ═══════════════════════════════════════════════
+       Stickman Archer Duel — a single-file HTML game
+       ═══════════════════════════════════════════════ */
+
+    :root {
+      --bg-deep: #1a1a2e;
+      --bg-grid: #16213e;
+      --surface: rgba(255,255,255,0.05);
+      --surface-hover: rgba(255,255,255,0.10);
+      --border: rgba(255,255,255,0.08);
+      --text: #f0f0f0;
+      --text-dim: rgba(255,255,255,0.55);
+      --text-muted: rgba(255,255,255,0.30);
+      --success: #00e676;
+      --danger: #ff5252;
+      --warning: #ffd740;
+      --info: #40c4ff;
+      --fire: #ff6d00;
+      --ice: #00e5ff;
+      --explosive: #ff1744;
+      --font-display: 'Outfit', system-ui, sans-serif;
+      --font-body: 'Inter', system-ui, sans-serif;
+      --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+      --radius-sm: 6px;
+      --radius-md: 12px;
+      --radius-lg: 20px;
+      --radius-xl: 28px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      background: var(--bg-deep);
+      color: var(--text);
+      font-family: var(--font-body);
+      overflow: hidden;
+      width: 100vw; height: 100vh;
+      display: flex; align-items: center; justify-content: center;
+      touch-action: none;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    /* ═══ Screens ═══ */
+    .screen {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      width: 100%; height: 100%;
+      position: fixed; inset: 0;
+    }
+    .screen.active { display: flex; }
+
+    /* ═══ Title Screen ═══ */
+    .title-screen { justify-content: center; gap: 20px; text-align: center; z-index: 1; }
+    .title-icon {
+      width: 100px; height: 100px; border-radius: 24px;
+      background: linear-gradient(135deg, #ff6d00, #ff1744, #d500f9);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 48px;
+      box-shadow: 0 0 40px rgba(255,109,0,0.4), 0 0 80px rgba(213,0,249,0.2);
+      position: relative; margin: 0 auto;
+    }
+    @media (prefers-reduced-motion: no-preference) {
+      .title-icon { animation: titleGlow 2.5s ease-in-out infinite alternate; }
+    }
+    @keyframes titleGlow {
+      0% { box-shadow: 0 0 40px rgba(255,109,0,0.4); }
+      100% { box-shadow: 0 0 70px rgba(213,0,249,0.6), 0 0 120px rgba(255,109,0,0.3); }
+    }
+    .title-text {
+      font-family: var(--font-display); font-size: 38px; font-weight: 900;
+      background: linear-gradient(135deg, #ff6d00, #ff1744, #d500f9);
+      background-size: 200% auto;
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+      animation: gradientShift 3s ease infinite;
+      line-height: 1.1; letter-spacing: -0.02em;
+    }
+    @keyframes gradientShift {
+      0%, 100% { background-position: 0% center; }
+      50% { background-position: 100% center; }
+    }
+    .title-subtitle {
+      font-size: 14px; color: var(--text-dim); letter-spacing: 0.04em; max-width: 300px;
+    }
+    .title-best {
+      font-family: var(--font-mono); font-size: 13px; color: var(--text-muted);
+    }
+    .title-best span { color: var(--warning); font-weight: 700; }
+
+    .btn {
+      font-family: var(--font-display); font-weight: 700; font-size: 17px;
+      border: none; border-radius: 9999px;
+      padding: 14px 44px; min-height: 52px;
+      cursor: pointer;
+      transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease;
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      letter-spacing: 0.03em;
+    }
+    .btn:active { transform: scale(0.96); }
+    .btn:focus-visible { outline: 2px solid #ff6d00; outline-offset: 3px; }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #ff6d00, #d500f9);
+      color: #fff;
+      box-shadow: 0 4px 20px rgba(255,109,0,0.35);
+    }
+    .btn-primary:hover { box-shadow: 0 6px 30px rgba(255,109,0,0.5); transform: translateY(-2px); }
+    .btn-primary:active { transform: scale(0.96); }
+
+    .btn-secondary {
+      background: var(--surface);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+    .btn-secondary:hover { background: var(--surface-hover); }
+
+    .title-info {
+      display: flex; gap: 20px; font-size: 13px; color: var(--text-dim);
+      flex-wrap: wrap; justify-content: center;
+    }
+    .title-info span { display: flex; align-items: center; gap: 4px; }
+
+    .title-arrows {
+      display: flex; gap: 10px; justify-content: center; align-items: center;
+      margin-top: 4px;
+    }
+    .arrow-badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 5px 12px; border-radius: 9999px;
+      background: var(--surface); border: 1px solid var(--border);
+      font-size: 12px; color: var(--text-dim);
+    }
+    .arrow-badge.locked { opacity: 0.4; filter: grayscale(1); }
+    .arrow-badge.unlocked { opacity: 1; }
+    .arrow-badge.fire { border-color: rgba(255,109,0,0.3); }
+    .arrow-badge.ice { border-color: rgba(0,229,255,0.3); }
+    .arrow-badge.explosive { border-color: rgba(255,23,68,0.3); }
+
+    /* ═══ Game Screen ═══ */
+    .game-screen { flex-direction: column; z-index: 1; }
+    .game-header {
+      width: 100%; padding: 10px 16px;
+      display: flex; justify-content: space-between; align-items: center;
+      flex-shrink: 0;
+    }
+    .game-header .back-btn {
+      width: 38px; height: 38px; border-radius: 50%;
+      background: var(--surface); border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; font-size: 18px; color: var(--text-dim);
+      transition: all 0.15s ease;
+    }
+    .game-header .back-btn:hover { background: var(--surface-hover); color: var(--text); }
+    .game-header .back-btn:active { transform: scale(0.9); }
+
+    .game-stats {
+      display: flex; gap: 12px; align-items: center;
+    }
+    .stat-badge {
+      display: flex; align-items: center; gap: 6px;
+      padding: 5px 12px; border-radius: 9999px;
+      background: var(--surface); border: 1px solid var(--border);
+      font-size: 13px; font-weight: 600;
+      font-family: var(--font-mono);
+    }
+    .stat-badge.round { color: var(--info); min-width: 80px; justify-content: center; }
+    .stat-badge.score-player { color: var(--success); }
+    .stat-badge.score-enemy { color: var(--danger); }
+    .stat-badge.arrow-type { color: var(--warning); cursor: pointer; transition: all 0.15s ease; }
+    .stat-badge.arrow-type:hover { background: var(--surface-hover); }
+
+    /* ═══ Canvas Wrap ═══ */
+    .canvas-wrap {
+      flex: 1; display: flex; align-items: center; justify-content: center;
+      width: 100%; padding: 4px 8px;
+      overflow: hidden;
+    }
+    #gameCanvas {
+      display: block;
+      border-radius: var(--radius-md);
+      background: #1a1a2e;
+      touch-action: none;
+      width: 100%;
+      height: 100%;
+    }
+
+    /* ═══ Result Screen ═══ */
+    .result-screen { justify-content: center; gap: 16px; text-align: center; z-index: 1; padding: 24px; }
+    .result-icon { font-size: 64px; margin-bottom: 4px; }
+    .result-title {
+      font-family: var(--font-display); font-size: 36px; font-weight: 900;
+    }
+    .result-title.win { background: linear-gradient(135deg, #00e676, #00e5ff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .result-title.lose { color: var(--danger); }
+    .result-score-wrap {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius-lg); padding: 16px 28px;
+      display: flex; flex-direction: column; gap: 6px; min-width: 240px;
+    }
+    .result-rounds {
+      display: flex; gap: 16px; justify-content: center; align-items: center;
+    }
+    .result-round-item {
+      display: flex; flex-direction: column; align-items: center; gap: 2px;
+    }
+    .result-round-label { font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.06em; }
+    .result-round-score { font-family: var(--font-mono); font-size: 32px; font-weight: 700; }
+    .result-round-score.player-score { color: var(--success); }
+    .result-round-score.enemy-score { color: var(--danger); }
+    .result-round-vs { font-size: 18px; color: var(--text-muted); }
+    .result-detail { font-size: 13px; color: var(--text-dim); }
+    .result-detail span { color: var(--text); font-weight: 600; }
+    .result-best-label { font-size: 13px; color: var(--text-muted); margin-bottom: 6px; }
+    .result-best-label b { color: var(--warning); }
+    .result-unlock {
+      font-size: 13px; color: var(--info); padding: 8px 16px;
+      background: rgba(64,196,255,0.08); border: 1px solid rgba(64,196,255,0.15);
+      border-radius: var(--radius-md); margin: 4px 0;
+    }
+
+    .result-btns { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+
+    /* ═══ Pause overlay ═══ */
+    .pause-overlay {
+      position: fixed; inset: 0; z-index: 50;
+      background: rgba(26,26,46,0.85);
+      backdrop-filter: blur(8px);
+      display: none; flex-direction: column; align-items: center; justify-content: center; gap: 20px;
+    }
+    .pause-overlay.active { display: flex; }
+    .pause-overlay h2 {
+      font-family: var(--font-display); font-size: 32px; font-weight: 800;
+    }
+    .pause-overlay .btn { min-width: 200px; }
+
+    /* ═══ Round announcement overlay ═══ */
+    .round-overlay {
+      position: fixed; inset: 0; z-index: 40;
+      background: rgba(26,26,46,0.6);
+      display: none; flex-direction: column; align-items: center; justify-content: center;
+    }
+    .round-overlay.active { display: flex; }
+    .round-announce {
+      font-family: var(--font-display); font-size: 42px; font-weight: 900;
+      text-align: center;
+    }
+    .round-announce .sub {
+      font-size: 18px; font-weight: 600; color: var(--text-dim); margin-top: 8px;
+    }
+    .round-announce .go-text {
+      color: var(--warning);
+      animation: pulse 0.4s ease-in-out infinite alternate;
+    }
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      100% { transform: scale(1.1); }
+    }
+
+    /* ═══ Hit markers ═══ */
+    .hit-marker {
+      position: fixed; pointer-events: none; z-index: 30;
+      font-family: var(--font-display); font-weight: 900;
+      font-size: 28px;
+      animation: hitFloat 0.8s ease-out forwards;
+    }
+    @keyframes hitFloat {
+      0% { opacity: 1; transform: translateY(0) scale(0.5); }
+      30% { opacity: 1; transform: translateY(0) scale(1.2); }
+      100% { opacity: 0; transform: translateY(-60px) scale(1); }
+    }
+    .hit-marker.headshot { color: var(--danger); font-size: 36px; }
+    .hit-marker.body-hit { color: var(--warning); }
+
+    /* ═══ Responsive ═══ */
+    @media (max-width: 480px) {
+      .title-text { font-size: 28px; }
+      .title-icon { width: 72px; height: 72px; font-size: 36px; border-radius: 18px; }
+      .btn { font-size: 15px; padding: 12px 32px; min-height: 46px; }
+      .game-header { padding: 8px 10px; }
+      .stat-badge { padding: 4px 8px; font-size: 11px; }
+      .canvas-wrap { padding: 2px 4px; }
+      .result-title { font-size: 28px; }
+      .result-score-wrap { padding: 14px 20px; min-width: 200px; }
+      .round-announce { font-size: 32px; }
+      .title-arrows { flex-wrap: wrap; }
+    }
+    @media (max-height: 640px) {
+      .game-header { padding: 6px 10px; }
+      .stat-badge { padding: 3px 6px; font-size: 10px; }
+      .canvas-wrap { padding: 2px 4px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+  </style>
+</head>
+<body>
+<!-- ═══ TITLE SCREEN ═══ -->
+<section class="screen title-screen active" id="titleScreen">
+  <div class="title-icon">🏹</div>
+  <h1 class="title-text">STICKMAN<br>ARCHER</h1>
+  <p class="title-subtitle">Drag to aim & release to fire! First to 2 wins the duel.</p>
+  <button class="btn btn-primary" id="playBtn">▶ PLAY</button>
+  <div class="title-info">
+    <span>🎯 Headshot = instant kill</span>
+    <span>🖱️ Drag to aim</span>
+    <span>🔥 3 arrow types</span>
+  </div>
+  <div class="title-arrows" id="titleArrows"></div>
+  <p class="title-best" id="titleBest">Best Streak: <span>0</span></p>
+</section>
+
+<!-- ═══ GAME SCREEN ═══ -->
+<section class="screen game-screen" id="gameScreen">
+  <div class="game-header">
+    <button class="back-btn" id="pauseBtn" aria-label="Pause">⏸</button>
+    <div class="game-stats">
+      <span class="stat-badge round" id="roundDisplay">Round 1</span>
+      <span class="stat-badge score-player" id="playerScoreDisplay">🏹 0</span>
+      <span class="stat-badge score-enemy" id="enemyScoreDisplay">0 🎯</span>
+      <span class="stat-badge arrow-type" id="arrowTypeDisplay" title="Click to change">→ Normal</span>
+    </div>
+  </div>
+  <div class="canvas-wrap">
+    <canvas id="gameCanvas"></canvas>
+  </div>
+</section>
+
+<!-- ═══ PAUSE OVERLAY ═══ -->
+<div class="pause-overlay" id="pauseOverlay">
+  <h2>⏸ PAUSED</h2>
+  <button class="btn btn-primary" id="resumeBtn">▶ RESUME</button>
+  <button class="btn btn-secondary" id="quitBtn">🏠 QUIT</button>
+</div>
+
+<!-- ═══ ROUND OVERLAY ═══ -->
+<div class="round-overlay" id="roundOverlay">
+  <div class="round-announce" id="roundAnnounce"></div>
+</div>
+
+<!-- ═══ RESULT SCREEN ═══ -->
+<section class="screen result-screen" id="resultScreen">
+  <div class="result-icon" id="resultIcon">🏆</div>
+  <h2 class="result-title" id="resultTitle">YOU WIN!</h2>
+  <div class="result-score-wrap">
+    <div class="result-rounds">
+      <div class="result-round-item">
+        <div class="result-round-label">You</div>
+        <div class="result-round-score player-score" id="resultMyScore">2</div>
+      </div>
+      <div class="result-round-vs">⚔️</div>
+      <div class="result-round-item">
+        <div class="result-round-label">Enemy</div>
+        <div class="result-round-score enemy-score" id="resultEnemyScore">0</div>
+      </div>
+    </div>
+    <div class="result-detail" id="resultDetail">Headshots: <span>0</span></div>
+  </div>
+  <div class="result-unlock" id="resultUnlock" style="display:none;"></div>
+  <p class="result-best-label" id="resultBestLabel">Best Streak: <b>3</b></p>
+  <div class="result-btns">
+    <button class="btn btn-primary" id="retryBtn">🔄 REMATCH</button>
+    <button class="btn btn-secondary" id="homeBtn">🏠 HOME</button>
+  </div>
+</section>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ════════════════════════════════════════════════
+     CONSTANTS
+     ════════════════════════════════════════════════ */
+  const STORAGE_KEY = 'stickman_archer_best';
+  const STORAGE_ARROW_KEY = 'stickman_archer_progress';
+  const MATCH_WINS = 2; // best of 3
+  const PLAYER_SPEED = 3;
+  const BOW_DRAW_MAX = 350; // max drag distance in px
+  const ARROW_SPEED_BASE = 600;
+  const GRAVITY = 450;
+  const BODY_RADIUS = 16;
+  const HEAD_RADIUS = 10;
+  const ARROW_TYPES = [
+    { id: 'normal', name: 'Normal', color: '#e0e0e0', trail: '#888', speed: 1.0, damage: 1, desc: 'Standard arrow', unlockWins: 0 },
+    { id: 'fire',    name: 'Fire',    color: '#ff6d00', trail: '#ffab00', speed: 1.1, damage: 2, desc: 'Burning tip — extra hurt', unlockWins: 1 },
+    { id: 'ice',     name: 'Ice',     color: '#00e5ff', trail: '#80d8ff', speed: 0.9, damage: 1, desc: 'Freezing — slows enemy', unlockWins: 3 },
+    { id: 'explosive', name: 'Boom', color: '#ff1744', trail: '#ff4081', speed: 0.85, damage: 1, desc: 'Explodes on impact', unlockWins: 5 },
+  ];
+  const HEADSHOT_MSG = ['HEADSHOT! 💀', 'CRITICAL! ⚡', 'PERFECT! 🎯', 'BULLSEYE! 🏹'];
+  const BODYHIT_MSG = ['HIT! 💥', 'NICE! 🔥', 'DIRECT! 🎯'];
+
+  /* ════════════════════════════════════════════════
+     STATE
+     ════════════════════════════════════════════════ */
+  let state = {
+    // Match
+    playerWins: 0,
+    enemyWins: 0,
+    round: 1,
+    totalRounds: 0,
+    playerHeadshots: 0,
+    enemyHeadshots: 0,
+    victoryCount: 0, // lifetime match wins for progression
+
+    // Round state
+    phase: 'aiming', // aiming | playerFly | enemyAim | enemyFly | roundOver | matchOver
+    playerHealth: 2, // 2 hits or 1 headshot
+    enemyHealth: 2,
+    playerHitHead: false, // for tracking hit type this round
+    enemyHitHead: false,
+    playerHitThisRound: false,
+    enemyHitThisRound: false,
+
+    // Positions
+    player: { x: 0, y: 0, bowAngle: -0.8, bowDrawn: false, drawPower: 0, drawAngle: 0 },
+    enemy: { x: 0, y: 0, bowAngle: -2.3, drawPower: 0, drawAngle: 0 },
+
+    // Arrow
+    arrow: null, // { x, y, vx, vy, type, fromPlayer, trail: [] }
+    arrowType: 0, // index into ARROW_TYPES
+
+    // Aiming
+    isDragging: false,
+    dragStart: null,
+    dragCurrent: null,
+
+    // Enemy AI timers
+    enemyTimer: null,
+    enemyAimStart: 0,
+    showTrajectory: false,
+    trajectoryPoints: [],
+
+    // Effects
+    explosions: [],
+    particles: [],
+    floatingTexts: [],
+
+    // Control
+    playing: false,
+    paused: false,
+    matchOver: false,
+    canvas: null,
+    ctx: null,
+    canvasW: 0,
+    canvasH: 0,
+    groundY: 0,
+
+    // Unlocked arrows
+    unlockedArrows: [],
+  };
+
+  /* ════════════════════════════════════════════════
+     DOM refs
+     ════════════════════════════════════════════════ */
+  const $ = s => document.querySelector(s);
+  const el = id => document.getElementById(id);
+  const titleScreen = el('titleScreen');
+  const gameScreen = el('gameScreen');
+  const resultScreen = el('resultScreen');
+  const pauseOverlay = el('pauseOverlay');
+  const roundOverlay = el('roundOverlay');
+  const playBtn = el('playBtn');
+  const pauseBtn = el('pauseBtn');
+  const resumeBtn = el('resumeBtn');
+  const quitBtn = el('quitBtn');
+  const retryBtn = el('retryBtn');
+  const homeBtn = el('homeBtn');
+  const roundDisplay = el('roundDisplay');
+  const playerScoreDisplay = el('playerScoreDisplay');
+  const enemyScoreDisplay = el('enemyScoreDisplay');
+  const arrowTypeDisplay = el('arrowTypeDisplay');
+  const canvas = el('gameCanvas');
+  const resultIcon = el('resultIcon');
+  const resultTitle = el('resultTitle');
+  const resultMyScore = el('resultMyScore');
+  const resultEnemyScore = el('resultEnemyScore');
+  const resultDetail = el('resultDetail');
+  const resultUnlock = el('resultUnlock');
+  const resultBestLabel = el('resultBestLabel');
+  const titleBest = el('titleBest');
+  const titleArrows = el('titleArrows');
+  const roundAnnounce = el('roundAnnounce');
+
+  /* ════════════════════════════════════════════════
+     AUDIO (Web Audio API)
+     ════════════════════════════════════════════════ */
+  let audioCtx = null;
+
+  function initAudio() {
+    if (!audioCtx) {
+      try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {}
+    }
+    if (audioCtx && audioCtx.state === 'suspended') {
+      audioCtx.resume().catch(function () {});
+    }
+  }
+
+  function playTone(freq, duration, type, volume) {
+    if (!audioCtx) return;
+    try {
+      var osc = audioCtx.createOscillator();
+      var gain = audioCtx.createGain();
+      osc.type = type || 'square';
+      osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+      gain.gain.setValueAtTime((volume || 0.12) * 0.3, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + (duration || 0.1));
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start();
+      osc.stop(audioCtx.currentTime + (duration || 0.1));
+    } catch (e) {}
+  }
+
+  function playBowDraw() {
+    playTone(200, 0.1, 'sine', 0.06);
+  }
+
+  function playArrowRelease(power) {
+    var vol = 0.04 + power * 0.06;
+    playTone(800 + power * 600, 0.08, 'sawtooth', vol);
+  }
+
+  function playHit(isHeadshot) {
+    if (isHeadshot) {
+      playTone(1200, 0.1, 'square', 0.12);
+      setTimeout(function () { playTone(800, 0.12, 'square', 0.08); }, 60);
+      setTimeout(function () { playTone(400, 0.15, 'square', 0.06); }, 120);
+    } else {
+      playTone(300, 0.08, 'square', 0.1);
+      setTimeout(function () { playTone(200, 0.06, 'square', 0.06); }, 40);
+    }
+  }
+
+  function playMiss() {
+    playTone(150, 0.15, 'triangle', 0.04);
+  }
+
+  function playRoundWin() {
+    [0, 100, 200].forEach(function (d, i) {
+      setTimeout(function () { playTone(400 + i * 200, 0.12, 'sine', 0.08); }, d);
+    });
+  }
+
+  function playRoundLose() {
+    [0, 150, 250].forEach(function (d, i) {
+      setTimeout(function () { playTone(500 - i * 150, 0.15, 'triangle', 0.06); }, d);
+    });
+  }
+
+  function playMatchWin() {
+    [0, 100, 200, 350, 500].forEach(function (d, i) {
+      setTimeout(function () { playTone(400 + i * 150, 0.15, 'sine', 0.1); }, d);
+    });
+  }
+
+  function playMatchLose() {
+    [0, 150, 300, 400, 500].forEach(function (d, i) {
+      setTimeout(function () { playTone(400, 0.2, 'triangle', 0.06); }, d);
+    });
+  }
+
+  function playExplosion() {
+    playTone(80, 0.3, 'sawtooth', 0.1);
+    setTimeout(function () { playTone(60, 0.2, 'square', 0.06); }, 50);
+  }
+
+  function playClick() {
+    playTone(1000, 0.05, 'square', 0.04);
+  }
+
+  /* ════════════════════════════════════════════════
+     VIBRATION
+     ════════════════════════════════════════════════ */
+  function vibrate(ms) {
+    try { if (navigator.vibrate) navigator.vibrate(ms || 10); } catch (e) {}
+  }
+
+  /* ════════════════════════════════════════════════
+     STORAGE
+     ════════════════════════════════════════════════ */
+  function getBest() {
+    try { return parseInt(localStorage.getItem(STORAGE_KEY)) || 0; } catch (e) { return 0; }
+  }
+  function setBest(val) {
+    try { localStorage.setItem(STORAGE_KEY, String(val)); } catch (e) {}
+  }
+  function getProgress() {
+    try { return parseInt(localStorage.getItem(STORAGE_ARROW_KEY)) || 0; } catch (e) { return 0; }
+  }
+  function setProgress(val) {
+    try { localStorage.setItem(STORAGE_ARROW_KEY, String(val)); } catch (e) {}
+  }
+  function updateBestUI() {
+    var best = getBest();
+    titleBest.innerHTML = 'Best Streak: <span>' + best + '</span>';
+    renderArrowBadges();
+  }
+
+  function renderArrowBadges() {
+    var wins = getProgress();
+    var html = '';
+    ARROW_TYPES.forEach(function (a, i) {
+      var unlocked = wins >= a.unlockWins;
+      html += '<span class="arrow-badge ' + (unlocked ? 'unlocked ' + a.id : 'locked') + '">'
+        + (unlocked ? '' : '🔒 ') + a.name + '</span>';
+    });
+    titleArrows.innerHTML = html;
+  }
+
+  /* ════════════════════════════════════════════════
+     CANVAS SETUP
+     ════════════════════════════════════════════════ */
+  function resizeCanvas() {
+    var wrap = canvas.parentElement;
+    var w = wrap.clientWidth;
+    var h = wrap.clientHeight;
+    var dpr = window.devicePixelRatio || 1;
+
+    canvas.style.width = w + 'px';
+    canvas.style.height = h + 'px';
+    canvas.width = w * dpr;
+    canvas.height = h * dpr;
+
+    state.canvasW = w;
+    state.canvasH = h;
+    state.groundY = h - 30;
+
+    // Position stickmen
+    state.player.x = w * 0.18;
+    state.player.y = state.groundY;
+    state.enemy.x = w * 0.82;
+    state.enemy.y = state.groundY;
+
+    if (state.ctx) {
+      state.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+  }
+
+  /* ════════════════════════════════════════════════
+     DRAWING
+     ════════════════════════════════════════════════ */
+
+  function drawBackground() {
+    var ctx = state.ctx;
+    var w = state.canvasW;
+    var h = state.canvasH;
+
+    // Sky gradient
+    var skyGrad = ctx.createLinearGradient(0, 0, 0, h);
+    skyGrad.addColorStop(0, '#0f0c29');
+    skyGrad.addColorStop(0.4, '#302b63');
+    skyGrad.addColorStop(0.7, '#24243e');
+    skyGrad.addColorStop(1, '#1a1a2e');
+    ctx.fillStyle = skyGrad;
+    ctx.fillRect(0, 0, w, h);
+
+    // Stars
+    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+    for (var i = 0; i < 30; i++) {
+      var sx = (i * 137.5 + 50) % w;
+      var sy = (i * 97.3 + 20) % (h * 0.5);
+      var sr = 0.5 + (i % 3) * 0.5;
+      ctx.beginPath();
+      ctx.arc(sx, sy, sr, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Ground
+    var groundGrad = ctx.createLinearGradient(0, state.groundY, 0, h);
+    groundGrad.addColorStop(0, '#2d5a27');
+    groundGrad.addColorStop(0.2, '#1e3a1a');
+    groundGrad.addColorStop(1, '#0d1f0a');
+    ctx.fillStyle = groundGrad;
+    ctx.fillRect(0, state.groundY, w, h - state.groundY);
+
+    // Ground line
+    ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(0, state.groundY);
+    ctx.lineTo(w, state.groundY);
+    ctx.stroke();
+
+    // Platform under player
+    ctx.fillStyle = 'rgba(255,255,255,0.04)';
+    ctx.fillRect(state.player.x - 50, state.groundY - 2, 100, 4);
+
+    // Platform under enemy
+    ctx.fillStyle = 'rgba(255,255,255,0.04)';
+    ctx.fillRect(state.enemy.x - 50, state.groundY - 2, 100, 4);
+  }
+
+  function drawStickman(x, y, facingRight, health, isDrawing, drawAngle, drawPower, flashColor) {
+    var ctx = state.ctx;
+    var baseY = y - 10;
+
+    // Body color (flash on hit)
+    var bodyColor = flashColor || (facingRight ? '#e0e0e0' : '#e0e0e0');
+    var darkColor = facingRight ? '#999' : '#999';
+
+    // === Head ===
+    var headY = baseY - 52;
+    ctx.fillStyle = bodyColor;
+    ctx.strokeStyle = darkColor;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(x, headY, HEAD_RADIUS, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    // === Body ===
+    ctx.strokeStyle = bodyColor;
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(x, headY + HEAD_RADIUS);
+    ctx.lineTo(x, baseY - 24);
+    ctx.stroke();
+
+    // === Arms ===
+    ctx.lineWidth = 2.5;
+    var shoulderX = x;
+    var shoulderY = headY + HEAD_RADIUS + 10;
+
+    if (isDrawing) {
+      // Bow arm (points in aim direction)
+      var armLen = 24;
+      var dir = facingRight ? 1 : -1;
+      var aimX = shoulderX + Math.cos(drawAngle) * armLen * dir;
+      var aimY = shoulderY + Math.sin(drawAngle) * armLen;
+
+      // Back arm
+      ctx.strokeStyle = bodyColor;
+      ctx.beginPath();
+      ctx.moveTo(shoulderX - 6 * dir, shoulderY);
+      ctx.lineTo(shoulderX - 16 * dir, shoulderY + 8);
+      ctx.stroke();
+
+      // Bow arm
+      ctx.beginPath();
+      ctx.moveTo(shoulderX, shoulderY);
+      ctx.lineTo(aimX, aimY);
+      ctx.stroke();
+
+      // Draw bow
+      drawBow(ctx, shoulderX, shoulderY, drawAngle, dir, drawPower);
+    } else {
+      // Relaxed arms
+      ctx.strokeStyle = bodyColor;
+      ctx.beginPath();
+      ctx.moveTo(shoulderX, shoulderY);
+      ctx.lineTo(shoulderX - 12, shoulderY + 14);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(shoulderX, shoulderY);
+      ctx.lineTo(shoulderX + 12, shoulderY + 14);
+      ctx.stroke();
+    }
+
+    // === Legs ===
+    ctx.strokeStyle = bodyColor;
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(x, baseY - 24);
+    ctx.lineTo(x - 10, baseY);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(x, baseY - 24);
+    ctx.lineTo(x + 10, baseY);
+    ctx.stroke();
+
+    // === Health bar ===
+    var barW = 36;
+    var barH = 5;
+    var barX = x - barW / 2;
+    var barY = baseY - 62;
+    ctx.fillStyle = 'rgba(255,255,255,0.15)';
+    ctx.fillRect(barX, barY, barW, barH);
+    var hpPct = Math.max(0, health / 2);
+    ctx.fillStyle = health === 1 ? '#ffd740' : '#00e676';
+    ctx.fillRect(barX, barY, barW * hpPct, barH);
+    ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+    ctx.lineWidth = 0.5;
+    ctx.strokeRect(barX, barY, barW, barH);
+  }
+
+  function drawBow(ctx, sx, sy, angle, dir, power) {
+    var bowLen = 20 + power * 8;
+    var openAngle = 0.5 - power * 0.2;
+
+    ctx.save();
+    ctx.translate(sx, sy);
+    ctx.rotate(angle * dir);
+
+    // Bow arc
+    ctx.strokeStyle = '#8d6e63';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(0, 0, bowLen, -Math.PI / 2 - openAngle, -Math.PI / 2 + openAngle);
+    ctx.stroke();
+
+    // Bowstring
+    var startX = Math.cos(-Math.PI / 2 - openAngle) * bowLen;
+    var startY = Math.sin(-Math.PI / 2 - openAngle) * bowLen;
+    var endX = Math.cos(-Math.PI / 2 + openAngle) * bowLen;
+    var endY = Math.sin(-Math.PI / 2 + openAngle) * bowLen;
+
+    ctx.strokeStyle = '#bdbdbd';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(startX, startY);
+    ctx.lineTo(0, 0);
+    ctx.lineTo(endX, endY);
+    ctx.stroke();
+
+    ctx.restore();
+  }
+
+  function drawArrow(arrow) {
+    if (!arrow) return;
+    var ctx = state.ctx;
+    var len = 22;
+    var angle = Math.atan2(arrow.vy, arrow.vx);
+
+    // Trail
+    if (arrow.trail && arrow.trail.length > 1) {
+      ctx.strokeStyle = arrow.type ? ARROW_TYPES[arrow.type].trail : '#888';
+      ctx.globalAlpha = 0.3;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(arrow.trail[0].x, arrow.trail[0].y);
+      for (var i = 1; i < arrow.trail.length; i++) {
+        ctx.lineTo(arrow.trail[i].x, arrow.trail[i].y);
+      }
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+    }
+
+    // Arrow shaft
+    ctx.save();
+    ctx.translate(arrow.x, arrow.y);
+    ctx.rotate(angle);
+
+    var color = arrow.type ? ARROW_TYPES[arrow.type].color : '#e0e0e0';
+
+    // Shaft
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(-len / 2, 0);
+    ctx.lineTo(len / 2, 0);
+    ctx.stroke();
+
+    // Arrowhead
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.moveTo(len / 2, 0);
+    ctx.lineTo(len / 2 - 6, -4);
+    ctx.lineTo(len / 2 - 6, 4);
+    ctx.closePath();
+    ctx.fill();
+
+    // Fletching
+    ctx.strokeStyle = '#ff6d00';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(-len / 2, 0);
+    ctx.lineTo(-len / 2 + 6, -5);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(-len / 2, 0);
+    ctx.lineTo(-len / 2 + 6, 5);
+    ctx.stroke();
+
+    ctx.restore();
+
+    // Glow for special arrows
+    if (arrow.type > 0) {
+      ctx.shadowColor = ARROW_TYPES[arrow.type].color;
+      ctx.shadowBlur = 15;
+      ctx.fillStyle = ARROW_TYPES[arrow.type].color;
+      ctx.globalAlpha = 0.15;
+      ctx.beginPath();
+      ctx.arc(arrow.x, arrow.y, 12, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalAlpha = 1;
+      ctx.shadowBlur = 0;
+    }
+  }
+
+  function drawTrajectory(points, color) {
+    if (!points || points.length < 2) return;
+    var ctx = state.ctx;
+    ctx.strokeStyle = color || 'rgba(255,255,255,0.2)';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([4, 6]);
+    ctx.beginPath();
+    ctx.moveTo(points[0].x, points[0].y);
+    for (var i = 1; i < points.length; i++) {
+      ctx.lineTo(points[i].x, points[i].y);
+    }
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // End point dot
+    if (points.length > 1) {
+      var last = points[points.length - 1];
+      ctx.fillStyle = color || 'rgba(255,255,255,0.3)';
+      ctx.beginPath();
+      ctx.arc(last.x, last.y, 3, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  function drawParticles() {
+    var ctx = state.ctx;
+    for (var i = state.particles.length - 1; i >= 0; i--) {
+      var p = state.particles[i];
+      p.x += p.vx * p.life;
+      p.y += p.vy * p.life;
+      p.vy += 200 * (1 / 60);
+      p.life -= 0.02;
+      if (p.life <= 0) { state.particles.splice(i, 1); continue; }
+      ctx.globalAlpha = p.life;
+      ctx.fillStyle = p.color;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.size * p.life, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  function drawFloatingTexts() {
+    var ctx = state.ctx;
+    for (var i = state.floatingTexts.length - 1; i >= 0; i--) {
+      var t = state.floatingTexts[i];
+      t.y -= 1.5;
+      t.life -= 0.015;
+      if (t.life <= 0) { state.floatingTexts.splice(i, 1); continue; }
+      ctx.globalAlpha = t.life;
+      ctx.fillStyle = t.color;
+      ctx.font = 'bold ' + t.size + 'px Outfit, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.shadowColor = 'rgba(0,0,0,0.5)';
+      ctx.shadowBlur = 4;
+      ctx.fillText(t.text, t.x, t.y);
+      ctx.shadowBlur = 0;
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  function drawExplosions() {
+    var ctx = state.ctx;
+    for (var i = state.explosions.length - 1; i >= 0; i--) {
+      var e = state.explosions[i];
+      e.life -= 0.03;
+      e.radius += 3;
+      if (e.life <= 0) { state.explosions.splice(i, 1); continue; }
+      ctx.globalAlpha = e.life * 0.4;
+      ctx.fillStyle = e.color;
+      ctx.beginPath();
+      ctx.arc(e.x, e.y, e.radius, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalAlpha = e.life * 0.6;
+      ctx.beginPath();
+      ctx.arc(e.x, e.y, e.radius * 0.4, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  function drawHUD() {
+    var ctx = state.ctx;
+    var w = state.canvasW;
+
+    // Player name
+    ctx.fillStyle = 'rgba(255,255,255,0.4)';
+    ctx.font = '12px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('YOU', state.player.x, state.player.y - 72);
+
+    // Enemy name
+    ctx.fillText('ENEMY', state.enemy.x, state.enemy.y - 72);
+
+    // Current arrow type indicator
+    if (state.phase === 'aiming') {
+      var arrowName = ARROW_TYPES[state.arrowType].name;
+      ctx.fillStyle = 'rgba(255,255,255,0.3)';
+      ctx.font = '11px Inter, sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillText('Arrow: ' + arrowName, 12, state.canvasH - 10);
+    }
+  }
+
+  /* ════════════════════════════════════════════════
+     MAIN RENDER LOOP
+     ════════════════════════════════════════════════ */
+  function render() {
+    var ctx = state.ctx;
+    if (!ctx) return;
+    ctx.clearRect(0, 0, state.canvasW, state.canvasH);
+
+    drawBackground();
+
+    // Trajectory preview
+    if (state.showTrajectory && state.trajectoryPoints.length > 0) {
+      var trajColor = ARROW_TYPES[state.arrowType].color;
+      drawTrajectory(state.trajectoryPoints, trajColor);
+    }
+
+    // Enemy (check if we should draw with aiming pose)
+    var enemyAiming = state.phase === 'enemyAim';
+    var enemyDrawAngle = enemyAiming ? state.enemy.drawAngle : -2.3;
+
+    drawStickman(
+      state.enemy.x, state.enemy.y,
+      false, state.enemyHealth,
+      enemyAiming, enemyDrawAngle, state.enemy.drawPower,
+      state.enemy.flashColor || null
+    );
+
+    // Player
+    var playerAiming = state.phase === 'aiming' && state.isDragging;
+    drawStickman(
+      state.player.x, state.player.y,
+      true, state.playerHealth,
+      playerAiming, state.player.drawAngle, state.player.drawPower,
+      state.player.flashColor || null
+    );
+
+    // Player's bow indicator when not dragging
+    if (state.phase === 'aiming' && !state.isDragging) {
+      drawBow(ctx, state.player.x, state.player.y - 18, -0.8, 1, 0);
+    }
+
+    // Arrow
+    if (state.arrow && state.phase === 'playerFly') {
+      drawArrow(state.arrow);
+    }
+    if (state.arrow && state.phase === 'enemyFly') {
+      drawArrow(state.arrow);
+    }
+
+    // Effects
+    drawParticles();
+    drawExplosions();
+    drawFloatingTexts();
+    drawHUD();
+  }
+
+  /* ════════════════════════════════════════════════
+     GAME LOOP
+     ════════════════════════════════════════════════ */
+  var lastTime = 0;
+
+  function gameLoop(timestamp) {
+    var dt = (timestamp - lastTime) / 1000;
+    if (dt > 0.05) dt = 0.05; // cap delta
+    lastTime = timestamp;
+
+    if (!state.paused && state.playing && !state.matchOver) {
+      update(dt);
+    }
+    render();
+    requestAnimationFrame(gameLoop);
+  }
+
+  /* ════════════════════════════════════════════════
+     UPDATE
+     ════════════════════════════════════════════════ */
+  function update(dt) {
+    // Update arrow flight
+    if (state.arrow && (state.phase === 'playerFly' || state.phase === 'enemyFly')) {
+      updateArrowFlight(dt);
+    }
+
+    // Enemy AI aiming (timing handled by the state timer)
+  }
+
+  function updateArrowFlight(dt) {
+    var arrow = state.arrow;
+    if (!arrow) return;
+
+    // Physics
+    arrow.vy += GRAVITY * dt;
+    arrow.x += arrow.vx * dt;
+    arrow.y += arrow.vy * dt;
+
+    // Trail
+    arrow.trail.push({ x: arrow.x, y: arrow.y });
+    if (arrow.trail.length > 20) arrow.trail.shift();
+
+    // Check if out of bounds
+    if (arrow.x < -50 || arrow.x > state.canvasW + 50 || arrow.y > state.groundY + 10) {
+      // Missed
+      playMiss();
+      vibrate(10);
+      if (arrow.fromPlayer) {
+        addFloatingText(state.enemy.x, state.enemy.y - 80, 'MISS!', '#ff5252', 24);
+        startEnemyTurn();
+      } else {
+        addFloatingText(state.player.x, state.player.y - 80, 'MISS!', '#ff5252', 24);
+        startPlayerTurn();
+      }
+      state.arrow = null;
+      return;
+    }
+
+    // Check collision with opponent
+    if (arrow.fromPlayer) {
+      checkHit(state.enemy, arrow);
+    } else {
+      checkHit(state.player, arrow);
+    }
+  }
+
+  function checkHit(target, arrow) {
+    // Head hitbox
+    var headX = target.x;
+    var headY = target.y - 62;
+    var dx = arrow.x - headX;
+    var dy = arrow.y - headY;
+    var dist = Math.sqrt(dx * dx + dy * dy);
+
+    var isHeadshot = false;
+    var isBodyHit = false;
+
+    if (dist < HEAD_RADIUS + 4) {
+      isHeadshot = true;
+    } else {
+      // Body hitbox (torso)
+      var bodyTop = target.y - 58;
+      var bodyBottom = target.y - 24;
+      if (arrow.x > target.x - BODY_RADIUS && arrow.x < target.x + BODY_RADIUS &&
+          arrow.y > bodyTop && arrow.y < bodyBottom) {
+        isBodyHit = true;
+      }
+    }
+
+    if (isHeadshot || isBodyHit) {
+      // Hit!
+      var fromPlayer = arrow.fromPlayer;
+      var type = arrow.type || 0;
+      var dmg = ARROW_TYPES[type].damage;
+
+      if (isHeadshot) {
+        // Instant kill
+        if (fromPlayer) {
+          state.enemyHealth = 0;
+          state.enemyHitHead = true;
+          state.playerHeadshots++;
+        } else {
+          state.playerHealth = 0;
+          state.playerHitHead = true;
+          state.enemyHeadshots++;
+        }
+      } else {
+        if (fromPlayer) {
+          state.enemyHealth -= dmg;
+          state.enemyHitThisRound = true;
+          state.enemy.flashColor = '#ff5252';
+          setTimeout(function () { state.enemy.flashColor = null; }, 200);
+        } else {
+          state.playerHealth -= dmg;
+          state.playerHitThisRound = true;
+          state.player.flashColor = '#ff5252';
+          setTimeout(function () { state.player.flashColor = null; }, 200);
+        }
+      }
+
+      // Play hit sound
+      playHit(isHeadshot);
+      vibrate(isHeadshot ? [30, 20, 50] : 20);
+
+      // Explosion particles
+      var hitX = arrow.x;
+      var hitY = arrow.y;
+      var partColor = isHeadshot ? '#ff1744' : '#ffd740';
+
+      // Special effect for arrow types
+      if (type === 1) {
+        // Fire - orange particles
+        partColor = '#ff6d00';
+        spawnParticles(hitX, hitY, 15, '#ff6d00');
+        spawnParticles(hitX, hitY, 10, '#ffab00');
+      } else if (type === 2) {
+        // Ice - blue particles
+        partColor = '#00e5ff';
+        spawnParticles(hitX, hitY, 12, '#00e5ff');
+        spawnParticles(hitX, hitY, 12, '#80d8ff');
+      } else if (type === 3) {
+        // Explosive
+        partColor = '#ff1744';
+        spawnParticles(hitX, hitY, 25, '#ff1744');
+        spawnParticles(hitX, hitY, 20, '#ff6d00');
+        spawnParticles(hitX, hitY, 15, '#ffd740');
+        state.explosions.push({ x: hitX, y: hitY, radius: 5, life: 1, color: '#ff1744' });
+        playExplosion();
+        vibrate([30, 20, 50, 30]);
+      } else {
+        spawnParticles(hitX, hitY, 10, '#e0e0e0');
+      }
+
+      var msg = isHeadshot
+        ? HEADSHOT_MSG[Math.floor(Math.random() * HEADSHOT_MSG.length)]
+        : BODYHIT_MSG[Math.floor(Math.random() * BODYHIT_MSG.length)];
+      addFloatingText(hitX, hitY - 20, msg, partColor, isHeadshot ? 32 : 24);
+
+      state.arrow = null;
+
+      // Check if someone died
+      if (state.enemyHealth <= 0 || state.playerHealth <= 0) {
+        endRound(isHeadshot, fromPlayer);
+      } else {
+        // Continue play - next turn
+        if (fromPlayer) {
+          startEnemyTurn();
+        } else {
+          // Enemy didn't kill, now player's turn
+          startPlayerTurn();
+        }
+      }
+    }
+  }
+
+  function spawnParticles(x, y, count, color) {
+    for (var i = 0; i < count; i++) {
+      var angle = Math.random() * Math.PI * 2;
+      var speed = 50 + Math.random() * 150;
+      state.particles.push({
+        x: x, y: y,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed - 100,
+        color: color,
+        size: 2 + Math.random() * 4,
+        life: 0.6 + Math.random() * 0.4,
+      });
+    }
+  }
+
+  function addFloatingText(x, y, text, color, size) {
+    state.floatingTexts.push({
+      x: x, y: y, text: text,
+      color: color || '#fff',
+      size: size || 24,
+      life: 1,
+    });
+  }
+
+  /* ════════════════════════════════════════════════
+     ROUND MANAGEMENT
+     ════════════════════════════════════════════════ */
+
+  function endRound(isHeadshot, fromPlayer) {
+    var playerWon = (fromPlayer && state.enemyHealth <= 0) || (!fromPlayer && state.playerHealth <= 0);
+    var wasHeadshot = isHeadshot;
+
+    // Wait a moment for effects
+    setTimeout(function () {
+      if (playerWon) {
+        state.playerWins++;
+        playRoundWin();
+      } else {
+        state.enemyWins++;
+        playRoundLose();
+      }
+
+      updateScoreUI();
+
+      if (state.playerWins >= MATCH_WINS || state.enemyWins >= MATCH_WINS) {
+        // Match over
+        endMatch(playerWon);
+      } else {
+        // Next round
+        state.round++;
+        showRoundAnnounce('Round ' + state.round, playerWon ? 'You won that round!' : 'Enemy took that round...');
+        setTimeout(function () { startNewRound(); }, 1500);
+      }
+    }, 600);
+  }
+
+  function startNewRound() {
+    state.playerHealth = 2;
+    state.enemyHealth = 2;
+    state.enemyHitHead = false;
+    state.playerHitHead = false;
+    state.enemyHitThisRound = false;
+    state.playerHitThisRound = false;
+    state.arrow = null;
+    state.isDragging = false;
+    state.phase = 'aiming';
+    state.showTrajectory = false;
+    state.trajectoryPoints = [];
+    state.player.flashColor = null;
+    state.enemy.flashColor = null;
+    updateScoreUI();
+    hideRoundOverlay();
+  }
+
+  function endMatch(playerWon) {
+    state.matchOver = true;
+    state.phase = 'matchOver';
+
+    if (playerWon) {
+      playMatchWin();
+      vibrate([50, 30, 50, 30, 100]);
+
+      // Update progression
+      state.victoryCount = getProgress() + 1;
+      setProgress(state.victoryCount);
+
+      // Update best streak
+      var best = getBest();
+      if (state.playerWins > best) {
+        setBest(state.playerWins);
+      }
+
+      // Check for new arrow unlock
+      var newUnlocks = [];
+      ARROW_TYPES.forEach(function (a) {
+        if (state.victoryCount >= a.unlockWins && !state.unlockedArrows.includes(a.id)) {
+          newUnlocks.push(a);
+        }
+      });
+      state.unlockedArrows = ARROW_TYPES.filter(function (a) { return state.victoryCount >= a.unlockWins; }).map(function (a) { return a.id; });
+
+      showResultScreen(true, newUnlocks);
+    } else {
+      playMatchLose();
+      vibrate([30, 30, 50]);
+
+      var best = getBest();
+      if (state.playerWins > best) {
+        setBest(state.playerWins);
+      }
+
+      showResultScreen(false, []);
+    }
+  }
+
+  function showRoundAnnounce(text, sub) {
+    roundAnnounce.innerHTML = '<div>' + text + '</div><div class="sub">' + sub + '</div><div class="go-text" style="margin-top:16px;">⚔️</div>';
+    roundOverlay.classList.add('active');
+  }
+
+  function hideRoundOverlay() {
+    roundOverlay.classList.remove('active');
+  }
+
+  function showResultScreen(isWin, newUnlocks) {
+    resultIcon.textContent = isWin ? '🏆' : '💀';
+    resultTitle.textContent = isWin ? 'VICTORY!' : 'DEFEATED';
+    resultTitle.className = 'result-title ' + (isWin ? 'win' : 'lose');
+    resultMyScore.textContent = state.playerWins;
+    resultEnemyScore.textContent = state.enemyWins;
+
+    var headshots = state.playerHeadshots + (isWin ? 0 : 0);
+    resultDetail.innerHTML = 'Headshots: <span>' + state.playerHeadshots + '</span> &nbsp;|&nbsp; Rounds: <span>' + state.round + '</span>';
+
+    // Unlock notifications
+    if (newUnlocks && newUnlocks.length > 0) {
+      var html = '🎉 <b>New Arrow Unlocked!</b> ';
+      newUnlocks.forEach(function (a) {
+        html += '<span style="color:' + a.color + ';">' + a.name + '</span> — ' + a.desc + ' ';
+      });
+      resultUnlock.innerHTML = html;
+      resultUnlock.style.display = 'block';
+    } else {
+      resultUnlock.style.display = 'none';
+    }
+
+    var best = getBest();
+    resultBestLabel.innerHTML = 'Best Streak: <b>' + best + '</b>';
+
+    showScreen('result');
+  }
+
+  /* ════════════════════════════════════════════════
+     PLAYER TURN — aiming
+     ════════════════════════════════════════════════ */
+
+  function startPlayerTurn() {
+    state.phase = 'aiming';
+    state.isDragging = false;
+    state.showTrajectory = false;
+    state.trajectoryPoints = [];
+    state.player.drawPower = 0;
+  }
+
+  function startEnemyTurn() {
+    state.phase = 'enemyAim';
+    state.enemy.drawPower = 0;
+
+    // Enemy AI calculates its shot
+    var diff = state.playerWins - state.enemyWins;
+    var accuracy = 0.55 + Math.random() * 0.15;
+    if (diff <= -1) accuracy += 0.1; // losing = slightly better
+    if (diff >= 1) accuracy -= 0.05; // winning = slightly dumber
+
+    var targetX = state.player.x;
+    var targetY = state.player.y - 40;
+
+    // Add some randomness based on accuracy
+    var spread = (1 - accuracy) * 80;
+    targetX += (Math.random() - 0.5) * spread;
+    targetY += (Math.random() - 0.5) * spread * 0.5;
+
+    // Calculate required angle and power
+    var dx = targetX - state.enemy.x;
+    var dy = targetY - (state.enemy.y - 30);
+    var dist = Math.sqrt(dx * dx + dy * dy);
+
+    // Calculate angle to aim (with gravity compensation)
+    var g = GRAVITY;
+    var vBase = ARROW_SPEED_BASE * 0.95;
+    var angle = Math.atan2(dy, dx);
+
+    // Add minor random variation in angle
+    angle += (Math.random() - 0.5) * 0.08;
+
+    var power = Math.min(1, dist / 500);
+    state.enemy.drawAngle = -2.3 + power * 0.2;
+
+    var aimTime = 600 + Math.random() * 800;
+    state.enemyAimStart = Date.now();
+
+    // Clear any existing enemy timer
+    if (state.enemyTimer) clearTimeout(state.enemyTimer);
+
+    // Show bow drawn for a moment then fire
+    setTimeout(function () {
+      state.enemy.drawPower = power;
+      render();
+
+      setTimeout(function () {
+        fireEnemyArrow(angle, power);
+      }, 300);
+    }, aimTime);
+  }
+
+  function fireEnemyArrow(angle, power) {
+    if (state.matchOver) return;
+    state.phase = 'enemyFly';
+    playArrowRelease(power);
+
+    var speed = ARROW_SPEED_BASE * 0.9 * (0.85 + power * 0.3);
+    var vx = Math.cos(angle) * speed;
+    var vy = Math.sin(angle) * speed;
+
+    state.arrow = {
+      x: state.enemy.x - 15,
+      y: state.enemy.y - 40,
+      vx: vx,
+      vy: vy,
+      fromPlayer: false,
+      type: 0, // enemy always uses normal
+      trail: [],
+    };
+  }
+
+  /* ════════════════════════════════════════════════
+     TRAJECTORY CALCULATION
+     ════════════════════════════════════════════════ */
+
+  function calculateTrajectory(startX, startY, vx, vy, steps) {
+    var points = [];
+    var x = startX;
+    var y = startY;
+    var cvx = vx;
+    var cvy = vy;
+    var dt = 0.016;
+
+    for (var i = 0; i < (steps || 40); i++) {
+      x += cvx * dt;
+      y += cvy * dt;
+      cvy += GRAVITY * dt;
+      points.push({ x: x, y: y });
+
+      // Stop if out of bounds
+      if (x < -10 || x > state.canvasW + 10 || y > state.groundY + 5) break;
+    }
+    return points;
+  }
+
+  /* ════════════════════════════════════════════════
+     UI UPDATES
+     ════════════════════════════════════════════════ */
+  function updateScoreUI() {
+    roundDisplay.textContent = 'Round ' + state.round;
+    playerScoreDisplay.textContent = '🏹 ' + state.playerWins;
+    enemyScoreDisplay.textContent = state.enemyWins + ' 🎯';
+    arrowTypeDisplay.textContent = '→ ' + ARROW_TYPES[state.arrowType].name;
+    arrowTypeDisplay.style.borderColor = ARROW_TYPES[state.arrowType].color + '40';
+    arrowTypeDisplay.style.color = ARROW_TYPES[state.arrowType].color;
+  }
+
+  /* ════════════════════════════════════════════════
+     SCREEN MANAGEMENT
+     ════════════════════════════════════════════════ */
+  function showScreen(id) {
+    [titleScreen, gameScreen, resultScreen].forEach(function (s) { s.classList.remove('active'); });
+    if (id === 'title') titleScreen.classList.add('active');
+    else if (id === 'game') gameScreen.classList.add('active');
+    else if (id === 'result') resultScreen.classList.add('active');
+    pauseOverlay.classList.remove('active');
+    roundOverlay.classList.remove('active');
+  }
+
+  /* ════════════════════════════════════════════════
+     START GAME
+     ════════════════════════════════════════════════ */
+  function startGame() {
+    state.playerWins = 0;
+    state.enemyWins = 0;
+    state.round = 1;
+    state.playerHealth = 2;
+    state.enemyHealth = 2;
+    state.playerHeadshots = 0;
+    state.enemyHeadshots = 0;
+    state.playerHitThisRound = false;
+    state.enemyHitThisRound = false;
+    state.enemyHitHead = false;
+    state.playerHitHead = false;
+    state.matchOver = false;
+    state.playing = true;
+    state.paused = false;
+    state.phase = 'aiming';
+    state.arrow = null;
+    state.isDragging = false;
+    state.showTrajectory = false;
+    state.trajectoryPoints = [];
+    state.explosions = [];
+    state.particles = [];
+    state.floatingTexts = [];
+    state.player.flashColor = null;
+    state.enemy.flashColor = null;
+    state.player.drawPower = 0;
+    state.enemy.drawPower = 0;
+
+    state.victoryCount = getProgress();
+    state.unlockedArrows = ARROW_TYPES.filter(function (a) { return state.victoryCount >= a.unlockWins; }).map(function (a) { return a.id; });
+
+    // Start with normal arrow
+    state.arrowType = 0;
+
+    resizeCanvas();
+    updateScoreUI();
+
+    showScreen('game');
+    showRoundAnnounce('Round 1', 'Get ready... FIGHT!');
+    setTimeout(function () {
+      hideRoundOverlay();
+      startPlayerTurn();
+    }, 1200);
+  }
+
+  /* ════════════════════════════════════════════════
+     INPUT — Mouse
+     ════════════════════════════════════════════════ */
+
+  function getCanvasPos(clientX, clientY) {
+    var rect = state.ctx ? canvas.getBoundingClientRect() : { left: 0, top: 0, width: state.canvasW, height: state.canvasH };
+    return {
+      x: (clientX - rect.left) * (state.canvasW / rect.width),
+      y: (clientY - rect.top) * (state.canvasH / rect.height),
+    };
+  }
+
+  function handleAimStart(pos) {
+    if (state.phase !== 'aiming' || state.matchOver || state.paused) return;
+    initAudio();
+
+    state.isDragging = true;
+    state.dragStart = { x: state.player.x, y: state.player.y - 30 };
+    state.dragCurrent = pos;
+    playBowDraw();
+  }
+
+  function handleAimMove(pos) {
+    if (!state.isDragging || state.phase !== 'aiming') return;
+    state.dragCurrent = pos;
+
+    // Calculate aim direction and power
+    var startY = state.player.y - 30;
+    var dx = pos.x - state.player.x;
+    var dy = pos.y - startY;
+
+    // Angle from the bow (player faces right)
+    state.player.drawAngle = Math.atan2(dy, dx);
+    // Clamp angle
+    if (state.player.drawAngle < -Math.PI / 2 + 0.05) state.player.drawAngle = -Math.PI / 2 + 0.05;
+    if (state.player.drawAngle > 0.3) state.player.drawAngle = 0.3;
+
+    // Power based on drag distance
+    var dist = Math.sqrt(dx * dx + dy * dy);
+    state.player.drawPower = Math.min(1, dist / BOW_DRAW_MAX);
+
+    // Show trajectory preview
+    if (state.player.drawPower > 0.05) {
+      var speed = ARROW_SPEED_BASE * (0.7 + state.player.drawPower * 0.3);
+      var vx = Math.cos(state.player.drawAngle) * speed;
+      var vy = Math.sin(state.player.drawAngle) * speed;
+      state.trajectoryPoints = calculateTrajectory(state.player.x + 15, startY, vx, vy);
+      state.showTrajectory = true;
+    } else {
+      state.showTrajectory = false;
+      state.trajectoryPoints = [];
+    }
+  }
+
+  function handleAimEnd() {
+    if (!state.isDragging || state.phase !== 'aiming') return;
+    state.isDragging = false;
+    state.showTrajectory = false;
+    state.trajectoryPoints = [];
+
+    if (state.player.drawPower > 0.08) {
+      firePlayerArrow();
+    } else {
+      state.player.drawPower = 0;
+    }
+  }
+
+  function firePlayerArrow() {
+    if (state.matchOver) return;
+    state.phase = 'playerFly';
+    playArrowRelease(state.player.drawPower);
+    vibrate(8);
+
+    var startX = state.player.x + 15;
+    var startY = state.player.y - 30;
+    var speed = ARROW_SPEED_BASE * (0.7 + state.player.drawPower * 0.3);
+    var angle = state.player.drawAngle;
+    var vx = Math.cos(angle) * speed;
+    var vy = Math.sin(angle) * speed;
+
+    // Arrow type effects
+    var type = state.arrowType;
+    if (type === 0) {
+      // Normal - no modifier
+    } else if (type === 1) {
+      // Fire - slightly faster
+      vx *= 1.1;
+      vy *= 1.1;
+    } else if (type === 2) {
+      // Ice - slightly slower but enemy moves slower (N/A)
+      vx *= 0.95;
+    } else if (type === 3) {
+      // Explosive - arc slightly
+      vy -= 40;
+    }
+
+    state.arrow = {
+      x: startX,
+      y: startY,
+      vx: vx,
+      vy: vy,
+      fromPlayer: true,
+      type: type,
+      trail: [],
+    };
+
+    state.player.drawPower = 0;
+  }
+
+  // --- Mouse Events ---
+  canvas.addEventListener('mousedown', function (e) {
+    e.preventDefault();
+    var pos = getCanvasPos(e.clientX, e.clientY);
+    handleAimStart(pos);
+  });
+
+  canvas.addEventListener('mousemove', function (e) {
+    e.preventDefault();
+    var pos = getCanvasPos(e.clientX, e.clientY);
+    handleAimMove(pos);
+  });
+
+  canvas.addEventListener('mouseup', function (e) {
+    e.preventDefault();
+    handleAimEnd();
+  });
+
+  canvas.addEventListener('mouseleave', function () {
+    if (state.isDragging) {
+      handleAimEnd();
+    }
+  });
+
+  // --- Touch Events ---
+  canvas.addEventListener('touchstart', function (e) {
+    e.preventDefault();
+    var touch = e.touches[0];
+    if (!touch) return;
+    var pos = getCanvasPos(touch.clientX, touch.clientY);
+    handleAimStart(pos);
+  }, { passive: false });
+
+  canvas.addEventListener('touchmove', function (e) {
+    e.preventDefault();
+    var touch = e.touches[0];
+    if (!touch) return;
+    var pos = getCanvasPos(touch.clientX, touch.clientY);
+    handleAimMove(pos);
+  }, { passive: false });
+
+  canvas.addEventListener('touchend', function (e) {
+    e.preventDefault();
+    handleAimEnd();
+  }, { passive: false });
+
+  /* ════════════════════════════════════════════════
+     INPUT — Keyboard
+     ════════════════════════════════════════════════ */
+
+  var kbdAngle = -0.8;
+  var kbdPower = 0;
+  var kbdAdjusting = false;
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') {
+      if (state.playing && !state.matchOver) togglePause();
+      return;
+    }
+
+    if (e.key === 'Enter' || e.key === ' ') {
+      var active = document.activeElement;
+      if (active && active.tagName === 'BUTTON') return;
+
+      if (titleScreen.classList.contains('active')) {
+        e.preventDefault();
+        initAudio();
+        startGame();
+        return;
+      } else if (resultScreen.classList.contains('active')) {
+        e.preventDefault();
+        el('retryBtn').click();
+        return;
+      }
+
+      // Space/Enter in game = fire or cycle arrow
+      if (state.phase === 'aiming' && !state.isDragging && !state.paused) {
+        if (kbdAdjusting) {
+          // Fire with keyboard aim
+          fireKbdArrow();
+        } else if (e.key === ' ') {
+          // Space cycled arrow type
+          cycleArrowType();
+        }
+      }
+      return;
+    }
+
+    if (!state.playing || state.paused || state.matchOver) return;
+
+    // Keyboard aiming (arrow keys)
+    if (state.phase === 'aiming' && !state.isDragging) {
+      kbdAdjusting = true;
+
+      if (e.key === 'ArrowUp') {
+        kbdPower = Math.min(1, kbdPower + 0.03);
+        state.player.drawPower = kbdPower;
+        updateKbdAim();
+        e.preventDefault();
+      } else if (e.key === 'ArrowDown') {
+        kbdPower = Math.max(0, kbdPower - 0.03);
+        state.player.drawPower = kbdPower;
+        updateKbdAim();
+        e.preventDefault();
+      } else if (e.key === 'ArrowLeft') {
+        kbdAngle = Math.max(-Math.PI / 2 + 0.05, kbdAngle - 0.02);
+        state.player.drawAngle = kbdAngle;
+        updateKbdAim();
+        e.preventDefault();
+      } else if (e.key === 'ArrowRight') {
+        kbdAngle = Math.min(0.3, kbdAngle + 0.02);
+        state.player.drawAngle = kbdAngle;
+        updateKbdAim();
+        e.preventDefault();
+      }
+
+      // Tab or 1/2/3/4 to cycle arrow type
+      if (e.key === 'Tab') {
+        e.preventDefault();
+        cycleArrowType();
+      }
+    }
+  });
+
+  function updateKbdAim() {
+    if (kbdPower > 0.05) {
+      var speed = ARROW_SPEED_BASE * (0.7 + kbdPower * 0.3);
+      var vx = Math.cos(kbdAngle) * speed;
+      var vy = Math.sin(kbdAngle) * speed;
+      state.trajectoryPoints = calculateTrajectory(state.player.x + 15, state.player.y - 30, vx, vy);
+      state.showTrajectory = true;
+    } else {
+      state.showTrajectory = false;
+      state.trajectoryPoints = [];
+    }
+  }
+
+  function fireKbdArrow() {
+    if (state.matchOver || state.phase !== 'aiming') return;
+    initAudio();
+    state.player.drawAngle = kbdAngle;
+    state.player.drawPower = kbdPower;
+    state.showTrajectory = false;
+    state.trajectoryPoints = [];
+    firePlayerArrow();
+    kbdAdjusting = false;
+    kbdPower = 0;
+  }
+
+  function cycleArrowType() {
+    var maxType = 0;
+    for (var i = ARROW_TYPES.length - 1; i >= 0; i--) {
+      if (state.unlockedArrows.includes(ARROW_TYPES[i].id)) {
+        maxType = i;
+        break;
+      }
+    }
+    state.arrowType = (state.arrowType + 1) % (maxType + 1);
+    // Ensure we don't go to locked
+    while (!state.unlockedArrows.includes(ARROW_TYPES[state.arrowType].id) && state.arrowType > 0) {
+      state.arrowType = (state.arrowType + 1) % (maxType + 1);
+    }
+    updateScoreUI();
+    playClick();
+  }
+
+  /* ════════════════════════════════════════════════
+     PAUSE / RESUME
+     ════════════════════════════════════════════════ */
+  function togglePause() {
+    if (state.matchOver) return;
+    state.paused = !state.paused;
+    pauseOverlay.classList.toggle('active', state.paused);
+  }
+
+  /* ════════════════════════════════════════════════
+     EVENT BINDING
+     ════════════════════════════════════════════════ */
+  // -- Navigation --
+  playBtn.addEventListener('click', function () { initAudio(); startGame(); });
+  retryBtn.addEventListener('click', function () { initAudio(); startGame(); });
+  homeBtn.addEventListener('click', function () { showScreen('title'); updateBestUI(); });
+
+  // -- Pause --
+  pauseBtn.addEventListener('click', togglePause);
+  resumeBtn.addEventListener('click', togglePause);
+  quitBtn.addEventListener('click', function () {
+    state.paused = false;
+    state.playing = false;
+    state.matchOver = true;
+    if (state.enemyTimer) { clearTimeout(state.enemyTimer); state.enemyTimer = null; }
+    pauseOverlay.classList.remove('active');
+    showScreen('title');
+    updateBestUI();
+  });
+
+  // -- Arrow type cycling --
+  arrowTypeDisplay.addEventListener('click', function () {
+    if (state.playing && state.phase === 'aiming') {
+      cycleArrowType();
+    }
+  });
+
+  // -- Keyboard shortcut for arrow type on result/title screen --
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Tab') {
+      // Only if on game screen and not moving keyboard aim
+      if (gameScreen.classList.contains('active') && state.phase === 'aiming' && !state.isDragging && !kbdAdjusting) {
+        e.preventDefault();
+        cycleArrowType();
+      }
+    }
+  });
+
+  // -- Window resize --
+  var resizeTimer;
+  window.addEventListener('resize', function () {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(function () {
+      if (state.playing && !state.matchOver) {
+        resizeCanvas();
+      }
+    }, 200);
+  });
+
+  /* ════════════════════════════════════════════════
+     INIT
+     ════════════════════════════════════════════════ */
+  state.ctx = canvas.getContext('2d');
+  updateBestUI();
+  resizeCanvas();
+
+  // Update unlocked arrows
+  state.victoryCount = getProgress();
+  state.unlockedArrows = ARROW_TYPES.filter(function (a) { return state.victoryCount >= a.unlockWins; }).map(function (a) { return a.id; });
+
+  // Start game loop
+  lastTime = performance.now();
+  requestAnimationFrame(gameLoop);
+
+})();
+</script>
+</body>
+</html>
