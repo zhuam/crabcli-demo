@@ -455,6 +455,20 @@
       "players": "1-2",
       "version": "1.0.0",
       "rating": 4.0
+    },
+    {
+      "id": "cube-labyrinth-roll",
+      "name": "Cube Labyrinth Roll",
+      "description": "Roll a 3D cube through a twisting maze — reach the flag without falling off!",
+      "category": "puzzle",
+      "tags": ["singleplayer", "puzzle", "3d", "maze", "short-session"],
+      "thumbnail": "/games/003-cube-labyrinth-roll/thumb.png",
+      "path": "/games/003-cube-labyrinth-roll/",
+      "hasServer": false,
+      "players": "1",
+      "version": "1.0.0",
+      "featured": true,
+      "rating": 4.2
     }
   ],
   "categories": [
