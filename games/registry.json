@@ -513,6 +513,20 @@
       "rating": 4.0
     },
     {
+      "id": "paws-and-claws-clinic",
+      "name": "Paws & Claws Clinic",
+      "description": "宠物诊所模拟，检查症状诊断治疗，赚取满意度过关解锁新病例与设备",
+      "category": "casual",
+      "tags": ["singleplayer", "simulation", "medical", "casual", "short-session"],
+      "thumbnail": "/games/072-paws-and-claws-clinic/thumb.svg",
+      "path": "/games/072-paws-and-claws-clinic/",
+      "hasServer": false,
+      "players": "1",
+      "version": "1.0.0",
+      "featured": true,
+      "rating": 4.0
+    },
+    {
       "id": "garden-keeper",
       "name": "Garden Keeper",
       "description": "管理花园种植与浇水，赚钱升级解锁新作物，离线产出",

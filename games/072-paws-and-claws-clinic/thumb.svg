@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" width="240" height="240">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0d2137"/>
+      <stop offset="100%" stop-color="#133653"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="50%" cy="40%" r="60%">
+      <stop offset="0%" stop-color="rgba(56,178,172,0.15)"/>
+      <stop offset="100%" stop-color="rgba(56,178,172,0)"/>
+    </radialGradient>
+  </defs>
+  <rect width="240" height="240" fill="url(#bg)" rx="16"/>
+  <rect width="240" height="240" fill="url(#glow)" rx="16"/>
+  <!-- bubbles -->
+  <circle cx="190" cy="35" r="6" fill="rgba(255,255,255,0.07)"/>
+  <circle cx="210" cy="60" r="4" fill="rgba(255,255,255,0.05)"/>
+  <circle cx="30" cy="190" r="5" fill="rgba(255,255,255,0.06)"/>
+  <circle cx="50" cy="210" r="3" fill="rgba(255,255,255,0.04)"/>
+  <!-- clinic building hint -->
+  <rect x="60" y="55" width="120" height="95" rx="8" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.08)" stroke-width="1.5"/>
+  <!-- cross / plus sign -->
+  <rect x="115" y="75" width="10" height="40" rx="3" fill="rgba(56,178,172,0.5)"/>
+  <rect x="100" y="90" width="40" height="10" rx="3" fill="rgba(56,178,172,0.5)"/>
+  <!-- pets -->
+  <text x="120" y="130" text-anchor="middle" font-size="48">🐾</text>
+  <!-- title -->
+  <text x="120" y="195" text-anchor="middle" font-family="'Outfit',sans-serif" font-size="18" font-weight="800" fill="#4fd1c5">Paws &amp; Claws</text>
+  <text x="120" y="215" text-anchor="middle" font-family="'Outfit',sans-serif" font-size="13" font-weight="700" fill="#ed64a6">Clinic</text>
+  <!-- pawprints -->
+  <text x="45" y="175" font-size="10" fill="rgba(255,255,255,0.15)">🐾</text>
+  <text x="185" y="180" font-size="8" fill="rgba(255,255,255,0.12)">🐾</text>
+</svg>
