@@ -593,6 +593,20 @@
       "version": "1.0.0",
       "featured": true,
       "rating": 4.0
+    },
+    {
+      "id": "punch-monkey-cafe",
+      "name": "Punch Monkey Cafe",
+      "description": "🐒🍹 Monkey cafe — take orders, mix fruit punches, serve customers, earn profit across 3 days!",
+      "category": "casual",
+      "tags": ["singleplayer", "management", "simulation", "drag", "short-session"],
+      "thumbnail": "/games/008-punch-monkey-cafe/thumb.svg",
+      "path": "/games/008-punch-monkey-cafe/",
+      "hasServer": false,
+      "players": "1",
+      "version": "1.0.0",
+      "featured": true,
+      "rating": 4.0
     }
   ],
   "categories": [
