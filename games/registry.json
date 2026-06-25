@@ -593,6 +593,20 @@
       "players": "1-2",
       "version": "1.0.0",
       "featured": true,
+      "rating": 4.5
+    },
+    {
+      "id": "sort-till-you-cant",
+      "name": "Sort Till You Cant",
+      "description": "颜色水管分类，倒入相同颜色 — sort colored water layers into matching bottles!",
+      "category": "puzzle",
+      "tags": ["singleplayer", "puzzle", "sorting", "logic", "short-session"],
+      "thumbnail": "/games/070-sort-till-you-cant/thumb.svg",
+      "path": "/games/070-sort-till-you-cant/",
+      "hasServer": false,
+      "players": "1",
+      "version": "1.0.0",
+      "featured": false,
       "rating": 4.0
     },
     {
