@@ -541,6 +541,19 @@
       "rating": 4.0
     },
     {
+      "id": "auto-spa-dash",
+      "name": "Auto Spa Dash",
+      "description": "洗车店模拟经营，拖拽工具洗车打蜡擦干，赚取营收过关升级",
+      "category": "casual",
+      "tags": ["singleplayer", "management", "simulation", "drag", "short-session"],
+      "thumbnail": "/games/071-auto-spa-dash/thumb.svg",
+      "path": "/games/071-auto-spa-dash/",
+      "hasServer": false,
+      "players": "1",
+      "version": "1.0.0",
+      "rating": 4.0
+    },
+    {
       "id": "sparkle-sweep",
       "name": "Sparkle Sweep",
       "description": "擦亮脏污区域，滑动手势清洁 100% 过关，治愈感满满",
