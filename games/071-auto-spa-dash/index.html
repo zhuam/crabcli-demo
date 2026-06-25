@@ -1,0 +1,1444 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
+  <meta name="theme-color" content="#0a1628" />
+  <title>Auto Spa Dash</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700;800;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../../games/shared/game-frame.css" />
+  <style>
+    /* ═══════════════════════════════════════════════════════
+       Auto Spa Dash — Wash · Wax · Dry · Earn!
+       ═══════════════════════════════════════════════════════ */
+
+    :root {
+      --bg-deep: #0a1628;
+      --bg-mid:  #0d1f3a;
+      --surface: rgba(255,255,255,0.06);
+      --surface-hover: rgba(255,255,255,0.10);
+      --border: rgba(255,255,255,0.08);
+      --border-strong: rgba(255,255,255,0.16);
+      --text: #f0f4f8;
+      --text-dim: rgba(255,255,255,0.55);
+      --text-muted: rgba(255,255,255,0.30);
+      --primary: #38bdf8;
+      --primary-dark: #0284c7;
+      --primary-glow: rgba(56,189,248,0.35);
+      --accent: #f472b6;
+      --accent-glow: rgba(244,114,182,0.3);
+      --gold: #facc15;
+      --success: #4ade80;
+      --danger: #f87171;
+      --warning: #fb923c;
+      --water: #38bdf8;
+      --wax-color: #c084fc;
+      --dry-color: #facc15;
+      --font-display: 'Outfit', system-ui, sans-serif;
+      --font-body: 'Inter', system-ui, sans-serif;
+      --radius-sm: 8px;
+      --radius-md: 14px;
+      --radius-lg: 20px;
+      --radius-xl: 28px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      background: var(--bg-deep);
+      color: var(--text);
+      font-family: var(--font-body);
+      overflow: hidden;
+      height: 100%; width: 100%;
+      user-select: none; -webkit-user-select: none;
+      touch-action: none; -webkit-touch-callout: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    #app { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; }
+
+    /* ═══ Screens ═══ */
+    .screen {
+      position: fixed; inset: 0;
+      display: flex; flex-direction: column; align-items: center;
+      transition: opacity 0.4s ease, transform 0.4s ease;
+      will-change: opacity, transform;
+    }
+    .screen.hidden {
+      opacity: 0; pointer-events: none; transform: scale(0.96);
+    }
+
+    /* ═══════════════════════════════
+       TITLE SCREEN
+       ═══════════════════════════════ */
+    .title-screen {
+      justify-content: center; gap: 10px;
+      background: linear-gradient(180deg, #0a1628 0%, #0d1f3a 40%, #0f2847 100%);
+      padding: 24px;
+    }
+    .title-screen::before {
+      content: ''; position: absolute; inset: 0;
+      background:
+        radial-gradient(ellipse 160px 80px at 25% 25%, rgba(56,189,248,0.10) 0%, transparent 70%),
+        radial-gradient(ellipse 100px 70px at 75% 30%, rgba(244,114,182,0.08) 0%, transparent 70%),
+        radial-gradient(ellipse 120px 60px at 50% 80%, rgba(250,204,21,0.06) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .title-icon {
+      font-size: 72px; line-height: 1;
+      filter: drop-shadow(0 0 30px rgba(56,189,248,0.35));
+      animation: titleFloat 2.5s ease-in-out infinite;
+      position: relative; z-index: 1;
+    }
+    @keyframes titleFloat {
+      0%, 100% { transform: translateY(0) scale(1); }
+      50% { transform: translateY(-8px) scale(1.03); }
+    }
+
+    .title-text {
+      font-family: var(--font-display); font-size: 40px; font-weight: 900;
+      background: linear-gradient(135deg, #38bdf8, #c084fc, #facc15);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+      line-height: 1.1; text-align: center;
+      position: relative; z-index: 1;
+    }
+    .title-sub {
+      font-size: 14px; color: var(--text-dim); text-align: center; max-width: 300px; line-height: 1.5;
+      position: relative; z-index: 1;
+    }
+    .title-best {
+      font-size: 14px; color: var(--text-muted);
+      position: relative; z-index: 1;
+    }
+    .title-best span { color: var(--gold); }
+
+    /* ─── Buttons ─── */
+    .btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 14px 36px; border: none; border-radius: 50px;
+      font-family: var(--font-display); font-size: 18px; font-weight: 700;
+      cursor: pointer; transition: all 0.2s ease;
+      position: relative; z-index: 1;
+    }
+    .btn:active { transform: scale(0.95); }
+    .btn-primary {
+      background: linear-gradient(135deg, #38bdf8, #c084fc);
+      color: #fff; box-shadow: 0 4px 20px rgba(56,189,248,0.35);
+    }
+    .btn-primary:hover { box-shadow: 0 6px 28px rgba(56,189,248,0.5); transform: translateY(-2px); }
+    .btn-primary:active { transform: scale(0.95) translateY(0); }
+    .btn-secondary {
+      background: var(--surface); color: var(--text);
+      border: 1px solid var(--border-strong);
+    }
+    .btn-secondary:hover { background: var(--surface-hover); }
+    .btn-sm { padding: 10px 24px; font-size: 14px; }
+
+    /* ═══════════════════════════════
+       PLAY SCREEN
+       ═══════════════════════════════ */
+    .play-screen {
+      background: linear-gradient(180deg, #0a1628 0%, #0d1f3a 100%);
+      padding: 4px;
+      justify-content: flex-start;
+    }
+
+    .play-top {
+      width: 100%; max-width: 480px;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 4px 8px; position: relative; z-index: 5;
+      flex-shrink: 0;
+    }
+    .play-level {
+      font-family: var(--font-display); font-size: 14px; font-weight: 700;
+      color: var(--primary);
+    }
+    .play-stat {
+      display: flex; align-items: center; gap: 10px;
+    }
+    .play-stat-item {
+      font-family: var(--font-body); font-size: 12px; font-weight: 600;
+      color: var(--text-dim);
+      white-space: nowrap;
+    }
+    .play-stat-item span { color: var(--gold); }
+    .play-stat-item .money { color: var(--success); }
+    .play-stat-item .target { color: var(--accent); }
+
+    .play-progress-bar {
+      width: 100%; max-width: 480px; height: 6px;
+      background: var(--surface); border-radius: 3px;
+      overflow: hidden; margin: 2px 0 6px; position: relative; z-index: 5;
+      flex-shrink: 0;
+    }
+    .play-progress-fill {
+      height: 100%; width: 0%;
+      background: linear-gradient(90deg, var(--success), var(--gold));
+      border-radius: 3px; transition: width 0.2s ease;
+    }
+
+    /* ─── Garage / Bay Area ─── */
+    .garage {
+      position: relative;
+      width: min(460px, 94vw);
+      flex: 1;
+      display: flex; flex-direction: column;
+      gap: 6px;
+      padding: 0 4px;
+      overflow: hidden;
+      z-index: 3;
+    }
+
+    .bay {
+      position: relative;
+      flex: 1;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border);
+      background: linear-gradient(135deg, rgba(56,189,248,0.04), rgba(192,132,252,0.04));
+      overflow: hidden;
+      min-height: 0;
+      transition: border-color 0.2s ease;
+    }
+    .bay.highlight {
+      border-color: var(--primary);
+      background: linear-gradient(135deg, rgba(56,189,248,0.10), rgba(192,132,252,0.08));
+    }
+    .bay.empty {
+      border-style: dashed;
+      border-color: rgba(255,255,255,0.06);
+    }
+
+    .bay-inner {
+      position: absolute; inset: 0;
+      display: flex; align-items: center;
+      padding: 6px 10px;
+      gap: 8px;
+    }
+
+    /* Car sprite */
+    .car-area {
+      flex-shrink: 0;
+      position: relative;
+      width: 60px; height: 50px;
+    }
+    .car-body {
+      position: absolute;
+      inset: 6px 2px;
+      border-radius: 8px 8px 4px 4px;
+      transition: background 0.3s ease;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .car-body::before {
+      content: '🚗';
+      font-size: 28px;
+      line-height: 1;
+    }
+
+    /* Car step indicators */
+    .car-steps {
+      flex: 1;
+      display: flex; gap: 4px;
+      align-items: center;
+      min-width: 0;
+    }
+    .step-dot {
+      width: 24px; height: 24px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      flex-shrink: 0;
+      transition: all 0.25s ease;
+    }
+    .step-dot.done {
+      background: rgba(74,222,128,0.15);
+      border-color: var(--success);
+    }
+    .step-dot.active {
+      background: rgba(56,189,248,0.15);
+      border-color: var(--primary);
+      animation: pulseStep 0.6s ease-in-out infinite alternate;
+    }
+    @keyframes pulseStep {
+      0% { transform: scale(1); box-shadow: 0 0 0 rgba(56,189,248,0); }
+      100% { transform: scale(1.15); box-shadow: 0 0 10px rgba(56,189,248,0.3); }
+    }
+
+    /* Car status info */
+    .car-info {
+      display: flex; flex-direction: column;
+      align-items: flex-end;
+      gap: 2px;
+      flex-shrink: 0;
+    }
+    .car-reward {
+      font-size: 11px; font-weight: 700;
+      color: var(--success);
+    }
+    .car-dirt-meter {
+      width: 36px; height: 4px;
+      background: var(--surface);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+    .car-dirt-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--success), var(--warning), var(--danger));
+      border-radius: 2px;
+      transition: width 0.3s ease;
+    }
+
+    /* Arrival animation */
+    .car-area.entering {
+      animation: carEnter 0.4s ease-out;
+    }
+    @keyframes carEnter {
+      0% { transform: translateX(-40px); opacity: 0; }
+      100% { transform: translateX(0); opacity: 1; }
+    }
+    .car-area.leaving {
+      animation: carLeave 0.45s ease-in forwards;
+    }
+    @keyframes carLeave {
+      0% { transform: translateX(0); opacity: 1; }
+      100% { transform: translateX(60px); opacity: 0; }
+    }
+
+    /* ─── Tool Tray ─── */
+    .tool-tray {
+      display: flex;
+      gap: 10px;
+      padding: 8px 12px 10px;
+      justify-content: center;
+      flex-shrink: 0;
+      z-index: 5;
+      width: 100%; max-width: 480px;
+    }
+
+    .tool-btn {
+      width: 64px; height: 64px;
+      border-radius: var(--radius-md);
+      border: 2px solid var(--border);
+      background: var(--surface);
+      cursor: grab;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 2px;
+      transition: all 0.15s ease;
+      font-size: 10px; color: var(--text-dim); font-weight: 600;
+      position: relative;
+    }
+    .tool-btn:hover { background: var(--surface-hover); border-color: var(--border-strong); }
+    .tool-btn:active { cursor: grabbing; transform: scale(0.92); }
+    .tool-btn .tool-icon { font-size: 28px; line-height: 1; }
+    .tool-btn .tool-label { font-size: 9px; line-height: 1; }
+
+    .tool-btn.selected {
+      border-color: var(--primary);
+      background: rgba(56,189,248,0.12);
+      box-shadow: 0 0 12px rgba(56,189,248,0.2);
+    }
+    .tool-btn.disabled {
+      opacity: 0.4; pointer-events: none;
+    }
+
+    /* ─── Floating hint ─── */
+    .hint-text {
+      font-size: 11px; color: var(--text-muted);
+      text-align: center;
+      flex-shrink: 0;
+      z-index: 5;
+      padding: 2px 0;
+    }
+
+    /* ─── Drag ghost ─── */
+    .drag-ghost {
+      position: fixed; pointer-events: none;
+      z-index: 10002;
+      width: 56px; height: 56px;
+      border-radius: var(--radius-md);
+      background: rgba(56,189,248,0.18);
+      border: 2px solid var(--primary);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 28px;
+      transform: translate(-50%, -50%) scale(1.15);
+      transition: none;
+      opacity: 0.9;
+    }
+
+    /* ─── Money popup ─── */
+    .money-popup {
+      position: fixed; pointer-events: none;
+      z-index: 10003;
+      font-family: var(--font-display);
+      font-size: 22px; font-weight: 900;
+      color: var(--success);
+      text-shadow: 0 2px 8px rgba(74,222,128,0.3);
+      animation: moneyFloat 0.8s ease-out forwards;
+    }
+    @keyframes moneyFloat {
+      0% { opacity: 1; transform: translateY(0) scale(1); }
+      100% { opacity: 0; transform: translateY(-40px) scale(1.3); }
+    }
+
+    /* ═══════════════════════════════
+       RESULT SCREEN
+       ═══════════════════════════════ */
+    .result-screen {
+      justify-content: center; gap: 12px; text-align: center;
+      background: linear-gradient(180deg, #0a1628 0%, #0d1f3a 50%, #0f2847 100%);
+      padding: 24px;
+    }
+    .result-screen::before {
+      content: ''; position: absolute; inset: 0;
+      background:
+        radial-gradient(ellipse 160px 80px at 30% 30%, rgba(56,189,248,0.10) 0%, transparent 70%),
+        radial-gradient(ellipse 130px 100px at 70% 60%, rgba(250,204,21,0.08) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .result-icon {
+      font-size: 72px; line-height: 1;
+      position: relative; z-index: 1;
+      animation: resultPop 0.6s ease-out;
+    }
+    @keyframes resultPop {
+      0% { transform: scale(0) rotate(-20deg); opacity: 0; }
+      60% { transform: scale(1.2) rotate(5deg); }
+      100% { transform: scale(1) rotate(0); opacity: 1; }
+    }
+
+    .result-title {
+      font-family: var(--font-display); font-size: 32px; font-weight: 900;
+      position: relative; z-index: 1;
+    }
+    .result-title.win {
+      background: linear-gradient(135deg, #38bdf8, #facc15);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .result-title.lose {
+      color: var(--text-dim);
+    }
+
+    .result-stars {
+      font-size: 40px; line-height: 1;
+      position: relative; z-index: 1;
+      letter-spacing: 6px;
+    }
+    .result-star { opacity: 0.2; }
+    .result-star.active {
+      opacity: 1;
+      animation: starPop 0.4s ease-out;
+    }
+    @keyframes starPop {
+      0% { transform: scale(0); }
+      60% { transform: scale(1.4); }
+      100% { transform: scale(1); }
+    }
+
+    .result-details {
+      font-size: 14px; color: var(--text-dim); line-height: 1.7;
+      position: relative; z-index: 1;
+    }
+    .result-details span { color: var(--gold); font-weight: 700; }
+
+    .result-best {
+      font-size: 13px; color: var(--text-muted);
+      position: relative; z-index: 1;
+    }
+    .result-best span { color: var(--gold); }
+
+    .result-new-best {
+      color: var(--primary); font-weight: 700; font-size: 14px;
+      animation: pulseBest 0.8s ease-in-out infinite alternate;
+      position: relative; z-index: 1;
+    }
+    @keyframes pulseBest {
+      0% { opacity: 0.5; transform: scale(1); }
+      100% { opacity: 1; transform: scale(1.1); }
+    }
+
+    .result-btns {
+      display: flex; gap: 12px; flex-wrap: wrap; justify-content: center;
+      position: relative; z-index: 1;
+    }
+
+    /* ═══ Misc ═══ */
+    .mute-btn {
+      width: 40px; height: 40px; border: none; border-radius: 50%;
+      background: var(--surface); font-size: 18px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      position: fixed; top: 12px; right: 12px; z-index: 10001;
+      transition: background 0.15s ease; color: var(--text);
+    }
+    .mute-btn:hover { background: var(--surface-hover); }
+    .mute-btn:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+
+    .sr-only {
+      position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+      overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0;
+    }
+
+    /* ═══ Responsive ═══ */
+    @media (max-width: 480px) {
+      .title-text { font-size: 30px; }
+      .title-icon { font-size: 56px; }
+      .result-title { font-size: 26px; }
+      .result-icon { font-size: 56px; }
+      .result-stars { font-size: 30px; }
+      .play-stat-item { font-size: 11px; }
+      .tool-btn { width: 54px; height: 54px; }
+      .tool-btn .tool-icon { font-size: 22px; }
+      .tool-btn .tool-label { font-size: 8px; }
+      .car-body::before { font-size: 22px; }
+      .car-area { width: 48px; height: 42px; }
+    }
+    @media (max-height: 640px) {
+      .title-text { font-size: 26px; }
+      .title-icon { font-size: 44px; }
+      .tool-btn { width: 48px; height: 48px; }
+      .tool-btn .tool-icon { font-size: 20px; }
+      .car-body::before { font-size: 20px; }
+      .car-area { width: 42px; height: 36px; }
+      .step-dot { width: 20px; height: 20px; font-size: 9px; }
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+
+    <!-- ═══ MUTE BUTTON ═══ -->
+    <button class="mute-btn" id="muteBtn" aria-label="Toggle sound" aria-pressed="false">🔊</button>
+
+    <!-- ═══ BACK TO HUB ═══ -->
+    <a href="/" class="back-to-hub" aria-label="Back to hub">&larr; Hub</a>
+
+    <!-- ═══ TITLE SCREEN ═══ -->
+    <div id="titleScreen" class="screen title-screen">
+      <div class="title-icon">🚗🧼</div>
+      <h1 class="title-text">Auto Spa<br/>Dash</h1>
+      <p class="title-sub">Wash · Wax · Dry — serve cars and earn big!</p>
+      <div style="height:4px"></div>
+      <button id="startBtn" class="btn btn-primary">🧽 Start Washing!</button>
+      <div class="title-best">🏆 Best Revenue: <span id="titleBest">$0</span></div>
+    </div>
+
+    <!-- ═══ PLAY SCREEN ═══ -->
+    <div id="playScreen" class="screen play-screen hidden">
+      <div class="play-top">
+        <span class="play-level" id="levelDisplay">🌟 Level 1</span>
+        <div class="play-stat">
+          <span class="play-stat-item">⏱ <span id="timerDisplay">0:00</span></span>
+          <span class="play-stat-item">💰 <span class="money" id="moneyDisplay">$0</span></span>
+        </div>
+      </div>
+
+      <div class="play-progress-bar">
+        <div class="play-progress-fill" id="progressFill"></div>
+      </div>
+
+      <!-- Garage -->
+      <div class="garage" id="garage"></div>
+
+      <!-- Tool Tray -->
+      <div class="tool-tray" id="toolTray">
+        <button class="tool-btn" data-tool="wash" aria-label="Wash">
+          <span class="tool-icon">🧽</span>
+          <span class="tool-label">Wash</span>
+        </button>
+        <button class="tool-btn" data-tool="wax" aria-label="Wax">
+          <span class="tool-icon">🧴</span>
+          <span class="tool-label">Wax</span>
+        </button>
+        <button class="tool-btn" data-tool="dry" aria-label="Dry">
+          <span class="tool-icon">🧹</span>
+          <span class="tool-label">Dry</span>
+        </button>
+      </div>
+
+      <div class="hint-text" id="hintText">💡 Drag a tool onto a car to start servicing!</div>
+    </div>
+
+    <!-- ═══ RESULT SCREEN ═══ -->
+    <div id="resultScreen" class="screen result-screen hidden">
+      <div class="result-icon" id="resultIcon">🏪</div>
+      <h2 class="result-title" id="resultTitle">Shift Complete!</h2>
+      <div class="result-stars" id="resultStars">
+        <span class="result-star" data-i="0">⭐</span>
+        <span class="result-star" data-i="1">⭐</span>
+        <span class="result-star" data-i="2">⭐</span>
+      </div>
+      <div class="result-details" id="resultDetails">
+        Revenue: <span id="resultMoney">$0</span> / <span id="resultTarget">$0</span>
+      </div>
+      <div class="result-new-best hidden" id="resultNewBest">🌟 New Best Revenue! 🌟</div>
+      <div class="result-best">🏆 Best: <span id="resultBest">$0</span></div>
+      <div class="result-btns">
+        <button id="resultNextBtn" class="btn btn-primary">➡️ Next Level</button>
+        <button id="resultRetryBtn" class="btn btn-secondary">🔄 Retry</button>
+      </div>
+    </div>
+
+    <!-- ═══ ARIA LIVE ═══ -->
+    <div class="sr-only" role="status" aria-live="polite" id="ariaLive">Auto Spa Dash</div>
+
+  </div>
+
+  <script>
+  (function(){
+    'use strict';
+
+    /* ═══════════════════════════════════════════════════════
+       AUTO SPA DASH — Wash · Wax · Dry · Earn!
+       ═══════════════════════════════════════════════════════ */
+
+    // ─── DOM refs ───
+    var $ = function(id) { return document.getElementById(id); };
+    var titleScreen    = $('titleScreen');
+    var playScreen     = $('playScreen');
+    var resultScreen   = $('resultScreen');
+    var startBtn       = $('startBtn');
+    var levelDisplay   = $('levelDisplay');
+    var timerDisplay   = $('timerDisplay');
+    var moneyDisplay   = $('moneyDisplay');
+    var progressFill   = $('progressFill');
+    var hintText       = $('hintText');
+    var garage         = $('garage');
+    var toolTray       = $('toolTray');
+    var resultIcon     = $('resultIcon');
+    var resultTitle    = $('resultTitle');
+    var resultStars    = $('resultStars');
+    var resultDetails  = $('resultDetails');
+    var resultMoney    = $('resultMoney');
+    var resultTarget   = $('resultTarget');
+    var resultBest     = $('resultBest');
+    var resultNewBest  = $('resultNewBest');
+    var resultNextBtn  = $('resultNextBtn');
+    var resultRetryBtn = $('resultRetryBtn');
+    var titleBest      = $('titleBest');
+    var muteBtn        = $('muteBtn');
+    var ariaLive       = $('ariaLive');
+
+    // ─── Constants ───
+    var MAX_GAME_SEC   = 180; // 3 minutes
+    var STORAGE_KEY    = 'autoSpaDash_best';
+    var PROGRESS_KEY   = 'autoSpaDash_progress';
+    var BAY_COUNT      = 3;
+
+    // ─── Tools ───
+    var TOOLS = [
+      { id: 'wash', icon: '🧽', label: 'Wash', color: '#38bdf8' },
+      { id: 'wax',  icon: '🧴', label: 'Wax',  color: '#c084fc' },
+      { id: 'dry',  icon: '🧹', label: 'Dry',  color: '#facc15' },
+    ];
+
+    // ─── Levels ───
+    var LEVELS = [
+      { level: 1,  name: 'Suds City',        bays: 3, revenueTarget: 120,  carInterval: 7000, maxCars: 6,  toolSpeed: 1.0, cars: [{reward:15,dirt:3},{reward:20,dirt:2},{reward:25,dirt:4}] },
+      { level: 2,  name: 'Bubble Rush',      bays: 3, revenueTarget: 200,  carInterval: 6000, maxCars: 8,  toolSpeed: 0.9, cars: [{reward:18,dirt:3},{reward:22,dirt:3},{reward:28,dirt:4},{reward:30,dirt:2}] },
+      { level: 3,  name: 'Wax & Shine',      bays: 3, revenueTarget: 300,  carInterval: 5500, maxCars: 10, toolSpeed: 0.9, cars: [{reward:20,dirt:3},{reward:25,dirt:3},{reward:30,dirt:4},{reward:35,dirt:3}] },
+      { level: 4,  name: 'Premium Detail',   bays: 4, revenueTarget: 420,  carInterval: 5000, maxCars: 12, toolSpeed: 0.8, cars: [{reward:25,dirt:4},{reward:30,dirt:3},{reward:35,dirt:4},{reward:40,dirt:3}] },
+      { level: 5,  name: 'Speed Wash Pro',   bays: 4, revenueTarget: 550,  carInterval: 4500, maxCars: 14, toolSpeed: 0.7, cars: [{reward:28,dirt:4},{reward:32,dirt:4},{reward:38,dirt:3},{reward:45,dirt:4}] },
+      { level: 6,  name: 'Elite Spa',        bays: 4, revenueTarget: 700,  carInterval: 4200, maxCars: 16, toolSpeed: 0.7, cars: [{reward:30,dirt:4},{reward:35,dirt:4},{reward:40,dirt:4},{reward:50,dirt:3}] },
+      { level: 7,  name: 'Turbo Express',    bays: 4, revenueTarget: 900,  carInterval: 3800, maxCars: 18, toolSpeed: 0.6, cars: [{reward:32,dirt:4},{reward:38,dirt:4},{reward:45,dirt:4},{reward:55,dirt:4}] },
+      { level: 8,  name: 'Mega Wash Empire', bays: 4, revenueTarget: 1200, carInterval: 3500, maxCars: 20, toolSpeed: 0.5, cars: [{reward:35,dirt:4},{reward:40,dirt:4},{reward:50,dirt:4},{reward:60,dirt:4}] },
+    ];
+
+    // ─── State ───
+    var muted = localStorage.getItem('autoSpaDash_muted') === 'true';
+    var highScore = 0;
+    var currentLevel = 0;
+    var money = 0;
+    var revenueTarget = 0;
+    var carsInBay = [];    // index → car object or null
+    var bayEls = [];
+    var gameActive = false;
+    var gamePhase = 'TITLE'; // TITLE | PLAYING | RESULT
+    var elapsedMs = 0;
+    var timerInterval = null;
+    var spawnInterval = null;
+    var selectedTool = null; // tool id string or null
+    var carsServed = 0;
+    var carsMissed = 0;
+    var levelMaxCars = 0;
+    var carsSpawned = 0;
+    var isDragging = false;
+    var dragGhost = null;
+    var dropTargets = [];
+    var carIdCounter = 0;
+    var processTimers = {};
+    var preferReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    // Audio
+    var audioCtx = null;
+    var lastSoundTime = 0;
+
+    // ─── Load / Save ───
+    function loadHighScore() {
+      try { return parseInt(localStorage.getItem(STORAGE_KEY)) || 0; }
+      catch(_) { return 0; }
+    }
+    function saveHighScore(val) {
+      try {
+        var cur = loadHighScore();
+        if (val > cur) {
+          localStorage.setItem(STORAGE_KEY, String(val));
+          return true;
+        }
+        return false;
+      } catch(_) { return false; }
+    }
+
+    function loadProgress() {
+      try {
+        var p = parseInt(localStorage.getItem(PROGRESS_KEY)) || 0;
+        return Math.min(p, LEVELS.length - 1);
+      } catch(_) { return 0; }
+    }
+    function saveProgress(level) {
+      try {
+        var cur = loadProgress();
+        if (level > cur) {
+          localStorage.setItem(PROGRESS_KEY, String(level));
+        }
+      } catch(_) {}
+    }
+
+    function recordPlayed() {
+      try {
+        var recent = JSON.parse(localStorage.getItem('recentlyPlayed') || '[]');
+        var filtered = recent.filter(function(p) { return p.id !== 'auto-spa-dash'; });
+        filtered.unshift({ id: 'auto-spa-dash', playedAt: Date.now() });
+        localStorage.setItem('recentlyPlayed', JSON.stringify(filtered.slice(0, 10)));
+      } catch(_) {}
+    }
+
+    // ─── Audio ───
+    function ensureAudio() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+    }
+
+    function playTone(freq, dur, type, vol) {
+      if (muted || !audioCtx) return;
+      try {
+        var now = audioCtx.currentTime;
+        if (now - lastSoundTime < 0.04) return;
+        lastSoundTime = now;
+        var osc = audioCtx.createOscillator();
+        var gain = audioCtx.createGain();
+        osc.type = type || 'sine';
+        osc.frequency.setValueAtTime(freq, now);
+        gain.gain.setValueAtTime(Math.min(vol || 0.1, 0.15), now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + (dur || 0.1));
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start(now);
+        osc.stop(now + (dur || 0.1));
+      } catch(_) {}
+    }
+
+    function playSwoosh() {
+      playTone(400, 0.08, 'sine', 0.06);
+      setTimeout(function() { playTone(600, 0.08, 'sine', 0.05); }, 40);
+    }
+    function playEarn() {
+      playTone(800, 0.08, 'sine', 0.08);
+      setTimeout(function() { playTone(1000, 0.1, 'sine', 0.08); }, 60);
+    }
+    function playComplete() {
+      [523, 659, 784, 1047, 1319].forEach(function(f, i) {
+        setTimeout(function() { playTone(f, 0.18, 'sine', 0.10); }, i * 100);
+      });
+    }
+    function playNewBest() {
+      [659, 784, 1047, 1319, 1568].forEach(function(f, i) {
+        setTimeout(function() { playTone(f, 0.2, 'triangle', 0.10); }, i * 80);
+      });
+    }
+    function playTimeout() {
+      playTone(300, 0.3, 'sawtooth', 0.08);
+      setTimeout(function() { playTone(200, 0.4, 'sawtooth', 0.08); }, 200);
+    }
+    function playDrop() {
+      playTone(500, 0.06, 'sine', 0.05);
+    }
+    function playStepComplete() {
+      playTone(660, 0.08, 'triangle', 0.06);
+    }
+
+    function vibrate(ms) {
+      try { if (navigator.vibrate) navigator.vibrate(ms); } catch(_) {}
+    }
+
+    // ─── Mute ───
+    muteBtn.addEventListener('click', function() {
+      muted = !muted;
+      localStorage.setItem('autoSpaDash_muted', String(muted));
+      muteBtn.textContent = muted ? '🔇' : '🔊';
+      muteBtn.setAttribute('aria-pressed', String(muted));
+      if (!muted) ensureAudio();
+    });
+    function updateMuteBtn() {
+      muteBtn.textContent = muted ? '🔇' : '🔊';
+      muteBtn.setAttribute('aria-pressed', String(muted));
+    }
+    updateMuteBtn();
+
+    // ─── Screens ───
+    function showScreen(screen) {
+      [titleScreen, playScreen, resultScreen].forEach(function(s) {
+        s.classList.add('hidden');
+      });
+      screen.classList.remove('hidden');
+    }
+
+    // ─── Bays ───
+    function buildBays(count) {
+      garage.innerHTML = '';
+      bayEls = [];
+      carsInBay = [];
+      for (var i = 0; i < count; i++) {
+        var bay = document.createElement('div');
+        bay.className = 'bay empty';
+        bay.dataset.bayIndex = i;
+        var inner = document.createElement('div');
+        inner.className = 'bay-inner';
+        bay.appendChild(inner);
+        garage.appendChild(bay);
+        bayEls.push(bay);
+        carsInBay.push(null);
+      }
+    }
+
+    function getEmptyBay() {
+      for (var i = 0; i < carsInBay.length; i++) {
+        if (carsInBay[i] === null) return i;
+      }
+      return -1;
+    }
+
+    // ─── Car Generation ───
+    function generateCar() {
+      var lvl = LEVELS[currentLevel];
+      var pool = lvl.cars;
+      var carType = pool[Math.floor(Math.random() * pool.length)];
+      var carEmojis = ['🚗','🚙','🚕','🚐','🚓','🚘','🚖','🚔'];
+      return {
+        id: ++carIdCounter,
+        emoji: carEmojis[Math.floor(Math.random() * carEmojis.length)],
+        steps: [
+          { id: 'wash', label: '🧽', done: false, processing: false },
+          { id: 'wax',  label: '🧴', done: false, processing: false },
+          { id: 'dry',  label: '🧹', done: false, processing: false },
+        ],
+        currentStep: 0,
+        reward: carType.reward,
+        dirtLevel: carType.dirt,
+        served: false,
+        driveAway: false,
+        processingTimer: null,
+        processProgress: 0,
+      };
+    }
+
+    function spawnCar() {
+      if (!gameActive || gamePhase !== 'PLAYING') return;
+      if (carsSpawned >= levelMaxCars) return;
+
+      var emptyIdx = getEmptyBay();
+      if (emptyIdx < 0) {
+        // All bays full — car drives away, lost revenue
+        vibrate(30);
+        return;
+      }
+
+      carsSpawned++;
+      var car = generateCar();
+      carsInBay[emptyIdx] = car;
+      renderBay(emptyIdx);
+
+      if (!preferReduced) {
+        var ca = bayEls[emptyIdx].querySelector('.car-area');
+        if (ca) ca.classList.add('entering');
+      }
+
+      playSwoosh();
+    }
+
+    function renderBay(index) {
+      var bay = bayEls[index];
+      var car = carsInBay[index];
+      var inner = bay.querySelector('.bay-inner');
+      if (!inner) return;
+
+      bay.classList.remove('empty');
+
+      if (!car) {
+        bay.classList.add('empty');
+        inner.innerHTML = '';
+        bay.dataset.carId = '';
+        return;
+      }
+
+      bay.dataset.carId = car.id;
+
+      // Steps
+      var stepsHtml = '';
+      for (var i = 0; i < car.steps.length; i++) {
+        var s = car.steps[i];
+        var cls = 'step-dot';
+        if (s.done) cls += ' done';
+        else if (s.processing) cls += ' active';
+        stepsHtml += '<div class="step-dot ' + cls + '">' + (s.done ? '✓' : s.label) + '</div>';
+      }
+
+      // Dirt meter
+      var dirtPct = 100 - (car.currentStep / 3) * 100;
+
+      inner.innerHTML =
+        '<div class="car-area" data-car-id="' + car.id + '">' +
+          '<div class="car-body">' + car.emoji + '</div>' +
+        '</div>' +
+        '<div class="car-steps">' + stepsHtml + '</div>' +
+        '<div class="car-info">' +
+          '<div class="car-reward">+$' + car.reward + '</div>' +
+          '<div class="car-dirt-meter"><div class="car-dirt-fill" style="width:' + dirtPct + '%"></div></div>' +
+        '</div>';
+    }
+
+    function getStepOrder(car) {
+      return car.steps;
+    }
+
+    function getCurrentStepIndex(car) {
+      for (var i = 0; i < car.steps.length; i++) {
+        if (!car.steps[i].done && !car.steps[i].processing) {
+          return i;
+        }
+      }
+      return -1; // all done or processing
+    }
+
+    // ─── Drop a tool on a bay ───
+    function applyToolToBay(toolId, bayIndex) {
+      if (!gameActive || gamePhase !== 'PLAYING') return;
+      var car = carsInBay[bayIndex];
+      if (!car) return;
+      if (car.driveAway) return;
+
+      // Find the next undone step
+      var stepIdx = getCurrentStepIndex(car);
+      if (stepIdx < 0) return; // all done or all processing
+
+      var step = car.steps[stepIdx];
+      if (step.processing || step.done) return;
+      if (step.id !== toolId) {
+        // Wrong tool — play error sound
+        playTone(200, 0.15, 'square', 0.06);
+        hintText.textContent = '💡 Try ' + step.label + ' next for this car!';
+        vibrate(20);
+        return;
+      }
+
+      // Start processing
+      step.processing = true;
+      var lvl = LEVELS[currentLevel];
+      var procTime = 600 + Math.floor(400 * lvl.toolSpeed);
+      car.processingTimer = setTimeout(function() {
+        completeStep(car, stepIdx, bayIndex);
+      }, procTime);
+
+      renderBay(bayIndex);
+      hintText.textContent = '🔧 ' + step.label + ' in progress...';
+      playDrop();
+      vibrate(15);
+    }
+
+    function completeStep(car, stepIdx, bayIndex) {
+      if (!gameActive && gamePhase !== 'PLAYING') return;
+
+      var step = car.steps[stepIdx];
+      step.done = true;
+      step.processing = false;
+      car.currentStep++;
+
+      playStepComplete();
+      vibrate(10);
+
+      // Check if all steps done
+      var allDone = car.steps.every(function(s) { return s.done; });
+      if (allDone) {
+        // Car is fully serviced — drive away and earn money
+        car.served = true;
+        earnMoney(car.reward);
+        carsServed++;
+
+        if (!preferReduced) {
+          var ca = bayEls[bayIndex].querySelector('.car-area');
+          if (ca) ca.classList.add('leaving');
+        }
+
+        setTimeout(function() {
+          clearBay(bayIndex);
+        }, preferReduced ? 0 : 450);
+
+        hintText.textContent = '✅ Car done! +$' + car.reward;
+        playEarn();
+        vibrate([30, 20, 30]);
+      } else {
+        renderBay(bayIndex);
+        var nextStep = getCurrentStepIndex(car);
+        if (nextStep >= 0) {
+          hintText.textContent = '⬇️ Next: ' + car.steps[nextStep].label;
+        }
+      }
+    }
+
+    function clearBay(index) {
+      if (carsInBay[index]) {
+        if (carsInBay[index].processingTimer) {
+          clearTimeout(carsInBay[index].processingTimer);
+        }
+        if (!carsInBay[index].served) {
+          carsMissed++;
+        }
+      }
+      carsInBay[index] = null;
+      renderBay(index);
+    }
+
+    function earnMoney(amount) {
+      money += amount;
+      moneyDisplay.textContent = '$' + money;
+      updateProgress();
+
+      // Show money popup
+      showMoneyPopup('+$' + amount);
+    }
+
+    function showMoneyPopup(text) {
+      var popup = document.createElement('div');
+      popup.className = 'money-popup';
+      popup.textContent = text;
+      popup.style.left = '50%';
+      popup.style.top = '40%';
+      popup.style.transform = 'translateX(-50%)';
+      document.body.appendChild(popup);
+      setTimeout(function() { popup.remove(); }, 900);
+    }
+
+    function updateProgress() {
+      var pct = Math.min(100, Math.floor((money / revenueTarget) * 100));
+      progressFill.style.width = pct + '%';
+      ariaLive.textContent = 'Revenue: $' + money + ' / $' + revenueTarget;
+      document.title = 'Auto Spa Dash — $' + money;
+    }
+
+    // ─── Timer ───
+    function startTimer() {
+      elapsedMs = 0;
+      if (timerInterval) clearInterval(timerInterval);
+      timerInterval = setInterval(function() {
+        if (!gameActive || gamePhase !== 'PLAYING') return;
+        elapsedMs += 1000;
+
+        var sec = Math.floor(elapsedMs / 1000);
+        var min = Math.floor(sec / 60);
+        var remainSec = sec % 60;
+        timerDisplay.textContent = min + ':' + (remainSec < 10 ? '0' : '') + remainSec;
+
+        if (sec >= MAX_GAME_SEC) {
+          endGame();
+        }
+      }, 1000);
+    }
+
+    function getElapsedSec() {
+      return Math.floor(elapsedMs / 1000);
+    }
+
+    // ─── End Game ───
+    function endGame() {
+      if (gamePhase !== 'PLAYING') return;
+      gameActive = false;
+      gamePhase = 'RESULT';
+      if (timerInterval) clearInterval(timerInterval);
+      if (spawnInterval) clearInterval(spawnInterval);
+
+      // Clear any pending car processing
+      for (var i = 0; i < carsInBay.length; i++) {
+        if (carsInBay[i] && carsInBay[i].processingTimer) {
+          clearTimeout(carsInBay[i].processingTimer);
+        }
+      }
+
+      // Clear unscheduled cars (missed revenue)
+      for (var j = 0; j < carsInBay.length; j++) {
+        if (carsInBay[j] && !carsInBay[j].served) carsMissed++;
+      }
+
+      var won = money >= revenueTarget;
+      var stars = 0;
+      if (won) {
+        var ratio = money / revenueTarget;
+        stars = ratio >= 1.5 ? 3 : (ratio >= 1.15 ? 2 : 1);
+        playComplete();
+        vibrate([50, 30, 50, 30, 80]);
+      } else {
+        playTimeout();
+        vibrate([100, 50, 100]);
+      }
+
+      var isNewBest = saveHighScore(money);
+      if (isNewBest) {
+        playNewBest();
+        vibrate([30, 20, 30, 20, 50, 20, 80]);
+      }
+
+      if (won) {
+        if (currentLevel + 1 < LEVELS.length) {
+          saveProgress(currentLevel + 1);
+        }
+      }
+
+      // Build result UI
+      if (won) {
+        resultIcon.textContent = '🏆';
+        resultTitle.textContent = 'Shift Complete!';
+        resultTitle.className = 'result-title win';
+      } else {
+        resultIcon.textContent = '⏰';
+        resultTitle.textContent = 'Time\'s Up!';
+        resultTitle.className = 'result-title lose';
+      }
+
+      // Stars
+      var starEls = resultStars.querySelectorAll('.result-star');
+      for (var si = 0; si < starEls.length; si++) {
+        starEls[si].classList.toggle('active', si < stars);
+        if (!preferReduced) {
+          starEls[si].style.animationDelay = (si * 0.25) + 's';
+        }
+      }
+
+      resultMoney.textContent = '$' + money;
+      resultTarget.textContent = '$' + revenueTarget;
+      var detailText = 'Revenue: <span>$' + money + '</span> / <span>$' + revenueTarget + '</span>';
+      if (won) {
+        detailText += '<br/>Cars serviced: <span>' + carsServed + '</span>';
+      } else {
+        detailText += '<br/>Target needed: <span>$' + Math.max(0, revenueTarget - money) + '</span> more';
+      }
+      resultDetails.innerHTML = detailText;
+      resultBest.textContent = '$' + loadHighScore();
+      resultNewBest.classList.toggle('hidden', !isNewBest);
+
+      if (won && currentLevel + 1 >= LEVELS.length) {
+        resultNextBtn.textContent = '🏆 You\'re a Wash Master!';
+        resultNextBtn.onclick = function() {
+          currentLevel = 0;
+          startGame();
+        };
+      } else if (won) {
+        resultNextBtn.textContent = '➡️ Next Level';
+        resultNextBtn.onclick = function() {
+          currentLevel++;
+          startGame();
+        };
+      } else {
+        resultNextBtn.textContent = '🔄 Try Again';
+        resultNextBtn.onclick = function() {
+          startGame();
+        };
+      }
+      resultRetryBtn.onclick = function() {
+        startGame();
+      };
+
+      showScreen(resultScreen);
+      document.title = 'Auto Spa Dash — ' + (won ? 'Won! $' + money : 'Time\'s Up');
+    }
+
+    // ─── Game Init ───
+    function startGame() {
+      ensureAudio();
+
+      var lvl = LEVELS[currentLevel];
+      revenueTarget = lvl.revenueTarget;
+      levelMaxCars = lvl.maxCars;
+      money = 0;
+      carsServed = 0;
+      carsMissed = 0;
+      carsSpawned = 0;
+      selectedTool = null;
+      isDragging = false;
+
+      // Clear any old spawn/timer
+      if (spawnInterval) clearInterval(spawnInterval);
+
+      // Clear any processing timers from previous game
+      for (var i = 0; i < carsInBay.length; i++) {
+        if (carsInBay[i] && carsInBay[i].processingTimer) {
+          clearTimeout(carsInBay[i].processingTimer);
+        }
+      }
+
+      gameActive = true;
+      gamePhase = 'PLAYING';
+
+      levelDisplay.textContent = '🌟 ' + lvl.name + ' (Lv.' + lvl.level + ')';
+      moneyDisplay.textContent = '$0';
+      timerDisplay.textContent = '0:00';
+      updateProgress();
+      hintText.textContent = '💡 Drag a tool onto a car to service it!';
+
+      buildBays(lvl.bays);
+
+      showScreen(playScreen);
+      document.title = 'Auto Spa Dash — ' + lvl.name;
+      ariaLive.textContent = lvl.name + ' - Earn $' + revenueTarget;
+
+      startTimer();
+      recordPlayed();
+
+      // Start spawning cars
+      spawnCar();
+      spawnInterval = setInterval(function() {
+        if (!gameActive || gamePhase !== 'PLAYING') return;
+        spawnCar();
+      }, lvl.carInterval);
+
+      // Reset tool selection
+      selectedTool = null;
+      document.querySelectorAll('.tool-btn').forEach(function(b) { b.classList.remove('selected'); });
+    }
+
+    // ─── Drag & Drop (Pointer) ───
+    function getBayFromPoint(x, y) {
+      for (var i = 0; i < bayEls.length; i++) {
+        var rect = bayEls[i].getBoundingClientRect();
+        if (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom) {
+          return i;
+        }
+      }
+      return -1;
+    }
+
+    function createDragGhost(toolId) {
+      if (dragGhost) dragGhost.remove();
+      dragGhost = document.createElement('div');
+      dragGhost.className = 'drag-ghost';
+      var tool = TOOLS.filter(function(t) { return t.id === toolId; })[0];
+      dragGhost.textContent = tool ? tool.icon : '🧽';
+      document.body.appendChild(dragGhost);
+    }
+
+    function updateDragGhost(clientX, clientY) {
+      if (!dragGhost) return;
+      dragGhost.style.left = clientX + 'px';
+      dragGhost.style.top = clientY + 'px';
+
+      // Highlight bay under cursor
+      var bayIdx = getBayFromPoint(clientX, clientY);
+      bayEls.forEach(function(el, i) {
+        el.classList.toggle('highlight', i === bayIdx);
+      });
+    }
+
+    function removeDragGhost() {
+      if (dragGhost) { dragGhost.remove(); dragGhost = null; }
+      bayEls.forEach(function(el) { el.classList.remove('highlight'); });
+    }
+
+    // Tool button pointerdown
+    toolTray.addEventListener('pointerdown', function(e) {
+      var btn = e.target.closest('.tool-btn');
+      if (!btn) return;
+      if (!gameActive || gamePhase !== 'PLAYING') return;
+
+      var toolId = btn.dataset.tool;
+      selectedTool = toolId;
+
+      // Visual selection
+      document.querySelectorAll('.tool-btn').forEach(function(b) { b.classList.remove('selected'); });
+      btn.classList.add('selected');
+
+      // Start drag
+      isDragging = true;
+      btn.setPointerCapture(e.pointerId);
+      createDragGhost(toolId);
+      updateDragGhost(e.clientX, e.clientY);
+    });
+
+    toolTray.addEventListener('pointermove', function(e) {
+      if (!isDragging || !dragGhost) return;
+      updateDragGhost(e.clientX, e.clientY);
+    });
+
+    toolTray.addEventListener('pointerup', function(e) {
+      if (!isDragging) return;
+      isDragging = false;
+
+      var bayIdx = getBayFromPoint(e.clientX, e.clientY);
+      if (bayIdx >= 0 && selectedTool) {
+        applyToolToBay(selectedTool, bayIdx);
+      }
+
+      removeDragGhost();
+      var btn = document.querySelector('.tool-btn.selected');
+      if (btn) btn.classList.remove('selected');
+      selectedTool = null;
+    });
+
+    toolTray.addEventListener('pointercancel', function() {
+      isDragging = false;
+      removeDragGhost();
+      var btn = document.querySelector('.tool-btn.selected');
+      if (btn) btn.classList.remove('selected');
+      selectedTool = null;
+    });
+
+    // Also allow drop on garage area (not just tray)
+    garage.addEventListener('pointerdown', function(e) {
+      if (!isDragging) return;
+      e.preventDefault();
+    });
+
+    // ─── Touch / Pointer on garage — click-to-drop (non-drag fallback) ───
+    garage.addEventListener('click', function(e) {
+      if (!gameActive || gamePhase !== 'PLAYING') return;
+      if (isDragging) return;
+      if (!selectedTool) return;
+
+      var bayIdx = getBayFromPoint(e.clientX, e.clientY);
+      if (bayIdx >= 0) {
+        applyToolToBay(selectedTool, bayIdx);
+        var btn = document.querySelector('.tool-btn.selected');
+        if (btn) btn.classList.remove('selected');
+        selectedTool = null;
+      }
+    });
+
+    // ─── Tool click on bay fallback (touch) ───
+    garage.addEventListener('touchstart', function(e) {
+      if (!gameActive || gamePhase !== 'PLAYING') return;
+      if (isDragging) return;
+      if (!selectedTool) return;
+
+      var touch = e.touches[0];
+      var bayIdx = getBayFromPoint(touch.clientX, touch.clientY);
+      if (bayIdx >= 0) {
+        e.preventDefault();
+        applyToolToBay(selectedTool, bayIdx);
+        var btn = document.querySelector('.tool-btn.selected');
+        if (btn) btn.classList.remove('selected');
+        selectedTool = null;
+      }
+    }, { passive: false });
+
+    // ─── Keyboard ───
+    document.addEventListener('keydown', function(e) {
+      var tag = (e.target && e.target.tagName || '').toLowerCase();
+      if (tag === 'input' || tag === 'textarea' || tag === 'select') return;
+
+      // Title / Result screens
+      if (gamePhase === 'TITLE' && (e.key === 'Enter' || e.key === ' ')) {
+        e.preventDefault();
+        startBtn.click();
+        return;
+      }
+      if (gamePhase === 'RESULT' && (e.key === 'Enter' || e.key === ' ')) {
+        e.preventDefault();
+        resultNextBtn.click();
+        return;
+      }
+
+      if (gamePhase !== 'PLAYING') return;
+
+      // Tool selection with 1/2/3
+      if (e.key === '1') { selectToolByIndex(0); return; }
+      if (e.key === '2') { selectToolByIndex(1); return; }
+      if (e.key === '3') { selectToolByIndex(2); return; }
+
+      // Apply tool to first eligible bay with Enter/Space
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        if (!selectedTool) return;
+        // Find first bay with a car that needs the selected tool
+        for (var i = 0; i < carsInBay.length; i++) {
+          var car = carsInBay[i];
+          if (!car) continue;
+          var stepIdx = getCurrentStepIndex(car);
+          if (stepIdx >= 0 && car.steps[stepIdx].id === selectedTool) {
+            applyToolToBay(selectedTool, i);
+            return;
+          }
+        }
+        // No matching car found
+        hintText.textContent = '💡 No car ready for ' + selectedTool + ' right now';
+        return;
+      }
+    });
+
+    function selectToolByIndex(index) {
+      if (index >= TOOLS.length) return;
+      var btns = document.querySelectorAll('.tool-btn');
+      if (btns[index]) {
+        btns[index].click();
+        selectedTool = TOOLS[index].id;
+        hintText.textContent = '🔧 Selected: ' + TOOLS[index].label + ' — tap a car or press Enter';
+      }
+    }
+
+    // Tool button click (for touch/keyboard selection)
+    document.querySelectorAll('.tool-btn').forEach(function(btn, i) {
+      btn.addEventListener('click', function() {
+        if (!gameActive || gamePhase !== 'PLAYING') return;
+        var toolId = this.dataset.tool;
+        if (selectedTool === toolId) {
+          // Deselect
+          this.classList.remove('selected');
+          selectedTool = null;
+          hintText.textContent = '💡 Select a tool to use on a car';
+        } else {
+          document.querySelectorAll('.tool-btn').forEach(function(b) { b.classList.remove('selected'); });
+          this.classList.add('selected');
+          selectedTool = toolId;
+          hintText.textContent = '🔧 ' + TOOLS[i].label + ' selected — tap a car bay!';
+        }
+      });
+    });
+
+    // ─── Buttons ───
+    startBtn.addEventListener('click', function() {
+      ensureAudio();
+      highScore = loadHighScore();
+      currentLevel = loadProgress();
+      startGame();
+    });
+
+    // ─── Init ───
+    function init() {
+      highScore = loadHighScore();
+      titleBest.textContent = '$' + highScore;
+      showScreen(titleScreen);
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', init);
+    } else {
+      init();
+    }
+
+  })();
+  </script>
+</body>
+</html>
