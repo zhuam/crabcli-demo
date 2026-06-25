@@ -511,6 +511,20 @@
       "version": "1.0.0",
       "featured": false,
       "rating": 4.0
+    },
+    {
+      "id": "garden-keeper",
+      "name": "Garden Keeper",
+      "description": "管理花园种植与浇水，赚钱升级解锁新作物，离线产出",
+      "category": "idle",
+      "tags": ["singleplayer", "idle", "planting", "management", "short-session"],
+      "thumbnail": "/games/041-garden-keeper/thumb.png",
+      "path": "/games/041-garden-keeper/",
+      "hasServer": false,
+      "players": "1",
+      "version": "1.0.0",
+      "featured": true,
+      "rating": 4.0
     }
   ],
   "categories": [

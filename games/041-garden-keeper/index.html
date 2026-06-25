@@ -1,0 +1,1536 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no">
+  <meta name="theme-color" content="#2d5a27">
+  <title>Garden Keeper</title>
+  <link rel="stylesheet" href="/games/shared/game-frame.css">
+  <style>
+    :root {
+      --soil: #5c4033;
+      --grass: #4a7c3f;
+      --grass-light: #6abf5e;
+      --sky: #87CEEB;
+      --sky-top: #4a90d9;
+      --wood: #8B6914;
+      --gold: #FFD700;
+      --water-blue: #3498db;
+      --water-light: #5dade2;
+      --carrot: #FF6B35;
+      --tomato: #E74C3C;
+      --pumpkin: #E67E22;
+      --corn: #F1C40F;
+      --bg-deep: #1a3a1a;
+      --text-primary: #FFFFFF;
+      --text-muted: rgba(255,255,255,0.6);
+      --danger: #e74c3c;
+      --success: #2ecc71;
+      --font-display: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      --font-body: system-ui, -apple-system, sans-serif;
+      --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+      --panel-bg: rgba(0,0,0,0.55);
+      --panel-border: rgba(255,255,255,0.1);
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg-deep);
+      color: var(--text-primary);
+      font-family: var(--font-body);
+      overflow: hidden;
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+
+    /* ── Screens ── */
+    .screen { display: none; flex-direction: column; align-items: center; width: 100%; height: 100vh; position: fixed; inset: 0; }
+    .screen.active { display: flex; }
+
+    /* ── Title Screen ── */
+    .title-screen {
+      justify-content: center; gap: 20px; text-align: center; z-index: 1;
+      background: linear-gradient(180deg, var(--sky-top) 0%, var(--sky) 40%, var(--grass) 70%, var(--bg-deep) 100%);
+    }
+    .title-icon {
+      font-size: 72px; line-height: 1;
+      filter: drop-shadow(0 4px 16px rgba(0,0,0,0.3));
+      animation: title-bounce 2s ease-in-out infinite alternate;
+    }
+    @keyframes title-bounce {
+      0% { transform: translateY(0); }
+      100% { transform: translateY(-8px); }
+    }
+    .title-text {
+      font-family: var(--font-display); font-size: 42px; font-weight: 800;
+      color: #fff; text-shadow: 0 2px 12px rgba(0,0,0,0.4);
+      letter-spacing: 0.05em; line-height: 1.1;
+    }
+    .title-subtitle {
+      font-size: 14px; color: rgba(255,255,255,0.8);
+      text-shadow: 0 1px 4px rgba(0,0,0,0.3);
+    }
+    .title-best {
+      font-family: var(--font-mono); font-size: 14px;
+      color: var(--gold); text-shadow: 0 1px 4px rgba(0,0,0,0.3);
+    }
+    .btn-primary {
+      font-family: var(--font-display); font-size: 20px; font-weight: 700;
+      background: linear-gradient(135deg, var(--grass-light), var(--grass));
+      color: #fff; border: 2px solid rgba(255,255,255,0.2); border-radius: 9999px;
+      padding: 16px 56px; min-height: 56px; cursor: pointer;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3), 0 0 40px rgba(106,191,94,0.2);
+      transition: transform 150ms ease, box-shadow 150ms ease;
+    }
+    .btn-primary:hover { transform: scale(1.05); box-shadow: 0 4px 28px rgba(106,191,94,0.4); }
+    .btn-primary:active { transform: scale(0.97); }
+    .btn-primary:focus-visible { outline: 2px solid var(--gold); outline-offset: 4px; }
+
+    /* ── Game Screen ── */
+    .game-screen {
+      background: linear-gradient(180deg, var(--sky-top) 0%, var(--sky) 35%, var(--grass) 60%, var(--bg-deep) 100%);
+      padding: 0; justify-content: flex-start;
+    }
+
+    /* ── HUD ── */
+    .hud {
+      width: 100%; padding: 10px 14px;
+      display: flex; align-items: center; justify-content: space-between;
+      background: rgba(0,0,0,0.3); backdrop-filter: blur(6px);
+      z-index: 10; flex-shrink: 0;
+    }
+    .hud-group { display: flex; align-items: center; gap: 8px; }
+    .hud-stat {
+      display: flex; align-items: center; gap: 4px;
+      font-family: var(--font-mono); font-size: 15px; font-weight: 700;
+    }
+    .hud-stat .ico { font-size: 16px; }
+    .hud-stat .val { color: var(--gold); }
+    .hud-level {
+      background: rgba(255,255,255,0.12);
+      padding: 3px 10px; border-radius: 9999px;
+      font-size: 12px; font-weight: 600;
+    }
+    .hud-timer {
+      font-family: var(--font-mono); font-size: 14px;
+      color: var(--text-muted);
+    }
+    .hud-timer.warning { color: var(--danger); }
+
+    /* ── Garden ── */
+    .garden-container {
+      flex: 1; width: 100%; max-width: 420px;
+      display: flex; flex-direction: column;
+      padding: 8px; gap: 8px;
+      overflow: hidden;
+    }
+
+    .garden-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      flex: 1;
+      align-content: center;
+    }
+
+    .plot {
+      position: relative;
+      aspect-ratio: 1;
+      background: radial-gradient(ellipse at 50% 60%, var(--soil), #3d2b1e);
+      border-radius: 12px;
+      border: 2px solid rgba(255,255,255,0.08);
+      box-shadow: inset 0 2px 8px rgba(0,0,0,0.4), 0 2px 4px rgba(0,0,0,0.2);
+      cursor: pointer;
+      transition: transform 150ms ease, border-color 150ms ease;
+      display: flex; align-items: center; justify-content: center;
+      overflow: hidden;
+      touch-action: manipulation;
+    }
+    .plot:active { transform: scale(0.95); }
+    .plot.empty { border-color: rgba(255,255,255,0.05); }
+    .plot.planted { border-color: rgba(106,191,94,0.2); }
+    .plot.ready { border-color: var(--gold); }
+    .plot.watered { border-color: var(--water-blue); }
+    .plot.dragover {
+      border-color: var(--water-light);
+      box-shadow: 0 0 20px rgba(52,152,219,0.4), inset 0 0 20px rgba(52,152,219,0.15);
+    }
+
+    /* Plot content */
+    .plot-content {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      width: 100%; height: 100%;
+      transition: transform 200ms ease;
+    }
+
+    .plant-icon { font-size: clamp(28px, 8vw, 44px); line-height: 1; }
+    .plant-icon.sprout { font-size: clamp(18px, 5vw, 28px); }
+    .plant-icon.seed { font-size: clamp(16px, 4vw, 24px); }
+
+    .growth-bar {
+      position: absolute; bottom: 4px; left: 8px; right: 8px;
+      height: 3px; background: rgba(0,0,0,0.3);
+      border-radius: 2px; overflow: hidden;
+    }
+    .growth-bar-fill {
+      height: 100%; border-radius: 2px;
+      background: linear-gradient(90deg, var(--grass), var(--grass-light));
+      transition: width 300ms linear;
+    }
+    .growth-bar-fill.watered {
+      background: linear-gradient(90deg, var(--water-blue), var(--water-light));
+    }
+
+    .water-icon {
+      position: absolute;
+      top: 4px; right: 4px;
+      font-size: 12px;
+      opacity: 0.7;
+      animation: water-drop 1s ease-in-out infinite;
+    }
+    @keyframes water-drop {
+      0%, 100% { transform: translateY(0); opacity: 0.7; }
+      50% { transform: translateY(-2px); opacity: 1; }
+    }
+
+    .harvest-hint {
+      position: absolute; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      background: rgba(255,215,0,0.15);
+      border-radius: 10px;
+      font-size: 24px;
+      animation: harvest-pulse 1s ease-in-out infinite alternate;
+      pointer-events: none;
+    }
+    @keyframes harvest-pulse {
+      0% { opacity: 0.6; }
+      100% { opacity: 1; }
+    }
+
+    /* ── Water Can / Toolbar ── */
+    .toolbar {
+      display: flex; align-items: center; justify-content: center;
+      gap: 10px; padding: 6px 12px;
+      flex-shrink: 0;
+    }
+    .tool-btn {
+      display: flex; align-items: center; gap: 6px;
+      padding: 8px 18px; border-radius: 9999px;
+      border: 2px solid rgba(255,255,255,0.12);
+      background: rgba(0,0,0,0.35);
+      color: var(--text-primary);
+      font-size: 14px; font-weight: 600;
+      cursor: pointer;
+      transition: all 150ms ease;
+      touch-action: manipulation;
+    }
+    .tool-btn:hover { background: rgba(255,255,255,0.1); }
+    .tool-btn:active { transform: scale(0.95); }
+    .tool-btn.active {
+      border-color: var(--water-blue);
+      background: rgba(52,152,219,0.25);
+      box-shadow: 0 0 16px rgba(52,152,219,0.3);
+    }
+    .tool-btn .ico { font-size: 20px; }
+    .tool-btn .badge {
+      font-family: var(--font-mono); font-size: 11px;
+      padding: 1px 6px; border-radius: 9999px;
+      background: rgba(255,255,255,0.12);
+    }
+
+    /* ── Shop Panel ── */
+    .shop-panel {
+      position: absolute; bottom: 0; left: 0; right: 0;
+      background: var(--panel-bg);
+      backdrop-filter: blur(12px);
+      border-top: 1px solid var(--panel-border);
+      border-radius: 20px 20px 0 0;
+      padding: 16px;
+      z-index: 20;
+      display: none;
+      flex-direction: column;
+      gap: 10px;
+      max-height: 60vh;
+      overflow-y: auto;
+      animation: slide-up 200ms ease-out;
+    }
+    @keyframes slide-up {
+      0% { transform: translateY(100%); }
+      100% { transform: translateY(0); }
+    }
+    .shop-panel.open { display: flex; }
+    .shop-header {
+      display: flex; justify-content: space-between; align-items: center;
+      font-size: 18px; font-weight: 700;
+    }
+    .shop-close {
+      background: none; border: none; color: var(--text-muted);
+      font-size: 24px; cursor: pointer;
+      width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;
+      border-radius: 50%;
+    }
+    .shop-close:hover { background: rgba(255,255,255,0.1); }
+
+    .shop-item {
+      display: flex; align-items: center; gap: 12px;
+      padding: 12px; border-radius: 12px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.06);
+      cursor: pointer;
+      transition: background 150ms;
+    }
+    .shop-item:hover { background: rgba(255,255,255,0.1); }
+    .shop-item:active { transform: scale(0.98); }
+    .shop-item.locked { opacity: 0.4; cursor: default; }
+    .shop-item.locked:hover { background: rgba(255,255,255,0.05); }
+    .shop-item-icon { font-size: 32px; width: 44px; text-align: center; }
+    .shop-item-info { flex: 1; }
+    .shop-item-name { font-weight: 600; font-size: 14px; }
+    .shop-item-desc { font-size: 12px; color: var(--text-muted); }
+    .shop-item-cost {
+      font-family: var(--font-mono); font-size: 14px; font-weight: 700;
+      color: var(--gold);
+    }
+    .shop-item.affordable .shop-item-cost { color: var(--gold); }
+    .shop-item:not(.affordable) .shop-item-cost { color: var(--danger); }
+    .shop-item-bought {
+      color: var(--success); font-size: 13px; font-weight: 600;
+    }
+
+    /* ── Result Overlay ── */
+    .result-overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.75);
+      backdrop-filter: blur(8px);
+      z-index: 100;
+      display: none;
+      flex-direction: column; align-items: center; justify-content: center;
+      gap: 12px;
+      padding: 24px;
+    }
+    .result-overlay.active { display: flex; }
+    .result-icon { font-size: 64px; }
+    .result-heading {
+      font-family: var(--font-display); font-size: 32px; font-weight: 800;
+    }
+    .result-heading.win { color: var(--gold); text-shadow: 0 0 20px rgba(255,215,0,0.4); }
+    .result-heading.lose { color: var(--danger); }
+    .result-stats {
+      display: flex; flex-direction: column; align-items: center; gap: 4px;
+      font-size: 14px; color: var(--text-muted);
+    }
+    .result-stats strong { color: var(--text-primary); }
+    .result-coins {
+      font-family: var(--font-mono); font-size: 48px; font-weight: 700;
+      color: var(--gold); line-height: 1;
+    }
+    .result-new-best {
+      font-size: 16px; color: var(--gold);
+      animation: celebrate 0.6s ease-in-out infinite alternate;
+    }
+    @keyframes celebrate {
+      0% { transform: scale(1); }
+      100% { transform: scale(1.1); }
+    }
+    .btn-replay {
+      font-family: var(--font-display); font-size: 18px; font-weight: 700;
+      background: linear-gradient(135deg, var(--grass-light), var(--grass));
+      color: #fff; border: 2px solid rgba(255,255,255,0.2); border-radius: 9999px;
+      padding: 14px 48px; min-height: 52px; cursor: pointer;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+      transition: transform 150ms ease;
+      margin-top: 8px;
+    }
+    .btn-replay:hover { transform: scale(1.05); }
+    .btn-replay:active { transform: scale(0.97); }
+    .btn-replay:focus-visible { outline: 2px solid var(--gold); outline-offset: 4px; }
+
+    /* ── Mute ── */
+    .mute-btn {
+      width: 36px; height: 36px; border: none;
+      background: rgba(255,255,255,0.1);
+      border-radius: 50%; font-size: 16px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: background 150ms ease;
+    }
+    .mute-btn:hover { background: rgba(255,255,255,0.2); }
+    .mute-btn:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+
+    /* ── Offline banner ── */
+    .offline-banner {
+      position: fixed; top: 60px; left: 50%; transform: translateX(-50%);
+      background: rgba(255,215,0,0.15);
+      border: 1px solid rgba(255,215,0,0.3);
+      backdrop-filter: blur(8px);
+      padding: 10px 20px; border-radius: 12px;
+      z-index: 50;
+      display: none;
+      align-items: center; gap: 10px;
+      font-size: 13px;
+      animation: slide-down 300ms ease-out;
+    }
+    @keyframes slide-down {
+      0% { transform: translateX(-50%) translateY(-20px); opacity: 0; }
+      100% { transform: translateX(-50%) translateY(0); opacity: 1; }
+    }
+    .offline-banner.active { display: flex; }
+    .offline-banner .coins { color: var(--gold); font-weight: 700; font-family: var(--font-mono); }
+
+    /* ── Level complete toast ── */
+    .toast {
+      position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+      background: rgba(0,0,0,0.85);
+      backdrop-filter: blur(8px);
+      padding: 20px 32px; border-radius: 16px;
+      z-index: 50;
+      display: none;
+      flex-direction: column; align-items: center; gap: 6px;
+      font-size: 18px; font-weight: 700;
+      text-align: center;
+      animation: toast-pop 300ms ease-out;
+    }
+    @keyframes toast-pop {
+      0% { transform: translate(-50%, -50%) scale(0.8); opacity: 0; }
+      100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+    }
+    .toast.active { display: flex; }
+    .toast .sub { font-size: 13px; font-weight: 400; color: var(--text-muted); }
+
+    /* ── Floating coin animation ── */
+    .float-coin {
+      position: fixed;
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--gold);
+      pointer-events: none;
+      z-index: 50;
+      animation: float-up 0.8s ease-out forwards;
+    }
+    @keyframes float-up {
+      0% { opacity: 1; transform: translateY(0) scale(1); }
+      100% { opacity: 0; transform: translateY(-60px) scale(1.2); }
+    }
+
+    /* ── Responsive ── */
+    @media (max-height: 640px) {
+      .garden-container { padding: 4px; gap: 4px; }
+      .garden-grid { gap: 5px; }
+      .hud { padding: 6px 10px; }
+      .hud-stat { font-size: 13px; }
+      .shop-panel { padding: 12px; }
+    }
+    @media (min-width: 600px) {
+      .garden-container { max-width: 400px; }
+    }
+
+    .sr-only {
+      position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+      overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0;
+    }
+  </style>
+</head>
+<body>
+
+<!-- Back to Hub -->
+<a href="/" class="back-to-hub" onclick="window.recordPlayed&&window.recordPlayed('garden-keeper')" aria-label="Back to hub">&larr; Hub</a>
+
+<!-- Mute toggle -->
+<button class="mute-btn" id="muteBtn" aria-label="Toggle sound" aria-pressed="false" style="position:fixed;top:12px;right:12px;z-index:10001">🔊</button>
+
+<!-- ═══════ TITLE SCREEN ═══════ -->
+<div class="screen title-screen active" id="titleScreen" role="region" aria-label="Title screen">
+  <div class="title-icon" aria-hidden="true">🌻</div>
+  <h1 class="title-text">Garden<br>Keeper</h1>
+  <p class="title-subtitle">种植 · 浇水 · 收获 · 卖出</p>
+  <button class="btn-primary" id="startBtn" autofocus>开始游戏</button>
+  <p class="title-best" id="titleBest">最高分: <span>0</span></p>
+</div>
+
+<!-- ═══════ GAME SCREEN ═══════ -->
+<div class="screen game-screen" id="gameScreen" role="region" aria-label="Game screen">
+
+  <!-- HUD -->
+  <header class="hud" role="banner">
+    <div class="hud-group">
+      <div class="hud-stat" aria-label="金币">
+        <span class="ico" aria-hidden="true">🪙</span>
+        <span class="val" id="coinDisplay">0</span>
+      </div>
+      <span class="hud-level" id="levelDisplay">Lv.1</span>
+    </div>
+    <div class="hud-group">
+      <div class="hud-timer" id="timerDisplay">3:00</div>
+      <button class="mute-btn" id="muteBtn2" aria-label="Toggle sound" aria-pressed="false" style="font-size:14px;width:32px;height:32px">🔊</button>
+    </div>
+  </header>
+
+  <!-- Offline banner -->
+  <div class="offline-banner" id="offlineBanner">
+    <span>🌙 离线收入</span>
+    <span class="coins" id="offlineCoins">+0</span>
+    <span>金币</span>
+  </div>
+
+  <!-- Level toast -->
+  <div class="toast" id="levelToast">
+    <span id="levelToastIcon">🎉</span>
+    <span id="levelToastText">新关卡!</span>
+    <span class="sub" id="levelToastSub">目标金币已提高</span>
+  </div>
+
+  <!-- Garden -->
+  <div class="garden-container">
+    <div class="garden-grid" id="gardenGrid">
+      <!-- 9 plots generated by JS -->
+    </div>
+  </div>
+
+  <!-- Toolbar -->
+  <div class="toolbar" id="toolbar">
+    <button class="tool-btn" id="waterCanBtn" aria-label="Water plants">
+      <span class="ico">💧</span>
+      浇水
+      <span class="badge" id="waterCount">5</span>
+    </button>
+    <button class="tool-btn" id="shopBtn" aria-label="Open shop">
+      <span class="ico">🏪</span>
+      商店
+    </button>
+    <button class="tool-btn" id="sellAllBtn" aria-label="Sell all ready crops">
+      <span class="ico">💰</span>
+      全部卖出
+    </button>
+  </div>
+
+  <!-- Shop Panel -->
+  <div class="shop-panel" id="shopPanel">
+    <div class="shop-header">
+      <span>🏪 商店</span>
+      <button class="shop-close" id="shopClose" aria-label="Close shop">✕</button>
+    </div>
+    <div id="shopItems"></div>
+  </div>
+</div>
+
+<!-- ═══════ RESULT OVERLAY ═══════ -->
+<div class="result-overlay" id="resultOverlay" role="dialog" aria-label="Game result">
+  <div class="result-icon" id="resultIcon">🏆</div>
+  <h2 class="result-heading" id="resultHeading">通关!</h2>
+  <div class="result-coins" id="resultCoins">0</div>
+  <div class="result-stats" id="resultStats">
+    <div>等级 <strong id="resultLevel">1</strong></div>
+    <div>收获 <strong id="resultHarvests">0</strong> 次</div>
+  </div>
+  <div class="result-new-best" id="resultNewBest" style="display:none">🎉 新纪录!</div>
+  <button class="btn-replay" id="replayBtn" aria-label="Play again">再来一局</button>
+</div>
+
+<!-- Aria live -->
+<div class="sr-only" role="status" aria-live="polite" id="ariaLive"></div>
+
+<script>
+(function() {
+  'use strict';
+
+  // ── Constants ──
+  var PLOTS = 9;
+  var GRID_COLS = 3;
+  var SESSION_DURATION = 180; // 3 minutes
+  var GROWTH_TIME = 15; // seconds for crop to grow
+  var WATER_BOOST = 0.6; // watering reduces remaining time by 60%
+  var STORAGE_KEY = 'garden-keeper-data';
+  var SAVE_INTERVAL = 3000; // auto-save every 3s
+
+  // ── Crops ──
+  var CROPS = [
+    { id: 'carrot',  name: '胡萝卜', emoji: '🥕', seedCost: 5,  sellPrice: 8,  growTime: 15,  unlockLevel: 1 },
+    { id: 'tomato',  name: '番茄',   emoji: '🍅', seedCost: 12, sellPrice: 18, growTime: 18,  unlockLevel: 2 },
+    { id: 'pumpkin', name: '南瓜',   emoji: '🎃', seedCost: 25, sellPrice: 40, growTime: 22,  unlockLevel: 3 },
+    { id: 'corn',    name: '玉米',   emoji: '🌽', seedCost: 40, sellPrice: 65, growTime: 28,  unlockLevel: 5 },
+  ];
+
+  // ── Upgrades ──
+  var UPGRADES = [
+    { id: 'autoWater',  name: '自动浇水', desc: '已种植的作物缓慢自动生长', cost: 50,  icon: '⏲️', effect: 'autoWater' },
+    { id: 'goldenCan',  name: '金水壶',   desc: '浇水效果翻倍',           cost: 100, icon: '✨', effect: 'goldenCan' },
+    { id: 'greenhouse', name: '温室',     desc: '所有作物生长加快 30%',   cost: 200, icon: '🏠', effect: 'greenhouse' },
+    { id: 'richSoil',   name: '沃土',     desc: '售价提高 25%',           cost: 150, icon: '🌱', effect: 'richSoil' },
+    { id: 'sprinkler',  name: '洒水器',   desc: '初始水壶次数 +3',        cost: 80,  icon: '💦', effect: 'sprinkler' },
+  ];
+
+  // Level progression
+  var LEVEL_TARGETS = [0, 30, 80, 160, 280, 450, 700, 1000, 1400, 2000];
+  var MAX_LEVEL = LEVEL_TARGETS.length - 1;
+  var WATER_MAX_BASE = 5;
+
+  // ── DOM refs ──
+  var titleScreen = document.getElementById('titleScreen');
+  var gameScreen = document.getElementById('gameScreen');
+  var gardenGrid = document.getElementById('gardenGrid');
+  var coinDisplay = document.getElementById('coinDisplay');
+  var levelDisplay = document.getElementById('levelDisplay');
+  var timerDisplay = document.getElementById('timerDisplay');
+  var waterCanBtn = document.getElementById('waterCanBtn');
+  var waterCount = document.getElementById('waterCount');
+  var shopBtn = document.getElementById('shopBtn');
+  var shopClose = document.getElementById('shopClose');
+  var shopPanel = document.getElementById('shopPanel');
+  var shopItems = document.getElementById('shopItems');
+  var sellAllBtn = document.getElementById('sellAllBtn');
+  var resultOverlay = document.getElementById('resultOverlay');
+  var resultIcon = document.getElementById('resultIcon');
+  var resultHeading = document.getElementById('resultHeading');
+  var resultCoins = document.getElementById('resultCoins');
+  var resultLevel = document.getElementById('resultLevel');
+  var resultHarvests = document.getElementById('resultHarvests');
+  var resultNewBest = document.getElementById('resultNewBest');
+  var titleBest = document.getElementById('titleBest');
+  var offlineBanner = document.getElementById('offlineBanner');
+  var offlineCoins = document.getElementById('offlineCoins');
+  var levelToast = document.getElementById('levelToast');
+  var levelToastIcon = document.getElementById('levelToastIcon');
+  var levelToastText = document.getElementById('levelToastText');
+  var levelToastSub = document.getElementById('levelToastSub');
+  var ariaLive = document.getElementById('ariaLive');
+
+  // ── State ──
+  var state = {
+    screen: 'TITLE', // TITLE | PLAYING | RESULT
+    coins: 15,
+    level: 1,
+    totalHarvests: 0,
+    highScore: 0,
+    plots: [],
+    waterRemaining: WATER_MAX_BASE,
+    wateringMode: false,
+    ownedUpgrades: {},
+    unlockedCrops: 1,
+    sessionElapsed: 0,
+    lastSaveTime: Date.now(),
+    lastPlayTime: null,
+    muted: false,
+    timerInterval: null,
+    gameInterval: null,
+    bestCoins: 0,
+  };
+
+  // ── Audio ──
+  var audioCtx = null;
+  function ensureAudio() {
+    if (!audioCtx) {
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+  }
+  function playTone(freq, dur, type, vol) {
+    if (state.muted || !audioCtx) return;
+    var t = audioCtx.currentTime;
+    var o = audioCtx.createOscillator();
+    var g = audioCtx.createGain();
+    o.connect(g); g.connect(audioCtx.destination);
+    o.type = type || 'sine';
+    g.gain.setValueAtTime(vol || 0.1, t);
+    o.frequency.setValueAtTime(freq, t);
+    g.gain.linearRampToValueAtTime(0, t + dur);
+    o.start(t); o.stop(t + dur);
+  }
+  function playSound(type) {
+    switch (type) {
+      case 'plant': playTone(440, 0.08, 'sine', 0.08); break;
+      case 'water': playTone(660, 0.1, 'sine', 0.06); break;
+      case 'harvest': playTone(880, 0.12, 'sine', 0.08); setTimeout(function(){ playTone(1100, 0.1, 'sine', 0.06); }, 80); break;
+      case 'coin': playTone(550, 0.06, 'sine', 0.06); break;
+      case 'levelup': playTone(440, 0.08, 'sine', 0.08); setTimeout(function(){ playTone(660, 0.08, 'sine', 0.08); }, 80); setTimeout(function(){ playTone(880, 0.12, 'sine', 0.08); }, 160); break;
+      case 'win': playTone(523, 0.12, 'sine', 0.08); setTimeout(function(){ playTone(659, 0.12, 'sine', 0.08); }, 120); setTimeout(function(){ playTone(784, 0.12, 'sine', 0.08); }, 240); setTimeout(function(){ playTone(1047, 0.2, 'sine', 0.1); }, 360); break;
+      case 'lose': playTone(300, 0.2, 'sawtooth', 0.06); setTimeout(function(){ playTone(200, 0.3, 'sawtooth', 0.05); }, 150); break;
+      case 'buy': playTone(660, 0.08, 'sine', 0.07); break;
+      case 'error': playTone(200, 0.15, 'square', 0.05); break;
+    }
+  }
+  function vibrate(pattern) {
+    if (navigator.vibrate) navigator.vibrate(pattern);
+  }
+
+  // ── Storage ──
+  function loadData() {
+    try {
+      var raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        var data = JSON.parse(raw);
+        state.highScore = data.highScore || 0;
+        state.bestCoins = data.bestCoins || 0;
+        state.ownedUpgrades = data.ownedUpgrades || {};
+        state.lastPlayTime = data.lastPlayTime || null;
+      }
+    } catch(e) {}
+  }
+  function saveData() {
+    try {
+      var data = {
+        highScore: Math.max(state.highScore, state.coins),
+        bestCoins: Math.max(state.bestCoins, state.coins),
+        ownedUpgrades: state.ownedUpgrades,
+        lastPlayTime: Date.now(),
+      };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    } catch(e) {}
+  }
+  function recordPlayed() {
+    try {
+      var recent = JSON.parse(localStorage.getItem('recentlyPlayed') || '[]');
+      var filtered = recent.filter(function(p) { return p.id !== 'garden-keeper'; });
+      filtered.unshift({ id: 'garden-keeper', playedAt: Date.now() });
+      localStorage.setItem('recentlyPlayed', JSON.stringify(filtered.slice(0, 10)));
+    } catch(e) {}
+  }
+
+  // ── Init Plots ──
+  function initPlots() {
+    state.plots = [];
+    for (var i = 0; i < PLOTS; i++) {
+      state.plots.push({
+        crop: null,      // crop id or null
+        stage: 'empty',  // empty | seed | sprout | growing | ready
+        growth: 0,       // 0-100 percentage
+        watered: false,
+        wateredTime: 0,
+      });
+    }
+  }
+
+  // ── Calc helpers ──
+  function getLevelTarget(level) {
+    if (level >= LEVEL_TARGETS.length) {
+      return LEVEL_TARGETS[LEVEL_TARGETS.length - 1] + (level - LEVEL_TARGETS.length + 1) * 500;
+    }
+    return LEVEL_TARGETS[level];
+  }
+
+  function getMaxWater() {
+    var base = WATER_MAX_BASE;
+    if (state.ownedUpgrades['sprinkler']) base += 3;
+    return base;
+  }
+
+  function getAvailableCrops() {
+    var available = [];
+    for (var i = 0; i < CROPS.length; i++) {
+      if (CROPS[i].unlockLevel <= state.level) {
+        available.push(CROPS[i]);
+      }
+    }
+    return available;
+  }
+
+  function getGrowthRate() {
+    var rate = 1;
+    if (state.ownedUpgrades['greenhouse']) rate += 0.3;
+    // autoWater gives slow passive growth
+    return rate;
+  }
+
+  function getSellMultiplier() {
+    return state.ownedUpgrades['richSoil'] ? 1.25 : 1;
+  }
+
+  function getWaterBoost() {
+    return state.ownedUpgrades['goldenCan'] ? WATER_BOOST * 2 : WATER_BOOST;
+  }
+
+  // ── Plot rendering ──
+  function renderPlot(i) {
+    var plot = state.plots[i];
+    var el = gardenGrid.children[i];
+    if (!el) return;
+
+    // Reset classes
+    el.className = 'plot';
+    el.innerHTML = '';
+
+    var content = document.createElement('div');
+    content.className = 'plot-content';
+
+    if (plot.stage === 'empty') {
+      el.classList.add('empty');
+      content.innerHTML = '<span style="font-size:20px;opacity:0.3">＋</span>';
+    } else if (plot.stage === 'seed') {
+      el.classList.add('planted');
+      content.innerHTML = '<div class="plant-icon seed">🌰</div>';
+    } else if (plot.stage === 'sprout') {
+      el.classList.add('planted');
+      var emoji = getCropEmoji(plot.crop);
+      content.innerHTML = '<div class="plant-icon sprout">' + getSproutEmoji(plot.crop) + '</div>';
+    } else if (plot.stage === 'growing') {
+      el.classList.add('planted');
+      var emoji2 = getCropEmoji(plot.crop);
+      content.innerHTML = '<div class="plant-icon">' + emoji2 + '</div>';
+    } else if (plot.stage === 'ready') {
+      el.classList.add('ready');
+      var emoji3 = getCropEmoji(plot.crop);
+      content.innerHTML = '<div class="plant-icon" style="animation:bounce 0.5s ease-in-out infinite alternate">' + emoji3 + '</div>';
+      content.innerHTML += '<div class="harvest-hint">👆</div>';
+    }
+
+    // Growth bar (for planted stages)
+    if (plot.stage !== 'empty' && plot.stage !== 'ready') {
+      var bar = document.createElement('div');
+      bar.className = 'growth-bar';
+      var fill = document.createElement('div');
+      fill.className = 'growth-bar-fill' + (plot.watered ? ' watered' : '');
+      fill.style.width = plot.growth + '%';
+      bar.appendChild(fill);
+      el.appendChild(bar);
+    }
+
+    // Water indicator
+    if (plot.watered && plot.stage !== 'empty' && plot.stage !== 'ready') {
+      var icon = document.createElement('div');
+      icon.className = 'water-icon';
+      icon.textContent = '💧';
+      el.appendChild(icon);
+    }
+
+    el.appendChild(content);
+  }
+
+  function getCropEmoji(cropId) {
+    for (var i = 0; i < CROPS.length; i++) {
+      if (CROPS[i].id === cropId) return CROPS[i].emoji;
+    }
+    return '🌿';
+  }
+
+  function getSproutEmoji(cropId) {
+    var map = { carrot: '🌱', tomato: '🌱', pumpkin: '🌿', corn: '🌱' };
+    return map[cropId] || '🌱';
+  }
+
+  function getCropById(id) {
+    for (var i = 0; i < CROPS.length; i++) {
+      if (CROPS[i].id === id) return CROPS[i];
+    }
+    return null;
+  }
+
+  function getCropCost(cropId) {
+    var c = getCropById(cropId);
+    return c ? c.seedCost : 0;
+  }
+
+  function getCropSellPrice(cropId) {
+    var c = getCropById(cropId);
+    return c ? Math.round(c.sellPrice * getSellMultiplier()) : 0;
+  }
+
+  function getCropGrowTime(cropId) {
+    var c = getCropById(cropId);
+    return c ? Math.round(c.growTime / getGrowthRate()) : 15;
+  }
+
+  // ── Game logic ──
+  function plantCrop(plotIndex, cropId) {
+    var plot = state.plots[plotIndex];
+    if (plot.stage !== 'empty') return false;
+
+    var cost = getCropCost(cropId);
+    if (state.coins < cost) {
+      playSound('error');
+      showToast('金币不足!', '需要 ' + cost + ' 金币', '😅');
+      return false;
+    }
+
+    state.coins -= cost;
+    plot.crop = cropId;
+    plot.stage = 'seed';
+    plot.growth = 0;
+    plot.watered = false;
+
+    playSound('plant');
+    vibrate(20);
+    renderPlot(plotIndex);
+    updateHUD();
+    return true;
+  }
+
+  function waterPlot(plotIndex) {
+    var plot = state.plots[plotIndex];
+    if (plot.stage === 'empty' || plot.stage === 'ready') return false;
+    if (state.waterRemaining <= 0) {
+      playSound('error');
+      showToast('水壶空了!', '去商店购买补充', '💧');
+      return false;
+    }
+
+    state.waterRemaining--;
+    plot.watered = true;
+    plot.wateredTime = Date.now();
+
+    // Apply growth boost
+    var boost = getWaterBoost();
+    var remaining = 100 - plot.growth;
+    var boostAmount = Math.round(remaining * boost);
+    plot.growth = Math.min(100, plot.growth + boostAmount);
+
+    checkGrowth(plotIndex);
+    playSound('water');
+    vibrate(15);
+    updateWaterCount();
+    renderPlot(plotIndex);
+    return true;
+  }
+
+  function harvestPlot(plotIndex) {
+    var plot = state.plots[plotIndex];
+    if (plot.stage !== 'ready') return false;
+
+    var price = getCropSellPrice(plot.crop);
+    state.coins += price;
+    state.totalHarvests++;
+
+    // Float coin animation
+    var el = gardenGrid.children[plotIndex];
+    if (el) {
+      var rect = el.getBoundingClientRect();
+      showFloatCoin('+' + price, rect.left + rect.width / 2, rect.top);
+    }
+
+    // Reset plot
+    plot.crop = null;
+    plot.stage = 'empty';
+    plot.growth = 0;
+    plot.watered = false;
+
+    playSound('harvest');
+    vibrate(30);
+    updateHUD();
+    renderPlot(plotIndex);
+    checkLevelUp();
+    return true;
+  }
+
+  function checkGrowth(plotIndex) {
+    var plot = state.plots[plotIndex];
+    if (plot.stage === 'empty' || plot.stage === 'ready') return;
+
+    if (plot.growth >= 100) {
+      plot.stage = 'ready';
+      plot.growth = 100;
+    } else if (plot.growth >= 60) {
+      plot.stage = 'growing';
+    } else if (plot.growth >= 20) {
+      plot.stage = 'sprout';
+    } else {
+      plot.stage = 'seed';
+    }
+  }
+
+  function sellAllReady() {
+    var total = 0;
+    var count = 0;
+    for (var i = 0; i < state.plots.length; i++) {
+      if (state.plots[i].stage === 'ready') {
+        var price = getCropSellPrice(state.plots[i].crop);
+        total += price;
+        count++;
+        state.totalHarvests++;
+        // Reset
+        state.plots[i].crop = null;
+        state.plots[i].stage = 'empty';
+        state.plots[i].growth = 0;
+        state.plots[i].watered = false;
+      }
+    }
+    if (total > 0) {
+      state.coins += total;
+      playSound('coin');
+      vibrate(40);
+      showFloatCoin('+' + total, window.innerWidth / 2, window.innerHeight / 2 - 60);
+      updateHUD();
+      renderAllPlots();
+      checkLevelUp();
+    } else {
+      playSound('error');
+      showToast('没有可收获的!', '种植并等待作物成熟', '🌱');
+    }
+  }
+
+  function checkLevelUp() {
+    var target = getLevelTarget(state.level);
+    if (state.coins >= target && state.level < MAX_LEVEL) {
+      state.level++;
+      playSound('levelup');
+      vibrate([50, 30, 50]);
+      showLevelToast();
+      // Auto-refill water on level up
+      state.waterRemaining = getMaxWater();
+      updateWaterCount();
+      updateHUD();
+      renderAllPlots();
+    }
+    // Also check win condition
+    checkWinCondition();
+  }
+
+  function checkWinCondition() {
+    var target = getLevelTarget(state.level);
+    if (state.coins >= target && state.level >= MAX_LEVEL) {
+      endGame(true);
+    }
+  }
+
+  // ── Game loop (growth tick) ──
+  function gameTick() {
+    if (state.screen !== 'PLAYING') return;
+
+    // Elapsed session time
+    state.sessionElapsed += 1;
+
+    // Update timer
+    updateTimer();
+
+    // Check timeout
+    if (state.sessionElapsed >= SESSION_DURATION) {
+      endGame(false);
+      return;
+    }
+
+    // Grow all planted plots
+    var changed = false;
+    for (var i = 0; i < state.plots.length; i++) {
+      var plot = state.plots[i];
+      if (plot.stage === 'empty' || plot.stage === 'ready') continue;
+
+      // Growth increment per second
+      var totalGrowTime = getCropGrowTime(plot.crop);
+      var increment = 100 / totalGrowTime;
+
+      // autoWater upgrade gives passive growth
+      if (state.ownedUpgrades['autoWater']) {
+        increment *= 1.3;
+      }
+
+      // Watered boost (not applied here, applied on water)
+      if (plot.watered) {
+        // Watered effect lasts 8 seconds
+        var elapsed = (Date.now() - plot.wateredTime) / 1000;
+        if (elapsed > 8) {
+          plot.watered = false;
+        } else {
+          increment *= 1.5;
+        }
+      }
+
+      plot.growth = Math.min(100, plot.growth + increment);
+      var prevStage = plot.stage;
+      checkGrowth(i);
+      if (prevStage !== plot.stage || Math.abs(plot.growth - Math.round(plot.growth)) < 0.01) {
+        changed = true;
+      }
+      if (plot.stage === 'ready' && prevStage !== 'ready') {
+        playTone(1200, 0.06, 'sine', 0.05);
+      }
+    }
+
+    if (changed) {
+      renderAllPlots();
+    }
+
+    // Update water count badge
+    updateWaterCount();
+
+    // Auto-save
+    var now = Date.now();
+    if (now - state.lastSaveTime > SAVE_INTERVAL) {
+      state.lastSaveTime = now;
+      saveData();
+    }
+  }
+
+  // ── Timer ──
+  function updateTimer() {
+    var remaining = Math.max(0, SESSION_DURATION - state.sessionElapsed);
+    var min = Math.floor(remaining / 60);
+    var sec = remaining % 60;
+    timerDisplay.textContent = min + ':' + (sec < 10 ? '0' : '') + sec;
+    timerDisplay.classList.toggle('warning', remaining <= 30);
+  }
+
+  // ── UI Updates ──
+  function updateHUD() {
+    coinDisplay.textContent = state.coins;
+    levelDisplay.textContent = 'Lv.' + state.level;
+    var target = getLevelTarget(state.level);
+    if (state.level >= MAX_LEVEL) {
+      levelDisplay.textContent = 'Lv.MAX';
+    }
+    updateWaterCount();
+  }
+
+  function updateWaterCount() {
+    waterCount.textContent = state.waterRemaining;
+  }
+
+  function renderAllPlots() {
+    for (var i = 0; i < state.plots.length; i++) {
+      renderPlot(i);
+    }
+  }
+
+  function buildGarden() {
+    gardenGrid.innerHTML = '';
+    for (var i = 0; i < PLOTS; i++) {
+      var el = document.createElement('div');
+      el.className = 'plot empty';
+      el.dataset.index = i;
+      gardenGrid.appendChild(el);
+    }
+    renderAllPlots();
+  }
+
+  // ── Shop ──
+  function openShop() {
+    shopPanel.classList.add('open');
+    renderShop();
+  }
+
+  function closeShop() {
+    shopPanel.classList.remove('open');
+  }
+
+  function renderShop() {
+    shopItems.innerHTML = '';
+
+    // Crop seeds section
+    var crops = getAvailableCrops();
+    var header = document.createElement('div');
+    header.style.cssText = 'font-weight:600;font-size:14px;margin:4px 0;color:var(--text-muted)';
+    header.textContent = '🌰 种子';
+    shopItems.appendChild(header);
+
+    for (var i = 0; i < crops.length; i++) {
+      var crop = crops[i];
+      var item = document.createElement('div');
+      item.className = 'shop-item' + (state.coins >= crop.seedCost ? ' affordable' : '');
+      item.innerHTML =
+        '<div class="shop-item-icon">' + crop.emoji + '</div>' +
+        '<div class="shop-item-info">' +
+          '<div class="shop-item-name">' + crop.name + '</div>' +
+          '<div class="shop-item-desc">生长 ' + Math.round(crop.growTime / getGrowthRate()) + 's · 售价 ' + Math.round(crop.sellPrice * getSellMultiplier()) + '</div>' +
+        '</div>' +
+        '<div class="shop-item-cost">🪙' + crop.seedCost + '</div>';
+      item.addEventListener('click', function(cropId) {
+        return function() {
+          // Find first empty plot and plant
+          for (var j = 0; j < state.plots.length; j++) {
+            if (state.plots[j].stage === 'empty') {
+              if (plantCrop(j, cropId)) {
+                closeShop();
+                return;
+              }
+              return;
+            }
+          }
+          // No empty plots
+          playSound('error');
+          showToast('花园已满!', '先收获已有作物', '🌿');
+        };
+      }(crop.id));
+      shopItems.appendChild(item);
+    }
+
+    // Refill water
+    var refillCost = 5;
+    var refillItem = document.createElement('div');
+    refillItem.className = 'shop-item' + (state.coins >= refillCost ? ' affordable' : '');
+    refillItem.innerHTML =
+      '<div class="shop-item-icon">💧</div>' +
+      '<div class="shop-item-info">' +
+        '<div class="shop-item-name">水壶补充</div>' +
+        '<div class="shop-item-desc">装满水壶</div>' +
+      '</div>' +
+      '<div class="shop-item-cost">🪙' + refillCost + '</div>';
+    refillItem.addEventListener('click', function() {
+      if (state.coins >= refillCost) {
+        state.coins -= refillCost;
+        state.waterRemaining = getMaxWater();
+        playSound('buy');
+        updateHUD();
+        updateWaterCount();
+        closeShop();
+        renderShop();
+      } else {
+        playSound('error');
+      }
+    });
+    shopItems.appendChild(refillItem);
+
+    // Upgrades section
+    var upHeader = document.createElement('div');
+    upHeader.style.cssText = 'font-weight:600;font-size:14px;margin:8px 0 4px;color:var(--text-muted)';
+    upHeader.textContent = '🔧 升级';
+    shopItems.appendChild(upHeader);
+
+    for (var k = 0; k < UPGRADES.length; k++) {
+      var upg = UPGRADES[k];
+      var owned = state.ownedUpgrades[upg.id];
+      var upItem = document.createElement('div');
+      upItem.className = 'shop-item';
+      if (owned) {
+        upItem.classList.add('affordable');
+        upItem.innerHTML =
+          '<div class="shop-item-icon">' + upg.icon + '</div>' +
+          '<div class="shop-item-info">' +
+            '<div class="shop-item-name">' + upg.name + '</div>' +
+            '<div class="shop-item-desc">' + upg.desc + '</div>' +
+          '</div>' +
+          '<div class="shop-item-bought">✓ 已拥有</div>';
+      } else {
+        upItem.classList.toggle('affordable', state.coins >= upg.cost);
+        upItem.innerHTML =
+          '<div class="shop-item-icon">' + upg.icon + '</div>' +
+          '<div class="shop-item-info">' +
+            '<div class="shop-item-name">' + upg.name + '</div>' +
+            '<div class="shop-item-desc">' + upg.desc + '</div>' +
+          '</div>' +
+          '<div class="shop-item-cost">🪙' + upg.cost + '</div>';
+        upItem.addEventListener('click', (function(upgrade) {
+          return function() {
+            if (state.ownedUpgrades[upgrade.id]) return;
+            if (state.coins >= upgrade.cost) {
+              state.coins -= upgrade.cost;
+              state.ownedUpgrades[upgrade.id] = true;
+              playSound('buy');
+              vibrate(30);
+              updateHUD();
+              closeShop();
+              // If sprinkler, refill water
+              if (upgrade.id === 'sprinkler') {
+                state.waterRemaining = getMaxWater();
+                updateWaterCount();
+              }
+              showToast(upgrade.name + ' 已购买!', upgrade.desc, upgrade.icon);
+            } else {
+              playSound('error');
+            }
+          };
+        })(upg));
+      }
+      shopItems.appendChild(upItem);
+    }
+  }
+
+  // ── Toasts ──
+  function showToast(title, subtitle, icon) {
+    levelToastIcon.textContent = icon || '🎉';
+    levelToastText.textContent = title;
+    levelToastSub.textContent = subtitle || '';
+    levelToast.classList.add('active');
+    clearTimeout(levelToast._hide);
+    levelToast._hide = setTimeout(function() {
+      levelToast.classList.remove('active');
+    }, 2000);
+  }
+
+  function showLevelToast() {
+    var target = getLevelTarget(state.level);
+    var nextTarget = state.level < MAX_LEVEL ? getLevelTarget(state.level + 1) : 'MAX';
+    levelToastIcon.textContent = '🌟';
+    levelToastText.textContent = '关卡 ' + state.level + '!';
+    levelToastSub.textContent = '目标金币: ' + target;
+    levelToast.classList.add('active');
+    clearTimeout(levelToast._hide);
+    levelToast._hide = setTimeout(function() {
+      levelToast.classList.remove('active');
+    }, 2500);
+  }
+
+  function showFloatCoin(text, x, y) {
+    var el = document.createElement('div');
+    el.className = 'float-coin';
+    el.textContent = text;
+    el.style.left = x + 'px';
+    el.style.top = y + 'px';
+    document.body.appendChild(el);
+    setTimeout(function() { el.remove(); }, 800);
+  }
+
+  // ── End Game ──
+  function endGame(won) {
+    state.screen = 'RESULT';
+
+    // Stop timers
+    if (state.gameInterval) { clearInterval(state.gameInterval); state.gameInterval = null; }
+
+    // Clear watering mode
+    state.wateringMode = false;
+    waterCanBtn.classList.remove('active');
+
+    // Save high score
+    var isNewBest = state.coins > state.highScore;
+    if (isNewBest) {
+      state.highScore = state.coins;
+    }
+    saveData();
+
+    // Show result
+    resultIcon.textContent = won ? '🏆' : '⏰';
+    resultHeading.textContent = won ? '通关成功!' : '时间到!';
+    resultHeading.className = 'result-heading ' + (won ? 'win' : 'lose');
+    resultCoins.textContent = '🪙 ' + state.coins;
+    resultLevel.textContent = state.level;
+    resultHarvests.textContent = state.totalHarvests;
+    resultNewBest.style.display = isNewBest ? 'block' : 'none';
+
+    if (won) {
+      playSound('win');
+      vibrate([50, 30, 50, 30, 100]);
+    } else {
+      playSound('lose');
+      vibrate([100, 50, 100]);
+    }
+
+    resultOverlay.classList.add('active');
+    document.getElementById('replayBtn').focus();
+    ariaLive.textContent = (won ? '通关!' : '游戏结束') + ' 获得 ' + state.coins + ' 金币';
+  }
+
+  // ── Start / Reset Game ──
+  function startGame() {
+    ensureAudio();
+
+    // Close result overlay if open
+    resultOverlay.classList.remove('active');
+    closeShop();
+    state.wateringMode = false;
+    waterCanBtn.classList.remove('active');
+
+    // Check offline earnings
+    var offlineEarned = 0;
+    if (state.lastPlayTime) {
+      var elapsed = Date.now() - state.lastPlayTime;
+      var offlineSeconds = Math.min(elapsed / 1000, 86400); // max 24h
+      if (offlineSeconds > 60) {
+        offlineEarned = Math.floor(offlineSeconds * 0.15); // 0.15 coins per second offline
+        offlineEarned = Math.min(offlineEarned, 200); // capped
+        state.coins += offlineEarned;
+        if (offlineEarned > 0) {
+          offlineCoins.textContent = '+' + offlineEarned;
+          offlineBanner.classList.add('active');
+          setTimeout(function() { offlineBanner.classList.remove('active'); }, 4000);
+        }
+      }
+    }
+
+    // Reset game state
+    state.screen = 'PLAYING';
+    state.sessionElapsed = 0;
+    state.waterRemaining = getMaxWater();
+    state.totalHarvests = 0;
+    state.lastSaveTime = Date.now();
+
+    initPlots();
+    buildGarden();
+    updateHUD();
+    updateWaterCount();
+
+    // Show screens
+    titleScreen.classList.remove('active');
+    gameScreen.classList.add('active');
+
+    recordPlayed();
+
+    // Start timers
+    if (state.gameInterval) clearInterval(state.gameInterval);
+    state.gameInterval = setInterval(gameTick, 1000);
+
+    // Timer display
+    updateTimer();
+
+    ariaLive.textContent = '游戏开始! 种植作物赚钱达到目标金币';
+  }
+
+  // ── Screens ──
+  function showTitle() {
+    state.screen = 'TITLE';
+    if (state.gameInterval) { clearInterval(state.gameInterval); state.gameInterval = null; }
+    resultOverlay.classList.remove('active');
+    gameScreen.classList.remove('active');
+    titleScreen.classList.add('active');
+    // Update high score
+    titleBest.querySelector('span').textContent = state.highScore || 0;
+  }
+
+  // ── Input: Plot click ──
+  gardenGrid.addEventListener('click', function(e) {
+    var plotEl = e.target.closest('.plot');
+    if (!plotEl) return;
+    if (state.screen !== 'PLAYING') return;
+    if (shopPanel.classList.contains('open')) return;
+
+    var index = parseInt(plotEl.dataset.index);
+    var plot = state.plots[index];
+
+    if (state.wateringMode) {
+      // Water mode
+      waterPlot(index);
+    } else if (plot.stage === 'ready') {
+      // Harvest
+      harvestPlot(index);
+    } else if (plot.stage === 'empty') {
+      // Plant - auto-plant cheapest available crop
+      var crops = getAvailableCrops();
+      if (crops.length > 0) {
+        plantCrop(index, crops[0].id);
+      }
+    }
+  });
+
+  // ── Drag watering (mouse) ──
+  var isDragging = false;
+  waterCanBtn.addEventListener('mousedown', function(e) {
+    if (state.screen !== 'PLAYING') return;
+    state.wateringMode = !state.wateringMode;
+    waterCanBtn.classList.toggle('active');
+  });
+
+  // ── Drag watering (touch on garden) ──
+  var touchDragWatering = false;
+  gardenGrid.addEventListener('touchstart', function(e) {
+    if (state.screen !== 'PLAYING') return;
+    if (state.wateringMode) {
+      touchDragWatering = true;
+    }
+  }, { passive: true });
+
+  gardenGrid.addEventListener('touchmove', function(e) {
+    if (!touchDragWatering || !state.wateringMode) return;
+    var touch = e.touches[0];
+    var el = document.elementFromPoint(touch.clientX, touch.clientY);
+    var plotEl = el ? el.closest('.plot') : null;
+    if (plotEl) {
+      var idx = parseInt(plotEl.dataset.index);
+      var plot = state.plots[idx];
+      if (plot.stage !== 'empty' && plot.stage !== 'ready' && !plot.watered) {
+        waterPlot(idx);
+      }
+    }
+  }, { passive: true });
+
+  gardenGrid.addEventListener('touchend', function() {
+    touchDragWatering = false;
+  }, { passive: true });
+
+  gardenGrid.addEventListener('touchcancel', function() {
+    touchDragWatering = false;
+  }, { passive: true });
+
+  // ── Drag watering: hover effect on plots ──
+  gardenGrid.addEventListener('mouseover', function(e) {
+    if (!state.wateringMode) return;
+    var plotEl = e.target.closest('.plot');
+    if (plotEl) {
+      var idx = parseInt(plotEl.dataset.index);
+      var plot = state.plots[idx];
+      if (plot.stage !== 'empty' && plot.stage !== 'ready') {
+        plotEl.classList.add('dragover');
+      }
+    }
+  });
+  gardenGrid.addEventListener('mouseout', function(e) {
+    var plotEl = e.target.closest('.plot');
+    if (plotEl) plotEl.classList.remove('dragover');
+  });
+
+  // ── Keyboard ──
+  document.addEventListener('keydown', function(e) {
+    if (state.screen === 'TITLE' && (e.key === 'Enter' || e.key === ' ')) {
+      e.preventDefault();
+      startGame();
+      return;
+    }
+    if (state.screen === 'RESULT' && (e.key === 'Enter' || e.key === ' ')) {
+      e.preventDefault();
+      startGame();
+      return;
+    }
+    if (state.screen === 'PLAYING') {
+      if (e.key === 'w' || e.key === 'W') {
+        e.preventDefault();
+        state.wateringMode = !state.wateringMode;
+        waterCanBtn.classList.toggle('active');
+      } else if (e.key === 's' || e.key === 'S') {
+        e.preventDefault();
+        sellAllReady();
+      } else if (e.key === 'b' || e.key === 'B') {
+        e.preventDefault();
+        if (shopPanel.classList.contains('open')) closeShop();
+        else openShop();
+      } else if (e.key === 'Escape') {
+        closeShop();
+        state.wateringMode = false;
+        waterCanBtn.classList.remove('active');
+      }
+    }
+  });
+
+  // ── Buttons ──
+  document.getElementById('startBtn').addEventListener('click', function() {
+    ensureAudio();
+    startGame();
+  });
+  document.getElementById('replayBtn').addEventListener('click', function() {
+    ensureAudio();
+    startGame();
+  });
+  shopBtn.addEventListener('click', function() {
+    if (shopPanel.classList.contains('open')) closeShop();
+    else openShop();
+  });
+  shopClose.addEventListener('click', closeShop);
+  sellAllBtn.addEventListener('click', sellAllReady);
+
+  // ── Mute ──
+  function toggleMute() {
+    state.muted = !state.muted;
+    var btnText = state.muted ? '🔇' : '🔊';
+    document.getElementById('muteBtn').textContent = btnText;
+    document.getElementById('muteBtn').setAttribute('aria-pressed', String(state.muted));
+    document.getElementById('muteBtn2').textContent = btnText;
+    document.getElementById('muteBtn2').setAttribute('aria-pressed', String(state.muted));
+  }
+  document.getElementById('muteBtn').addEventListener('click', toggleMute);
+  document.getElementById('muteBtn2').addEventListener('click', toggleMute);
+
+  // Add bounce keyframes for harvest animation
+  var style = document.createElement('style');
+  style.textContent = '@keyframes bounce { 0% { transform: translateY(0); } 100% { transform: translateY(-4px); } }';
+  document.head.appendChild(style);
+
+  // ── Init ──
+  loadData();
+  titleBest.querySelector('span').textContent = state.highScore || 0;
+
+  // Init garden for preview
+  initPlots();
+  buildGarden();
+
+  // Show title
+  titleScreen.classList.add('active');
+
+  // Update mute button states
+  var muteState = state.muted ? '🔇' : '🔊';
+  document.getElementById('muteBtn').textContent = muteState;
+  document.getElementById('muteBtn').setAttribute('aria-pressed', String(state.muted));
+  document.getElementById('muteBtn2').textContent = muteState;
+  document.getElementById('muteBtn2').setAttribute('aria-pressed', String(state.muted));
+
+})();
+</script>
+
+</body>
+</html>
