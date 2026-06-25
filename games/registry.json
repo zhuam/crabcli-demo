@@ -579,6 +579,20 @@
       "version": "1.0.0",
       "featured": true,
       "rating": 4.2
+    },
+    {
+      "id": "chess-online-blitz",
+      "name": "Chess Online Blitz",
+      "description": "2+1 分钟增量快棋 — 经典国际象棋，对战 AI 或本地双人",
+      "category": "strategy",
+      "tags": ["multiplayer", "chess", "board", "pvp", "ai", "short-session"],
+      "thumbnail": "/games/007-chess-online-blitz/thumb.svg",
+      "path": "/games/007-chess-online-blitz/",
+      "hasServer": false,
+      "players": "1-2",
+      "version": "1.0.0",
+      "featured": true,
+      "rating": 4.0
     }
   ],
   "categories": [
