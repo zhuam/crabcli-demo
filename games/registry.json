@@ -552,6 +552,19 @@
       "players": "1",
       "version": "1.0.0",
       "rating": 4.0
+    },
+    {
+      "id": "mushroom-kingdom-run",
+      "name": "Mushroom Kingdom Run",
+      "description": "蘑菇主角在像素王国奔跑，跳跃躲水管避敌人，收集金币跑最远！",
+      "category": "action",
+      "tags": ["singleplayer", "runner", "platformer", "retro", "short-session"],
+      "path": "/games/006-mushroom-kingdom-run/",
+      "hasServer": false,
+      "players": "1",
+      "version": "1.0.0",
+      "featured": true,
+      "rating": 4.2
     }
   ],
   "categories": [
