@@ -483,6 +483,20 @@
       "version": "1.0.0",
       "featured": true,
       "rating": 4.0
+    },
+    {
+      "id": "sky-guardian-3d",
+      "name": "Sky Guardian 3D",
+      "description": "驾驶飞船在峡谷中穿梭并击落入侵者，3D 飞行射击体验",
+      "category": "action",
+      "tags": ["singleplayer", "shooter", "3d", "flight", "short-session"],
+      "thumbnail": "/games/005-sky-guardian-3d/thumb.png",
+      "path": "/games/005-sky-guardian-3d/",
+      "hasServer": false,
+      "players": "1",
+      "version": "1.0.0",
+      "featured": true,
+      "rating": 4.0
     }
   ],
   "categories": [
