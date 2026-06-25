@@ -539,6 +539,20 @@
       "version": "1.0.0",
       "featured": true,
       "rating": 4.0
+    },
+    {
+      "id": "sparkle-sweep",
+      "name": "Sparkle Sweep",
+      "description": "擦亮脏污区域，滑动手势清洁 100% 过关，治愈感满满",
+      "category": "casual",
+      "tags": ["singleplayer", "casual", "cleaning", "relaxing", "short-session"],
+      "thumbnail": "/games/075-sparkle-sweep/thumb.svg",
+      "path": "/games/075-sparkle-sweep/",
+      "hasServer": false,
+      "players": "1",
+      "version": "1.0.0",
+      "featured": true,
+      "rating": 4.2
     }
   ],
   "categories": [

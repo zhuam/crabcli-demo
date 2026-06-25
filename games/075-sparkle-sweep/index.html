@@ -1,0 +1,1194 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
+  <meta name="theme-color" content="#1a1025" />
+  <title>Sparkle Sweep</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700;800;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../../games/shared/game-frame.css" />
+  <style>
+    /* ═══════════════════════════════════════════════════════
+       Sparkle Sweep — Swipe to clean, reveal beautiful scenes!
+       ═══════════════════════════════════════════════════════ */
+
+    :root {
+      --bg-deep: #1a1025;
+      --bg-surface: rgba(255,255,255,0.06);
+      --bg-surface-hover: rgba(255,255,255,0.10);
+      --border: rgba(255,255,255,0.10);
+      --border-strong: rgba(255,255,255,0.18);
+      --text: #f0edf5;
+      --text-dim: rgba(255,255,255,0.55);
+      --text-muted: rgba(255,255,255,0.30);
+      --accent: #6c5ce7;
+      --accent-glow: rgba(108,92,231,0.4);
+      --gold: #ffd700;
+      --pink: #fd79a8;
+      --cyan: #00cec9;
+      --coral: #ff7675;
+      --green: #55efc4;
+      --font-display: 'Outfit', system-ui, sans-serif;
+      --font-body: 'Inter', system-ui, sans-serif;
+      --radius-sm: 8px;
+      --radius-md: 14px;
+      --radius-lg: 20px;
+      --scene-size: min(420px, 88vw);
+      --brush-default: 38;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      background: var(--bg-deep);
+      color: var(--text);
+      font-family: var(--font-body);
+      overflow: hidden;
+      height: 100%; width: 100%;
+      user-select: none; -webkit-user-select: none;
+      touch-action: none; -webkit-touch-callout: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    #app { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; }
+
+    /* ═══ Shared Screens ═══ */
+    .screen {
+      position: fixed; inset: 0;
+      display: flex; flex-direction: column; align-items: center;
+      transition: opacity 0.4s ease, transform 0.4s ease;
+      will-change: opacity, transform;
+    }
+    .screen.hidden {
+      opacity: 0; pointer-events: none; transform: scale(0.96);
+    }
+
+    /* ═══════════════════════════
+       TITLE SCREEN
+       ═══════════════════════════ */
+    .title-screen {
+      justify-content: center; gap: 12px;
+      background: linear-gradient(160deg, #1a1025 0%, #2d1b4e 40%, #1a1a4e 75%, #0d2440 100%);
+      padding: 24px;
+    }
+    .title-screen::before {
+      content: ''; position: absolute; inset: 0;
+      background:
+        radial-gradient(ellipse 180px 100px at 20% 25%, rgba(108,92,231,0.12) 0%, transparent 70%),
+        radial-gradient(ellipse 140px 80px at 75% 20%, rgba(253,121,168,0.10) 0%, transparent 70%),
+        radial-gradient(ellipse 120px 80px at 50% 80%, rgba(0,206,201,0.08) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .title-bg-stars {
+      position: absolute; inset: 0;
+      pointer-events: none; overflow: hidden;
+    }
+    .title-bg-stars span {
+      position: absolute;
+      width: 4px; height: 4px;
+      background: #fff;
+      border-radius: 50%;
+      animation: twinkle 2s ease-in-out infinite alternate;
+    }
+    @keyframes twinkle {
+      0% { opacity: 0.2; transform: scale(0.8); }
+      100% { opacity: 0.9; transform: scale(1.2); }
+    }
+
+    .title-icon {
+      font-size: 72px; line-height: 1;
+      filter: drop-shadow(0 0 40px rgba(108,92,231,0.4));
+      animation: iconFloat 2.5s ease-in-out infinite;
+      position: relative; z-index: 1;
+    }
+    @keyframes iconFloat {
+      0%, 100% { transform: translateY(0) scale(1); }
+      50% { transform: translateY(-10px) scale(1.05); }
+    }
+
+    .title-text {
+      font-family: var(--font-display); font-size: 40px; font-weight: 900;
+      background: linear-gradient(135deg, #6c5ce7, #fd79a8, #ffd700, #00cec9);
+      background-size: 300% auto;
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+      animation: gradSweep 4s ease infinite;
+      line-height: 1.1; text-align: center;
+      position: relative; z-index: 1;
+    }
+    @keyframes gradSweep {
+      0%, 100% { background-position: 0% center; }
+      50% { background-position: 100% center; }
+    }
+    .title-sub {
+      font-size: 14px; color: var(--text-dim);
+      text-align: center; max-width: 280px; line-height: 1.5;
+      position: relative; z-index: 1;
+    }
+    .title-best {
+      font-size: 14px; color: var(--text-muted);
+      position: relative; z-index: 1;
+    }
+    .title-best span { color: var(--gold); font-weight: 700; }
+    .title-level-count {
+      font-family: var(--font-display); font-size: 15px; font-weight: 700;
+      color: var(--accent); text-align: center; position: relative; z-index: 1;
+    }
+
+    .btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 14px 36px; border: none; border-radius: 50px;
+      font-family: var(--font-display); font-size: 18px; font-weight: 700;
+      cursor: pointer; transition: all 0.2s ease;
+      position: relative; z-index: 1;
+    }
+    .btn:active { transform: scale(0.95); }
+    .btn-primary {
+      background: linear-gradient(135deg, #6c5ce7, #a29bfe);
+      color: #fff; box-shadow: 0 4px 24px rgba(108,92,231,0.35);
+    }
+    .btn-primary:hover { box-shadow: 0 6px 30px rgba(108,92,231,0.5); transform: translateY(-2px); }
+    .btn-primary:active { transform: scale(0.95) translateY(0); }
+    .btn-secondary {
+      background: var(--bg-surface); color: var(--text);
+      border: 1px solid var(--border-strong);
+    }
+    .btn-secondary:hover { background: var(--bg-surface-hover); }
+    .btn-sm { padding: 10px 22px; font-size: 14px; }
+
+    /* ═══════════════════════════
+       GAME SCREEN
+       ═══════════════════════════ */
+    .game-screen {
+      background: linear-gradient(180deg, #1a1025 0%, #23153a 100%);
+      padding: 8px 12px 16px;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .game-top {
+      width: 100%; max-width: var(--scene-size);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 4px 2px; flex-shrink: 0;
+    }
+    .game-level {
+      font-family: var(--font-display); font-size: 15px; font-weight: 700;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      max-width: 55%;
+    }
+    .game-timer {
+      font-family: var(--font-display); font-size: 16px; font-weight: 700;
+      color: var(--gold);
+    }
+    .game-timer .sec { font-size: 22px; }
+    .game-timer.danger { color: var(--coral); animation: pulseDanger 0.6s ease-in-out infinite alternate; }
+    @keyframes pulseDanger {
+      0% { opacity: 0.7; }
+      100% { opacity: 1; }
+    }
+
+    /* ─── Progress Bar ─── */
+    .progress-wrap {
+      width: 100%; max-width: var(--scene-size);
+      display: flex; align-items: center; gap: 10px;
+      flex-shrink: 0; padding: 0 2px;
+    }
+    .progress-track {
+      flex: 1; height: 8px;
+      background: var(--bg-surface);
+      border-radius: 10px; overflow: hidden;
+      border: 1px solid var(--border);
+    }
+    .progress-fill {
+      height: 100%; width: 0%;
+      background: linear-gradient(90deg, #6c5ce7, #fd79a8, #ffd700);
+      border-radius: 10px;
+      transition: width 0.25s ease;
+    }
+    .progress-pct {
+      font-size: 14px; font-weight: 700;
+      color: var(--text-dim); min-width: 44px; text-align: right;
+      font-family: var(--font-display);
+    }
+    .progress-pct span { color: var(--gold); }
+
+    /* ─── Scene Area ─── */
+    .scene-wrap {
+      position: relative;
+      width: var(--scene-size);
+      height: var(--scene-size);
+      flex-shrink: 0;
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      box-shadow:
+        0 0 0 1px var(--border),
+        0 8px 40px rgba(0,0,0,0.4);
+    }
+
+    #scene-container {
+      position: absolute; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      transition: background 1s ease;
+      z-index: 0;
+    }
+    #scene-container .scene-emoji {
+      position: absolute;
+      pointer-events: none;
+      transform: translate(-50%, -50%);
+      user-select: none;
+      transition: opacity 0.3s ease;
+      opacity: 0.85;
+    }
+
+    #dirt-canvas {
+      position: absolute; inset: 0;
+      width: 100%; height: 100%;
+      z-index: 1;
+      cursor: crosshair;
+      touch-action: none;
+    }
+
+    .scene-label {
+      position: absolute;
+      bottom: 14px; left: 50%;
+      transform: translateX(-50%);
+      font-family: var(--font-display);
+      font-size: 13px;
+      font-weight: 700;
+      color: rgba(255,255,255,0.6);
+      text-shadow: 0 2px 8px rgba(0,0,0,0.5);
+      z-index: 2;
+      pointer-events: none;
+      white-space: nowrap;
+    }
+
+    /* ─── Sparkle particles ─── */
+    .sparkle {
+      position: absolute;
+      pointer-events: none;
+      z-index: 3;
+      font-size: 14px;
+      animation: sparkleFade 0.7s ease-out forwards;
+    }
+    @keyframes sparkleFade {
+      0% { opacity: 1; transform: translate(0, 0) scale(0.5) rotate(0deg); }
+      100% { opacity: 0; transform: translate(var(--dx, -15px), var(--dy, -20px)) scale(1.8) rotate(180deg); }
+    }
+
+    /* ─── Hint Text ─── */
+    .hint-text {
+      font-size: 12px; color: var(--text-muted);
+      text-align: center; margin-top: 2px; flex-shrink: 0;
+      transition: color 0.3s ease;
+    }
+
+    /* ─── Clean Burst ─── */
+    .burst-ring {
+      position: absolute;
+      border-radius: 50%;
+      border: 2.5px solid rgba(255,255,255,0.4);
+      z-index: 2;
+      pointer-events: none;
+      animation: burstExpand 0.5s ease-out forwards;
+    }
+    @keyframes burstExpand {
+      0% { width: 0; height: 0; opacity: 0.8; }
+      100% { width: var(--burst-size, 100px); height: var(--burst-size, 100px); opacity: 0; transform: translate(-50%, -50%); }
+    }
+
+    /* ═══════════════════════════
+       RESULT SCREEN
+       ═══════════════════════════ */
+    .result-screen {
+      justify-content: center; gap: 14px; text-align: center;
+      background: linear-gradient(160deg, #1a1025 0%, #2d1b4e 50%, #1a1a4e 100%);
+      padding: 24px;
+    }
+    .result-screen::before {
+      content: ''; position: absolute; inset: 0;
+      background:
+        radial-gradient(ellipse 180px 100px at 30% 25%, rgba(108,92,231,0.10) 0%, transparent 70%),
+        radial-gradient(ellipse 140px 80px at 70% 60%, rgba(255,215,0,0.08) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .result-icon {
+      font-size: 72px; line-height: 1;
+      position: relative; z-index: 1;
+      animation: resultPop 0.6s ease-out;
+    }
+    @keyframes resultPop {
+      0% { transform: scale(0) rotate(-10deg); opacity: 0; }
+      60% { transform: scale(1.15) rotate(3deg); }
+      100% { transform: scale(1) rotate(0deg); opacity: 1; }
+    }
+
+    .result-title {
+      font-family: var(--font-display); font-size: 30px; font-weight: 900;
+      position: relative; z-index: 1;
+      line-height: 1.2;
+    }
+    .result-title.win {
+      background: linear-gradient(135deg, #6c5ce7, #fd79a8, #ffd700);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .result-stars {
+      font-size: 36px; position: relative; z-index: 1;
+      letter-spacing: 8px;
+    }
+    .result-stars .star { display: inline-block; }
+    .result-stars .star.filled { animation: starPop 0.4s ease-out both; }
+    .result-stars .star.empty { opacity: 0.2; }
+    @keyframes starPop {
+      0% { transform: scale(0); }
+      60% { transform: scale(1.3); }
+      100% { transform: scale(1); }
+    }
+
+    .result-details {
+      font-size: 15px; color: var(--text-dim);
+      position: relative; z-index: 1; line-height: 1.7;
+    }
+    .result-details span { color: var(--gold); font-weight: 700; }
+    .result-best {
+      font-size: 13px; color: var(--text-muted);
+      position: relative; z-index: 1;
+    }
+    .result-best span { color: var(--gold); }
+    .result-new-best {
+      color: var(--pink); font-weight: 700; font-size: 14px;
+      animation: nbPulse 0.8s ease-in-out infinite alternate;
+      position: relative; z-index: 1;
+    }
+    @keyframes nbPulse {
+      0% { opacity: 0.5; transform: scale(1); }
+      100% { opacity: 1; transform: scale(1.08); }
+    }
+
+    .result-btns {
+      display: flex; gap: 12px; flex-wrap: wrap; justify-content: center;
+      position: relative; z-index: 1;
+    }
+
+    /* ═══ Confetti (simple) ═══ */
+    .confetti-piece {
+      position: absolute;
+      width: 8px; height: 8px;
+      border-radius: 2px;
+      z-index: 0;
+      animation: confettiFall 2s ease-out forwards;
+      pointer-events: none;
+    }
+    @keyframes confettiFall {
+      0% { opacity: 1; transform: translateY(0) rotate(0deg) scale(1); }
+      100% { opacity: 0; transform: translateY(300px) rotate(720deg) scale(0.3); }
+    }
+
+    /* ═══ Responsive ═══ */
+    @media (max-width: 480px) {
+      .title-text { font-size: 30px; }
+      .title-icon { font-size: 56px; }
+      .result-title { font-size: 24px; }
+      .result-icon { font-size: 56px; }
+      .result-stars { font-size: 30px; }
+      .game-level { font-size: 13px; }
+      .game-timer { font-size: 15px; }
+      .game-timer .sec { font-size: 20px; }
+      .scene-label { font-size: 11px; bottom: 10px; }
+    }
+    @media (max-height: 640px) {
+      :root { --scene-size: min(340px, 80vw); }
+      .title-icon { font-size: 42px; }
+      .title-text { font-size: 24px; }
+      .game-top { padding: 2px; }
+      .game-level { font-size: 12px; }
+      .game-timer { font-size: 13px; }
+      .game-timer .sec { font-size: 17px; }
+      .result-icon { font-size: 44px; }
+      .result-title { font-size: 20px; }
+      .btn { padding: 10px 24px; font-size: 15px; }
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+
+    <!-- ═══ TITLE SCREEN ═══ -->
+    <div id="title-screen" class="screen title-screen">
+      <div class="title-bg-stars" id="bg-stars"></div>
+      <div class="title-icon">🧹</div>
+      <div class="title-text">Sparkle<br/>Sweep</div>
+      <div class="title-sub">Swipe to clean and reveal<br/>beautiful hidden scenes! ✨</div>
+      <div id="title-level" class="title-level-count">🌈 Level 1 of 10</div>
+      <div class="title-best">🏆 Best Time: <span id="title-best">--</span></div>
+      <div style="height:6px"></div>
+      <button id="play-btn" class="btn btn-primary">✨ Start Cleaning!</button>
+    </div>
+
+    <!-- ═══ GAME SCREEN ═══ -->
+    <div id="game-screen" class="screen game-screen hidden">
+      <div class="game-top">
+        <span class="game-level" id="level-label">🌻 Level 1</span>
+        <span class="game-timer" id="timer-display"><span class="sec">0</span>s</span>
+      </div>
+
+      <div class="progress-wrap">
+        <div class="progress-track">
+          <div class="progress-fill" id="progress-fill"></div>
+        </div>
+        <span class="progress-pct"><span id="pct-display">0</span>%</span>
+      </div>
+
+      <!-- Scene + Dirt Canvas -->
+      <div class="scene-wrap" id="scene-wrap">
+        <div id="scene-container"></div>
+        <canvas id="dirt-canvas"></canvas>
+        <div class="scene-label" id="scene-label">✨ Swipe to clean!</div>
+      </div>
+
+      <div class="hint-text" id="hint-text">💡 Swipe your finger or mouse across the dirt to clean it!</div>
+    </div>
+
+    <!-- ═══ RESULT SCREEN ═══ -->
+    <div id="result-screen" class="screen result-screen hidden">
+      <div class="result-icon" id="result-icon">✨</div>
+      <div class="result-title win" id="result-title">All Clean!</div>
+      <div class="result-stars" id="result-stars">
+        <span class="star filled" style="animation-delay:0s">⭐</span>
+        <span class="star filled" style="animation-delay:0.15s">⭐</span>
+        <span class="star filled" style="animation-delay:0.3s">⭐</span>
+      </div>
+      <div class="result-details" id="result-details">
+        Time: <span id="result-time">0</span>s &nbsp;·&nbsp; Score: <span id="result-score">0</span>
+      </div>
+      <div id="new-best" class="result-new-best hidden">🌟 New Best Time! 🌟</div>
+      <div class="result-best">🏆 Best: <span id="result-best">--</span></div>
+      <div class="result-btns">
+        <button id="result-next" class="btn btn-primary">➡️ Next Level</button>
+        <button id="result-retry" class="btn btn-secondary">🔄 Retry</button>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+  (function(){
+    'use strict';
+
+    /* ═══════════════════════════════════════════════
+       SPARKLE SWEEP — Game Logic
+       ═══════════════════════════════════════════════ */
+
+    // ─── DOM References ───
+    const $ = id => document.getElementById(id);
+    const titleScreen   = $('title-screen');
+    const gameScreen    = $('game-screen');
+    const resultScreen  = $('result-screen');
+    const levelLabel    = $('level-label');
+    const timerDisp     = $('timer-display');
+    const progressFill  = $('progress-fill');
+    const pctDisplay    = $('pct-display');
+    const sceneWrap     = $('scene-wrap');
+    const sceneContainer = $('scene-container');
+    const canvas        = $('dirt-canvas');
+    const sceneLabel    = $('scene-label');
+    const hintText      = $('hint-text');
+    const playBtn       = $('play-btn');
+    const titleBest     = $('title-best');
+    const titleLevel    = $('title-level');
+    const resultIcon    = $('result-icon');
+    const resultTitle   = $('result-title');
+    const resultStars   = $('result-stars');
+    const resultTime    = $('result-time');
+    const resultScore   = $('result-score');
+    const resultBest    = $('result-best');
+    const resultNewBest = $('new-best');
+    const resultNext    = $('result-next');
+    const resultRetry   = $('result-retry');
+
+    // ─── Storage ───
+    const STORAGE_KEY  = 'sparkleSweep_bestTimes';
+    const LEVEL_KEY    = 'sparkleSweep_unlockedLevel';
+    const TOTAL_KEY    = 'sparkleSweep_totalScore';
+
+    // ─── Levels ───
+    const LEVELS = [
+      { name: '🌻 Sunny Garden',   scene: 'garden',     emojis: ['🌻','🌸','🦋','🐝','🌺','🌷','☀️','🌿'],   par: 25, brush: 40 },
+      { name: '🐠 Ocean Reef',     scene: 'ocean',      emojis: ['🐠','🐟','🐡','🪸','🐙','🫧','🐚','🌊'],   par: 25, brush: 38 },
+      { name: '✨ Starry Night',   scene: 'night',      emojis: ['⭐','🌙','🌠','✨','🌟','🌌','🪐','💫'],   par: 28, brush: 36 },
+      { name: '🌸 Cherry Blossom', scene: 'cherry',     emojis: ['🌸','🌺','🦋','🎋','🏮','🌿','🍵','🎎'],   par: 26, brush: 38 },
+      { name: '🌈 Rainbow Falls',  scene: 'rainbow',    emojis: ['🌈','🌊','☁️','💧','🦋','🌿','🌟','🌤️'],  par: 28, brush: 36 },
+      { name: '🏰 Magic Castle',   scene: 'castle',     emojis: ['🏰','🦄','✨','👑','🌹','🪄','💎','🔮'],   par: 28, brush: 36 },
+      { name: '❄️ Winter Land',    scene: 'winter',     emojis: ['❄️','⛄','🎄','🦌','☃️','🌟','🔔','🎁'],  par: 26, brush: 38 },
+      { name: '🏖️ Tropical Beach', scene: 'beach',      emojis: ['🏖️','🌴','🐚','☀️','🌊','🦀','⛱️','🍹'],  par: 25, brush: 40 },
+      { name: '🚀 Space Quest',    scene: 'space',      emojis: ['🚀','🌍','⭐','🌕','🛸','🌠','👾','☄️'],   par: 28, brush: 36 },
+      { name: '🌳 Magic Forest',   scene: 'forest',     emojis: ['🌳','🍄','🦊','🦉','🌿','✨','🦋','🌙'],   par: 26, brush: 38 },
+    ];
+
+    // Scene background gradients
+    const SCENE_GRADIENTS = {
+      garden:  'linear-gradient(135deg, #87CEEB 0%, #7EC850 35%, #FFD700 75%, #FFA07A 100%)',
+      ocean:   'linear-gradient(135deg, #001F3F 0%, #006994 30%, #00B4D8 60%, #48CAE4 85%, #90E0EF 100%)',
+      night:   'linear-gradient(135deg, #0B0B2B 0%, #1B1B4B 30%, #2D1B69 60%, #4A2B7A 85%, #6B3FA0 100%)',
+      cherry:  'linear-gradient(135deg, #FFB7C5 0%, #FF69B4 30%, #FF1493 55%, #DB7093 80%, #C71585 100%)',
+      rainbow: 'linear-gradient(135deg, #FF0000 0%, #FF7F00 14%, #FFFF00 28%, #00FF00 45%, #00BFFF 65%, #4B0082 82%, #8F00FF 100%)',
+      castle:  'linear-gradient(135deg, #1A0A2E 0%, #2D1B69 30%, #6B3FA0 55%, #E8A838 78%, #FFD700 100%)',
+      winter:  'linear-gradient(135deg, #E8F0FE 0%, #B3D9F7 25%, #87CEEB 55%, #6BB3D9 80%, #4A90C4 100%)',
+      beach:   'linear-gradient(135deg, #F4D03F 0%, #E8C37A 18%, #85C1E9 50%, #2E86C1 80%, #1A5276 100%)',
+      space:   'linear-gradient(135deg, #0B0B2B 0%, #1A0A3E 25%, #2D1B69 55%, #E85D26 80%, #FF6B35 100%)',
+      forest:  'linear-gradient(135deg, #0D3B1E 0%, #1A6B32 25%, #2E8B57 50%, #4CAF50 72%, #81C784 100%)',
+    };
+
+    // ─── State ───
+    let level = 0;
+    let bestTimes = {};
+    let unlockedLevel = 0;
+    let totalScore = 0;
+    let playing = false;
+    let cleaning = false;
+    let startTime = 0;
+    let elapsed = 0;
+    let timerRAF = null;
+    let lastProgressUpdate = 0;
+
+    // Canvas
+    let ctx = null;
+    let cW = 0, cH = 0;
+    const CELL_SIZE = 16;
+    let cleanGrid = [];
+    let cleanedCount = 0;
+    let totalCells = 0;
+    let isComplete = false;
+    let lastPointerX = -1, lastPointerY = -1;
+
+    // Audio
+    let audioCtx = null;
+    let lastSoundTime = 0;
+
+    // ─── Load saved data ───
+    function loadSave() {
+      try {
+        const t = localStorage.getItem(STORAGE_KEY);
+        bestTimes = t ? JSON.parse(t) : {};
+      } catch (_) { bestTimes = {}; }
+      try {
+        const u = localStorage.getItem(LEVEL_KEY);
+        unlockedLevel = u ? parseInt(u, 10) : 0;
+      } catch (_) { unlockedLevel = 0; }
+      try {
+        const s = localStorage.getItem(TOTAL_KEY);
+        totalScore = s ? parseInt(s, 10) : 0;
+      } catch (_) { totalScore = 0; }
+    }
+    function saveBestTime(lvl, time) {
+      const key = 'lvl_' + lvl;
+      if (!bestTimes[key] || time < bestTimes[key]) {
+        bestTimes[key] = time;
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(bestTimes)); } catch (_) {}
+        return true; // new best
+      }
+      return false;
+    }
+    function saveUnlocked(lvl) {
+      if (lvl > unlockedLevel) {
+        unlockedLevel = lvl;
+        try { localStorage.setItem(LEVEL_KEY, String(unlockedLevel)); } catch (_) {}
+      }
+    }
+    function saveTotalScore(score) {
+      totalScore += score;
+      try { localStorage.setItem(TOTAL_KEY, String(totalScore)); } catch (_) {}
+    }
+
+    // ─── Audio ───
+    function getAudio() {
+      if (!audioCtx) {
+        try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch (_) {}
+      }
+      return audioCtx;
+    }
+    function playTone(freq, dur, type, vol) {
+      try {
+        const ctx = getAudio();
+        if (!ctx) return;
+        const now = ctx.currentTime;
+        if (now - lastSoundTime < 0.04) return;
+        lastSoundTime = now;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = type || 'sine';
+        osc.frequency.setValueAtTime(freq, now);
+        gain.gain.setValueAtTime(Math.min(vol || 0.10, 0.14), now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + (dur || 0.12));
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now);
+        osc.stop(now + (dur || 0.12));
+      } catch (_) {}
+    }
+    function playSweep() { playTone(480 + Math.random() * 120, 0.08, 'sine', 0.06); }
+    function playComplete() {
+      [523, 659, 784, 1047, 1319].forEach((f, i) => setTimeout(() => playTone(f, 0.18, 'sine', 0.10), i * 90));
+    }
+    function playStar() { playTone(880, 0.12, 'sine', 0.08); setTimeout(() => playTone(1100, 0.1, 'sine', 0.06), 70); }
+    function playSelect() { playTone(500, 0.06, 'sine', 0.05); }
+
+    function vibe(ms) { try { navigator.vibrate && navigator.vibrate(ms); } catch (_) {} }
+
+    // ─── Screen helpers ───
+    function showScreen(screen) {
+      [titleScreen, gameScreen, resultScreen].forEach(s => s.classList.add('hidden'));
+      screen.classList.remove('hidden');
+    }
+
+    // ─── Scene builder ───
+    function buildScene(lvl) {
+      const idx = lvl % LEVELS.length;
+      const levelData = LEVELS[idx];
+      sceneContainer.style.background = SCENE_GRADIENTS[levelData.scene];
+      sceneContainer.innerHTML = '';
+
+      // Randomly place emojis
+      const count = 22 + Math.floor(Math.random() * 8);
+      for (let i = 0; i < count; i++) {
+        const el = document.createElement('span');
+        el.className = 'scene-emoji';
+        el.textContent = levelData.emojis[i % levelData.emojis.length];
+        const size = 22 + Math.random() * 20;
+        const rot = Math.random() * 24 - 12;
+        el.style.cssText = `left:${2+Math.random()*96}%;top:${2+Math.random()*96}%;font-size:${size}px;transform:translate(-50%,-50%) rotate(${rot}deg)`;
+        sceneContainer.appendChild(el);
+      }
+
+      // Scene label
+      sceneLabel.textContent = levelData.name;
+    }
+
+    // ─── Dirt Canvas ───
+    function initDirtCanvas() {
+      const rect = sceneWrap.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      cW = rect.width;
+      cH = rect.height;
+
+      canvas.width = cW * dpr;
+      canvas.height = cH * dpr;
+      canvas.style.width = cW + 'px';
+      canvas.style.height = cH + 'px';
+
+      ctx = canvas.getContext('2d');
+      ctx.scale(dpr, dpr);
+
+      createDirtTexture();
+
+      // Init clean grid
+      const cols = Math.ceil(cW / CELL_SIZE);
+      const rows = Math.ceil(cH / CELL_SIZE);
+      cleanGrid = Array.from({ length: rows }, () => new Array(cols).fill(false));
+      totalCells = rows * cols;
+      cleanedCount = 0;
+      updateProgress(0);
+
+      isComplete = false;
+    }
+
+    function createDirtTexture() {
+      // Base dirt color with noise
+      const imageData = ctx.createImageData(cW, cH);
+      const data = imageData.data;
+      for (let i = 0; i < data.length; i += 4) {
+        const n = (Math.random() - 0.5) * 48;
+        data[i]     = 125 + n;       // R
+        data[i+1]   = 110 + n;       // G
+        data[i+2]   = 95  + n * 0.7; // B
+        data[i+3]   = 255;           // A
+      }
+      ctx.putImageData(imageData, 0, 0);
+
+      // Dark smudge patches
+      for (let i = 0; i < 25; i++) {
+        const sx = Math.random() * cW;
+        const sy = Math.random() * cH;
+        const sr = 6 + Math.random() * 22;
+        ctx.beginPath();
+        ctx.arc(sx, sy, sr, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(60,48,36,${0.08 + Math.random() * 0.18})`;
+        ctx.fill();
+      }
+
+      // Light speckles
+      for (let i = 0; i < 18; i++) {
+        const sx = Math.random() * cW;
+        const sy = Math.random() * cH;
+        const sr = 4 + Math.random() * 14;
+        ctx.beginPath();
+        ctx.arc(sx, sy, sr, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(190,175,155,${0.05 + Math.random() * 0.08})`;
+        ctx.fill();
+      }
+
+      // Edge grime — darker border
+      ctx.fillStyle = 'rgba(50,40,32,0.15)';
+      const edgeW = 8;
+      ctx.fillRect(0, 0, cW, edgeW);
+      ctx.fillRect(0, cH - edgeW, cW, edgeW);
+      ctx.fillRect(0, 0, edgeW, cH);
+      ctx.fillRect(cW - edgeW, 0, edgeW, cH);
+    }
+
+    // ─── Clean grid helpers ───
+    function markGridClean(cx, cy, radius) {
+      const colStart = Math.max(0, Math.floor((cx - radius) / CELL_SIZE));
+      const rowStart = Math.max(0, Math.floor((cy - radius) / CELL_SIZE));
+      const colEnd = Math.min(cleanGrid[0]?.length || 1, Math.ceil((cx + radius) / CELL_SIZE));
+      const rowEnd = Math.min(cleanGrid.length, Math.ceil((cy + radius) / CELL_SIZE));
+
+      for (let r = rowStart; r < rowEnd; r++) {
+        for (let c = colStart; c < colEnd; c++) {
+          if (!cleanGrid[r][c]) {
+            const cellCx = c * CELL_SIZE + CELL_SIZE / 2;
+            const cellCy = r * CELL_SIZE + CELL_SIZE / 2;
+            const dx = cellCx - cx;
+            const dy = cellCy - cy;
+            if (dx * dx + dy * dy <= radius * radius) {
+              cleanGrid[r][c] = true;
+              cleanedCount++;
+            }
+          }
+        }
+      }
+    }
+
+    function getProgress() {
+      return totalCells > 0 ? cleanedCount / totalCells : 0;
+    }
+
+    function updateProgress(pct) {
+      const p = pct !== undefined ? pct : getProgress();
+      const pctInt = Math.min(100, Math.round(p * 100));
+      pctDisplay.textContent = pctInt;
+      progressFill.style.width = pctInt + '%';
+
+      if (pctInt >= 100 && !isComplete) {
+        isComplete = true;
+        onLevelComplete();
+      }
+    }
+
+    // ─── Erase on canvas ───
+    function eraseAt(x, y, brushR) {
+      // Feathered brush with destination-out
+      ctx.globalCompositeOperation = 'destination-out';
+      const grad = ctx.createRadialGradient(x, y, 0, x, y, brushR);
+      grad.addColorStop(0, 'rgba(0,0,0,1)');
+      grad.addColorStop(0.65, 'rgba(0,0,0,1)');
+      grad.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(x, y, brushR, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalCompositeOperation = 'source-over';
+
+      // Mark grid
+      markGridClean(x, y, brushR);
+    }
+
+    // ─── Sparkle effect ───
+    function spawnSparkle(x, y) {
+      const sparkleChars = ['✨', '⭐', '💫', '🌟'];
+      const el = document.createElement('span');
+      el.className = 'sparkle';
+      // Random direction
+      const dx = (-20 + Math.random() * 40) + 'px';
+      const dy = (-25 + Math.random() * -10) + 'px';
+      el.style.cssText = `left:${x}px;top:${y}px;--dx:${dx};--dy:${dy};`;
+      el.textContent = sparkleChars[Math.floor(Math.random() * sparkleChars.length)];
+      sceneWrap.appendChild(el);
+      setTimeout(() => el.remove(), 800);
+
+      // Throttle sweep sound
+      if (Math.random() < 0.25) playSweep();
+    }
+
+    function spawnBurstRing(x, y, size) {
+      const el = document.createElement('div');
+      el.className = 'burst-ring';
+      el.style.cssText = `left:${x}px;top:${y}px;--burst-size:${size}px;`;
+      sceneWrap.appendChild(el);
+      setTimeout(() => el.remove(), 600);
+    }
+
+    // ─── Pointer handlers ───
+    function getBrushRadius() {
+      const idx = level % LEVELS.length;
+      const levelData = LEVELS[idx];
+      const base = levelData.brush || 38;
+      // Scale with canvas size
+      return Math.max(18, Math.min(55, base * (cW / 380)));
+    }
+
+    function handlePointerStart(e) {
+      if (!playing || isComplete) return;
+      const pos = getCanvasPos(e);
+      if (!pos) return;
+      cleaning = true;
+      lastPointerX = pos.x;
+      lastPointerY = pos.y;
+
+      const r = getBrushRadius();
+      eraseAt(pos.x, pos.y, r);
+      spawnSparkle(pos.x, pos.y);
+      vibe(6);
+      updateProgress();
+    }
+
+    function handlePointerMove(e) {
+      if (!cleaning || !playing || isComplete) return;
+      e.preventDefault();
+
+      const pos = getCanvasPos(e);
+      if (!pos) return;
+
+      const r = getBrushRadius();
+
+      // Interpolate between last and current for fast swipes
+      const dx = pos.x - lastPointerX;
+      const dy = pos.y - lastPointerY;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+
+      if (dist > 0) {
+        const steps = Math.ceil(dist / (r * 0.6));
+        for (let i = 0; i <= steps; i++) {
+          const t = i / steps;
+          const ix = lastPointerX + dx * t;
+          const iy = lastPointerY + dy * t;
+          eraseAt(ix, iy, r);
+        }
+
+        // Sparkles along the stroke
+        if (Math.random() < 0.3) {
+          spawnSparkle(pos.x, pos.y);
+        }
+
+        vibe(4);
+      }
+
+      lastPointerX = pos.x;
+      lastPointerY = pos.y;
+
+      // Throttle progress update
+      const now = Date.now();
+      if (now - lastProgressUpdate > 80) {
+        lastProgressUpdate = now;
+        updateProgress();
+      }
+    }
+
+    function handlePointerEnd(e) {
+      if (!cleaning) return;
+      cleaning = false;
+      // Final progress check
+      updateProgress();
+    }
+
+    function getCanvasPos(e) {
+      if (!ctx) return null;
+      const rect = canvas.getBoundingClientRect();
+      const clientX = e.clientX !== undefined ? e.clientX : (e.touches ? e.touches[0].clientX : 0);
+      const clientY = e.clientY !== undefined ? e.clientY : (e.touches ? e.touches[0].clientY : 0);
+
+      let x = clientX - rect.left;
+      let y = clientY - rect.top;
+      // Clamp
+      x = Math.max(2, Math.min(cW - 2, x));
+      y = Math.max(2, Math.min(cH - 2, y));
+      return { x, y };
+    }
+
+    // ─── Timer ───
+    function startTimer() {
+      startTime = Date.now();
+      elapsed = 0;
+      timerDisp.querySelector('.sec').textContent = '0';
+      timerDisp.classList.remove('danger');
+      timerRAF = requestAnimationFrame(updateTimer);
+    }
+
+    function updateTimer() {
+      if (!playing) return;
+      elapsed = (Date.now() - startTime) / 1000;
+      const secs = Math.floor(elapsed);
+      timerDisp.querySelector('.sec').textContent = secs;
+      timerRAF = requestAnimationFrame(updateTimer);
+    }
+
+    function stopTimer() {
+      if (timerRAF) { cancelAnimationFrame(timerRAF); timerRAF = null; }
+    }
+
+    // ─── Level Flow ───
+    function initLevel() {
+      const idx = level % LEVELS.length;
+      const levelData = LEVELS[idx];
+
+      playing = true;
+      isComplete = false;
+      cleaning = false;
+      lastPointerX = -1;
+      lastPointerY = -1;
+      lastProgressUpdate = 0;
+
+      levelLabel.textContent = `Level ${level + 1} · ${levelData.name}`;
+
+      // Build scene
+      buildScene(level);
+
+      // Init canvas
+      initDirtCanvas();
+
+      // Setup progress
+      pctDisplay.textContent = '0';
+      progressFill.style.width = '0%';
+      timerDisp.querySelector('.sec').textContent = '0';
+
+      hintText.textContent = '💡 Swipe to clean and reveal the hidden scene!';
+      sceneLabel.textContent = '✨ Swipe to clean!';
+
+      showScreen(gameScreen);
+
+      // Start timer after canvas init
+      requestAnimationFrame(() => {
+        startTimer();
+      });
+    }
+
+    function onLevelComplete() {
+      playing = false;
+      cleaning = false;
+      stopTimer();
+
+      const finalTime = Math.round(elapsed);
+      const isNewBest = saveBestTime(level, finalTime);
+
+      // Calculate stars
+      const idx = level % LEVELS.length;
+      const par = LEVELS[idx].par;
+      let stars = 1;
+      if (finalTime <= par * 0.6) stars = 3;
+      else if (finalTime <= par * 1.0) stars = 2;
+
+      // Score
+      const score = Math.round(stars * 100 + Math.max(0, par - finalTime) * 2);
+      saveTotalScore(score);
+
+      // Effects
+      playComplete();
+      vibe([30, 20, 40]);
+
+      // Confetti for 3 stars
+      if (stars >= 3) {
+        spawnConfetti();
+      }
+
+      // Build result
+      resultIcon.textContent = stars >= 3 ? '🏆' : stars >= 2 ? '🎉' : '✨';
+      resultTitle.textContent = stars >= 3 ? '✨ Perfect Clean! ✨' : stars >= 2 ? 'Great Job!' : 'All Clean!';
+      resultTitle.className = 'result-title win';
+
+      // Stars
+      const starEls = resultStars.querySelectorAll('.star');
+      starEls.forEach((el, i) => {
+        el.className = i < stars ? 'star filled' : 'star empty';
+      });
+
+      resultTime.textContent = finalTime;
+      resultScore.textContent = score;
+      resultBest.textContent = bestTimes['lvl_' + level] ? bestTimes['lvl_' + level] + 's' : '--';
+      resultNewBest.classList.toggle('hidden', !isNewBest);
+      if (isNewBest) playStar();
+
+      // Next / retry buttons
+      const maxUnlocked = Math.max(unlockedLevel, level);
+      const isLastLevel = level >= LEVELS.length - 1;
+
+      if (isLastLevel) {
+        resultNext.textContent = '🏆 You mastered all levels!';
+        resultNext.style.display = 'inline-flex';
+        resultNext.onclick = () => { level = 0; showScreen(titleScreen); updateTitleInfo(); };
+        resultRetry.textContent = '🔄 Play Again';
+      } else {
+        const canAdvance = level + 1 <= maxUnlocked || level < maxUnlocked;
+        if (level + 1 > unlockedLevel) {
+          saveUnlocked(level + 1);
+        }
+        resultNext.textContent = '➡️ Next Level';
+        resultNext.style.display = 'inline-flex';
+        resultNext.onclick = () => { level++; initLevel(); };
+        resultRetry.textContent = '🔄 Retry';
+      }
+      resultRetry.onclick = () => initLevel();
+
+      showScreen(resultScreen);
+    }
+
+    // ─── Confetti ───
+    function spawnConfetti() {
+      const colors = ['#6c5ce7', '#fd79a8', '#ffd700', '#00cec9', '#55efc4', '#ff7675', '#74b9ff'];
+      for (let i = 0; i < 40; i++) {
+        const el = document.createElement('div');
+        el.className = 'confetti-piece';
+        const x = 10 + Math.random() * 80;
+        const delay = Math.random() * 0.8;
+        const color = colors[Math.floor(Math.random() * colors.length)];
+        el.style.cssText = `left:${x}%;top:-10px;background:${color};width:${4+Math.random()*8}px;height:${4+Math.random()*8}px;animation-delay:${delay}s;border-radius:${Math.random()>0.5?'50%':'2px'}`;
+        resultScreen.appendChild(el);
+        setTimeout(() => el.remove(), 2800 + delay * 1000);
+      }
+    }
+
+    // ─── Title Screen ───
+    function updateTitleInfo() {
+      // Stars background
+      const starsContainer = $('bg-stars');
+      starsContainer.innerHTML = '';
+      for (let i = 0; i < 30; i++) {
+        const s = document.createElement('span');
+        const x = Math.random() * 100;
+        const y = Math.random() * 100;
+        const size = 2 + Math.random() * 3;
+        const delay = Math.random() * 3;
+        s.style.cssText = `left:${x}%;top:${y}%;width:${size}px;height:${size}px;animation-delay:${delay}s;`;
+        starsContainer.appendChild(s);
+      }
+
+      // Best time across all levels
+      const allTimes = Object.values(bestTimes);
+      const bestOverall = allTimes.length > 0 ? Math.min(...allTimes) : null;
+      titleBest.textContent = bestOverall ? bestOverall + 's' : '--';
+
+      const nextLevel = Math.min(unlockedLevel + 1, LEVELS.length);
+      titleLevel.textContent = `🌈 ${nextLevel} of ${LEVELS.length} levels`;
+    }
+
+    // ─── Resize handler ───
+    let resizeTimer = null;
+    function onResize() {
+      if (!playing || isComplete) return;
+      if (resizeTimer) { clearTimeout(resizeTimer); }
+      resizeTimer = setTimeout(() => {
+        // Re-init canvas and scene sizing
+        stopTimer();
+        const wasPlaying = playing;
+        if (wasPlaying) {
+          // Save elapsed time
+          const oldElapsed = elapsed;
+          initLevel();
+          // Adjust timer to account for time spent
+          startTime = Date.now() - oldElapsed * 1000;
+        }
+      }, 300);
+    }
+
+    // ─── Keyboard support ───
+    let kbCursorX = -1, kbCursorY = -1;
+
+    function initKeyboard() {
+      const r = getBrushRadius();
+      kbCursorX = cW / 2;
+      kbCursorY = cH / 2;
+    }
+
+    function handleKeyboard(e) {
+      if (!playing || isComplete) return;
+
+      const r = getBrushRadius();
+      const step = 16;
+
+      if (kbCursorX < 0) initKeyboard();
+
+      switch (e.key) {
+        case 'ArrowUp':    kbCursorY = Math.max(0, kbCursorY - step); e.preventDefault(); break;
+        case 'ArrowDown':  kbCursorY = Math.min(cH, kbCursorY + step); e.preventDefault(); break;
+        case 'ArrowLeft':  kbCursorX = Math.max(0, kbCursorX - step); e.preventDefault(); break;
+        case 'ArrowRight': kbCursorX = Math.min(cW, kbCursorX + step); e.preventDefault(); break;
+        case ' ': case 'Enter': {
+          e.preventDefault();
+          eraseAt(kbCursorX, kbCursorY, r);
+          spawnSparkle(kbCursorX, kbCursorY);
+          spawnBurstRing(kbCursorX, kbCursorY, r * 2.5);
+          updateProgress();
+          vibe(10);
+          return;
+        }
+        default: return;
+      }
+
+      // Clean while moving
+      eraseAt(kbCursorX, kbCursorY, r);
+      if (Math.random() < 0.15) spawnSparkle(kbCursorX, kbCursorY);
+      updateProgress();
+
+      // Show cursor position via burst ring
+      spawnBurstRing(kbCursorX, kbCursorY, r * 1.5);
+    }
+
+    // ─── Events Binding ───
+    function bindEvents() {
+      // Canvas pointer events
+      canvas.addEventListener('pointerdown', handlePointerStart);
+      canvas.addEventListener('pointermove', handlePointerMove);
+      canvas.addEventListener('pointerup', handlePointerEnd);
+      canvas.addEventListener('pointerleave', handlePointerEnd);
+
+      // Touch-specific: prevent scroll
+      canvas.addEventListener('touchstart', e => { if (playing) e.preventDefault(); }, { passive: false });
+      canvas.addEventListener('touchmove', e => { if (playing) e.preventDefault(); }, { passive: false });
+
+      // Keyboard
+      window.addEventListener('keydown', e => {
+        if (!playing) {
+          if (e.key === 'Enter' || e.key === ' ') {
+            if (!titleScreen.classList.contains('hidden')) {
+              playBtn.click();
+            } else if (!resultScreen.classList.contains('hidden')) {
+              const nextBtn = resultNext.style.display !== 'none' ? resultNext : resultRetry;
+              nextBtn.click();
+            }
+          }
+          return;
+        }
+        handleKeyboard(e);
+      });
+
+      // Play button
+      playBtn.addEventListener('click', () => {
+        try { getAudio(); } catch (_) {}
+        initLevel();
+      });
+
+      // Window resize
+      window.addEventListener('resize', onResize);
+    }
+
+    // ─── Init ───
+    function init() {
+      loadSave();
+      updateTitleInfo();
+      bindEvents();
+      showScreen(titleScreen);
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', init);
+    } else {
+      init();
+    }
+
+  })();
+  </script>
+</body>
+</html>
