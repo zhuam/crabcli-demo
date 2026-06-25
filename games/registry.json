@@ -544,6 +544,7 @@
       "id": "auto-spa-dash",
       "name": "Auto Spa Dash",
       "description": "洗车店模拟经营，拖拽工具洗车打蜡擦干，赚取营收过关升级",
+
       "category": "casual",
       "tags": ["singleplayer", "management", "simulation", "drag", "short-session"],
       "thumbnail": "/games/071-auto-spa-dash/thumb.svg",
