@@ -1,0 +1,1324 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
+  <meta name="theme-color" content="#1a1a2e" />
+  <title>Sort Till You Cant</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700;800;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../../games/shared/game-frame.css" />
+  <style>
+    /* ═══════════════════════════════════════════════════════
+       SORT TILL YOU CANT — Color water sort puzzle
+       ═══════════════════════════════════════════════════════ */
+
+    :root {
+      --bg-deep: #0f0e17;
+      --bg-mid: #1a1a2e;
+      --surface: rgba(255,255,255,0.07);
+      --surface-hover: rgba(255,255,255,0.12);
+      --border: rgba(255,255,255,0.10);
+      --border-strong: rgba(255,255,255,0.20);
+      --text: #f0f0f0;
+      --text-dim: rgba(255,255,255,0.55);
+      --text-muted: rgba(255,255,255,0.30);
+      --gold: #FFD700;
+      --cyan: #4dd0e1;
+      --coral: #ff6b9d;
+      --purple: #a29bfe;
+      --green: #00e676;
+      --orange: #ff9100;
+      --pink: #f48fb1;
+      --blue: #42a5f5;
+      --red: #ef5350;
+      --teal: #26c6da;
+      --lime: #cddc39;
+      --font-display: 'Outfit', system-ui, sans-serif;
+      --font-body: 'Inter', system-ui, sans-serif;
+      --radius-sm: 8px;
+      --radius-md: 16px;
+      --radius-lg: 24px;
+      --bottle-w: 52px;
+      --bottle-h: 130px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      background: var(--bg-deep);
+      color: var(--text);
+      font-family: var(--font-body);
+      overflow: hidden;
+      height: 100%; width: 100%;
+      user-select: none; -webkit-user-select: none;
+      touch-action: none; -webkit-touch-callout: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    #app { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; }
+
+    .screen {
+      position: fixed; inset: 0;
+      display: flex; flex-direction: column; align-items: center;
+      transition: opacity 0.4s ease, transform 0.4s ease;
+      will-change: opacity, transform;
+    }
+    .screen.hidden {
+      opacity: 0; pointer-events: none; transform: scale(0.96);
+    }
+
+    /* ═══════════════════════════════
+       TITLE SCREEN
+       ═══════════════════════════════ */
+    .title-screen {
+      justify-content: center; gap: 10px;
+      background: linear-gradient(180deg, #0f0e17 0%, #1a1a2e 50%, #16213e 100%);
+      padding: 24px;
+    }
+    .title-screen::before {
+      content: ''; position: absolute; inset: 0;
+      background:
+        radial-gradient(ellipse 140px 70px at 25% 25%, rgba(77,208,225,0.08) 0%, transparent 70%),
+        radial-gradient(ellipse 120px 90px at 75% 30%, rgba(162,155,254,0.06) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .title-icon {
+      font-size: 64px; line-height: 1;
+      filter: drop-shadow(0 0 30px rgba(77,208,225,0.30));
+      animation: titleFloat 3s ease-in-out infinite;
+      position: relative; z-index: 1;
+    }
+    @keyframes titleFloat {
+      0%, 100% { transform: translateY(0) scale(1); }
+      50% { transform: translateY(-8px) scale(1.02); }
+    }
+
+    .title-text {
+      font-family: var(--font-display); font-size: 40px; font-weight: 900;
+      background: linear-gradient(135deg, #4dd0e1, #a29bfe, #ff6b9d, #FFD700);
+      background-size: 400% auto;
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+      animation: gradSweep 6s ease infinite;
+      line-height: 1.1; text-align: center;
+      position: relative; z-index: 1;
+    }
+    @keyframes gradSweep {
+      0%, 100% { background-position: 0% center; }
+      50% { background-position: 100% center; }
+    }
+
+    .title-sub {
+      font-size: 14px; color: var(--text-dim);
+      text-align: center; max-width: 300px; line-height: 1.6;
+      position: relative; z-index: 1;
+    }
+    .title-high {
+      font-family: var(--font-body); font-size: 14px; color: var(--text-muted);
+      position: relative; z-index: 1;
+    }
+    .title-high span { color: var(--gold); }
+
+    .title-levels {
+      font-size: 12px; color: var(--text-muted);
+      position: relative; z-index: 1;
+    }
+
+    /* ─── Buttons ─── */
+    .btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 14px 36px; border: none; border-radius: 50px;
+      font-family: var(--font-display); font-size: 18px; font-weight: 700;
+      cursor: pointer; transition: all 0.2s ease;
+      position: relative; z-index: 1;
+    }
+    .btn:active { transform: scale(0.95); }
+    .btn-primary {
+      background: linear-gradient(135deg, #4dd0e1, #a29bfe);
+      color: #fff; box-shadow: 0 4px 20px rgba(77,208,225,0.35);
+    }
+    .btn-primary:hover { box-shadow: 0 6px 28px rgba(77,208,225,0.5); transform: translateY(-2px); }
+    .btn-primary:active { transform: scale(0.95) translateY(0); }
+    .btn-secondary {
+      background: var(--surface); color: var(--text);
+      border: 1px solid var(--border-strong);
+    }
+    .btn-secondary:hover { background: var(--surface-hover); }
+    .btn-sm { padding: 10px 24px; font-size: 14px; }
+
+    /* ═══════════════════════════════
+       PLAY SCREEN
+       ═══════════════════════════════ */
+    .play-screen {
+      background: linear-gradient(180deg, #0f0e17 0%, #1a1a2e 100%);
+      padding: 8px;
+      justify-content: flex-start;
+    }
+
+    .play-top {
+      width: 100%; max-width: 500px;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 6px 8px 2px; position: relative; z-index: 5;
+    }
+    .play-level {
+      font-family: var(--font-display); font-size: 14px; font-weight: 700;
+      color: var(--cyan);
+    }
+    .play-stat {
+      display: flex; align-items: center; gap: 10px;
+    }
+    .play-stat-item {
+      font-family: var(--font-body); font-size: 12px; font-weight: 600;
+      color: var(--text-dim);
+    }
+    .play-stat-item span { color: var(--gold); }
+
+    /* ─── Bottle Grid ─── */
+    .bottle-grid {
+      display: flex; flex-wrap: wrap; justify-content: center; gap: 10px;
+      padding: 8px 4px; max-width: 480px;
+      width: 100%; position: relative; z-index: 3;
+      max-height: calc(100vh - 160px);
+      overflow-y: auto;
+      scrollbar-width: thin;
+      scrollbar-color: var(--surface) transparent;
+    }
+    .bottle-grid::-webkit-scrollbar { width: 4px; }
+    .bottle-grid::-webkit-scrollbar-thumb { background: var(--surface); border-radius: 2px; }
+
+    /* ─── Bottle ─── */
+    .bottle-wrap {
+      display: flex; flex-direction: column; align-items: center;
+      gap: 2px; cursor: pointer;
+      transition: transform 0.15s ease;
+      position: relative;
+    }
+    .bottle-wrap:active { transform: scale(0.95); }
+    .bottle-wrap.selected .bottle {
+      box-shadow: 0 0 0 3px var(--cyan), 0 0 20px rgba(77,208,225,0.35);
+      transform: translateY(-8px);
+    }
+    .bottle-wrap.selected .bottle-label {
+      color: var(--cyan);
+    }
+
+    .bottle {
+      width: var(--bottle-w); height: var(--bottle-h);
+      border: 2px solid var(--border-strong);
+      border-top: none;
+      border-radius: 0 0 12px 12px;
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      background: rgba(255,255,255,0.03);
+      display: flex; flex-direction: column-reverse;
+    }
+
+    .bottle-layer {
+      width: 100%;
+      transition: height 0.2s ease;
+      flex-shrink: 0;
+    }
+
+    /* Bottle neck (top rim) */
+    .bottle::before {
+      content: '';
+      position: absolute;
+      top: -6px; left: -2px;
+      width: calc(var(--bottle-w) + 4px);
+      height: 8px;
+      border: 2px solid var(--border-strong);
+      border-radius: 4px 4px 0 0;
+      background: rgba(255,255,255,0.04);
+    }
+
+    .bottle-label {
+      font-size: 10px; color: var(--text-muted);
+      font-family: var(--font-body); font-weight: 600;
+      transition: color 0.2s ease;
+      margin-top: 2px;
+    }
+
+    .selected-hint {
+      font-size: 10px; color: var(--cyan);
+      font-weight: 700; opacity: 0;
+      transition: opacity 0.2s ease;
+      height: 14px;
+    }
+    .bottle-wrap.selected .selected-hint {
+      opacity: 1;
+    }
+
+    /* ─── Hint ─── */
+    .hint-area {
+      width: 100%; max-width: 500px;
+      text-align: center; padding: 2px 8px 6px;
+      position: relative; z-index: 5;
+    }
+    .hint-text {
+      font-size: 12px; color: var(--text-muted);
+    }
+    .hint-text.selected {
+      color: var(--cyan);
+    }
+
+    /* ═══════════════════════════════
+       RESULT SCREEN
+       ═══════════════════════════════ */
+    .result-screen {
+      justify-content: center; gap: 12px; text-align: center;
+      background: linear-gradient(180deg, #0f0e17 0%, #1a1a2e 50%, #16213e 100%);
+      padding: 24px;
+    }
+    .result-screen::before {
+      content: ''; position: absolute; inset: 0;
+      background:
+        radial-gradient(ellipse 160px 80px at 30% 30%, rgba(77,208,225,0.08) 0%, transparent 70%),
+        radial-gradient(ellipse 130px 100px at 70% 60%, rgba(255,215,0,0.06) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .result-icon {
+      font-size: 72px; line-height: 1;
+      position: relative; z-index: 1;
+      animation: resultPop 0.6s ease-out;
+    }
+    @keyframes resultPop {
+      0% { transform: scale(0) rotate(-20deg); opacity: 0; }
+      60% { transform: scale(1.2) rotate(5deg); }
+      100% { transform: scale(1) rotate(0); opacity: 1; }
+    }
+
+    .result-title {
+      font-family: var(--font-display); font-size: 28px; font-weight: 900;
+      position: relative; z-index: 1;
+    }
+    .result-title.win {
+      background: linear-gradient(135deg, #4dd0e1, #FFD700);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .result-title.lose { color: var(--text-dim); }
+
+    .result-details {
+      font-size: 14px; color: var(--text-dim); line-height: 1.7;
+      position: relative; z-index: 1;
+    }
+    .result-details span { color: var(--gold); font-weight: 700; }
+
+    .result-best {
+      font-size: 13px; color: var(--text-muted);
+      position: relative; z-index: 1;
+    }
+    .result-best span { color: var(--gold); }
+
+    .result-new-best {
+      color: var(--cyan); font-weight: 700; font-size: 14px;
+      animation: pulseBest 0.8s ease-in-out infinite alternate;
+      position: relative; z-index: 1;
+    }
+    @keyframes pulseBest {
+      0% { opacity: 0.5; transform: scale(1); }
+      100% { opacity: 1; transform: scale(1.1); }
+    }
+
+    .result-btns {
+      display: flex; gap: 12px; flex-wrap: wrap; justify-content: center;
+      position: relative; z-index: 1;
+    }
+
+    /* ═══ Misc ═══ */
+    .mute-btn {
+      width: 40px; height: 40px; border: none; border-radius: 50%;
+      background: var(--surface); font-size: 18px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      position: fixed; top: 12px; right: 12px; z-index: 10001;
+      transition: background 0.15s ease; color: var(--text);
+    }
+    .mute-btn:hover { background: var(--surface-hover); }
+    .mute-btn:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }
+
+    .sr-only {
+      position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+      overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0;
+    }
+
+    /* ─── Undo Button ─── */
+    .undock {
+      display: flex; gap: 8px; align-items: center;
+      width: 100%; max-width: 500px; justify-content: center;
+      position: relative; z-index: 5; padding: 2px 0;
+    }
+    .btn-undo {
+      padding: 6px 18px; font-size: 13px;
+      display: inline-flex; align-items: center; gap: 4px;
+    }
+    .btn-undo:disabled {
+      opacity: 0.3; cursor: not-allowed; transform: none !important;
+    }
+    .btn-shuffle {
+      padding: 6px 18px; font-size: 13px;
+      display: inline-flex; align-items: center; gap: 4px;
+    }
+
+    /* ═══ Responsive ═══ */
+    @media (max-width: 480px) {
+      :root {
+        --bottle-w: 44px;
+        --bottle-h: 112px;
+      }
+      .title-text { font-size: 30px; }
+      .title-icon { font-size: 52px; }
+      .result-title { font-size: 24px; }
+      .result-icon { font-size: 56px; }
+      .play-stat-item { font-size: 11px; }
+    }
+    @media (max-height: 640px) {
+      :root {
+        --bottle-w: 40px;
+        --bottle-h: 100px;
+      }
+      .title-text { font-size: 26px; }
+      .title-icon { font-size: 40px; }
+      .bottle-grid { gap: 6px; }
+    }
+    @media (max-width: 360px) {
+      :root {
+        --bottle-w: 38px;
+        --bottle-h: 96px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+
+    <!-- ═══ MUTE BUTTON ═══ -->
+    <button class="mute-btn" id="muteBtn" aria-label="Toggle sound" aria-pressed="false">🔊</button>
+
+    <!-- ═══ BACK TO HUB ═══ -->
+    <a href="/" class="back-to-hub" onclick="window.recordPlayed&amp;&amp;window.recordPlayed('sort-till-you-cant')" aria-label="Back to hub">&larr; Hub</a>
+
+    <!-- ═══ TITLE SCREEN ═══ -->
+    <div id="titleScreen" class="screen title-screen">
+      <div class="title-icon">🧪</div>
+      <h1 class="title-text">Sort Till<br/>You Cant</h1>
+      <p class="title-sub">Sort the colored water into matching bottles!<br/>Tap to pour, match all colors to win!</p>
+      <div style="height:4px"></div>
+      <button id="startBtn" class="btn btn-primary">🧪 Start Sorting!</button>
+      <div class="title-high">🏆 Best Score: <span id="titleBest">0</span></div>
+      <div class="title-levels" id="titleLevel">Level: 1 · Highest: 1</div>
+    </div>
+
+    <!-- ═══ PLAY SCREEN ═══ -->
+    <div id="playScreen" class="screen play-screen hidden">
+      <div class="play-top">
+        <span class="play-level" id="levelDisplay">Level 1</span>
+        <div class="play-stat">
+          <span class="play-stat-item">⏱ <span id="timerDisplay">0:00</span></span>
+          <span class="play-stat-item">📊 <span id="movesDisplay">0</span></span>
+        </div>
+      </div>
+
+      <div class="bottle-grid" id="bottleGrid"></div>
+
+      <div class="hint-area">
+        <div class="hint-text" id="hintText">💡 Tap a bottle to select it, then tap another to pour</div>
+      </div>
+
+      <div class="undock">
+        <button id="undoBtn" class="btn btn-sm btn-secondary btn-undo" disabled>↩ Undo</button>
+        <button id="shuffleBtn" class="btn btn-sm btn-secondary btn-shuffle">🔀 Shuffle</button>
+      </div>
+    </div>
+
+    <!-- ═══ RESULT SCREEN ═══ -->
+    <div id="resultScreen" class="screen result-screen hidden">
+      <div class="result-icon" id="resultIcon">🎉</div>
+      <h2 class="result-title" id="resultTitle">You Sorted It!</h2>
+      <div class="result-details" id="resultDetails">
+        All colors sorted in <span>0</span> moves!<br/>
+        ⭐ Score: <span id="resultScore">0</span>
+      </div>
+      <div class="result-new-best hidden" id="resultNewBest">🌟 New Best Score! 🌟</div>
+      <div class="result-best">🏆 Best: <span id="resultBest">0</span></div>
+      <div class="result-btns">
+        <button id="resultNextBtn" class="btn btn-primary">➡️ Next Level</button>
+        <button id="resultRetryBtn" class="btn btn-secondary">🔄 Retry</button>
+      </div>
+    </div>
+
+    <!-- ═══ ARIA LIVE ═══ -->
+    <div class="sr-only" role="status" aria-live="polite" id="ariaLive">Sort Till You Cant</div>
+
+  </div>
+
+  <script>
+  (function(){
+    'use strict';
+
+    /* ═══════════════════════════════════════════════════════
+       SORT TILL YOU CANT — Water color sort puzzle
+       ═══════════════════════════════════════════════════════ */
+
+    // ─── DOM refs ───
+    var $ = function(id) { return document.getElementById(id); };
+    var titleScreen = $('titleScreen');
+    var playScreen  = $('playScreen');
+    var resultScreen = $('resultScreen');
+    var startBtn    = $('startBtn');
+    var levelDisplay = $('levelDisplay');
+    var timerDisplay = $('timerDisplay');
+    var movesDisplay = $('movesDisplay');
+    var hintText    = $('hintText');
+    var bottleGrid  = $('bottleGrid');
+    var resultIcon  = $('resultIcon');
+    var resultTitle = $('resultTitle');
+    var resultDetails = $('resultDetails');
+    var resultScore = $('resultScore');
+    var resultBest  = $('resultBest');
+    var resultNewBest = $('resultNewBest');
+    var resultNextBtn = $('resultNextBtn');
+    var resultRetryBtn = $('resultRetryBtn');
+    var titleBest   = $('titleBest');
+    var titleLevel  = $('titleLevel');
+    var muteBtn     = $('muteBtn');
+    var ariaLive    = $('ariaLive');
+    var undoBtn     = $('undoBtn');
+    var shuffleBtn  = $('shuffleBtn');
+
+    // ─── Constants ───
+    var MAX_GAME_SEC = 180; // 3 minutes
+    var MAX_BOTTLE_CAPACITY = 4;
+    var STORAGE_KEY = 'sortTillYouCant_best';
+    var PROGRESS_KEY = 'sortTillYouCant_progress';
+
+    // ─── Colors ───
+    var COLORS = [
+      { name: 'Red',        hex: '#ef5350' },
+      { name: 'Blue',       hex: '#42a5f5' },
+      { name: 'Green',      hex: '#66bb6a' },
+      { name: 'Yellow',     hex: '#ffd54f' },
+      { name: 'Purple',     hex: '#ab47bc' },
+      { name: 'Orange',     hex: '#ff9100' },
+      { name: 'Teal',       hex: '#26c6da' },
+      { name: 'Pink',       hex: '#f48fb1' },
+      { name: 'Lime',       hex: '#cddc39' },
+      { name: 'Coral',      hex: '#ff6b9d' },
+    ];
+
+    // ─── Level configs ───
+    var LEVELS = [
+      { colors: 3, bottles: 5, emptyBottles: 2 },  // 3 colors + 2 empty = 5
+      { colors: 4, bottles: 6, emptyBottles: 2 },  // 4 colors + 2 empty = 6
+      { colors: 5, bottles: 7, emptyBottles: 2 },  // 5 colors + 2 empty = 7
+      { colors: 6, bottles: 8, emptyBottles: 2 },  // 6 colors + 2 empty = 8
+      { colors: 7, bottles: 9, emptyBottles: 2 },  // 7 colors + 2 empty = 9
+      { colors: 8, bottles: 10, emptyBottles: 2 }, // 8 colors + 2 empty = 10
+    ];
+
+    // ─── State ───
+    var muted = localStorage.getItem('sortTillYouCant_muted') === 'true';
+    var highScore = 0;
+    var currentLevel = 0;
+    var score = 0;
+    var moves = 0;
+    var gameActive = false;
+    var gamePhase = 'TITLE'; // TITLE | PLAYING | RESULT
+    var selectedBottle = -1;
+    var elapsedMs = 0;
+    var timerInterval = null;
+    var bottles = [];
+    var undoStack = [];
+
+    // Audio
+    var audioCtx = null;
+    var lastSoundTime = 0;
+
+    // ─── Load / Save ───
+    function loadHighScore() {
+      try {
+        return parseInt(localStorage.getItem(STORAGE_KEY)) || 0;
+      } catch(_) { return 0; }
+    }
+    function saveHighScore(val) {
+      try {
+        var cur = loadHighScore();
+        if (val > cur) {
+          localStorage.setItem(STORAGE_KEY, String(val));
+          return true;
+        }
+        return false;
+      } catch(_) { return false; }
+    }
+
+    function loadProgress() {
+      try {
+        var p = parseInt(localStorage.getItem(PROGRESS_KEY)) || 0;
+        return Math.min(p, LEVELS.length - 1);
+      } catch(_) { return 0; }
+    }
+    function saveProgress(level) {
+      try {
+        var cur = loadProgress();
+        if (level > cur) {
+          localStorage.setItem(PROGRESS_KEY, String(level));
+        }
+      } catch(_) {}
+    }
+
+    function recordPlayed() {
+      try {
+        var recent = JSON.parse(localStorage.getItem('recentlyPlayed') || '[]');
+        var filtered = recent.filter(function(p) { return p.id !== 'sort-till-you-cant'; });
+        filtered.unshift({ id: 'sort-till-you-cant', playedAt: Date.now() });
+        localStorage.setItem('recentlyPlayed', JSON.stringify(filtered.slice(0, 10)));
+      } catch(_) {}
+    }
+
+    // ─── Audio ───
+    function ensureAudio() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+    }
+
+    function playTone(freq, dur, type, vol) {
+      if (muted || !audioCtx) return;
+      try {
+        var now = audioCtx.currentTime;
+        if (now - lastSoundTime < 0.04) return;
+        lastSoundTime = now;
+        var osc = audioCtx.createOscillator();
+        var gain = audioCtx.createGain();
+        osc.type = type || 'sine';
+        osc.frequency.setValueAtTime(freq, now);
+        gain.gain.setValueAtTime(Math.min(vol || 0.1, 0.15), now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + (dur || 0.1));
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start(now);
+        osc.stop(now + (dur || 0.1));
+      } catch(_) {}
+    }
+
+    function playPour() {
+      playTone(300 + Math.random() * 200, 0.1, 'sine', 0.06);
+    }
+    function playSelect() {
+      playTone(600, 0.05, 'sine', 0.05);
+    }
+    function playDeselect() {
+      playTone(400, 0.05, 'sine', 0.04);
+    }
+    function playWin() {
+      [523, 659, 784, 1047, 1319].forEach(function(f, i) {
+        setTimeout(function() { playTone(f, 0.2, 'sine', 0.10); }, i * 100);
+      });
+    }
+    function playNewBest() {
+      [659, 784, 1047, 1319, 1568].forEach(function(f, i) {
+        setTimeout(function() { playTone(f, 0.2, 'triangle', 0.10); }, i * 80);
+      });
+    }
+    function playTimeout() {
+      playTone(300, 0.3, 'sawtooth', 0.08);
+      setTimeout(function() { playTone(200, 0.4, 'sawtooth', 0.08); }, 200);
+    }
+    function playError() {
+      playTone(200, 0.12, 'square', 0.05);
+    }
+
+    function vibrate(ms) {
+      try { if (navigator.vibrate) navigator.vibrate(ms); } catch(_) {}
+    }
+
+    // ─── Mute ───
+    muteBtn.addEventListener('click', function() {
+      muted = !muted;
+      localStorage.setItem('sortTillYouCant_muted', String(muted));
+      muteBtn.textContent = muted ? '🔇' : '🔊';
+      muteBtn.setAttribute('aria-pressed', String(muted));
+      if (!muted) ensureAudio();
+    });
+    function updateMuteBtn() {
+      muteBtn.textContent = muted ? '🔇' : '🔊';
+      muteBtn.setAttribute('aria-pressed', String(muted));
+    }
+    updateMuteBtn();
+
+    // ─── Screens ───
+    function showScreen(screen) {
+      [titleScreen, playScreen, resultScreen].forEach(function(s) {
+        s.classList.add('hidden');
+      });
+      screen.classList.remove('hidden');
+    }
+
+    // ─── Level Generation ───
+    function getLevelConfig() {
+      var idx = Math.min(currentLevel, LEVELS.length - 1);
+      return LEVELS[idx];
+    }
+
+    function generateLevel() {
+      var config = getLevelConfig();
+      var numColors = config.colors;
+      var numBottles = numColors + config.emptyBottles;
+
+      // Create color units: 4 of each color
+      var units = [];
+      for (var c = 0; c < numColors; c++) {
+        for (var i = 0; i < MAX_BOTTLE_CAPACITY; i++) {
+          units.push(c);
+        }
+      }
+
+      // Fisher-Yates shuffle
+      for (var i = units.length - 1; i > 0; i--) {
+        var j = Math.floor(Math.random() * (i + 1));
+        var tmp = units[i]; units[i] = units[j]; units[j] = tmp;
+      }
+
+      // Distribute into bottles (each gets up to 4 layers)
+      var newBottles = [];
+      var unitIdx = 0;
+      for (var b = 0; b < numBottles - config.emptyBottles; b++) {
+        var bottle = [];
+        for (var i = 0; i < MAX_BOTTLE_CAPACITY; i++) {
+          if (unitIdx < units.length) {
+            bottle.push(units[unitIdx++]);
+          }
+        }
+        newBottles.push(bottle);
+      }
+
+      // Add empty bottles
+      for (var e = 0; e < config.emptyBottles; e++) {
+        newBottles.push([]);
+      }
+
+      // Attempt to solve by doing random valid pours to scramble
+      // But more reliably, we'll just use the shuffled distribution directly
+      // and add some shuffle-backwards for solvability guarantee.
+
+      return newBottles;
+    }
+
+    // Solvability: generate a solved state, then reverse-shuffle it
+    function generateSolvableLevel() {
+      var config = getLevelConfig();
+      var numColors = config.colors;
+      var numBottles = numColors + config.emptyBottles;
+
+      // Start with sorted bottles (each bottle = one color x4)
+      var sorted = [];
+      for (var c = 0; c < numColors; c++) {
+        var bottle = [];
+        for (var i = 0; i < MAX_BOTTLE_CAPACITY; i++) {
+          bottle.push(c);
+        }
+        sorted.push(bottle);
+      }
+      // Add empty bottles
+      for (var e = 0; e < config.emptyBottles; e++) {
+        sorted.push([]);
+      }
+
+      // Now do a bunch of random valid reverse-moves to scramble
+      // This guarantees solvability since every move is reversible
+      var scrambleMoves = 40 + numColors * 10;
+      for (var s = 0; s < scrambleMoves; s++) {
+        var validMoves = [];
+        for (var src = 0; src < sorted.length; src++) {
+          if (sorted[src].length === 0) continue;
+          for (var dst = 0; dst < sorted.length; dst++) {
+            if (src === dst) continue;
+            if (canPour(sorted, src, dst)) {
+              validMoves.push({ src: src, dst: dst });
+            }
+          }
+        }
+        if (validMoves.length === 0) break;
+        var move = validMoves[Math.floor(Math.random() * validMoves.length)];
+        var poured = doPour(sorted, move.src, move.dst);
+        // Don't count pure bottles (same color already sorted) — make it harder
+        if (s < 10 && isBottleSorted(sorted[move.dst]) && sorted[move.src].length > 0) {
+          // Undo this pour
+          for (var u = 0; u < poured; u++) {
+            sorted[move.src].push(sorted[move.dst].pop());
+          }
+        }
+      }
+
+      return sorted;
+    }
+
+    // ─── Bottle Logic ───
+    function canPour(bottleArr, srcIdx, dstIdx) {
+      var src = bottleArr[srcIdx];
+      var dst = bottleArr[dstIdx];
+
+      // Source must have water
+      if (src.length === 0) return false;
+
+      // Destination must have room
+      if (dst.length >= MAX_BOTTLE_CAPACITY) return false;
+
+      // If destination is empty, can pour (any color)
+      if (dst.length === 0) return true;
+
+      // Can only pour if top colors match
+      return src[src.length - 1] === dst[dst.length - 1];
+    }
+
+    function doPour(bottleArr, srcIdx, dstIdx) {
+      var src = bottleArr[srcIdx];
+      var dst = bottleArr[dstIdx];
+      var poured = 0;
+
+      // Pour while conditions are met
+      while (src.length > 0 && dst.length < MAX_BOTTLE_CAPACITY) {
+        var topColor = src[src.length - 1];
+
+        // If destination is empty or matches top color
+        if (dst.length === 0 || dst[dst.length - 1] === topColor) {
+          dst.push(src.pop());
+          poured++;
+        } else {
+          break;
+        }
+      }
+
+      return poured;
+    }
+
+    function canPourAny(bottleArr) {
+      for (var i = 0; i < bottleArr.length; i++) {
+        for (var j = 0; j < bottleArr.length; j++) {
+          if (i !== j && canPour(bottleArr, i, j)) {
+            return true;
+          }
+        }
+      }
+      return false;
+    }
+
+    function isBottleSorted(bottle) {
+      if (bottle.length === 0) return true;
+      var color = bottle[0];
+      for (var i = 1; i < bottle.length; i++) {
+        if (bottle[i] !== color) return false;
+      }
+      return true;
+    }
+
+    function isAllSorted(bottleArr) {
+      var pureColorCount = 0;
+      for (var i = 0; i < bottleArr.length; i++) {
+        var b = bottleArr[i];
+        if (b.length === 0) continue; // empty bottles OK
+        if (b.length === MAX_BOTTLE_CAPACITY && isBottleSorted(b)) {
+          pureColorCount++;
+        } else if (b.length < MAX_BOTTLE_CAPACITY && isBottleSorted(b)) {
+          // Accept partially filled pure bottles too (edge case)
+          pureColorCount++;
+        } else {
+          return false;
+        }
+      }
+
+      var config = getLevelConfig();
+      return pureColorCount >= config.colors;
+    }
+
+    // ─── Clone bottles for undo ───
+    function cloneBottles(bottleArr) {
+      return bottleArr.map(function(b) { return b.slice(); });
+    }
+
+    // ─── Render ───
+    function renderBottles() {
+      bottleGrid.innerHTML = '';
+      var config = getLevelConfig();
+
+      bottles.forEach(function(bottle, idx) {
+        var wrap = document.createElement('div');
+        wrap.className = 'bottle-wrap' + (idx === selectedBottle ? ' selected' : '');
+        wrap.dataset.idx = idx;
+
+        var bottleEl = document.createElement('div');
+        bottleEl.className = 'bottle';
+
+        // Render layers (bottom to top)
+        var layerHeight = 100 / MAX_BOTTLE_CAPACITY;
+        for (var l = 0; l < bottle.length; l++) {
+          var layer = document.createElement('div');
+          layer.className = 'bottle-layer';
+          layer.style.height = layerHeight + '%';
+          layer.style.backgroundColor = COLORS[bottle[l]] ? COLORS[bottle[l]].hex : '#888';
+          bottleEl.appendChild(layer);
+        }
+
+        // Fill empty space at top
+        var emptyHeight = MAX_BOTTLE_CAPACITY - bottle.length;
+        if (emptyHeight > 0) {
+          var emptyDiv = document.createElement('div');
+          emptyDiv.style.flex = '1';
+          bottleEl.appendChild(emptyDiv);
+        }
+
+        wrap.appendChild(bottleEl);
+
+        // Label
+        var label = document.createElement('div');
+        label.className = 'bottle-label';
+        if (bottle.length === 0) {
+          label.textContent = 'Empty';
+        } else {
+          label.textContent = (idx + 1);
+        }
+        wrap.appendChild(label);
+
+        // Selected hint
+        var hint = document.createElement('div');
+        hint.className = 'selected-hint';
+        hint.textContent = '▲ POUR';
+        wrap.appendChild(hint);
+
+        wrap.addEventListener('click', function() { onBottleClick(parseInt(this.dataset.idx)); });
+
+        bottleGrid.appendChild(wrap);
+      });
+
+      updateUndoBtn();
+    }
+
+    function updateUndoBtn() {
+      undoBtn.disabled = undoStack.length === 0;
+    }
+
+    function scrollToBottle(idx) {
+      var wraps = bottleGrid.querySelectorAll('.bottle-wrap');
+      if (wraps[idx]) {
+        wraps[idx].scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      }
+    }
+
+    // ─── Bottle Click Handler ───
+    function onBottleClick(idx) {
+      if (!gameActive || gamePhase !== 'PLAYING') return;
+
+      // If no bottle selected
+      if (selectedBottle === -1) {
+        // Select this bottle if it has water
+        if (bottles[idx].length > 0) {
+          selectedBottle = idx;
+          renderBottles();
+          hintText.textContent = '👇 Tap another bottle to pour';
+          hintText.className = 'hint-text selected';
+          playSelect();
+          vibrate(10);
+          scrollToBottle(idx);
+        }
+        return;
+      }
+
+      // Same bottle clicked → deselect
+      if (selectedBottle === idx) {
+        selectedBottle = -1;
+        renderBottles();
+        hintText.textContent = '💡 Tap a bottle to select it, then tap another to pour';
+        hintText.className = 'hint-text';
+        playDeselect();
+        return;
+      }
+
+      // Try to pour
+      if (canPour(bottles, selectedBottle, idx)) {
+        // Save state for undo
+        undoStack.push(cloneBottles(bottles));
+
+        var poured = doPour(bottles, selectedBottle, idx);
+        moves++;
+        movesDisplay.textContent = moves;
+        score += poured * 5;
+
+        playPour();
+        vibrate([15, 5, 15]);
+
+        selectedBottle = -1;
+        renderBottles();
+
+        hintText.textContent = '💡 Tap a bottle to select it, then tap another to pour';
+        hintText.className = 'hint-text';
+
+        // Check win
+        if (isAllSorted(bottles)) {
+          winGame();
+        } else if (!canPourAny(bottles)) {
+          // Stuck! Show a hint
+          hintText.textContent = '🔀 No valid moves! Try shuffle or undo';
+          hintText.className = 'hint-text';
+        }
+
+        updateUndoBtn();
+      } else {
+        // Cannot pour
+        selectedBottle = -1;
+        renderBottles();
+        hintText.textContent = '❌ Cannot pour there — need matching color or empty bottle';
+        hintText.className = 'hint-text';
+        playError();
+        vibrate(20);
+      }
+    }
+
+    // ─── Timer ───
+    function startTimer() {
+      elapsedMs = 0;
+      if (timerInterval) clearInterval(timerInterval);
+      timerInterval = setInterval(function() {
+        if (!gameActive || gamePhase !== 'PLAYING') return;
+        elapsedMs += 1000;
+
+        var sec = Math.floor(elapsedMs / 1000);
+        var min = Math.floor(sec / 60);
+        var remainSec = sec % 60;
+        timerDisplay.textContent = min + ':' + (remainSec < 10 ? '0' : '') + remainSec;
+
+        // Timeout
+        if (sec >= MAX_GAME_SEC) {
+          timeoutGame();
+        }
+      }, 1000);
+    }
+
+    function getElapsedSec() {
+      return Math.floor(elapsedMs / 1000);
+    }
+
+    function fmtTime(sec) {
+      var m = Math.floor(sec / 60);
+      var s = sec % 60;
+      return m + ':' + (s < 10 ? '0' : '') + s;
+    }
+
+    // ─── Win / Lose ───
+    function winGame() {
+      if (gamePhase !== 'PLAYING') return;
+      gameActive = false;
+      gamePhase = 'RESULT';
+      if (timerInterval) clearInterval(timerInterval);
+
+      playWin();
+      vibrate([50, 30, 50, 30, 80]);
+
+      var timeBonus = Math.max(0, MAX_GAME_SEC - getElapsedSec()) * 2;
+      var moveBonus = Math.max(0, (100 - moves)) * 3;
+      var finalScore = score + timeBonus + moveBonus;
+
+      var isNewBest = saveHighScore(finalScore);
+      if (isNewBest) {
+        playNewBest();
+        vibrate([30, 20, 30, 20, 50, 20, 80]);
+      }
+
+      // Unlock next level
+      saveProgress(currentLevel + 1);
+
+      var isLastLevel = currentLevel >= LEVELS.length - 1;
+
+      resultIcon.textContent = '🎉';
+      resultTitle.textContent = 'All Sorted!';
+      resultTitle.className = 'result-title win';
+      resultDetails.innerHTML = 'Sorted in <span>' + moves + '</span> moves!<br/>' +
+        '⏱ Time: ' + fmtTime(getElapsedSec()) + '<br/>' +
+        '⭐ Score: <span>' + finalScore + '</span>';
+      resultScore.textContent = finalScore;
+      resultBest.textContent = loadHighScore();
+      resultNewBest.classList.toggle('hidden', !isNewBest);
+
+      if (isLastLevel) {
+        resultNextBtn.textContent = '🏆 You\'re a Sorting Master!';
+        resultNextBtn.onclick = function() {
+          currentLevel = 0;
+          startGame();
+        };
+      } else {
+        resultNextBtn.textContent = '➡️ Next Level';
+        resultNextBtn.onclick = function() {
+          currentLevel++;
+          startGame();
+        };
+      }
+      resultRetryBtn.onclick = function() {
+        startGame();
+      };
+
+      showScreen(resultScreen);
+      document.title = 'Sort Till You Cant — Won!';
+    }
+
+    function timeoutGame() {
+      if (gamePhase !== 'PLAYING') return;
+      gameActive = false;
+      gamePhase = 'RESULT';
+      if (timerInterval) clearInterval(timerInterval);
+
+      playTimeout();
+      vibrate([100, 50, 100]);
+
+      var finalScore = Math.max(0, score);
+
+      var isNewBest = saveHighScore(finalScore);
+      if (isNewBest) {
+        playNewBest();
+      }
+
+      resultIcon.textContent = '⏰';
+      resultTitle.textContent = 'Time\'s Up!';
+      resultTitle.className = 'result-title lose';
+      resultDetails.innerHTML = 'You made <span>' + moves + '</span> moves.<br/>' +
+        'Try to sort faster next time!<br/>' +
+        '⭐ Score: <span>' + finalScore + '</span>';
+      resultScore.textContent = finalScore;
+      resultBest.textContent = loadHighScore();
+      resultNewBest.classList.toggle('hidden', !isNewBest);
+
+      resultNextBtn.textContent = '🔄 Try Again';
+      resultNextBtn.onclick = function() {
+        startGame();
+      };
+      resultRetryBtn.onclick = function() {
+        startGame();
+      };
+
+      showScreen(resultScreen);
+      document.title = 'Sort Till You Cant — Time\'s Up';
+    }
+
+    // ─── Undo ───
+    function doUndo() {
+      if (undoStack.length === 0) return;
+      bottles = undoStack.pop();
+      moves--;
+      score = Math.max(0, score - 5);
+      movesDisplay.textContent = moves;
+      selectedBottle = -1;
+      renderBottles();
+      hintText.textContent = '↩ Undone!';
+      hintText.className = 'hint-text';
+      playDeselect();
+    }
+
+    // ─── Shuffle (scramble remaining unsorted bottles) ───
+    function doShuffle() {
+      if (!gameActive || gamePhase !== 'PLAYING') return;
+      if (isAllSorted(bottles)) return;
+
+      // Save undo state
+      undoStack.push(cloneBottles(bottles));
+
+      // Collect all units from unsorted/non-empty bottles
+      var units = [];
+      var newBottles = [];
+      var emptyCount = 0;
+
+      for (var i = 0; i < bottles.length; i++) {
+        var b = bottles[i];
+        // Only take from non-completed and non-empty bottles
+        if (b.length > 0 && !isBottleSorted(b)) {
+          for (var j = 0; j < b.length; j++) {
+            units.push(b[j]);
+          }
+          newBottles.push([]);
+        } else if (b.length > 0 && isBottleSorted(b) && b.length === MAX_BOTTLE_CAPACITY) {
+          // Keep sorted full bottles as-is
+          newBottles.push(b.slice());
+        } else if (b.length === 0) {
+          emptyCount++;
+        } else {
+          // Partially sorted - reshuffle
+          for (var j = 0; j < b.length; j++) {
+            units.push(b[j]);
+          }
+          newBottles.push([]);
+        }
+      }
+
+      // Add empty bottles at the end
+      for (var e = 0; e < emptyCount; e++) {
+        newBottles.push([]);
+      }
+
+      // Shuffle units
+      for (var i = units.length - 1; i > 0; i--) {
+        var j = Math.floor(Math.random() * (i + 1));
+        var tmp = units[i]; units[i] = units[j]; units[j] = tmp;
+      }
+
+      // Redistribute
+      var ui = 0;
+      for (var i = 0; i < newBottles.length && ui < units.length; i++) {
+        if (newBottles[i].length === 0 && (isBottleSorted(bottles[i]) && bottles[i].length === MAX_BOTTLE_CAPACITY)) {
+          continue; // Skip full sorted bottles
+        }
+        while (newBottles[i].length < MAX_BOTTLE_CAPACITY && ui < units.length) {
+          newBottles[i].push(units[ui++]);
+        }
+      }
+
+      // Fill any remaining bottles
+      for (var i = 0; i < newBottles.length && ui < units.length; i++) {
+        while (newBottles[i].length < MAX_BOTTLE_CAPACITY && ui < units.length) {
+          newBottles[i].push(units[ui++]);
+        }
+      }
+
+      bottles = newBottles;
+      selectedBottle = -1;
+      movesDisplay.textContent = moves;
+      renderBottles();
+      hintText.textContent = '🔀 Shuffled! Try a new approach';
+      hintText.className = 'hint-text';
+      playPour();
+      vibrate(30);
+      updateUndoBtn();
+
+      // Check if stuck
+      if (!canPourAny(bottles) && !isAllSorted(bottles)) {
+        hintText.textContent = '⚠️ Still stuck! Try undo or restart';
+      }
+    }
+
+    // ─── Game Init ───
+    function startGame() {
+      ensureAudio();
+      gameActive = true;
+      gamePhase = 'PLAYING';
+      score = 0;
+      moves = 0;
+      selectedBottle = -1;
+      undoStack = [];
+
+      movesDisplay.textContent = '0';
+
+      var config = getLevelConfig();
+      levelDisplay.textContent = 'Level ' + (currentLevel + 1) + ' · ' + config.colors + ' colors';
+
+      bottles = generateSolvableLevel();
+      renderBottles();
+
+      timerDisplay.textContent = '0:00';
+      hintText.textContent = '💡 Tap a bottle to select it, then tap another to pour';
+      hintText.className = 'hint-text';
+
+      showScreen(playScreen);
+      document.title = 'Sort Till You Cant — Level ' + (currentLevel + 1);
+
+      startTimer();
+      recordPlayed();
+    }
+
+    // ─── Input ───
+    // ── Keyboard ──
+    document.addEventListener('keydown', function(e) {
+      var tag = (e.target && e.target.tagName || '').toLowerCase();
+      if (tag === 'input' || tag === 'textarea' || tag === 'select') return;
+
+      // Title → Enter / Space to start
+      if (gamePhase === 'TITLE' && (e.key === 'Enter' || e.key === ' ')) {
+        e.preventDefault();
+        startBtn.click();
+        return;
+      }
+      // Result → Enter / Space to advance
+      if (gamePhase === 'RESULT' && (e.key === 'Enter' || e.key === ' ')) {
+        e.preventDefault();
+        resultNextBtn.click();
+        return;
+      }
+
+      if (gamePhase !== 'PLAYING') return;
+
+      // Number keys 1-9 to select bottles
+      var num = parseInt(e.key);
+      if (num >= 1 && num <= bottles.length) {
+        e.preventDefault();
+        onBottleClick(num - 1);
+        return;
+      }
+
+      // Z / Ctrl+Z for undo
+      if (e.key === 'z' || e.key === 'Z') {
+        if (e.ctrlKey || e.metaKey) {
+          e.preventDefault();
+          doUndo();
+          return;
+        }
+      }
+
+      // U for undo
+      if (e.key === 'u' || e.key === 'U') {
+        e.preventDefault();
+        doUndo();
+        return;
+      }
+
+      // S for shuffle
+      if (e.key === 's' || e.key === 'S') {
+        e.preventDefault();
+        doShuffle();
+        return;
+      }
+
+      // Escape to deselect
+      if (e.key === 'Escape') {
+        if (selectedBottle !== -1) {
+          selectedBottle = -1;
+          renderBottles();
+          hintText.textContent = '💡 Tap a bottle to select it, then tap another to pour';
+          hintText.className = 'hint-text';
+          playDeselect();
+        }
+        return;
+      }
+    });
+
+    // ─── Buttons ───
+    startBtn.addEventListener('click', function() {
+      ensureAudio();
+      highScore = loadHighScore();
+      currentLevel = loadProgress();
+      startGame();
+    });
+
+    undoBtn.addEventListener('click', doUndo);
+
+    shuffleBtn.addEventListener('click', doShuffle);
+
+    // ─── Init ───
+    function init() {
+      highScore = loadHighScore();
+      titleBest.textContent = highScore;
+      var progress = loadProgress();
+      titleLevel.textContent = 'Level: ' + (progress + 1) + ' · Highest: ' + (progress + 1);
+
+      showScreen(titleScreen);
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', init);
+    } else {
+      init();
+    }
+
+  })();
+  </script>
+</body>
+</html>
