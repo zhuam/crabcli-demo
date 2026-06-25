@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#1e1b4b"/>
+      <stop offset="100%" stop-color="#0f0e17"/>
+    </linearGradient>
+    <linearGradient id="glow" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#8B5CF6"/>
+      <stop offset="100%" stop-color="#4C51BF"/>
+    </linearGradient>
+  </defs>
+  <rect width="128" height="128" rx="16" fill="url(#bg)"/>
+  <!-- Chess board pattern -->
+  <rect x="18" y="18" width="92" height="92" rx="4" fill="#b58863"/>
+  <!-- Light squares -->
+  <g fill="#f0d9b5">
+    <rect x="18" y="18" width="11.5" height="11.5"/><rect x="41" y="18" width="11.5" height="11.5"/><rect x="64" y="18" width="11.5" height="11.5"/><rect x="87" y="18" width="11.5" height="11.5"/>
+    <rect x="29.5" y="29.5" width="11.5" height="11.5"/><rect x="52" y="29.5" width="11.5" height="11.5"/><rect x="75" y="29.5" width="11.5" height="11.5"/><rect x="98" y="29.5" width="11.5" height="11.5"/>
+    <rect x="18" y="41" width="11.5" height="11.5"/><rect x="41" y="41" width="11.5" height="11.5"/><rect x="64" y="41" width="11.5" height="11.5"/><rect x="87" y="41" width="11.5" height="11.5"/>
+    <rect x="29.5" y="52" width="11.5" height="11.5"/><rect x="52" y="52" width="11.5" height="11.5"/><rect x="75" y="52" width="11.5" height="11.5"/><rect x="98" y="52" width="11.5" height="11.5"/>
+    <rect x="18" y="64" width="11.5" height="11.5"/><rect x="41" y="64" width="11.5" height="11.5"/><rect x="64" y="64" width="11.5" height="11.5"/><rect x="87" y="64" width="11.5" height="11.5"/>
+    <rect x="29.5" y="75" width="11.5" height="11.5"/><rect x="52" y="75" width="11.5" height="11.5"/><rect x="75" y="75" width="11.5" height="11.5"/><rect x="98" y="75" width="11.5" height="11.5"/>
+    <rect x="18" y="87" width="11.5" height="11.5"/><rect x="41" y="87" width="11.5" height="11.5"/><rect x="64" y="87" width="11.5" height="11.5"/><rect x="87" y="87" width="11.5" height="11.5"/>
+    <rect x="29.5" y="98" width="11.5" height="11.5"/><rect x="52" y="98" width="11.5" height="11.5"/><rect x="75" y="98" width="11.5" height="11.5"/><rect x="98" y="98" width="11.5" height="11.5"/>
+  </g>
+  <!-- King pieces -->
+  <text x="42" y="86" font-size="28" font-family="serif" fill="#fff">♔</text>
+  <text x="87" y="40" font-size="28" font-family="serif" fill="#1a1a1a" transform="rotate(180, 87, 40)">♚</text>
+  <!-- Glow bar -->
+  <rect x="0" y="0" width="128" height="3" fill="url(#glow)" rx="1.5"/>
+</svg>
