@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
-  <meta name="theme-color" content="#1a1a2e" />
+  <meta name="theme-color" content="#1a1025" />
   <title>Sparkle Sweep</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -11,29 +11,32 @@
   <link rel="stylesheet" href="../../games/shared/game-frame.css" />
   <style>
     /* ═══════════════════════════════════════════════════════
-       Sparkle Sweep — Swipe to clean, reveal the beauty!
+       Sparkle Sweep — Swipe to clean, reveal beautiful scenes!
        ═══════════════════════════════════════════════════════ */
 
     :root {
-      --bg-deep: #1a1a2e;
-      --bg-mid: #16213e;
-      --surface: rgba(255,255,255,0.07);
-      --surface-hover: rgba(255,255,255,0.12);
+      --bg-deep: #1a1025;
+      --bg-surface: rgba(255,255,255,0.06);
+      --bg-surface-hover: rgba(255,255,255,0.10);
       --border: rgba(255,255,255,0.10);
-      --border-strong: rgba(255,255,255,0.20);
-      --text: #f0f0f0;
+      --border-strong: rgba(255,255,255,0.18);
+      --text: #f0edf5;
       --text-dim: rgba(255,255,255,0.55);
       --text-muted: rgba(255,255,255,0.30);
-      --gold: #FFD700;
-      --cyan: #4dd0e1;
-      --coral: #ff6b9d;
-      --purple: #a29bfe;
-      --green: #00e676;
+      --accent: #6c5ce7;
+      --accent-glow: rgba(108,92,231,0.4);
+      --gold: #ffd700;
+      --pink: #fd79a8;
+      --cyan: #00cec9;
+      --coral: #ff7675;
+      --green: #55efc4;
       --font-display: 'Outfit', system-ui, sans-serif;
       --font-body: 'Inter', system-ui, sans-serif;
       --radius-sm: 8px;
-      --radius-md: 16px;
-      --radius-lg: 24px;
+      --radius-md: 14px;
+      --radius-lg: 20px;
+      --scene-size: min(420px, 88vw);
+      --brush-default: 38;
     }
 
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -48,10 +51,9 @@
       touch-action: none; -webkit-touch-callout: none;
       -webkit-tap-highlight-color: transparent;
     }
-
     #app { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; }
 
-    /* ═══ Screens ═══ */
+    /* ═══ Shared Screens ═══ */
     .screen {
       position: fixed; inset: 0;
       display: flex; flex-direction: column; align-items: center;
@@ -62,37 +64,53 @@
       opacity: 0; pointer-events: none; transform: scale(0.96);
     }
 
-    /* ═══════════════════════════════
+    /* ═══════════════════════════
        TITLE SCREEN
-       ═══════════════════════════════ */
+       ═══════════════════════════ */
     .title-screen {
       justify-content: center; gap: 12px;
-      background: linear-gradient(180deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+      background: linear-gradient(160deg, #1a1025 0%, #2d1b4e 40%, #1a1a4e 75%, #0d2440 100%);
       padding: 24px;
     }
     .title-screen::before {
       content: ''; position: absolute; inset: 0;
       background:
-        radial-gradient(ellipse 140px 70px at 25% 30%, rgba(77,208,225,0.10) 0%, transparent 70%),
-        radial-gradient(ellipse 120px 90px at 75% 25%, rgba(255,215,0,0.08) 0%, transparent 70%),
-        radial-gradient(ellipse 90px 60px at 50% 80%, rgba(255,107,157,0.06) 0%, transparent 70%);
+        radial-gradient(ellipse 180px 100px at 20% 25%, rgba(108,92,231,0.12) 0%, transparent 70%),
+        radial-gradient(ellipse 140px 80px at 75% 20%, rgba(253,121,168,0.10) 0%, transparent 70%),
+        radial-gradient(ellipse 120px 80px at 50% 80%, rgba(0,206,201,0.08) 0%, transparent 70%);
       pointer-events: none;
+    }
+
+    .title-bg-stars {
+      position: absolute; inset: 0;
+      pointer-events: none; overflow: hidden;
+    }
+    .title-bg-stars span {
+      position: absolute;
+      width: 4px; height: 4px;
+      background: #fff;
+      border-radius: 50%;
+      animation: twinkle 2s ease-in-out infinite alternate;
+    }
+    @keyframes twinkle {
+      0% { opacity: 0.2; transform: scale(0.8); }
+      100% { opacity: 0.9; transform: scale(1.2); }
     }
 
     .title-icon {
       font-size: 72px; line-height: 1;
-      filter: drop-shadow(0 0 30px rgba(77,208,225,0.35));
-      animation: titleFloat 3s ease-in-out infinite;
+      filter: drop-shadow(0 0 40px rgba(108,92,231,0.4));
+      animation: iconFloat 2.5s ease-in-out infinite;
       position: relative; z-index: 1;
     }
-    @keyframes titleFloat {
+    @keyframes iconFloat {
       0%, 100% { transform: translateY(0) scale(1); }
-      50% { transform: translateY(-10px) scale(1.03); }
+      50% { transform: translateY(-10px) scale(1.05); }
     }
 
     .title-text {
       font-family: var(--font-display); font-size: 40px; font-weight: 900;
-      background: linear-gradient(135deg, #4dd0e1, #FFD700, #a29bfe);
+      background: linear-gradient(135deg, #6c5ce7, #fd79a8, #ffd700, #00cec9);
       background-size: 300% auto;
       -webkit-background-clip: text; -webkit-text-fill-color: transparent;
       background-clip: text;
@@ -104,19 +122,21 @@
       0%, 100% { background-position: 0% center; }
       50% { background-position: 100% center; }
     }
-
     .title-sub {
       font-size: 14px; color: var(--text-dim);
-      text-align: center; max-width: 300px; line-height: 1.6;
+      text-align: center; max-width: 280px; line-height: 1.5;
       position: relative; z-index: 1;
     }
-    .title-high {
-      font-family: var(--font-body); font-size: 14px; color: var(--text-muted);
+    .title-best {
+      font-size: 14px; color: var(--text-muted);
       position: relative; z-index: 1;
     }
-    .title-high span { color: var(--gold); }
+    .title-best span { color: var(--gold); font-weight: 700; }
+    .title-level-count {
+      font-family: var(--font-display); font-size: 15px; font-weight: 700;
+      color: var(--accent); text-align: center; position: relative; z-index: 1;
+    }
 
-    /* ─── Buttons ─── */
     .btn {
       display: inline-flex; align-items: center; gap: 8px;
       padding: 14px 36px; border: none; border-radius: 50px;
@@ -126,123 +146,171 @@
     }
     .btn:active { transform: scale(0.95); }
     .btn-primary {
-      background: linear-gradient(135deg, #4dd0e1, #a29bfe);
-      color: #fff; box-shadow: 0 4px 20px rgba(77,208,225,0.35);
+      background: linear-gradient(135deg, #6c5ce7, #a29bfe);
+      color: #fff; box-shadow: 0 4px 24px rgba(108,92,231,0.35);
     }
-    .btn-primary:hover { box-shadow: 0 6px 28px rgba(77,208,225,0.5); transform: translateY(-2px); }
+    .btn-primary:hover { box-shadow: 0 6px 30px rgba(108,92,231,0.5); transform: translateY(-2px); }
     .btn-primary:active { transform: scale(0.95) translateY(0); }
     .btn-secondary {
-      background: var(--surface); color: var(--text);
+      background: var(--bg-surface); color: var(--text);
       border: 1px solid var(--border-strong);
     }
-    .btn-secondary:hover { background: var(--surface-hover); }
-    .btn-sm { padding: 10px 24px; font-size: 14px; }
+    .btn-secondary:hover { background: var(--bg-surface-hover); }
+    .btn-sm { padding: 10px 22px; font-size: 14px; }
 
-    /* ═══════════════════════════════
-       PLAY SCREEN
-       ═══════════════════════════════ */
-    .play-screen {
-      background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%);
-      padding: 8px;
-      justify-content: flex-start;
+    /* ═══════════════════════════
+       GAME SCREEN
+       ═══════════════════════════ */
+    .game-screen {
+      background: linear-gradient(180deg, #1a1025 0%, #23153a 100%);
+      padding: 8px 12px 16px;
+      justify-content: center;
+      gap: 6px;
     }
 
-    .play-top {
-      width: 100%; max-width: 420px;
+    .game-top {
+      width: 100%; max-width: var(--scene-size);
       display: flex; align-items: center; justify-content: space-between;
-      padding: 6px 4px; position: relative; z-index: 5;
+      padding: 4px 2px; flex-shrink: 0;
     }
-    .play-level {
+    .game-level {
       font-family: var(--font-display); font-size: 15px; font-weight: 700;
-      color: var(--cyan);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      max-width: 55%;
     }
-    .play-stat {
-      display: flex; align-items: center; gap: 12px;
+    .game-timer {
+      font-family: var(--font-display); font-size: 16px; font-weight: 700;
+      color: var(--gold);
     }
-    .play-stat-item {
-      font-family: var(--font-body); font-size: 13px; font-weight: 600;
-      color: var(--text-dim);
-    }
-    .play-stat-item span { color: var(--gold); }
-
-    .play-progress-bar {
-      width: 100%; max-width: 420px; height: 6px;
-      background: var(--surface); border-radius: 3px;
-      overflow: hidden; margin: 4px 0; position: relative; z-index: 5;
-    }
-    .play-progress-fill {
-      height: 100%; width: 0%;
-      background: linear-gradient(90deg, var(--cyan), var(--green));
-      border-radius: 3px; transition: width 0.15s ease;
+    .game-timer .sec { font-size: 22px; }
+    .game-timer.danger { color: var(--coral); animation: pulseDanger 0.6s ease-in-out infinite alternate; }
+    @keyframes pulseDanger {
+      0% { opacity: 0.7; }
+      100% { opacity: 1; }
     }
 
-    /* ─── Canvas Area ─── */
-    .canvas-wrap {
-      position: relative;
-      width: min(400px, 92vw);
-      aspect-ratio: 1;
-      border-radius: var(--radius-md);
-      overflow: hidden;
-      box-shadow: 0 0 40px rgba(77,208,225,0.06), 0 8px 32px rgba(0,0,0,0.3);
+    /* ─── Progress Bar ─── */
+    .progress-wrap {
+      width: 100%; max-width: var(--scene-size);
+      display: flex; align-items: center; gap: 10px;
+      flex-shrink: 0; padding: 0 2px;
+    }
+    .progress-track {
+      flex: 1; height: 8px;
+      background: var(--bg-surface);
+      border-radius: 10px; overflow: hidden;
       border: 1px solid var(--border);
-      z-index: 3;
     }
-    .canvas-wrap canvas {
-      display: block; width: 100%; height: 100%;
-      touch-action: none;
-      cursor: crosshair;
+    .progress-fill {
+      height: 100%; width: 0%;
+      background: linear-gradient(90deg, #6c5ce7, #fd79a8, #ffd700);
+      border-radius: 10px;
+      transition: width 0.25s ease;
+    }
+    .progress-pct {
+      font-size: 14px; font-weight: 700;
+      color: var(--text-dim); min-width: 44px; text-align: right;
+      font-family: var(--font-display);
+    }
+    .progress-pct span { color: var(--gold); }
+
+    /* ─── Scene Area ─── */
+    .scene-wrap {
+      position: relative;
+      width: var(--scene-size);
+      height: var(--scene-size);
+      flex-shrink: 0;
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      box-shadow:
+        0 0 0 1px var(--border),
+        0 8px 40px rgba(0,0,0,0.4);
     }
 
-    #dirtCanvas,
-    #revealCanvas { position: absolute; top: 0; left: 0; }
-
-    /* ─── Brush Size Toggle ─── */
-    .brush-section {
-      display: flex; align-items: center; gap: 8px;
-      width: 100%; max-width: 420px;
-      justify-content: center; margin-top: 8px;
-      position: relative; z-index: 5;
-    }
-    .brush-label {
-      font-size: 11px; color: var(--text-dim);
-      text-transform: uppercase; letter-spacing: 0.06em;
-    }
-    .brush-btn {
-      width: 36px; height: 36px; border-radius: 50%;
-      border: 2px solid var(--border); background: var(--surface);
-      cursor: pointer; transition: all 0.15s ease;
+    #scene-container {
+      position: absolute; inset: 0;
       display: flex; align-items: center; justify-content: center;
+      transition: background 1s ease;
+      z-index: 0;
     }
-    .brush-btn:hover { background: var(--surface-hover); }
-    .brush-btn.selected {
-      border-color: var(--cyan);
-      background: rgba(77,208,225,0.12);
-      box-shadow: 0 0 10px rgba(77,208,225,0.25);
+    #scene-container .scene-emoji {
+      position: absolute;
+      pointer-events: none;
+      transform: translate(-50%, -50%);
+      user-select: none;
+      transition: opacity 0.3s ease;
+      opacity: 0.85;
     }
-    .brush-sml { width: 18px; height: 18px; border-radius: 50%; background: var(--text-dim); }
-    .brush-med { width: 28px; height: 28px; border-radius: 50%; background: var(--text-dim); }
-    .brush-lrg { width: 38px; height: 38px; border-radius: 50%; background: var(--text-dim); }
 
-    /* ─── Hint ─── */
+    #dirt-canvas {
+      position: absolute; inset: 0;
+      width: 100%; height: 100%;
+      z-index: 1;
+      cursor: crosshair;
+      touch-action: none;
+    }
+
+    .scene-label {
+      position: absolute;
+      bottom: 14px; left: 50%;
+      transform: translateX(-50%);
+      font-family: var(--font-display);
+      font-size: 13px;
+      font-weight: 700;
+      color: rgba(255,255,255,0.6);
+      text-shadow: 0 2px 8px rgba(0,0,0,0.5);
+      z-index: 2;
+      pointer-events: none;
+      white-space: nowrap;
+    }
+
+    /* ─── Sparkle particles ─── */
+    .sparkle {
+      position: absolute;
+      pointer-events: none;
+      z-index: 3;
+      font-size: 14px;
+      animation: sparkleFade 0.7s ease-out forwards;
+    }
+    @keyframes sparkleFade {
+      0% { opacity: 1; transform: translate(0, 0) scale(0.5) rotate(0deg); }
+      100% { opacity: 0; transform: translate(var(--dx, -15px), var(--dy, -20px)) scale(1.8) rotate(180deg); }
+    }
+
+    /* ─── Hint Text ─── */
     .hint-text {
       font-size: 12px; color: var(--text-muted);
-      text-align: center; margin-top: 4px;
-      position: relative; z-index: 5;
+      text-align: center; margin-top: 2px; flex-shrink: 0;
+      transition: color 0.3s ease;
     }
 
-    /* ═══════════════════════════════
+    /* ─── Clean Burst ─── */
+    .burst-ring {
+      position: absolute;
+      border-radius: 50%;
+      border: 2.5px solid rgba(255,255,255,0.4);
+      z-index: 2;
+      pointer-events: none;
+      animation: burstExpand 0.5s ease-out forwards;
+    }
+    @keyframes burstExpand {
+      0% { width: 0; height: 0; opacity: 0.8; }
+      100% { width: var(--burst-size, 100px); height: var(--burst-size, 100px); opacity: 0; transform: translate(-50%, -50%); }
+    }
+
+    /* ═══════════════════════════
        RESULT SCREEN
-       ═══════════════════════════════ */
+       ═══════════════════════════ */
     .result-screen {
       justify-content: center; gap: 14px; text-align: center;
-      background: linear-gradient(180deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+      background: linear-gradient(160deg, #1a1025 0%, #2d1b4e 50%, #1a1a4e 100%);
       padding: 24px;
     }
     .result-screen::before {
       content: ''; position: absolute; inset: 0;
       background:
-        radial-gradient(ellipse 160px 80px at 30% 30%, rgba(77,208,225,0.10) 0%, transparent 70%),
-        radial-gradient(ellipse 130px 100px at 70% 60%, rgba(255,215,0,0.08) 0%, transparent 70%);
+        radial-gradient(ellipse 180px 100px at 30% 25%, rgba(108,92,231,0.10) 0%, transparent 70%),
+        radial-gradient(ellipse 140px 80px at 70% 60%, rgba(255,215,0,0.08) 0%, transparent 70%);
       pointer-events: none;
     }
 
@@ -252,44 +320,53 @@
       animation: resultPop 0.6s ease-out;
     }
     @keyframes resultPop {
-      0% { transform: scale(0) rotate(-20deg); opacity: 0; }
-      60% { transform: scale(1.2) rotate(5deg); }
-      100% { transform: scale(1) rotate(0); opacity: 1; }
+      0% { transform: scale(0) rotate(-10deg); opacity: 0; }
+      60% { transform: scale(1.15) rotate(3deg); }
+      100% { transform: scale(1) rotate(0deg); opacity: 1; }
     }
 
     .result-title {
-      font-family: var(--font-display); font-size: 32px; font-weight: 900;
+      font-family: var(--font-display); font-size: 30px; font-weight: 900;
       position: relative; z-index: 1;
+      line-height: 1.2;
     }
     .result-title.win {
-      background: linear-gradient(135deg, #4dd0e1, #FFD700);
+      background: linear-gradient(135deg, #6c5ce7, #fd79a8, #ffd700);
       -webkit-background-clip: text; -webkit-text-fill-color: transparent;
       background-clip: text;
     }
-    .result-title.lose {
-      color: var(--text-dim);
+
+    .result-stars {
+      font-size: 36px; position: relative; z-index: 1;
+      letter-spacing: 8px;
+    }
+    .result-stars .star { display: inline-block; }
+    .result-stars .star.filled { animation: starPop 0.4s ease-out both; }
+    .result-stars .star.empty { opacity: 0.2; }
+    @keyframes starPop {
+      0% { transform: scale(0); }
+      60% { transform: scale(1.3); }
+      100% { transform: scale(1); }
     }
 
     .result-details {
-      font-size: 14px; color: var(--text-dim); line-height: 1.7;
-      position: relative; z-index: 1;
+      font-size: 15px; color: var(--text-dim);
+      position: relative; z-index: 1; line-height: 1.7;
     }
     .result-details span { color: var(--gold); font-weight: 700; }
-
     .result-best {
       font-size: 13px; color: var(--text-muted);
       position: relative; z-index: 1;
     }
     .result-best span { color: var(--gold); }
-
     .result-new-best {
-      color: var(--cyan); font-weight: 700; font-size: 14px;
-      animation: pulseBest 0.8s ease-in-out infinite alternate;
+      color: var(--pink); font-weight: 700; font-size: 14px;
+      animation: nbPulse 0.8s ease-in-out infinite alternate;
       position: relative; z-index: 1;
     }
-    @keyframes pulseBest {
+    @keyframes nbPulse {
       0% { opacity: 0.5; transform: scale(1); }
-      100% { opacity: 1; transform: scale(1.1); }
+      100% { opacity: 1; transform: scale(1.08); }
     }
 
     .result-btns {
@@ -297,103 +374,104 @@
       position: relative; z-index: 1;
     }
 
-    /* ═══ Misc ═══ */
-    .mute-btn {
-      width: 40px; height: 40px; border: none; border-radius: 50%;
-      background: var(--surface); font-size: 18px; cursor: pointer;
-      display: flex; align-items: center; justify-content: center;
-      position: fixed; top: 12px; right: 12px; z-index: 10001;
-      transition: background 0.15s ease; color: var(--text);
+    /* ═══ Confetti (simple) ═══ */
+    .confetti-piece {
+      position: absolute;
+      width: 8px; height: 8px;
+      border-radius: 2px;
+      z-index: 0;
+      animation: confettiFall 2s ease-out forwards;
+      pointer-events: none;
     }
-    .mute-btn:hover { background: var(--surface-hover); }
-    .mute-btn:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }
-
-    .sr-only {
-      position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
-      overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0;
+    @keyframes confettiFall {
+      0% { opacity: 1; transform: translateY(0) rotate(0deg) scale(1); }
+      100% { opacity: 0; transform: translateY(300px) rotate(720deg) scale(0.3); }
     }
 
     /* ═══ Responsive ═══ */
     @media (max-width: 480px) {
       .title-text { font-size: 30px; }
       .title-icon { font-size: 56px; }
-      .result-title { font-size: 26px; }
+      .result-title { font-size: 24px; }
       .result-icon { font-size: 56px; }
-      .play-stat-item { font-size: 11px; }
+      .result-stars { font-size: 30px; }
+      .game-level { font-size: 13px; }
+      .game-timer { font-size: 15px; }
+      .game-timer .sec { font-size: 20px; }
+      .scene-label { font-size: 11px; bottom: 10px; }
     }
     @media (max-height: 640px) {
-      .canvas-wrap { width: min(320px, 80vw); }
-      .title-text { font-size: 26px; }
-      .title-icon { font-size: 44px; }
+      :root { --scene-size: min(340px, 80vw); }
+      .title-icon { font-size: 42px; }
+      .title-text { font-size: 24px; }
+      .game-top { padding: 2px; }
+      .game-level { font-size: 12px; }
+      .game-timer { font-size: 13px; }
+      .game-timer .sec { font-size: 17px; }
+      .result-icon { font-size: 44px; }
+      .result-title { font-size: 20px; }
+      .btn { padding: 10px 24px; font-size: 15px; }
     }
   </style>
 </head>
 <body>
   <div id="app">
 
-    <!-- ═══ MUTE BUTTON ═══ -->
-    <button class="mute-btn" id="muteBtn" aria-label="Toggle sound" aria-pressed="false">🔊</button>
-
-    <!-- ═══ BACK TO HUB ═══ -->
-    <a href="/" class="back-to-hub" onclick="window.recordPlayed&&window.recordPlayed('sparkle-sweep')" aria-label="Back to hub">&larr; Hub</a>
-
     <!-- ═══ TITLE SCREEN ═══ -->
-    <div id="titleScreen" class="screen title-screen">
-      <div class="title-icon">✨🧹</div>
-      <h1 class="title-text">Sparkle<br/>Sweep</h1>
-      <p class="title-sub">Swipe to clean the grime away<br/>and reveal the sparkling scene!</p>
-      <div style="height:4px"></div>
-      <button id="startBtn" class="btn btn-primary">🧹 Start Sweeping!</button>
-      <div class="title-high">🏆 Best Score: <span id="titleBest">0</span></div>
+    <div id="title-screen" class="screen title-screen">
+      <div class="title-bg-stars" id="bg-stars"></div>
+      <div class="title-icon">🧹</div>
+      <div class="title-text">Sparkle<br/>Sweep</div>
+      <div class="title-sub">Swipe to clean and reveal<br/>beautiful hidden scenes! ✨</div>
+      <div id="title-level" class="title-level-count">🌈 Level 1 of 10</div>
+      <div class="title-best">🏆 Best Time: <span id="title-best">--</span></div>
+      <div style="height:6px"></div>
+      <button id="play-btn" class="btn btn-primary">✨ Start Cleaning!</button>
     </div>
 
-    <!-- ═══ PLAY SCREEN ═══ -->
-    <div id="playScreen" class="screen play-screen hidden">
-      <div class="play-top">
-        <span class="play-level" id="levelDisplay">🌸 Garden</span>
-        <div class="play-stat">
-          <span class="play-stat-item">⏱ <span id="timerDisplay">0:00</span></span>
-          <span class="play-stat-item">⭐ <span id="scoreDisplay">0</span></span>
+    <!-- ═══ GAME SCREEN ═══ -->
+    <div id="game-screen" class="screen game-screen hidden">
+      <div class="game-top">
+        <span class="game-level" id="level-label">🌻 Level 1</span>
+        <span class="game-timer" id="timer-display"><span class="sec">0</span>s</span>
+      </div>
+
+      <div class="progress-wrap">
+        <div class="progress-track">
+          <div class="progress-fill" id="progress-fill"></div>
         </div>
+        <span class="progress-pct"><span id="pct-display">0</span>%</span>
       </div>
 
-      <div class="play-progress-bar">
-        <div class="play-progress-fill" id="progressFill"></div>
+      <!-- Scene + Dirt Canvas -->
+      <div class="scene-wrap" id="scene-wrap">
+        <div id="scene-container"></div>
+        <canvas id="dirt-canvas"></canvas>
+        <div class="scene-label" id="scene-label">✨ Swipe to clean!</div>
       </div>
 
-      <div class="canvas-wrap" id="canvasWrap">
-        <canvas id="revealCanvas" width="400" height="400"></canvas>
-        <canvas id="dirtCanvas" width="400" height="400"></canvas>
-      </div>
-
-      <div class="brush-section">
-        <span class="brush-label">Brush:</span>
-        <button class="brush-btn selected" data-size="18" aria-label="Small brush"><div class="brush-sml"></div></button>
-        <button class="brush-btn" data-size="32" aria-label="Medium brush"><div class="brush-med"></div></button>
-        <button class="brush-btn" data-size="50" aria-label="Large brush"><div class="brush-lrg"></div></button>
-      </div>
-
-      <div class="hint-text" id="hintText">💡 Swipe across the screen to clean!</div>
+      <div class="hint-text" id="hint-text">💡 Swipe your finger or mouse across the dirt to clean it!</div>
     </div>
 
     <!-- ═══ RESULT SCREEN ═══ -->
-    <div id="resultScreen" class="screen result-screen hidden">
-      <div class="result-icon" id="resultIcon">✨</div>
-      <h2 class="result-title" id="resultTitle">All Clean!</h2>
-      <div class="result-details" id="resultDetails">
-        You cleaned <span>100%</span> of the grime!<br/>
-        ⭐ Score: <span id="resultScore">0</span>
+    <div id="result-screen" class="screen result-screen hidden">
+      <div class="result-icon" id="result-icon">✨</div>
+      <div class="result-title win" id="result-title">All Clean!</div>
+      <div class="result-stars" id="result-stars">
+        <span class="star filled" style="animation-delay:0s">⭐</span>
+        <span class="star filled" style="animation-delay:0.15s">⭐</span>
+        <span class="star filled" style="animation-delay:0.3s">⭐</span>
       </div>
-      <div class="result-new-best hidden" id="resultNewBest">🌟 New Best Score! 🌟</div>
-      <div class="result-best">🏆 Best: <span id="resultBest">0</span></div>
+      <div class="result-details" id="result-details">
+        Time: <span id="result-time">0</span>s &nbsp;·&nbsp; Score: <span id="result-score">0</span>
+      </div>
+      <div id="new-best" class="result-new-best hidden">🌟 New Best Time! 🌟</div>
+      <div class="result-best">🏆 Best: <span id="result-best">--</span></div>
       <div class="result-btns">
-        <button id="resultNextBtn" class="btn btn-primary">➡️ Next Scene</button>
-        <button id="resultRetryBtn" class="btn btn-secondary">🔄 Retry</button>
+        <button id="result-next" class="btn btn-primary">➡️ Next Level</button>
+        <button id="result-retry" class="btn btn-secondary">🔄 Retry</button>
       </div>
     </div>
-
-    <!-- ═══ ARIA LIVE ═══ -->
-    <div class="sr-only" role="status" aria-live="polite" id="ariaLive">Sparkle Sweep</div>
 
   </div>
 
@@ -401,1158 +479,706 @@
   (function(){
     'use strict';
 
-    /* ═══════════════════════════════════════════════════════
-       SPARKLE SWEEP — Swipe to clean, reveal the beauty!
-       ═══════════════════════════════════════════════════════ */
+    /* ═══════════════════════════════════════════════
+       SPARKLE SWEEP — Game Logic
+       ═══════════════════════════════════════════════ */
 
-    // ─── DOM refs ───
-    var $ = function(id) { return document.getElementById(id); };
-    var titleScreen = $('titleScreen');
-    var playScreen  = $('playScreen');
-    var resultScreen = $('resultScreen');
-    var startBtn    = $('startBtn');
-    var levelDisplay = $('levelDisplay');
-    var timerDisplay = $('timerDisplay');
-    var scoreDisplay = $('scoreDisplay');
-    var progressFill = $('progressFill');
-    var hintText    = $('hintText');
-    var revealCanvas = $('revealCanvas');
-    var dirtCanvas  = $('dirtCanvas');
-    var canvasWrap  = $('canvasWrap');
-    var resultIcon  = $('resultIcon');
-    var resultTitle = $('resultTitle');
-    var resultDetails = $('resultDetails');
-    var resultScore = $('resultScore');
-    var resultBest  = $('resultBest');
-    var resultNewBest = $('resultNewBest');
-    var resultNextBtn = $('resultNextBtn');
-    var resultRetryBtn = $('resultRetryBtn');
-    var titleBest   = $('titleBest');
-    var muteBtn     = $('muteBtn');
-    var ariaLive    = $('ariaLive');
+    // ─── DOM References ───
+    const $ = id => document.getElementById(id);
+    const titleScreen   = $('title-screen');
+    const gameScreen    = $('game-screen');
+    const resultScreen  = $('result-screen');
+    const levelLabel    = $('level-label');
+    const timerDisp     = $('timer-display');
+    const progressFill  = $('progress-fill');
+    const pctDisplay    = $('pct-display');
+    const sceneWrap     = $('scene-wrap');
+    const sceneContainer = $('scene-container');
+    const canvas        = $('dirt-canvas');
+    const sceneLabel    = $('scene-label');
+    const hintText      = $('hint-text');
+    const playBtn       = $('play-btn');
+    const titleBest     = $('title-best');
+    const titleLevel    = $('title-level');
+    const resultIcon    = $('result-icon');
+    const resultTitle   = $('result-title');
+    const resultStars   = $('result-stars');
+    const resultTime    = $('result-time');
+    const resultScore   = $('result-score');
+    const resultBest    = $('result-best');
+    const resultNewBest = $('new-best');
+    const resultNext    = $('result-next');
+    const resultRetry   = $('result-retry');
 
-    var revealCtx = revealCanvas.getContext('2d');
-    var dirtCtx = dirtCanvas.getContext('2d');
+    // ─── Storage ───
+    const STORAGE_KEY  = 'sparkleSweep_bestTimes';
+    const LEVEL_KEY    = 'sparkleSweep_unlockedLevel';
+    const TOTAL_KEY    = 'sparkleSweep_totalScore';
 
-    var brushBtns = document.querySelectorAll('.brush-btn');
-
-    // ─── Constants ───
-    var CANVAS_SIZE = 400;
-    var MAX_GAME_SEC = 180; // 3 minutes
-    var STORAGE_KEY = 'sparkleSweep_best';
-    var PROGRESS_KEY = 'sparkleSweep_progress';
-
-    // ─── Scenes ───
-    var SCENES = [
-      {
-        name: '🌸 Garden',
-        desc: 'A peaceful garden',
-        sceneKey: 'garden',
-        // We draw the scenes procedurally
-      },
-      {
-        name: '🌊 Beach',
-        desc: 'Sandy beach at sunset',
-        sceneKey: 'beach',
-      },
-      {
-        name: '🏔 Mountains',
-        desc: 'Snowy mountain peaks',
-        sceneKey: 'mountains',
-      },
-      {
-        name: '🌃 City Night',
-        desc: 'City skyline at night',
-        sceneKey: 'city',
-      },
-      {
-        name: '🌌 Starry Sky',
-        desc: 'Galaxy and stars',
-        sceneKey: 'starry',
-      },
+    // ─── Levels ───
+    const LEVELS = [
+      { name: '🌻 Sunny Garden',   scene: 'garden',     emojis: ['🌻','🌸','🦋','🐝','🌺','🌷','☀️','🌿'],   par: 25, brush: 40 },
+      { name: '🐠 Ocean Reef',     scene: 'ocean',      emojis: ['🐠','🐟','🐡','🪸','🐙','🫧','🐚','🌊'],   par: 25, brush: 38 },
+      { name: '✨ Starry Night',   scene: 'night',      emojis: ['⭐','🌙','🌠','✨','🌟','🌌','🪐','💫'],   par: 28, brush: 36 },
+      { name: '🌸 Cherry Blossom', scene: 'cherry',     emojis: ['🌸','🌺','🦋','🎋','🏮','🌿','🍵','🎎'],   par: 26, brush: 38 },
+      { name: '🌈 Rainbow Falls',  scene: 'rainbow',    emojis: ['🌈','🌊','☁️','💧','🦋','🌿','🌟','🌤️'],  par: 28, brush: 36 },
+      { name: '🏰 Magic Castle',   scene: 'castle',     emojis: ['🏰','🦄','✨','👑','🌹','🪄','💎','🔮'],   par: 28, brush: 36 },
+      { name: '❄️ Winter Land',    scene: 'winter',     emojis: ['❄️','⛄','🎄','🦌','☃️','🌟','🔔','🎁'],  par: 26, brush: 38 },
+      { name: '🏖️ Tropical Beach', scene: 'beach',      emojis: ['🏖️','🌴','🐚','☀️','🌊','🦀','⛱️','🍹'],  par: 25, brush: 40 },
+      { name: '🚀 Space Quest',    scene: 'space',      emojis: ['🚀','🌍','⭐','🌕','🛸','🌠','👾','☄️'],   par: 28, brush: 36 },
+      { name: '🌳 Magic Forest',   scene: 'forest',     emojis: ['🌳','🍄','🦊','🦉','🌿','✨','🦋','🌙'],   par: 26, brush: 38 },
     ];
 
+    // Scene background gradients
+    const SCENE_GRADIENTS = {
+      garden:  'linear-gradient(135deg, #87CEEB 0%, #7EC850 35%, #FFD700 75%, #FFA07A 100%)',
+      ocean:   'linear-gradient(135deg, #001F3F 0%, #006994 30%, #00B4D8 60%, #48CAE4 85%, #90E0EF 100%)',
+      night:   'linear-gradient(135deg, #0B0B2B 0%, #1B1B4B 30%, #2D1B69 60%, #4A2B7A 85%, #6B3FA0 100%)',
+      cherry:  'linear-gradient(135deg, #FFB7C5 0%, #FF69B4 30%, #FF1493 55%, #DB7093 80%, #C71585 100%)',
+      rainbow: 'linear-gradient(135deg, #FF0000 0%, #FF7F00 14%, #FFFF00 28%, #00FF00 45%, #00BFFF 65%, #4B0082 82%, #8F00FF 100%)',
+      castle:  'linear-gradient(135deg, #1A0A2E 0%, #2D1B69 30%, #6B3FA0 55%, #E8A838 78%, #FFD700 100%)',
+      winter:  'linear-gradient(135deg, #E8F0FE 0%, #B3D9F7 25%, #87CEEB 55%, #6BB3D9 80%, #4A90C4 100%)',
+      beach:   'linear-gradient(135deg, #F4D03F 0%, #E8C37A 18%, #85C1E9 50%, #2E86C1 80%, #1A5276 100%)',
+      space:   'linear-gradient(135deg, #0B0B2B 0%, #1A0A3E 25%, #2D1B69 55%, #E85D26 80%, #FF6B35 100%)',
+      forest:  'linear-gradient(135deg, #0D3B1E 0%, #1A6B32 25%, #2E8B57 50%, #4CAF50 72%, #81C784 100%)',
+    };
+
     // ─── State ───
-    var muted = localStorage.getItem('sparkleSweep_muted') === 'true';
-    var highScore = 0;
-    var currentLevel = 0;
-    var score = 0;
-    var cleanPixels = 0;
-    var totalDirtPixels = 0;
-    var brushSize = 18;
-    var gameActive = false;
-    var gamePhase = 'TITLE'; // TITLE | PLAYING | RESULT
-    var elapsedMs = 0;
-    var timerInterval = null;
-    var animFrameId = null;
-    var isDrawing = false;
-    var lastPointerX = -1;
-    var lastPointerY = -1;
-    var sparkles = [];
-    var preferReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    let level = 0;
+    let bestTimes = {};
+    let unlockedLevel = 0;
+    let totalScore = 0;
+    let playing = false;
+    let cleaning = false;
+    let startTime = 0;
+    let elapsed = 0;
+    let timerRAF = null;
+    let lastProgressUpdate = 0;
+
+    // Canvas
+    let ctx = null;
+    let cW = 0, cH = 0;
+    const CELL_SIZE = 16;
+    let cleanGrid = [];
+    let cleanedCount = 0;
+    let totalCells = 0;
+    let isComplete = false;
+    let lastPointerX = -1, lastPointerY = -1;
 
     // Audio
-    var audioCtx = null;
-    var lastSoundTime = 0;
+    let audioCtx = null;
+    let lastSoundTime = 0;
 
-    // ─── Load / Save ───
-    function loadHighScore() {
+    // ─── Load saved data ───
+    function loadSave() {
       try {
-        return parseInt(localStorage.getItem(STORAGE_KEY)) || 0;
-      } catch(_) { return 0; }
+        const t = localStorage.getItem(STORAGE_KEY);
+        bestTimes = t ? JSON.parse(t) : {};
+      } catch (_) { bestTimes = {}; }
+      try {
+        const u = localStorage.getItem(LEVEL_KEY);
+        unlockedLevel = u ? parseInt(u, 10) : 0;
+      } catch (_) { unlockedLevel = 0; }
+      try {
+        const s = localStorage.getItem(TOTAL_KEY);
+        totalScore = s ? parseInt(s, 10) : 0;
+      } catch (_) { totalScore = 0; }
     }
-    function saveHighScore(val) {
-      try {
-        var cur = loadHighScore();
-        if (val > cur) {
-          localStorage.setItem(STORAGE_KEY, String(val));
-          return true;
-        }
-        return false;
-      } catch(_) { return false; }
+    function saveBestTime(lvl, time) {
+      const key = 'lvl_' + lvl;
+      if (!bestTimes[key] || time < bestTimes[key]) {
+        bestTimes[key] = time;
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(bestTimes)); } catch (_) {}
+        return true; // new best
+      }
+      return false;
     }
-
-    function loadProgress() {
-      try {
-        var p = parseInt(localStorage.getItem(PROGRESS_KEY)) || 0;
-        return Math.min(p, SCENES.length - 1);
-      } catch(_) { return 0; }
+    function saveUnlocked(lvl) {
+      if (lvl > unlockedLevel) {
+        unlockedLevel = lvl;
+        try { localStorage.setItem(LEVEL_KEY, String(unlockedLevel)); } catch (_) {}
+      }
     }
-    function saveProgress(level) {
-      try {
-        var cur = loadProgress();
-        if (level > cur) {
-          localStorage.setItem(PROGRESS_KEY, String(level));
-        }
-      } catch(_) {}
-    }
-
-    function recordPlayed() {
-      try {
-        var recent = JSON.parse(localStorage.getItem('recentlyPlayed') || '[]');
-        var filtered = recent.filter(function(p) { return p.id !== 'sparkle-sweep'; });
-        filtered.unshift({ id: 'sparkle-sweep', playedAt: Date.now() });
-        localStorage.setItem('recentlyPlayed', JSON.stringify(filtered.slice(0, 10)));
-      } catch(_) {}
+    function saveTotalScore(score) {
+      totalScore += score;
+      try { localStorage.setItem(TOTAL_KEY, String(totalScore)); } catch (_) {}
     }
 
     // ─── Audio ───
-    function ensureAudio() {
+    function getAudio() {
       if (!audioCtx) {
-        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch (_) {}
       }
-      if (audioCtx.state === 'suspended') audioCtx.resume();
+      return audioCtx;
     }
-
     function playTone(freq, dur, type, vol) {
-      if (muted || !audioCtx) return;
       try {
-        var now = audioCtx.currentTime;
+        const ctx = getAudio();
+        if (!ctx) return;
+        const now = ctx.currentTime;
         if (now - lastSoundTime < 0.04) return;
         lastSoundTime = now;
-        var osc = audioCtx.createOscillator();
-        var gain = audioCtx.createGain();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
         osc.type = type || 'sine';
         osc.frequency.setValueAtTime(freq, now);
-        gain.gain.setValueAtTime(Math.min(vol || 0.1, 0.15), now);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + (dur || 0.1));
+        gain.gain.setValueAtTime(Math.min(vol || 0.10, 0.14), now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + (dur || 0.12));
         osc.connect(gain);
-        gain.connect(audioCtx.destination);
+        gain.connect(ctx.destination);
         osc.start(now);
-        osc.stop(now + (dur || 0.1));
-      } catch(_) {}
+        osc.stop(now + (dur || 0.12));
+      } catch (_) {}
     }
-
-    function playClean() {
-      playTone(700 + Math.random() * 400, 0.06, 'sine', 0.06);
-    }
+    function playSweep() { playTone(480 + Math.random() * 120, 0.08, 'sine', 0.06); }
     function playComplete() {
-      [523, 659, 784, 1047, 1319].forEach(function(f, i) {
-        setTimeout(function() { playTone(f, 0.18, 'sine', 0.10); }, i * 100);
-      });
+      [523, 659, 784, 1047, 1319].forEach((f, i) => setTimeout(() => playTone(f, 0.18, 'sine', 0.10), i * 90));
     }
-    function playNewBest() {
-      [659, 784, 1047, 1319, 1568].forEach(function(f, i) {
-        setTimeout(function() { playTone(f, 0.2, 'triangle', 0.10); }, i * 80);
-      });
-    }
-    function playTimeout() {
-      playTone(300, 0.3, 'sawtooth', 0.08);
-      setTimeout(function() { playTone(200, 0.4, 'sawtooth', 0.08); }, 200);
-    }
+    function playStar() { playTone(880, 0.12, 'sine', 0.08); setTimeout(() => playTone(1100, 0.1, 'sine', 0.06), 70); }
+    function playSelect() { playTone(500, 0.06, 'sine', 0.05); }
 
-    function vibrate(ms) {
-      try { if (navigator.vibrate) navigator.vibrate(ms); } catch(_) {}
-    }
+    function vibe(ms) { try { navigator.vibrate && navigator.vibrate(ms); } catch (_) {} }
 
-    // ─── Mute ───
-    muteBtn.addEventListener('click', function() {
-      muted = !muted;
-      localStorage.setItem('sparkleSweep_muted', String(muted));
-      muteBtn.textContent = muted ? '🔇' : '🔊';
-      muteBtn.setAttribute('aria-pressed', String(muted));
-      if (!muted) ensureAudio();
-    });
-    function updateMuteBtn() {
-      muteBtn.textContent = muted ? '🔇' : '🔊';
-      muteBtn.setAttribute('aria-pressed', String(muted));
-    }
-    updateMuteBtn();
-
-    // ─── Screens ───
+    // ─── Screen helpers ───
     function showScreen(screen) {
-      [titleScreen, playScreen, resultScreen].forEach(function(s) {
-        s.classList.add('hidden');
-      });
+      [titleScreen, gameScreen, resultScreen].forEach(s => s.classList.add('hidden'));
       screen.classList.remove('hidden');
     }
 
-    // ─── Procedural Scene Drawing ───
-    function drawScene(ctx, sceneKey) {
-      ctx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+    // ─── Scene builder ───
+    function buildScene(lvl) {
+      const idx = lvl % LEVELS.length;
+      const levelData = LEVELS[idx];
+      sceneContainer.style.background = SCENE_GRADIENTS[levelData.scene];
+      sceneContainer.innerHTML = '';
 
-      switch (sceneKey) {
-        // ── Garden ──
-        case 'garden': {
-          // Sky gradient
-          var skyGrad = ctx.createLinearGradient(0, 0, 0, 250);
-          skyGrad.addColorStop(0, '#87CEEB');
-          skyGrad.addColorStop(1, '#E0F7FA');
-          ctx.fillStyle = skyGrad;
-          ctx.fillRect(0, 0, CANVAS_SIZE, 250);
-
-          // Grass
-          var grassGrad = ctx.createLinearGradient(0, 220, 0, CANVAS_SIZE);
-          grassGrad.addColorStop(0, '#66BB6A');
-          grassGrad.addColorStop(0.5, '#4CAF50');
-          grassGrad.addColorStop(1, '#388E3C');
-          ctx.fillStyle = grassGrad;
-          ctx.fillRect(0, 220, CANVAS_SIZE, 180);
-
-          // Sun
-          ctx.fillStyle = '#FFF176';
-          ctx.beginPath();
-          ctx.arc(340, 60, 40, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.fillStyle = '#FFF9C4';
-          ctx.beginPath();
-          ctx.arc(340, 60, 30, 0, Math.PI * 2);
-          ctx.fill();
-
-          // Clouds
-          drawCloud(ctx, 60, 50, 1);
-          drawCloud(ctx, 200, 35, 0.8);
-
-          // Flowers
-          var flowerColors = ['#E91E63', '#FF5722', '#FF9800', '#9C27B0', '#FF4081'];
-          for (var i = 0; i < 14; i++) {
-            var fx = 20 + i * 28 + (i % 3) * 6;
-            var fy = 300 + (i % 5) * 15 + Math.sin(i * 1.5) * 10;
-            drawFlower(ctx, fx, fy, flowerColors[i % flowerColors.length], 6 + (i % 3));
-          }
-
-          // Butterfly
-          ctx.fillStyle = '#FF80AB';
-          ctx.beginPath();
-          ctx.ellipse(180, 140, 8, 5, -0.3, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.fillStyle = '#FF4081';
-          ctx.beginPath();
-          ctx.ellipse(188, 140, 8, 5, 0.3, 0, Math.PI * 2);
-          ctx.fill();
-
-          break;
-        }
-
-        // ── Beach ──
-        case 'beach': {
-          // Sky
-          var skyG = ctx.createLinearGradient(0, 0, 0, 200);
-          skyG.addColorStop(0, '#FF9A9E');
-          skyG.addColorStop(0.5, '#FECFEF');
-          skyG.addColorStop(1, '#FFF8E1');
-          ctx.fillStyle = skyG;
-          ctx.fillRect(0, 0, CANVAS_SIZE, 220);
-
-          // Sun
-          ctx.fillStyle = '#FF6F00';
-          ctx.beginPath();
-          ctx.arc(310, 90, 45, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.fillStyle = '#FFB74D';
-          ctx.beginPath();
-          ctx.arc(310, 90, 36, 0, Math.PI * 2);
-          ctx.fill();
-
-          // Ocean
-          var oceanG = ctx.createLinearGradient(0, 170, 0, 260);
-          oceanG.addColorStop(0, '#4FC3F7');
-          oceanG.addColorStop(0.5, '#29B6F6');
-          oceanG.addColorStop(1, '#0288D1');
-          ctx.fillStyle = oceanG;
-          ctx.fillRect(0, 170, CANVAS_SIZE, 90);
-
-          // Waves
-          ctx.strokeStyle = 'rgba(255,255,255,0.3)';
-          ctx.lineWidth = 2;
-          for (var w = 0; w < 4; w++) {
-            ctx.beginPath();
-            var wy = 175 + w * 18;
-            for (var wx = 0; wx <= CANVAS_SIZE; wx += 10) {
-              var wy2 = wy + Math.sin((wx + w * 30) * 0.05) * 4;
-              wx === 0 ? ctx.moveTo(wx, wy2) : ctx.lineTo(wx, wy2);
-            }
-            ctx.stroke();
-          }
-
-          // Sand
-          var sandG = ctx.createLinearGradient(0, 240, 0, CANVAS_SIZE);
-          sandG.addColorStop(0, '#FFE082');
-          sandG.addColorStop(0.5, '#FFD54F');
-          sandG.addColorStop(1, '#FFCA28');
-          ctx.fillStyle = sandG;
-          ctx.fillRect(0, 240, CANVAS_SIZE, 160);
-
-          // Shells
-          var shellX = [50, 150, 250, 350, 100, 300];
-          for (var s = 0; s < shellX.length; s++) {
-            ctx.fillStyle = '#FFF8E1';
-            ctx.beginPath();
-            ctx.arc(shellX[s], 310 + (s % 3) * 20, 5, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.fillStyle = '#FFCC80';
-            ctx.beginPath();
-            ctx.arc(shellX[s] - 2, 308 + (s % 3) * 20, 2, 0, Math.PI * 2);
-            ctx.fill();
-          }
-
-          // Palm tree
-          drawPalm(ctx, 60, 230);
-          drawPalm(ctx, 340, 260);
-
-          break;
-        }
-
-        // ── Mountains ──
-        case 'mountains': {
-          // Sky
-          var skyM = ctx.createLinearGradient(0, 0, 0, CANVAS_SIZE);
-          skyM.addColorStop(0, '#1A237E');
-          skyM.addColorStop(0.3, '#3949AB');
-          skyM.addColorStop(0.5, '#5C6BC0');
-          skyM.addColorStop(0.7, '#7986CB');
-          skyM.addColorStop(1, '#C5CAE9');
-          ctx.fillStyle = skyM;
-          ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
-
-          // Stars
-          for (var st = 0; st < 40; st++) {
-            ctx.fillStyle = 'rgba(255,255,255,' + (0.4 + Math.random() * 0.6) + ')';
-            ctx.beginPath();
-            ctx.arc(Math.random() * CANVAS_SIZE, Math.random() * 120, 1 + Math.random() * 1.5, 0, Math.PI * 2);
-            ctx.fill();
-          }
-
-          // Moon
-          ctx.fillStyle = '#FFF9C4';
-          ctx.beginPath();
-          ctx.arc(300, 60, 30, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.fillStyle = skyM;
-          ctx.beginPath();
-          ctx.arc(312, 54, 26, 0, Math.PI * 2);
-          ctx.fill();
-
-          // Mountains (back)
-          ctx.fillStyle = '#37474F';
-          ctx.beginPath();
-          ctx.moveTo(0, 300);
-          for (var mx = 0; mx <= CANVAS_SIZE; mx += 20) {
-            ctx.lineTo(mx, 180 + Math.sin(mx * 0.015) * 60 + Math.sin(mx * 0.03) * 30);
-          }
-          ctx.lineTo(CANVAS_SIZE, 300);
-          ctx.closePath();
-          ctx.fill();
-
-          // Mountains (front)
-          ctx.fillStyle = '#455A64';
-          ctx.beginPath();
-          ctx.moveTo(0, 350);
-          for (var mx2 = 0; mx2 <= CANVAS_SIZE; mx2 += 20) {
-            ctx.lineTo(mx2, 220 + Math.sin(mx2 * 0.02) * 50 + Math.sin(mx2 * 0.04) * 20);
-          }
-          ctx.lineTo(CANVAS_SIZE, 350);
-          ctx.closePath();
-          ctx.fill();
-
-          // Snow caps
-          ctx.fillStyle = '#ECEFF1';
-          ctx.beginPath();
-          ctx.moveTo(0, 300);
-          for (var sx = 0; sx <= CANVAS_SIZE; sx += 20) {
-            var sy = 180 + Math.sin(sx * 0.015) * 60 + Math.sin(sx * 0.03) * 30;
-            if (sy < 210) {
-              ctx.lineTo(sx, sy);
-            }
-            ctx.lineTo(sx, sy);
-          }
-          ctx.closePath();
-          ctx.fill();
-
-          // Lake
-          var lakeG = ctx.createLinearGradient(0, 320, 0, 390);
-          lakeG.addColorStop(0, '#42A5F5');
-          lakeG.addColorStop(1, '#1565C0');
-          ctx.fillStyle = lakeG;
-          ctx.beginPath();
-          ctx.ellipse(200, 360, 120, 30, 0, 0, Math.PI * 2);
-          ctx.fill();
-
-          // Trees
-          drawTree(ctx, 30, 270);
-          drawTree(ctx, 370, 280);
-
-          break;
-        }
-
-        // ── City Night ──
-        case 'city': {
-          // Night sky
-          var skyC = ctx.createLinearGradient(0, 0, 0, CANVAS_SIZE);
-          skyC.addColorStop(0, '#0D0D2B');
-          skyC.addColorStop(0.3, '#1A1A3E');
-          skyC.addColorStop(0.6, '#2D2D5E');
-          skyC.addColorStop(1, '#0D0D2B');
-          ctx.fillStyle = skyC;
-          ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
-
-          // Stars
-          for (var st2 = 0; st2 < 50; st2++) {
-            ctx.fillStyle = 'rgba(255,255,255,' + (0.3 + Math.random() * 0.7) + ')';
-            ctx.beginPath();
-            ctx.arc(Math.random() * CANVAS_SIZE, Math.random() * 150, 1 + Math.random(), 0, Math.PI * 2);
-            ctx.fill();
-          }
-
-          // Moon
-          ctx.fillStyle = '#E0E0E0';
-          ctx.beginPath();
-          ctx.arc(320, 40, 25, 0, Math.PI * 2);
-          ctx.fill();
-
-          // Buildings
-          var buildingColors = ['#1B5E20', '#2E7D32', '#0D47A1', '#1565C0', '#4A148C', '#311B92', '#B71C1C', '#E65100'];
-          var buildingHeights = [180, 220, 150, 260, 200, 140, 280, 190, 170, 230, 160, 250, 210, 180];
-          var bw = 28;
-          for (var b = 0; b < buildingHeights.length; b++) {
-            var bx = b * bw;
-            var bh = buildingHeights[b];
-            var by = CANVAS_SIZE - bh;
-            ctx.fillStyle = buildingColors[b % buildingColors.length];
-            ctx.fillRect(bx, by, bw - 2, bh);
-
-            // Windows
-            for (var wy = by + 10; wy < CANVAS_SIZE - 10; wy += 20) {
-              for (var wx = bx + 4; wx < bx + bw - 6; wx += 8) {
-                if (Math.random() > 0.3) {
-                  ctx.fillStyle = '#FFD54F';
-                } else {
-                  ctx.fillStyle = 'rgba(255,213,79,0.2)';
-                }
-                ctx.fillRect(wx, wy, 5, 7);
-              }
-            }
-          }
-
-          // Ground
-          ctx.fillStyle = '#212121';
-          ctx.fillRect(0, CANVAS_SIZE - 30, CANVAS_SIZE, 30);
-
-          // Road markings
-          ctx.strokeStyle = '#FFD54F';
-          ctx.lineWidth = 2;
-          ctx.setLineDash([10, 10]);
-          ctx.beginPath();
-          ctx.moveTo(0, CANVAS_SIZE - 15);
-          ctx.lineTo(CANVAS_SIZE, CANVAS_SIZE - 15);
-          ctx.stroke();
-          ctx.setLineDash([]);
-
-          break;
-        }
-
-        // ── Starry Sky / Galaxy ──
-        case 'starry': {
-          // Deep space gradient
-          var galG = ctx.createRadialGradient(200, 200, 20, 200, 200, 250);
-          galG.addColorStop(0, '#4A148C');
-          galG.addColorStop(0.2, '#1A237E');
-          galG.addColorStop(0.5, '#0D0D2B');
-          galG.addColorStop(1, '#000011');
-          ctx.fillStyle = galG;
-          ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
-
-          // Galaxy spiral
-          for (var g = 0; g < 200; g++) {
-            var t = g / 200;
-            var angle = t * 8;
-            var dist = t * 180;
-            var gx = 200 + Math.cos(angle) * dist;
-            var gy = 200 + Math.sin(angle) * dist;
-            var alpha = 0.1 + Math.random() * 0.3;
-            var size = 1 + Math.random() * 3;
-            var hue = 200 + Math.random() * 160;
-            ctx.fillStyle = 'hsla(' + hue + ', 80%, 70%, ' + alpha + ')';
-            ctx.beginPath();
-            ctx.arc(gx, gy, size, 0, Math.PI * 2);
-            ctx.fill();
-          }
-
-          // Bright stars
-          var starPositions = [
-            [40, 30, 3], [360, 50, 4], [80, 120, 2], [320, 180, 3], [50, 300, 2],
-            [180, 40, 2], [280, 100, 3], [120, 250, 2], [350, 280, 2], [200, 310, 3],
-            [60, 350, 2], [300, 340, 2], [150, 150, 3], [250, 220, 2]
-          ];
-          for (var sp = 0; sp < starPositions.length; sp++) {
-            var spd = starPositions[sp];
-            ctx.fillStyle = '#FFFFFF';
-            ctx.beginPath();
-            ctx.arc(spd[0], spd[1], spd[2], 0, Math.PI * 2);
-            ctx.fill();
-            // Glow
-            ctx.fillStyle = 'rgba(255,255,255,0.2)';
-            ctx.beginPath();
-            ctx.arc(spd[0], spd[1], spd[2] * 2.5, 0, Math.PI * 2);
-            ctx.fill();
-          }
-
-          // Planet
-          ctx.fillStyle = '#FF8A65';
-          ctx.beginPath();
-          ctx.arc(300, 300, 18, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.fillStyle = '#FFAB91';
-          ctx.beginPath();
-          ctx.arc(290, 294, 8, 0, Math.PI * 2);
-          ctx.fill();
-          // Ring
-          ctx.strokeStyle = 'rgba(255,138,101,0.4)';
-          ctx.lineWidth = 3;
-          ctx.beginPath();
-          ctx.ellipse(300, 300, 30, 6, 0.2, 0, Math.PI * 2);
-          ctx.stroke();
-
-          break;
-        }
+      // Randomly place emojis
+      const count = 22 + Math.floor(Math.random() * 8);
+      for (let i = 0; i < count; i++) {
+        const el = document.createElement('span');
+        el.className = 'scene-emoji';
+        el.textContent = levelData.emojis[i % levelData.emojis.length];
+        const size = 22 + Math.random() * 20;
+        const rot = Math.random() * 24 - 12;
+        el.style.cssText = `left:${2+Math.random()*96}%;top:${2+Math.random()*96}%;font-size:${size}px;transform:translate(-50%,-50%) rotate(${rot}deg)`;
+        sceneContainer.appendChild(el);
       }
+
+      // Scene label
+      sceneLabel.textContent = levelData.name;
     }
 
-    // ─── Drawing Helpers ───
-    function drawCloud(ctx, cx, cy, scale) {
-      ctx.fillStyle = 'rgba(255,255,255,0.7)';
-      ctx.beginPath();
-      ctx.arc(cx, cy, 20 * scale, 0, Math.PI * 2);
-      ctx.arc(cx + 25 * scale, cy - 8 * scale, 18 * scale, 0, Math.PI * 2);
-      ctx.arc(cx + 45 * scale, cy, 15 * scale, 0, Math.PI * 2);
-      ctx.arc(cx + 22 * scale, cy + 5 * scale, 14 * scale, 0, Math.PI * 2);
-      ctx.fill();
+    // ─── Dirt Canvas ───
+    function initDirtCanvas() {
+      const rect = sceneWrap.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      cW = rect.width;
+      cH = rect.height;
+
+      canvas.width = cW * dpr;
+      canvas.height = cH * dpr;
+      canvas.style.width = cW + 'px';
+      canvas.style.height = cH + 'px';
+
+      ctx = canvas.getContext('2d');
+      ctx.scale(dpr, dpr);
+
+      createDirtTexture();
+
+      // Init clean grid
+      const cols = Math.ceil(cW / CELL_SIZE);
+      const rows = Math.ceil(cH / CELL_SIZE);
+      cleanGrid = Array.from({ length: rows }, () => new Array(cols).fill(false));
+      totalCells = rows * cols;
+      cleanedCount = 0;
+      updateProgress(0);
+
+      isComplete = false;
     }
 
-    function drawFlower(ctx, x, y, color, size) {
-      // Stem
-      ctx.strokeStyle = '#388E3C';
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.moveTo(x, y);
-      ctx.lineTo(x, y + 25);
-      ctx.stroke();
+    function createDirtTexture() {
+      // Base dirt color with noise
+      const imageData = ctx.createImageData(cW, cH);
+      const data = imageData.data;
+      for (let i = 0; i < data.length; i += 4) {
+        const n = (Math.random() - 0.5) * 48;
+        data[i]     = 125 + n;       // R
+        data[i+1]   = 110 + n;       // G
+        data[i+2]   = 95  + n * 0.7; // B
+        data[i+3]   = 255;           // A
+      }
+      ctx.putImageData(imageData, 0, 0);
 
-      // Petals
-      var pcount = 5;
-      for (var i = 0; i < pcount; i++) {
-        var angle = (i / pcount) * Math.PI * 2 - Math.PI / 2;
-        ctx.fillStyle = color;
+      // Dark smudge patches
+      for (let i = 0; i < 25; i++) {
+        const sx = Math.random() * cW;
+        const sy = Math.random() * cH;
+        const sr = 6 + Math.random() * 22;
         ctx.beginPath();
-        ctx.ellipse(x + Math.cos(angle) * size, y + Math.sin(angle) * size, size, size * 0.6, angle, 0, Math.PI * 2);
+        ctx.arc(sx, sy, sr, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(60,48,36,${0.08 + Math.random() * 0.18})`;
         ctx.fill();
       }
-      // Center
-      ctx.fillStyle = '#FFEB3B';
-      ctx.beginPath();
-      ctx.arc(x, y, size * 0.4, 0, Math.PI * 2);
-      ctx.fill();
-    }
 
-    function drawPalm(ctx, x, y) {
-      // Trunk
-      ctx.strokeStyle = '#795548';
-      ctx.lineWidth = 6;
-      ctx.beginPath();
-      ctx.moveTo(x, y);
-      ctx.quadraticCurveTo(x - 10, y - 40, x + 5, y - 80);
-      ctx.stroke();
-
-      // Leaves
-      ctx.fillStyle = '#4CAF50';
-      for (var i = 0; i < 6; i++) {
-        var a = (i / 6) * Math.PI * 2 + Math.PI / 2;
+      // Light speckles
+      for (let i = 0; i < 18; i++) {
+        const sx = Math.random() * cW;
+        const sy = Math.random() * cH;
+        const sr = 4 + Math.random() * 14;
         ctx.beginPath();
-        ctx.ellipse(x + 5 + Math.cos(a) * 35, y - 80 + Math.sin(a) * 20, 30, 6, a, 0, Math.PI * 2);
+        ctx.arc(sx, sy, sr, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(190,175,155,${0.05 + Math.random() * 0.08})`;
         ctx.fill();
       }
-      // Coconuts
-      ctx.fillStyle = '#5D4037';
-      ctx.beginPath();
-      ctx.arc(x + 2, y - 75, 5, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.beginPath();
-      ctx.arc(x + 8, y - 73, 4, 0, Math.PI * 2);
-      ctx.fill();
+
+      // Edge grime — darker border
+      ctx.fillStyle = 'rgba(50,40,32,0.15)';
+      const edgeW = 8;
+      ctx.fillRect(0, 0, cW, edgeW);
+      ctx.fillRect(0, cH - edgeW, cW, edgeW);
+      ctx.fillRect(0, 0, edgeW, cH);
+      ctx.fillRect(cW - edgeW, 0, edgeW, cH);
     }
 
-    function drawTree(ctx, x, y) {
-      // Trunk
-      ctx.fillStyle = '#5D4037';
-      ctx.fillRect(x - 3, y, 6, 40);
-      // Foliage
-      ctx.fillStyle = '#2E7D32';
-      ctx.beginPath();
-      ctx.arc(x, y - 5, 20, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = '#388E3C';
-      ctx.beginPath();
-      ctx.arc(x - 8, y + 2, 14, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = '#43A047';
-      ctx.beginPath();
-      ctx.arc(x + 8, y + 2, 14, 0, Math.PI * 2);
-      ctx.fill();
-    }
+    // ─── Clean grid helpers ───
+    function markGridClean(cx, cy, radius) {
+      const colStart = Math.max(0, Math.floor((cx - radius) / CELL_SIZE));
+      const rowStart = Math.max(0, Math.floor((cy - radius) / CELL_SIZE));
+      const colEnd = Math.min(cleanGrid[0]?.length || 1, Math.ceil((cx + radius) / CELL_SIZE));
+      const rowEnd = Math.min(cleanGrid.length, Math.ceil((cy + radius) / CELL_SIZE));
 
-    // ─── Dirt Generation ───
-    function generateDirt() {
-      var imgData = dirtCtx.createImageData(CANVAS_SIZE, CANVAS_SIZE);
-      var data = imgData.data;
-
-      for (var y = 0; y < CANVAS_SIZE; y++) {
-        for (var x = 0; x < CANVAS_SIZE; x++) {
-          var idx = (y * CANVAS_SIZE + x) * 4;
-
-          // Complex dirt pattern using multiple sine waves + noise
-          var n1 = Math.sin(x * 0.04) * Math.sin(y * 0.06) * 0.5 + 0.5;
-          var n2 = Math.sin((x + y) * 0.05) * 0.5 + 0.5;
-          var n3 = Math.sin(x * 0.1 + y * 0.08) * Math.cos(y * 0.07) * 0.5 + 0.5;
-          // Perlin-like layered noise
-          var noise = (Math.sin(x * 0.02 + 1.3) + Math.sin(y * 0.025 + 2.7) +
-                       Math.sin((x + y) * 0.015 + 0.5)) / 3 * 0.5 + 0.5;
-          var n4 = (Math.sin(x * 0.3 + y * 0.25) * 0.5 + 0.5) * 0.3;
-          var n5 = (Math.sin(x * 0.5) * Math.cos(y * 0.4) * 0.5 + 0.5) * 0.2;
-
-          var val = Math.min(1, n1 * 0.3 + n2 * 0.2 + n3 * 0.25 + noise * 0.35 + n4 + n5);
-
-          // More dirt at edges (vignette)
-          var vx = (x / CANVAS_SIZE - 0.5) * 2;
-          var vy = (y / CANVAS_SIZE - 0.5) * 2;
-          var vignette = Math.min(1, Math.sqrt(vx * vx + vy * vy) * 0.6);
-          val = Math.min(1, val + vignette * 0.3);
-
-          // Clamp to visible threshold
-          var alpha = val > 0.1 ? Math.min(255, val * 255) : 0;
-
-          // Brown/gray dirt colors
-          var dirtR = 80 + Math.floor(val * 60);
-          var dirtG = 60 + Math.floor(val * 50);
-          var dirtB = 40 + Math.floor(val * 30);
-
-          data[idx]     = dirtR;   // R
-          data[idx + 1] = dirtG;   // G
-          data[idx + 2] = dirtB;   // B
-          data[idx + 3] = alpha;   // A
-        }
-      }
-
-      dirtCtx.putImageData(imgData, 0, 0);
-      countDirtPixels();
-    }
-
-    function countDirtPixels() {
-      var imgData = dirtCtx.getImageData(0, 0, CANVAS_SIZE, CANVAS_SIZE);
-      var data = imgData.data;
-      var count = 0;
-      for (var i = 3; i < data.length; i += 4) {
-        if (data[i] > 10) count++;
-      }
-      totalDirtPixels = count;
-    }
-
-    // ─── Clean Mechanics ───
-    function cleanAt(cx, cy) {
-      if (!gameActive || gamePhase !== 'PLAYING') return;
-
-      var radius = brushSize / 2;
-      var imgData = dirtCtx.getImageData(0, 0, CANVAS_SIZE, CANVAS_SIZE);
-      var data = imgData.data;
-      var radSq = radius * radius;
-      var cleaned = 0;
-
-      var minX = Math.max(0, Math.floor(cx - radius));
-      var maxX = Math.min(CANVAS_SIZE - 1, Math.ceil(cx + radius));
-      var minY = Math.max(0, Math.floor(cy - radius));
-      var maxY = Math.min(CANVAS_SIZE - 1, Math.ceil(cy + radius));
-
-      for (var y = minY; y <= maxY; y++) {
-        for (var x = minX; x <= maxX; x++) {
-          var dx = x - cx;
-          var dy = y - cy;
-          if (dx * dx + dy * dy <= radSq) {
-            var idx = (y * CANVAS_SIZE + x) * 4 + 3;
-            if (data[idx] > 0) {
-              data[idx] = 0;
-              cleaned++;
+      for (let r = rowStart; r < rowEnd; r++) {
+        for (let c = colStart; c < colEnd; c++) {
+          if (!cleanGrid[r][c]) {
+            const cellCx = c * CELL_SIZE + CELL_SIZE / 2;
+            const cellCy = r * CELL_SIZE + CELL_SIZE / 2;
+            const dx = cellCx - cx;
+            const dy = cellCy - cy;
+            if (dx * dx + dy * dy <= radius * radius) {
+              cleanGrid[r][c] = true;
+              cleanedCount++;
             }
           }
         }
       }
+    }
 
-      if (cleaned > 0) {
-        dirtCtx.putImageData(imgData, 0, 0);
-        cleanPixels += cleaned;
+    function getProgress() {
+      return totalCells > 0 ? cleanedCount / totalCells : 0;
+    }
 
-        // Score based on pixels cleaned
-        score += Math.round(cleaned / 5);
-        scoreDisplay.textContent = score;
+    function updateProgress(pct) {
+      const p = pct !== undefined ? pct : getProgress();
+      const pctInt = Math.min(100, Math.round(p * 100));
+      pctDisplay.textContent = pctInt;
+      progressFill.style.width = pctInt + '%';
+
+      if (pctInt >= 100 && !isComplete) {
+        isComplete = true;
+        onLevelComplete();
+      }
+    }
+
+    // ─── Erase on canvas ───
+    function eraseAt(x, y, brushR) {
+      // Feathered brush with destination-out
+      ctx.globalCompositeOperation = 'destination-out';
+      const grad = ctx.createRadialGradient(x, y, 0, x, y, brushR);
+      grad.addColorStop(0, 'rgba(0,0,0,1)');
+      grad.addColorStop(0.65, 'rgba(0,0,0,1)');
+      grad.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(x, y, brushR, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalCompositeOperation = 'source-over';
+
+      // Mark grid
+      markGridClean(x, y, brushR);
+    }
+
+    // ─── Sparkle effect ───
+    function spawnSparkle(x, y) {
+      const sparkleChars = ['✨', '⭐', '💫', '🌟'];
+      const el = document.createElement('span');
+      el.className = 'sparkle';
+      // Random direction
+      const dx = (-20 + Math.random() * 40) + 'px';
+      const dy = (-25 + Math.random() * -10) + 'px';
+      el.style.cssText = `left:${x}px;top:${y}px;--dx:${dx};--dy:${dy};`;
+      el.textContent = sparkleChars[Math.floor(Math.random() * sparkleChars.length)];
+      sceneWrap.appendChild(el);
+      setTimeout(() => el.remove(), 800);
+
+      // Throttle sweep sound
+      if (Math.random() < 0.25) playSweep();
+    }
+
+    function spawnBurstRing(x, y, size) {
+      const el = document.createElement('div');
+      el.className = 'burst-ring';
+      el.style.cssText = `left:${x}px;top:${y}px;--burst-size:${size}px;`;
+      sceneWrap.appendChild(el);
+      setTimeout(() => el.remove(), 600);
+    }
+
+    // ─── Pointer handlers ───
+    function getBrushRadius() {
+      const idx = level % LEVELS.length;
+      const levelData = LEVELS[idx];
+      const base = levelData.brush || 38;
+      // Scale with canvas size
+      return Math.max(18, Math.min(55, base * (cW / 380)));
+    }
+
+    function handlePointerStart(e) {
+      if (!playing || isComplete) return;
+      const pos = getCanvasPos(e);
+      if (!pos) return;
+      cleaning = true;
+      lastPointerX = pos.x;
+      lastPointerY = pos.y;
+
+      const r = getBrushRadius();
+      eraseAt(pos.x, pos.y, r);
+      spawnSparkle(pos.x, pos.y);
+      vibe(6);
+      updateProgress();
+    }
+
+    function handlePointerMove(e) {
+      if (!cleaning || !playing || isComplete) return;
+      e.preventDefault();
+
+      const pos = getCanvasPos(e);
+      if (!pos) return;
+
+      const r = getBrushRadius();
+
+      // Interpolate between last and current for fast swipes
+      const dx = pos.x - lastPointerX;
+      const dy = pos.y - lastPointerY;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+
+      if (dist > 0) {
+        const steps = Math.ceil(dist / (r * 0.6));
+        for (let i = 0; i <= steps; i++) {
+          const t = i / steps;
+          const ix = lastPointerX + dx * t;
+          const iy = lastPointerY + dy * t;
+          eraseAt(ix, iy, r);
+        }
+
+        // Sparkles along the stroke
+        if (Math.random() < 0.3) {
+          spawnSparkle(pos.x, pos.y);
+        }
+
+        vibe(4);
+      }
+
+      lastPointerX = pos.x;
+      lastPointerY = pos.y;
+
+      // Throttle progress update
+      const now = Date.now();
+      if (now - lastProgressUpdate > 80) {
+        lastProgressUpdate = now;
         updateProgress();
-
-        // Sound (throttled)
-        if (Math.random() < 0.15) playClean();
-        vibrate(5);
-
-        // Sparkle particles in cleaned area
-        if (!preferReduced) {
-          spawnSparkles(cx, cy, Math.min(cleaned / 3, 6));
-        }
-
-        // Check win
-        var pct = getCleanPercent();
-        if (pct >= 100) {
-          winGame();
-        }
       }
     }
 
-    function getCleanPercent() {
-      if (totalDirtPixels === 0) return 100;
-      return Math.min(100, Math.floor((cleanPixels / totalDirtPixels) * 100));
+    function handlePointerEnd(e) {
+      if (!cleaning) return;
+      cleaning = false;
+      // Final progress check
+      updateProgress();
     }
 
-    function updateProgress() {
-      var pct = getCleanPercent();
-      progressFill.style.width = pct + '%';
-      ariaLive.textContent = 'Cleaned: ' + pct + '%';
-      // Update document title
-      document.title = 'Sparkle Sweep — ' + pct + '%';
-    }
+    function getCanvasPos(e) {
+      if (!ctx) return null;
+      const rect = canvas.getBoundingClientRect();
+      const clientX = e.clientX !== undefined ? e.clientX : (e.touches ? e.touches[0].clientX : 0);
+      const clientY = e.clientY !== undefined ? e.clientY : (e.touches ? e.touches[0].clientY : 0);
 
-    // ─── Drawing helper (smooth strokes) ───
-    function drawStroke(fromX, fromY, toX, toY) {
-      if (!gameActive || gamePhase !== 'PLAYING') return;
-
-      // Interpolate between points for smooth cleaning
-      var dist = Math.sqrt((toX - fromX) * (toX - fromX) + (toY - fromY) * (toY - fromY));
-      var steps = Math.max(1, Math.ceil(dist / 3));
-
-      for (var i = 0; i <= steps; i++) {
-        var t = i / steps;
-        var cx = fromX + (toX - fromX) * t;
-        var cy = fromY + (toY - fromY) * t;
-        cleanAt(cx, cy);
-      }
-    }
-
-    // ─── Sparkle Particle System ───
-    function spawnSparkles(cx, cy, count) {
-      for (var i = 0; i < count; i++) {
-        var angle = Math.random() * Math.PI * 2;
-        var speed = 1 + Math.random() * 2.5;
-        sparkles.push({
-          x: cx,
-          y: cy,
-          vx: Math.cos(angle) * speed,
-          vy: Math.sin(angle) * speed - 1,
-          life: 1,
-          decay: 0.02 + Math.random() * 0.025,
-          size: 2 + Math.random() * 3,
-          color: ['#FFD700','#4dd0e1','#a29bfe','#00e676','#ff6b9d'][Math.floor(Math.random() * 5)]
-        });
-      }
-    }
-
-    function updateSparkles() {
-      if (preferReduced) return;
-      // Draw sparkles on the reveal canvas
-      for (var i = sparkles.length - 1; i >= 0; i--) {
-        var p = sparkles[i];
-        p.x += p.vx;
-        p.y += p.vy;
-        p.vy += 0.03; // gravity
-        p.life -= p.decay;
-        if (p.life <= 0) { sparkles.splice(i, 1); continue; }
-
-        revealCtx.save();
-        revealCtx.globalAlpha = p.life;
-        revealCtx.fillStyle = p.color;
-        // Draw sparkle as a star shape
-        var s = p.size * p.life;
-        drawStarShape(revealCtx, p.x, p.y, s * 0.4, s, 4);
-        revealCtx.fill();
-        revealCtx.restore();
-      }
-    }
-
-    function drawStarShape(ctx, cx, cy, innerR, outerR, points) {
-      ctx.beginPath();
-      for (var i = 0; i < points * 2; i++) {
-        var r = i % 2 === 0 ? outerR : innerR;
-        var angle = (i * Math.PI) / points - Math.PI / 2;
-        var x = cx + Math.cos(angle) * r;
-        var y = cy + Math.sin(angle) * r;
-        i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
-      }
-      ctx.closePath();
-    }
-
-    // ─── Sparkle animation loop ───
-    function sparkleLoop() {
-      if (gamePhase !== 'PLAYING' && gamePhase !== 'RESULT') return;
-      // We draw sparkles over the reveal canvas (they're additive)
-      // Don't clear here — sparkles fade out naturally
-      updateSparkles();
-      animFrameId = requestAnimationFrame(sparkleLoop);
+      let x = clientX - rect.left;
+      let y = clientY - rect.top;
+      // Clamp
+      x = Math.max(2, Math.min(cW - 2, x));
+      y = Math.max(2, Math.min(cH - 2, y));
+      return { x, y };
     }
 
     // ─── Timer ───
     function startTimer() {
-      elapsedMs = 0;
-      if (timerInterval) clearInterval(timerInterval);
-      timerInterval = setInterval(function() {
-        if (!gameActive || gamePhase !== 'PLAYING') return;
-        elapsedMs += 1000;
-
-        var sec = Math.floor(elapsedMs / 1000);
-        var min = Math.floor(sec / 60);
-        var remainSec = sec % 60;
-        timerDisplay.textContent = min + ':' + (remainSec < 10 ? '0' : '') + remainSec;
-
-        // Timeout
-        if (sec >= MAX_GAME_SEC) {
-          timeoutGame();
-        }
-      }, 1000);
+      startTime = Date.now();
+      elapsed = 0;
+      timerDisp.querySelector('.sec').textContent = '0';
+      timerDisp.classList.remove('danger');
+      timerRAF = requestAnimationFrame(updateTimer);
     }
 
-    function getElapsedSec() {
-      return Math.floor(elapsedMs / 1000);
+    function updateTimer() {
+      if (!playing) return;
+      elapsed = (Date.now() - startTime) / 1000;
+      const secs = Math.floor(elapsed);
+      timerDisp.querySelector('.sec').textContent = secs;
+      timerRAF = requestAnimationFrame(updateTimer);
     }
 
-    function fmtTime(sec) {
-      var m = Math.floor(sec / 60);
-      var s = sec % 60;
-      return m + ':' + (s < 10 ? '0' : '') + s;
+    function stopTimer() {
+      if (timerRAF) { cancelAnimationFrame(timerRAF); timerRAF = null; }
     }
 
-    // ─── Win / Lose ───
-    function winGame() {
-      if (gamePhase !== 'PLAYING') return;
-      gameActive = false;
-      gamePhase = 'RESULT';
-      if (timerInterval) clearInterval(timerInterval);
+    // ─── Level Flow ───
+    function initLevel() {
+      const idx = level % LEVELS.length;
+      const levelData = LEVELS[idx];
 
+      playing = true;
+      isComplete = false;
+      cleaning = false;
+      lastPointerX = -1;
+      lastPointerY = -1;
+      lastProgressUpdate = 0;
+
+      levelLabel.textContent = `Level ${level + 1} · ${levelData.name}`;
+
+      // Build scene
+      buildScene(level);
+
+      // Init canvas
+      initDirtCanvas();
+
+      // Setup progress
+      pctDisplay.textContent = '0';
+      progressFill.style.width = '0%';
+      timerDisp.querySelector('.sec').textContent = '0';
+
+      hintText.textContent = '💡 Swipe to clean and reveal the hidden scene!';
+      sceneLabel.textContent = '✨ Swipe to clean!';
+
+      showScreen(gameScreen);
+
+      // Start timer after canvas init
+      requestAnimationFrame(() => {
+        startTimer();
+      });
+    }
+
+    function onLevelComplete() {
+      playing = false;
+      cleaning = false;
+      stopTimer();
+
+      const finalTime = Math.round(elapsed);
+      const isNewBest = saveBestTime(level, finalTime);
+
+      // Calculate stars
+      const idx = level % LEVELS.length;
+      const par = LEVELS[idx].par;
+      let stars = 1;
+      if (finalTime <= par * 0.6) stars = 3;
+      else if (finalTime <= par * 1.0) stars = 2;
+
+      // Score
+      const score = Math.round(stars * 100 + Math.max(0, par - finalTime) * 2);
+      saveTotalScore(score);
+
+      // Effects
       playComplete();
-      vibrate([50, 30, 50, 30, 80]);
+      vibe([30, 20, 40]);
 
-      var timeBonus = Math.max(0, MAX_GAME_SEC - getElapsedSec()) * 10;
-      var cleanBonus = score;
-      var finalScore = cleanBonus + timeBonus * 2;
-
-      var isNewBest = saveHighScore(finalScore);
-      if (isNewBest) {
-        playNewBest();
-        vibrate([30, 20, 30, 20, 50, 20, 80]);
+      // Confetti for 3 stars
+      if (stars >= 3) {
+        spawnConfetti();
       }
 
-      // Unlock next level
-      saveProgress(currentLevel + 1);
-
-      var sceneName = getScene().name;
-      resultIcon.textContent = '✨';
-      resultTitle.textContent = '✨ All Clean! ✨';
+      // Build result
+      resultIcon.textContent = stars >= 3 ? '🏆' : stars >= 2 ? '🎉' : '✨';
+      resultTitle.textContent = stars >= 3 ? '✨ Perfect Clean! ✨' : stars >= 2 ? 'Great Job!' : 'All Clean!';
       resultTitle.className = 'result-title win';
-      resultDetails.innerHTML = 'You cleaned the <span>' + sceneName + '</span>!<br/>⭐ Score: <span>' + finalScore + '</span>';
-      resultScore.textContent = finalScore;
-      resultBest.textContent = loadHighScore();
-      resultNewBest.classList.toggle('hidden', !isNewBest);
 
-      var isLastLevel = currentLevel >= SCENES.length - 1;
+      // Stars
+      const starEls = resultStars.querySelectorAll('.star');
+      starEls.forEach((el, i) => {
+        el.className = i < stars ? 'star filled' : 'star empty';
+      });
+
+      resultTime.textContent = finalTime;
+      resultScore.textContent = score;
+      resultBest.textContent = bestTimes['lvl_' + level] ? bestTimes['lvl_' + level] + 's' : '--';
+      resultNewBest.classList.toggle('hidden', !isNewBest);
+      if (isNewBest) playStar();
+
+      // Next / retry buttons
+      const maxUnlocked = Math.max(unlockedLevel, level);
+      const isLastLevel = level >= LEVELS.length - 1;
+
       if (isLastLevel) {
-        resultNextBtn.textContent = '🏆 You\'re a Master Sweeper!';
-        resultNextBtn.onclick = function() {
-          currentLevel = 0;
-          startGame();
-        };
+        resultNext.textContent = '🏆 You mastered all levels!';
+        resultNext.style.display = 'inline-flex';
+        resultNext.onclick = () => { level = 0; showScreen(titleScreen); updateTitleInfo(); };
+        resultRetry.textContent = '🔄 Play Again';
       } else {
-        resultNextBtn.textContent = '➡️ Next Scene';
-        resultNextBtn.onclick = function() {
-          currentLevel++;
-          startGame();
-        };
+        const canAdvance = level + 1 <= maxUnlocked || level < maxUnlocked;
+        if (level + 1 > unlockedLevel) {
+          saveUnlocked(level + 1);
+        }
+        resultNext.textContent = '➡️ Next Level';
+        resultNext.style.display = 'inline-flex';
+        resultNext.onclick = () => { level++; initLevel(); };
+        resultRetry.textContent = '🔄 Retry';
       }
-      resultRetryBtn.onclick = function() {
-        startGame();
-      };
+      resultRetry.onclick = () => initLevel();
 
       showScreen(resultScreen);
-      document.title = 'Sparkle Sweep — Won!';
     }
 
-    function timeoutGame() {
-      if (gamePhase !== 'PLAYING') return;
-      gameActive = false;
-      gamePhase = 'RESULT';
-      if (timerInterval) clearInterval(timerInterval);
+    // ─── Confetti ───
+    function spawnConfetti() {
+      const colors = ['#6c5ce7', '#fd79a8', '#ffd700', '#00cec9', '#55efc4', '#ff7675', '#74b9ff'];
+      for (let i = 0; i < 40; i++) {
+        const el = document.createElement('div');
+        el.className = 'confetti-piece';
+        const x = 10 + Math.random() * 80;
+        const delay = Math.random() * 0.8;
+        const color = colors[Math.floor(Math.random() * colors.length)];
+        el.style.cssText = `left:${x}%;top:-10px;background:${color};width:${4+Math.random()*8}px;height:${4+Math.random()*8}px;animation-delay:${delay}s;border-radius:${Math.random()>0.5?'50%':'2px'}`;
+        resultScreen.appendChild(el);
+        setTimeout(() => el.remove(), 2800 + delay * 1000);
+      }
+    }
 
-      playTimeout();
-      vibrate([100, 50, 100]);
-
-      var finalScore = Math.max(0, score);
-
-      var isNewBest = saveHighScore(finalScore);
-      if (isNewBest) {
-        playNewBest();
+    // ─── Title Screen ───
+    function updateTitleInfo() {
+      // Stars background
+      const starsContainer = $('bg-stars');
+      starsContainer.innerHTML = '';
+      for (let i = 0; i < 30; i++) {
+        const s = document.createElement('span');
+        const x = Math.random() * 100;
+        const y = Math.random() * 100;
+        const size = 2 + Math.random() * 3;
+        const delay = Math.random() * 3;
+        s.style.cssText = `left:${x}%;top:${y}%;width:${size}px;height:${size}px;animation-delay:${delay}s;`;
+        starsContainer.appendChild(s);
       }
 
-      resultIcon.textContent = '⏰';
-      resultTitle.textContent = 'Time\'s Up!';
-      resultTitle.className = 'result-title lose';
-      resultDetails.innerHTML = 'You cleaned <span>' + getCleanPercent() + '%</span> of the scene.<br/>' +
-        'Try to clean faster next time!<br/>⭐ Score: <span>' + finalScore + '</span>';
-      resultScore.textContent = finalScore;
-      resultBest.textContent = loadHighScore();
-      resultNewBest.classList.toggle('hidden', !isNewBest);
+      // Best time across all levels
+      const allTimes = Object.values(bestTimes);
+      const bestOverall = allTimes.length > 0 ? Math.min(...allTimes) : null;
+      titleBest.textContent = bestOverall ? bestOverall + 's' : '--';
 
-      resultNextBtn.textContent = '🔄 Try Again';
-      resultNextBtn.onclick = function() {
-        startGame();
-      };
-      resultRetryBtn.onclick = function() {
-        startGame();
-      };
-
-      showScreen(resultScreen);
-      document.title = 'Sparkle Sweep — Time\'s Up';
+      const nextLevel = Math.min(unlockedLevel + 1, LEVELS.length);
+      titleLevel.textContent = `🌈 ${nextLevel} of ${LEVELS.length} levels`;
     }
 
-    // ─── Game Init ───
-    function getScene() {
-      return SCENES[currentLevel % SCENES.length];
+    // ─── Resize handler ───
+    let resizeTimer = null;
+    function onResize() {
+      if (!playing || isComplete) return;
+      if (resizeTimer) { clearTimeout(resizeTimer); }
+      resizeTimer = setTimeout(() => {
+        // Re-init canvas and scene sizing
+        stopTimer();
+        const wasPlaying = playing;
+        if (wasPlaying) {
+          // Save elapsed time
+          const oldElapsed = elapsed;
+          initLevel();
+          // Adjust timer to account for time spent
+          startTime = Date.now() - oldElapsed * 1000;
+        }
+      }, 300);
     }
 
-    function startGame() {
-      ensureAudio();
-      gameActive = true;
-      gamePhase = 'PLAYING';
-      score = 0;
-      cleanPixels = 0;
+    // ─── Keyboard support ───
+    let kbCursorX = -1, kbCursorY = -1;
 
-      var scene = getScene();
-      levelDisplay.textContent = scene.name;
-
-      // Draw the reveal scene
-      drawScene(revealCtx, scene.sceneKey);
-
-      // Reset dirt
-      generateDirt();
-
-      // Reset UI
-      scoreDisplay.textContent = '0';
-      timerDisplay.textContent = '0:00';
-      updateProgress();
-      hintText.textContent = '💡 Swipe across the screen to clean!';
-
-      // Clear sparkles
-      sparkles = [];
-
-      showScreen(playScreen);
-      document.title = 'Sparkle Sweep — ' + scene.name;
-
-      startTimer();
-      recordPlayed();
-
-      // Start sparkle animation loop
-      if (animFrameId) cancelAnimationFrame(animFrameId);
-      animFrameId = requestAnimationFrame(sparkleLoop);
+    function initKeyboard() {
+      const r = getBrushRadius();
+      kbCursorX = cW / 2;
+      kbCursorY = cH / 2;
     }
 
-    // ─── Input ───
-    // Coordinate mapping
-    function getCanvasCoords(clientX, clientY) {
-      var rect = canvasWrap.getBoundingClientRect();
-      var scaleX = CANVAS_SIZE / rect.width;
-      var scaleY = CANVAS_SIZE / rect.height;
-      return {
-        x: (clientX - rect.left) * scaleX,
-        y: (clientY - rect.top) * scaleY
-      };
-    }
+    function handleKeyboard(e) {
+      if (!playing || isComplete) return;
 
-    function clampToCanvas(p) {
-      return {
-        x: Math.max(0, Math.min(CANVAS_SIZE - 1, p.x)),
-        y: Math.max(0, Math.min(CANVAS_SIZE - 1, p.y))
-      };
-    }
+      const r = getBrushRadius();
+      const step = 16;
 
-    // ── Pointer / Touch ──
-    canvasWrap.addEventListener('pointerdown', function(e) {
-      e.preventDefault();
-      if (gamePhase !== 'PLAYING') return;
-      isDrawing = true;
-      var pos = clampToCanvas(getCanvasCoords(e.clientX, e.clientY));
-      lastPointerX = pos.x;
-      lastPointerY = pos.y;
-      cleanAt(pos.x, pos.y);
-    });
-
-    window.addEventListener('pointermove', function(e) {
-      if (!isDrawing || gamePhase !== 'PLAYING') return;
-      e.preventDefault();
-      var pos = clampToCanvas(getCanvasCoords(e.clientX, e.clientY));
-      if (lastPointerX >= 0) {
-        drawStroke(lastPointerX, lastPointerY, pos.x, pos.y);
-      }
-      lastPointerX = pos.x;
-      lastPointerY = pos.y;
-    });
-
-    window.addEventListener('pointerup', function() {
-      isDrawing = false;
-      lastPointerX = -1;
-      lastPointerY = -1;
-    });
-
-    window.addEventListener('pointercancel', function() {
-      isDrawing = false;
-      lastPointerX = -1;
-      lastPointerY = -1;
-    });
-
-    // Canvas-specific touch prevent
-    canvasWrap.addEventListener('touchstart', function(e) {
-      if (e.target.closest('.canvas-wrap')) {
-        e.preventDefault();
-      }
-    }, { passive: false });
-
-    // ── Keyboard ──
-    document.addEventListener('keydown', function(e) {
-      var tag = (e.target && e.target.tagName || '').toLowerCase();
-      if (tag === 'input' || tag === 'textarea' || tag === 'select') return;
-
-      // Title / Result → Enter / Space to advance
-      if (gamePhase === 'TITLE' && (e.key === 'Enter' || e.key === ' ')) {
-        e.preventDefault();
-        startBtn.click();
-        return;
-      }
-      if (gamePhase === 'RESULT' && (e.key === 'Enter' || e.key === ' ')) {
-        e.preventDefault();
-        resultNextBtn.click();
-        return;
-      }
-
-      if (gamePhase !== 'PLAYING') return;
-
-      // WASD / Arrow keys to move a cleaning cursor
-      var STEP = brushSize * 0.6;
-      var cx = lastPointerX >= 0 ? lastPointerX : 200;
-      var cy = lastPointerY >= 0 ? lastPointerY : 200;
+      if (kbCursorX < 0) initKeyboard();
 
       switch (e.key) {
-        case 'ArrowUp':
-        case 'w':
-        case 'W':
+        case 'ArrowUp':    kbCursorY = Math.max(0, kbCursorY - step); e.preventDefault(); break;
+        case 'ArrowDown':  kbCursorY = Math.min(cH, kbCursorY + step); e.preventDefault(); break;
+        case 'ArrowLeft':  kbCursorX = Math.max(0, kbCursorX - step); e.preventDefault(); break;
+        case 'ArrowRight': kbCursorX = Math.min(cW, kbCursorX + step); e.preventDefault(); break;
+        case ' ': case 'Enter': {
           e.preventDefault();
-          cy = Math.max(0, cy - STEP);
-          break;
-        case 'ArrowDown':
-        case 's':
-        case 'S':
-          e.preventDefault();
-          cy = Math.min(CANVAS_SIZE - 1, cy + STEP);
-          break;
-        case 'ArrowLeft':
-        case 'a':
-        case 'A':
-          e.preventDefault();
-          cx = Math.max(0, cx - STEP);
-          break;
-        case 'ArrowRight':
-        case 'd':
-        case 'D':
-          e.preventDefault();
-          cx = Math.min(CANVAS_SIZE - 1, cx + STEP);
-          break;
-        case '1': brushSize = 18; updateBrushUI(); return;
-        case '2': brushSize = 32; updateBrushUI(); return;
-        case '3': brushSize = 50; updateBrushUI(); return;
+          eraseAt(kbCursorX, kbCursorY, r);
+          spawnSparkle(kbCursorX, kbCursorY);
+          spawnBurstRing(kbCursorX, kbCursorY, r * 2.5);
+          updateProgress();
+          vibe(10);
+          return;
+        }
         default: return;
       }
 
-      if (e.key.startsWith('Arrow') || 'wasdWASD'.indexOf(e.key) >= 0) {
-        if (lastPointerX >= 0 && lastPointerY >= 0) {
-          drawStroke(lastPointerX, lastPointerY, cx, cy);
-        } else {
-          cleanAt(cx, cy);
-        }
-        lastPointerX = cx;
-        lastPointerY = cy;
-      }
-    });
+      // Clean while moving
+      eraseAt(kbCursorX, kbCursorY, r);
+      if (Math.random() < 0.15) spawnSparkle(kbCursorX, kbCursorY);
+      updateProgress();
 
-    // ─── Brush UI ───
-    function updateBrushUI() {
-      brushBtns.forEach(function(btn) {
-        btn.classList.toggle('selected', parseInt(btn.dataset.size) === brushSize);
-      });
+      // Show cursor position via burst ring
+      spawnBurstRing(kbCursorX, kbCursorY, r * 1.5);
     }
 
-    brushBtns.forEach(function(btn) {
-      btn.addEventListener('click', function() {
-        brushSize = parseInt(this.dataset.size);
-        updateBrushUI();
-        hintText.textContent = '🧽 Brush size: ' + brushSize + 'px';
-      });
-    });
+    // ─── Events Binding ───
+    function bindEvents() {
+      // Canvas pointer events
+      canvas.addEventListener('pointerdown', handlePointerStart);
+      canvas.addEventListener('pointermove', handlePointerMove);
+      canvas.addEventListener('pointerup', handlePointerEnd);
+      canvas.addEventListener('pointerleave', handlePointerEnd);
 
-    // ─── Buttons ───
-    startBtn.addEventListener('click', function() {
-      ensureAudio();
-      highScore = loadHighScore();
-      currentLevel = loadProgress();
-      startGame();
-    });
+      // Touch-specific: prevent scroll
+      canvas.addEventListener('touchstart', e => { if (playing) e.preventDefault(); }, { passive: false });
+      canvas.addEventListener('touchmove', e => { if (playing) e.preventDefault(); }, { passive: false });
+
+      // Keyboard
+      window.addEventListener('keydown', e => {
+        if (!playing) {
+          if (e.key === 'Enter' || e.key === ' ') {
+            if (!titleScreen.classList.contains('hidden')) {
+              playBtn.click();
+            } else if (!resultScreen.classList.contains('hidden')) {
+              const nextBtn = resultNext.style.display !== 'none' ? resultNext : resultRetry;
+              nextBtn.click();
+            }
+          }
+          return;
+        }
+        handleKeyboard(e);
+      });
+
+      // Play button
+      playBtn.addEventListener('click', () => {
+        try { getAudio(); } catch (_) {}
+        initLevel();
+      });
+
+      // Window resize
+      window.addEventListener('resize', onResize);
+    }
 
     // ─── Init ───
     function init() {
-      highScore = loadHighScore();
-      titleBest.textContent = highScore;
-
-      // Draw a preview on the reveal canvas
-      drawScene(revealCtx, 'garden');
-
-      // Generate preview dirt over it
-      generateDirt();
-
+      loadSave();
+      updateTitleInfo();
+      bindEvents();
       showScreen(titleScreen);
     }
 
