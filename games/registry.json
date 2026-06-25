@@ -497,6 +497,20 @@
       "version": "1.0.0",
       "featured": true,
       "rating": 4.0
+    },
+    {
+      "id": "baby-shark-manicure",
+      "name": "Baby Shark Manicure",
+      "description": "为鲨鱼宝宝美甲！选色涂指装饰，完成所有指甲过关，解锁新主题美甲款式",
+      "category": "casual",
+      "tags": ["singleplayer", "creative", "design", "casual", "short-session"],
+      "thumbnail": "/games/073-baby-shark-manicure/thumb.png",
+      "path": "/games/073-baby-shark-manicure/",
+      "hasServer": false,
+      "players": "1",
+      "version": "1.0.0",
+      "featured": false,
+      "rating": 4.0
     }
   ],
   "categories": [
