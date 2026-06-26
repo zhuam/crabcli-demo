@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#5D4432"/>
+      <stop offset="100%" stop-color="#3E2B1E"/>
+    </linearGradient>
+  </defs>
+  <rect width="200" height="200" fill="url(#bg)" rx="16"/>
+  <!-- Sushi roll -->
+  <ellipse cx="100" cy="90" rx="45" ry="25" fill="#F5F0EB"/>
+  <ellipse cx="100" cy="90" rx="45" ry="25" fill="none" stroke="#3E2B1E" stroke-width="1.5" opacity="0.2"/>
+  <!-- Nori wrap -->
+  <path d="M55 85 Q60 75 80 72 Q100 70 120 72 Q140 75 145 85" fill="#2d5a27" opacity="0.7"/>
+  <path d="M55 95 Q60 105 80 108 Q100 110 120 108 Q140 105 145 95" fill="#2d5a27" opacity="0.7"/>
+  <!-- Rice grains -->
+  <ellipse cx="85" cy="90" rx="10" ry="8" fill="#fff" opacity="0.8"/>
+  <ellipse cx="100" cy="88" rx="10" ry="8" fill="#fff" opacity="0.8"/>
+  <ellipse cx="115" cy="90" rx="10" ry="8" fill="#fff" opacity="0.8"/>
+  <!-- Salmon topping -->
+  <ellipse cx="85" cy="82" rx="8" ry="5" fill="#FA8072"/>
+  <ellipse cx="100" cy="80" rx="8" ry="5" fill="#FA8072"/>
+  <ellipse cx="115" cy="82" rx="8" ry="5" fill="#FA8072"/>
+  <!-- Salmon stripes -->
+  <line x1="78" y1="82" x2="92" y2="82" stroke="#ff6347" stroke-width="0.8" opacity="0.5"/>
+  <line x1="93" y1="80" x2="107" y2="80" stroke="#ff6347" stroke-width="0.8" opacity="0.5"/>
+  <line x1="108" y1="82" x2="122" y2="82" stroke="#ff6347" stroke-width="0.8" opacity="0.5"/>
+  <!-- Chopsticks -->
+  <line x1="140" y1="55" x2="165" y2="130" stroke="#8B7355" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="148" y1="52" x2="173" y2="127" stroke="#8B7355" stroke-width="2.5" stroke-linecap="round"/>
+  <!-- Soy sauce dish (bottom right) -->
+  <ellipse cx="155" cy="155" rx="18" ry="6" fill="#3E2B1E"/>
+  <ellipse cx="155" cy="153" rx="15" ry="4" fill="#2a1a0e"/>
+  <!-- Steam -->
+  <path d="M90 60 Q92 52 90 45" stroke="#fff" stroke-width="1.5" fill="none" opacity="0.15" stroke-linecap="round"/>
+  <path d="M100 58 Q102 50 100 42" stroke="#fff" stroke-width="1.5" fill="none" opacity="0.15" stroke-linecap="round"/>
+  <path d="M110 60 Q112 52 110 44" stroke="#fff" stroke-width="1.5" fill="none" opacity="0.15" stroke-linecap="round"/>
+  <!-- Title -->
+  <text x="100" y="175" text-anchor="middle" font-family="sans-serif" font-size="13" font-weight="bold" fill="#F5F0EB">Sushi Master</text>
+  <text x="100" y="190" text-anchor="middle" font-family="sans-serif" font-size="9" fill="#E9E3DD" opacity="0.7">🍣 精准出餐</text>
+</svg>

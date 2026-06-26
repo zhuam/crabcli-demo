@@ -378,6 +378,19 @@
       "players": "1",
       "version": "1.0.0",
       "rating": 4.0
+    },
+    {
+      "id": "sushi-master",
+      "name": "Sushi Master",
+      "description": "寿司店出餐，捏饭·加料·摆盘，精准完成订单过关！",
+      "category": "casual",
+      "tags": ["singleplayer", "management", "drag", "simulation", "short-session"],
+      "thumbnail": "/games/093-sushi-master/thumb.svg",
+      "path": "/games/093-sushi-master/",
+      "hasServer": false,
+      "players": "1",
+      "version": "1.0.0",
+      "rating": 4.0
     }
   ],
   "categories": [

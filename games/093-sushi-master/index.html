@@ -1,0 +1,1476 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Sushi Master</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Poppins:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../games/shared/game-frame.css" />
+<style>
+  /* ===== Cafe Design System Tokens ===== */
+  :root {
+    --primary: #5D4432;
+    --primary-dark: #3E2B1E;
+    --secondary: #E9E3DD;
+    --surface: #F9F7F5;
+    --text: #3E2B1E;
+    --text-light: #7A6B5E;
+    --success: #16A34A;
+    --warning: #D97706;
+    --danger: #DC2626;
+    --accent-red: #E74C3C;
+    --cream: #F5F0EB;
+    --gold: #F59E0B;
+    --star-gold: #FBBF24;
+    --white: #ffffff;
+    --font: 'Poppins', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+    --radius: 12px;
+    --radius-lg: 20px;
+    --radius-pill: 28px;
+    --shadow-sm: 0 2px 8px rgba(62,43,30,0.08);
+    --shadow-md: 0 4px 16px rgba(62,43,30,0.12);
+    --shadow-lg: 0 8px 32px rgba(62,43,30,0.18);
+    --shadow-glow: 0 0 20px rgba(93,68,50,0.25);
+    --transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    --bounce: 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    width: 100%; height: 100%;
+    overflow: hidden;
+    font-family: var(--font);
+    background: var(--surface);
+    color: var(--text);
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  /* ===== Screen Base ===== */
+  .screen {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    display: flex; flex-direction: column;
+    transition: transform 0.35s cubic-bezier(0.4,0,0.2,1), opacity 0.35s ease;
+    will-change: transform, opacity;
+  }
+  .screen.hidden {
+    transform: translateY(30px); opacity: 0;
+    pointer-events: none;
+  }
+  .screen.active {
+    transform: translateY(0); opacity: 1;
+  }
+
+  /* ===== SPLASH SCREEN ===== */
+  #splash {
+    background: linear-gradient(160deg, var(--primary) 0%, var(--primary-dark) 100%);
+    justify-content: center; align-items: center;
+    padding: 32px; text-align: center;
+    position: relative; overflow: hidden;
+  }
+  #splash::before {
+    content: ''; position: absolute; inset: 0;
+    background: radial-gradient(ellipse at 50% 30%, rgba(233,227,221,0.08) 0%, transparent 70%);
+  }
+  .splash-bg-deco {
+    position: absolute; pointer-events: none; font-size: 6rem; opacity: 0.06;
+    animation: floatDeco 6s ease-in-out infinite;
+  }
+  @keyframes floatDeco {
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    50% { transform: translateY(-20px) rotate(5deg); }
+  }
+  .splash-logo {
+    position: relative; z-index: 1;
+    font-size: 4.5rem; line-height: 1; margin-bottom: 8px;
+    filter: drop-shadow(0 4px 16px rgba(0,0,0,0.2));
+    animation: sushiBounce 2s ease-in-out infinite;
+  }
+  @keyframes sushiBounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+  }
+  .splash-title {
+    position: relative; z-index: 1;
+    font-size: 2.8rem; font-weight: 900; color: var(--white);
+    letter-spacing: 1px; text-shadow: 0 2px 12px rgba(0,0,0,0.3);
+    margin-bottom: 4px;
+  }
+  .splash-subtitle {
+    position: relative; z-index: 1;
+    font-size: 1rem; color: var(--secondary);
+    opacity: 0.85; margin-bottom: 48px;
+    font-weight: 400; letter-spacing: 2px;
+  }
+  .splash-btn {
+    position: relative; z-index: 1;
+    width: 200px; height: 56px;
+    background: var(--accent-red);
+    color: var(--white); border: none; border-radius: var(--radius-pill);
+    font-size: 1.25rem; font-weight: 700; font-family: var(--font);
+    cursor: pointer; transition: transform var(--transition), box-shadow var(--transition);
+    box-shadow: 0 4px 20px rgba(231,76,60,0.4);
+    touch-action: manipulation;
+  }
+  .splash-btn:hover { transform: scale(1.05); box-shadow: 0 6px 28px rgba(231,76,60,0.5); }
+  .splash-btn:active { transform: scale(0.97); }
+  .splash-footer {
+    position: absolute; bottom: 24px; z-index: 1;
+    font-size: 0.75rem; color: var(--secondary); opacity: 0.5;
+    letter-spacing: 1px;
+  }
+
+  /* ===== GAME SCREEN ===== */
+  #game {
+    background: var(--surface);
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    grid-template-columns: 1fr;
+    gap: 0; padding: 0;
+  }
+
+  /* Top Bar */
+  .game-topbar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 16px;
+    background: var(--primary);
+    color: var(--white); min-height: 52px;
+  }
+  .game-topbar .order-label {
+    font-size: 0.85rem; font-weight: 600; opacity: 0.8;
+  }
+  .game-topbar .order-customer {
+    font-size: 1.1rem; font-weight: 700;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .game-topbar .order-timer {
+    font-family: var(--font-mono);
+    font-size: 1.1rem; font-weight: 700;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .game-topbar .order-timer.warning { color: var(--danger); animation: pulseText 0.5s ease-in-out infinite; }
+
+  /* Timer Bar */
+  .timer-bar-wrap {
+    height: 4px; background: rgba(255,255,255,0.15); position: relative;
+  }
+  .timer-bar {
+    height: 100%; background: var(--success); width: 100%;
+    transition: width 0.3s linear, background 0.3s ease;
+    border-radius: 0 2px 2px 0;
+  }
+  .timer-bar.warning { background: var(--warning); }
+  .timer-bar.danger { background: var(--danger); }
+
+  /* Game Body - main play area */
+  .game-body {
+    display: grid; grid-template-columns: 1fr 280px; gap: 12px;
+    padding: 12px 16px; flex: 1; overflow: hidden;
+    min-height: 0;
+  }
+
+  /* Plating Area */
+  .plating-area {
+    background: var(--cream);
+    border-radius: var(--radius);
+    border: 2px dashed var(--secondary);
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(2, 1fr);
+    gap: 10px; padding: 16px;
+    position: relative; overflow: hidden;
+    min-height: 220px;
+  }
+  .plating-area::before {
+    content: '🍣'; position: absolute;
+    top: 50%; left: 50%; transform: translate(-50%, -50%);
+    font-size: 4rem; opacity: 0.06; pointer-events: none;
+  }
+  .plating-area-label {
+    position: absolute; top: 6px; left: 50%; transform: translateX(-50%);
+    font-size: 0.7rem; color: var(--text-light); opacity: 0.4;
+    font-weight: 500; letter-spacing: 1px; text-transform: uppercase;
+    pointer-events: none;
+  }
+
+  .snap-zone {
+    background: rgba(233,227,221,0.5);
+    border: 2px dashed rgba(93,68,50,0.15);
+    border-radius: var(--radius);
+    display: flex; align-items: center; justify-content: center;
+    position: relative; transition: all var(--transition);
+    min-height: 60px;
+    aspect-ratio: 1;
+  }
+  .snap-zone .slot-hint {
+    font-size: 1.5rem; opacity: 0.2; pointer-events: none;
+    transition: opacity var(--transition);
+  }
+  .snap-zone.highlight {
+    border-color: var(--primary);
+    background: rgba(93,68,50,0.08);
+    box-shadow: var(--shadow-glow);
+  }
+  .snap-zone.highlight .slot-hint { opacity: 0.4; }
+  .snap-zone.pulse {
+    animation: snapPulse 1.2s ease-in-out infinite;
+  }
+  @keyframes snapPulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(93,68,50,0.15); }
+    50% { box-shadow: 0 0 0 8px rgba(93,68,50,0.05); }
+  }
+  .snap-zone.has-ingredient {
+    border-style: solid;
+    border-color: var(--success);
+    background: rgba(22,163,74,0.06);
+  }
+  .snap-zone .placed-ingredient {
+    font-size: 2rem; pointer-events: none;
+    animation: placePop 0.25s cubic-bezier(0.34,1.56,0.64,1);
+  }
+  @keyframes placePop {
+    0% { transform: scale(0.3); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+  .snap-zone .placed-check {
+    position: absolute; top: -4px; right: -4px;
+    width: 20px; height: 20px;
+    background: var(--success); color: var(--white);
+    border-radius: 50%; font-size: 0.7rem;
+    display: flex; align-items: center; justify-content: center;
+    animation: popIn 0.2s cubic-bezier(0.34,1.56,0.64,1);
+  }
+  @keyframes popIn { 0% { transform: scale(0); } 100% { transform: scale(1); } }
+
+  /* Ingredient Tray */
+  .ingredient-tray {
+    background: var(--cream);
+    border-radius: var(--radius);
+    padding: 12px; display: flex; flex-direction: column; gap: 8px;
+    overflow-y: auto;
+    position: relative;
+  }
+  .tray-title {
+    font-size: 0.7rem; font-weight: 600; color: var(--text-light); opacity: 0.5;
+    text-transform: uppercase; letter-spacing: 1px; text-align: center; padding-bottom: 4px;
+    flex-shrink: 0;
+  }
+  .ingredient-card {
+    background: var(--white); border-radius: 10px; padding: 8px 10px;
+    display: flex; align-items: center; gap: 8px;
+    box-shadow: var(--shadow-sm);
+    cursor: grab; transition: all var(--transition);
+    touch-action: none;
+    flex-shrink: 0;
+    border: 2px solid transparent;
+  }
+  .ingredient-card:active { cursor: grabbing; }
+  .ingredient-card:hover { box-shadow: var(--shadow-md); border-color: rgba(93,68,50,0.15); }
+  .ingredient-card .ing-emoji { font-size: 1.5rem; }
+  .ingredient-card .ing-name { font-size: 0.8rem; font-weight: 500; flex: 1; }
+  .ingredient-card .ing-count {
+    font-family: var(--font-mono); font-size: 0.75rem;
+    color: var(--text-light); background: var(--secondary); padding: 2px 8px;
+    border-radius: 20px;
+  }
+  .ingredient-card.dragging {
+    opacity: 0.4; transform: scale(0.95);
+  }
+  .ingredient-card.used {
+    opacity: 0.3; cursor: default; filter: grayscale(0.5);
+    pointer-events: none;
+  }
+
+  /* Bottom Bar */
+  .game-bottombar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 16px;
+    background: var(--white); border-top: 1px solid var(--secondary);
+    min-height: 48px;
+  }
+  .progress-dots {
+    display: flex; align-items: center; gap: 6px;
+  }
+  .progress-dot {
+    width: 10px; height: 10px; border-radius: 50%;
+    background: var(--secondary); transition: all var(--transition);
+  }
+  .progress-dot.done { background: var(--success); }
+  .progress-dot.current {
+    background: var(--primary); box-shadow: 0 0 0 3px rgba(93,68,50,0.15);
+  }
+  .game-score {
+    font-family: var(--font-mono); font-size: 1.1rem; font-weight: 700;
+    color: var(--text);
+  }
+  .game-combo {
+    font-size: 0.8rem; font-weight: 600; color: var(--warning);
+    display: none;
+  }
+  .game-combo.active { display: block; animation: comboFlash 0.3s ease; }
+  @keyframes comboFlash { 0% { transform: scale(1.3); } 100% { transform: scale(1); } }
+
+  /* Drag Preview */
+  .drag-preview {
+    position: fixed; pointer-events: none; z-index: 1000;
+    will-change: transform;
+    font-size: 2.5rem;
+    filter: drop-shadow(0 8px 24px rgba(62,43,30,0.3));
+    transform: translate(-50%, -50%) scale(1.15);
+    transition: transform 0.12s cubic-bezier(0.34,1.56,0.64,1);
+  }
+
+  /* ===== ORDER RESULT POPUP ===== */
+  #order-result {
+    position: absolute; inset: 0; z-index: 100;
+    background: rgba(62,43,30,0.5); backdrop-filter: blur(4px);
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.3s ease;
+  }
+  #order-result.active { opacity: 1; pointer-events: auto; }
+  .order-result-card {
+    background: var(--white); border-radius: var(--radius-lg);
+    padding: 40px 36px 32px; text-align: center;
+    box-shadow: var(--shadow-lg); max-width: 320px; width: 90%;
+    transform: scale(0.85); transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
+  }
+  #order-result.active .order-result-card {
+    transform: scale(1);
+  }
+  .order-result-card .result-emoji { font-size: 3rem; margin-bottom: 8px; }
+  .order-result-card .result-label {
+    font-size: 1.1rem; font-weight: 700; color: var(--text); margin-bottom: 4px;
+  }
+  .order-result-card .result-points {
+    font-family: var(--font-mono); font-size: 1.5rem; font-weight: 700;
+    color: var(--success); margin-bottom: 16px;
+  }
+  .order-result-card .result-combo {
+    font-size: 0.85rem; font-weight: 600; color: var(--warning);
+    margin-bottom: 16px;
+  }
+  .order-result-btn {
+    padding: 10px 32px; border: none; border-radius: var(--radius-pill);
+    background: var(--primary); color: var(--white);
+    font-size: 0.95rem; font-weight: 600; font-family: var(--font);
+    cursor: pointer; transition: transform var(--transition), box-shadow var(--transition);
+  }
+  .order-result-btn:hover { transform: scale(1.03); box-shadow: var(--shadow-md); }
+  .order-result-btn:active { transform: scale(0.97); }
+
+  /* ===== RESULT SCREEN ===== */
+  #result {
+    background: linear-gradient(160deg, var(--primary) 0%, var(--primary-dark) 100%);
+    justify-content: center; align-items: center;
+    padding: 32px; text-align: center; position: relative; overflow: hidden;
+  }
+  #result::before {
+    content: ''; position: absolute; inset: 0;
+    background: radial-gradient(ellipse at 50% 40%, rgba(233,227,221,0.06) 0%, transparent 60%);
+  }
+  .result-card {
+    position: relative; z-index: 1;
+    background: rgba(255,255,255,0.08); backdrop-filter: blur(12px);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: var(--radius-lg); padding: 40px 36px; max-width: 380px; width: 100%;
+  }
+  .result-title {
+    font-size: 1.8rem; font-weight: 800; color: var(--white); margin-bottom: 4px;
+  }
+  .result-subtitle {
+    font-size: 0.9rem; color: var(--secondary); opacity: 0.8; margin-bottom: 24px;
+  }
+  .result-stars {
+    display: flex; justify-content: center; gap: 8px; margin-bottom: 20px;
+  }
+  .result-star {
+    font-size: 2.5rem; transition: all 0.3s ease;
+    opacity: 0.2; filter: grayscale(1);
+  }
+  .result-star.filled {
+    opacity: 1; filter: grayscale(0);
+    animation: starPop 0.3s cubic-bezier(0.34,1.56,0.64,1) forwards;
+  }
+  .result-star.filled:nth-child(2) { animation-delay: 0.15s; }
+  .result-star.filled:nth-child(3) { animation-delay: 0.3s; }
+  @keyframes starPop {
+    0% { transform: scale(0); }
+    100% { transform: scale(1); }
+  }
+  .result-score-wrap {
+    display: flex; justify-content: center; gap: 24px; margin-bottom: 28px;
+  }
+  .result-score-item {
+    text-align: center;
+  }
+  .result-score-item .num {
+    font-family: var(--font-mono); font-size: 1.8rem; font-weight: 700; color: var(--white);
+  }
+  .result-score-item .label {
+    font-size: 0.7rem; color: var(--secondary); opacity: 0.6; text-transform: uppercase; letter-spacing: 1px;
+  }
+  .result-score-item.highlight .num { color: var(--star-gold); }
+  .result-actions {
+    display: flex; flex-direction: column; gap: 10px; align-items: center;
+  }
+  .result-btn {
+    width: 220px; height: 52px; border: none; border-radius: var(--radius-pill);
+    font-size: 1.05rem; font-weight: 700; font-family: var(--font);
+    cursor: pointer; transition: all var(--transition);
+    touch-action: manipulation;
+  }
+  .result-btn.primary {
+    background: var(--success); color: var(--white);
+    box-shadow: 0 4px 16px rgba(22,163,74,0.35);
+  }
+  .result-btn.primary:hover { transform: scale(1.04); box-shadow: 0 6px 24px rgba(22,163,74,0.45); }
+  .result-btn.secondary {
+    background: transparent; color: var(--secondary);
+    border: 2px solid rgba(255,255,255,0.2);
+  }
+  .result-btn.secondary:hover { border-color: rgba(255,255,255,0.4); transform: scale(1.02); }
+  .result-btn:active { transform: scale(0.97); }
+
+  /* ===== Shared Animations ===== */
+  @keyframes pulseText {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+
+  /* ===== Toast Notification ===== */
+  .toast {
+    position: fixed; top: 20px; left: 50%; transform: translateX(-50%) translateY(-80px);
+    z-index: 2000;
+    background: var(--primary); color: var(--white); padding: 12px 24px;
+    border-radius: var(--radius-pill); font-size: 0.9rem; font-weight: 600;
+    box-shadow: var(--shadow-lg);
+    transition: transform 0.35s cubic-bezier(0.34,1.56,0.64,1);
+    pointer-events: none;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+  .toast.success { background: var(--success); }
+  .toast.warning { background: var(--warning); }
+  .toast.danger { background: var(--danger); }
+
+  /* ===== Responsive ===== */
+  @media (max-width: 767px) {
+    .game-body {
+      grid-template-columns: 1fr;
+      grid-template-rows: 1fr auto;
+      gap: 8px; padding: 8px 10px;
+    }
+    .plating-area {
+      min-height: 180px; padding: 12px; gap: 8px;
+    }
+    .ingredient-tray {
+      flex-direction: row; padding: 8px 10px; gap: 6px;
+      overflow-x: auto; overflow-y: hidden;
+      min-height: 72px; border-radius: var(--radius);
+    }
+    .tray-title { display: none; }
+    .ingredient-card {
+      flex-direction: column; padding: 6px 10px; min-width: 64px;
+      gap: 2px;
+    }
+    .ingredient-card .ing-emoji { font-size: 1.3rem; }
+    .ingredient-card .ing-name { font-size: 0.65rem; }
+    .ingredient-card .ing-count { font-size: 0.65rem; padding: 1px 6px; }
+    .splash-title { font-size: 2rem; }
+    .splash-logo { font-size: 3rem; }
+    .result-card { padding: 28px 20px; }
+    .result-title { font-size: 1.4rem; }
+    .result-score-item .num { font-size: 1.4rem; }
+    .game-topbar { padding: 8px 12px; min-height: 44px; }
+    .game-topbar .order-customer { font-size: 0.95rem; }
+  }
+
+  /* ===== Focus & Keyboard ===== */
+  .ingredient-card:focus-visible,
+  .snap-zone:focus-visible,
+  .splash-btn:focus-visible,
+  .result-btn:focus-visible,
+  .order-result-btn:focus-visible {
+    outline: 3px solid var(--primary);
+    outline-offset: 2px;
+  }
+  .keyboard-hint {
+    font-size: 0.65rem; color: var(--text-light); opacity: 0.35;
+    margin-top: 4px;
+  }
+</style>
+</head>
+<body>
+
+<a href="/" class="back-to-hub" aria-label="Back to hub">&larr; Hub</a>
+
+<!-- ===== SPLASH SCREEN ===== -->
+<div id="splash" class="screen active" data-od-id="splash">
+  <div class="splash-bg-deco" style="top:10%;left:5%;animation-delay:-1s;">🍣</div>
+  <div class="splash-bg-deco" style="bottom:15%;right:8%;animation-delay:-3s;font-size:4rem;">🍱</div>
+  <div class="splash-bg-deco" style="top:40%;right:15%;animation-delay:-5s;font-size:3rem;">🥢</div>
+  <div class="splash-logo">🍣</div>
+  <h1 class="splash-title">Sushi Master</h1>
+  <p class="splash-subtitle">精准出餐 · 一握入魂</p>
+  <button class="splash-btn" data-comp-id="splash-start-btn" id="startBtn">开始</button>
+  <p class="splash-footer">Astrocade · Tab + Enter to Play</p>
+</div>
+
+<!-- ===== GAME SCREEN ===== -->
+<div id="game" class="screen hidden" data-od-id="game">
+
+  <!-- Top Bar -->
+  <div class="game-topbar">
+    <div>
+      <div class="order-label">ORDER</div>
+      <div class="order-customer" id="customerDisplay">👤 顾客</div>
+    </div>
+    <div class="order-timer" id="timerDisplay">
+      <span>⏱</span>
+      <span id="timerValue">45</span><span>s</span>
+    </div>
+  </div>
+  <div class="timer-bar-wrap">
+    <div class="timer-bar" id="timerBar"></div>
+  </div>
+
+  <!-- Game Body -->
+  <div class="game-body">
+    <!-- Plating Area -->
+    <div class="plating-area" id="platingArea">
+      <span class="plating-area-label">摆盘区</span>
+    </div>
+    <!-- Ingredient Tray -->
+    <div class="ingredient-tray" id="ingredientTray" role="listbox" aria-label="Ingredient tray">
+      <div class="tray-title">食材</div>
+    </div>
+  </div>
+
+  <!-- Bottom Bar -->
+  <div class="game-bottombar">
+    <div class="progress-dots" id="progressDots"></div>
+    <div class="game-combo" id="comboDisplay">🔥 Combo x<span id="comboCount">0</span></div>
+    <div class="game-score" id="scoreDisplay">0</div>
+  </div>
+</div>
+
+<!-- ===== ORDER RESULT OVERLAY ===== -->
+<div id="order-result">
+  <div class="order-result-card">
+    <div class="result-emoji" id="orderResultEmoji">✅</div>
+    <div class="result-label" id="orderResultLabel">订单完成!</div>
+    <div class="result-points" id="orderResultPoints">+100</div>
+    <div class="result-combo" id="orderResultCombo" style="display:none;">🔥 Combo x2!</div>
+    <button class="order-result-btn" data-comp-id="order-next-btn" id="orderNextBtn">继续</button>
+  </div>
+</div>
+
+<!-- ===== RESULT SCREEN ===== -->
+<div id="result" class="screen hidden" data-od-id="result">
+  <div class="result-card">
+    <div class="result-title" id="resultTitle">通关!</div>
+    <div class="result-subtitle" id="resultSubtitle">太棒了！</div>
+    <div class="result-stars" id="resultStars">
+      <span class="result-star" data-idx="0">⭐</span>
+      <span class="result-star" data-idx="1">⭐</span>
+      <span class="result-star" data-idx="2">⭐</span>
+    </div>
+    <div class="result-score-wrap">
+      <div class="result-score-item highlight">
+        <div class="num" id="finalScore">0</div>
+        <div class="label">得分</div>
+      </div>
+      <div class="result-score-item">
+        <div class="num" id="highScore">0</div>
+        <div class="label">最高分</div>
+      </div>
+    </div>
+    <div class="result-actions">
+      <button class="result-btn primary" data-comp-id="result-replay-btn" id="replayBtn">再来一局</button>
+      <button class="result-btn secondary" data-comp-id="result-next-btn" id="nextLevelBtn" style="display:none;">下一关</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== DRAG PREVIEW ===== -->
+<div class="drag-preview" id="dragPreview" style="display:none;"></div>
+
+<!-- ===== TOAST ===== -->
+<div class="toast" id="toast"></div>
+
+<script>
+(function() {
+  'use strict';
+
+  // ===== CONSTANTS =====
+  const LS_PREFIX = 'sushi-master:';
+  const SNAP_RADIUS = 15;
+  const STORAGE_KEY = LS_PREFIX + 'highScore';
+  const LEVEL_KEY = LS_PREFIX + 'unlockedLevel';
+
+  // ===== INGREDIENTS =====
+  const ALL_INGREDIENTS = [
+    { id: 'rice', name: '醋饭', emoji: '🍚', category: 'rice' },
+    { id: 'salmon', name: '三文鱼', emoji: '🍣', category: 'topping' },
+    { id: 'tuna', name: '金枪鱼', emoji: '🐟', category: 'topping' },
+    { id: 'shrimp', name: '虾', emoji: '🦐', category: 'topping' },
+    { id: 'egg', name: '玉子', emoji: '🥚', category: 'topping' },
+    { id: 'cucumber', name: '黄瓜', emoji: '🥒', category: 'topping' },
+    { id: 'nori', name: '海苔', emoji: '🌿', category: 'wrap' },
+    { id: 'avocado', name: '牛油果', emoji: '🥑', category: 'topping' },
+    { id: 'roe', name: '鱼籽', emoji: '🔴', category: 'garnish' },
+    { id: 'eel', name: '鳗鱼', emoji: '🐍', category: 'topping' },
+  ];
+
+  // ===== LEVEL CONFIG =====
+  const LEVELS = [
+    { id: 1, orders: 3, ingredients: ['rice','salmon','nori'], time: 45, templates: ['A'], unlock: null },
+    { id: 2, orders: 4, ingredients: ['rice','salmon','tuna','cucumber','nori'], time: 40, templates: ['A','B'], unlock: '金枪鱼卷' },
+    { id: 3, orders: 4, ingredients: ['rice','salmon','tuna','shrimp','egg','nori'], time: 35, templates: ['A','B','C'], unlock: '握寿司' },
+    { id: 4, orders: 5, ingredients: ['rice','salmon','tuna','shrimp','avocado','cucumber','nori'], time: 32, templates: ['A','B','C'], unlock: '龙卷' },
+    { id: 5, orders: 5, ingredients: ['rice','salmon','tuna','shrimp','egg','avocado','eel','roe','nori'], time: 28, templates: ['A','B','C'], unlock: '豪华拼盘' },
+  ];
+
+  // ===== STATE =====
+  let state = {
+    phase: 'title', // 'title' | 'playing' | 'orderResult' | 'win' | 'lose'
+    level: 1,
+    score: 0,
+    combo: 0,
+    highScore: parseInt(localStorage.getItem(STORAGE_KEY)) || 0,
+    maxCombo: 0,
+    ordersCompleted: 0,
+    currentOrderIndex: 0,
+    orders: [],
+    currentOrder: null,
+    timeRemaining: 45,
+    totalTime: 45,
+    placedItems: [], // { ingredientId, slotIndex, emoji }
+    timerInterval: null,
+    soundEnabled: true,
+  };
+
+  // ===== DOM REFS =====
+  const $ = id => document.getElementById(id);
+  const splash = $('splash');
+  const game = $('game');
+  const result = $('result');
+  const platingArea = $('platingArea');
+  const ingredientTray = $('ingredientTray');
+  const progressDots = $('progressDots');
+  const scoreDisplay = $('scoreDisplay');
+  const comboDisplay = $('comboDisplay');
+  const comboCount = $('comboCount');
+  const customerDisplay = $('customerDisplay');
+  const timerValue = $('timerValue');
+  const timerBar = $('timerBar');
+  const dragPreview = $('dragPreview');
+  const orderResult = $('order-result');
+  const orderResultEmoji = $('orderResultEmoji');
+  const orderResultLabel = $('orderResultLabel');
+  const orderResultPoints = $('orderResultPoints');
+  const orderResultCombo = $('orderResultCombo');
+  const finalScore = $('finalScore');
+  const highScore = $('highScore');
+  const resultTitle = $('resultTitle');
+  const resultSubtitle = $('resultSubtitle');
+  const resultStars = Array.from(document.querySelectorAll('.result-star'));
+  const toast = $('toast');
+  const replayBtn = $('replayBtn');
+  const nextLevelBtn = $('nextLevelBtn');
+  const startBtn = $('startBtn');
+  const orderNextBtn = $('orderNextBtn');
+
+  // ===== AUDIO =====
+  let audioCtx = null;
+  function ensureAudio() {
+    if (!audioCtx) {
+      const Ctor = window.AudioContext || window.webkitAudioContext;
+      if (!Ctor) return null;
+      audioCtx = new Ctor();
+    }
+    return audioCtx;
+  }
+
+  function playTone(freq, duration, type = 'sine', volume = 0.15) {
+    try {
+      const ctx = ensureAudio();
+      if (!ctx) return;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = type;
+      osc.frequency.setValueAtTime(freq, ctx.currentTime);
+      gain.gain.setValueAtTime(volume, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + duration);
+    } catch(e) { /* ignore autoplay block */ }
+  }
+
+  function playFreqSweep(startFreq, endFreq, duration, type = 'sine') {
+    try {
+      const ctx = ensureAudio();
+      if (!ctx) return;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = type;
+      osc.frequency.setValueAtTime(startFreq, ctx.currentTime);
+      osc.frequency.linearRampToValueAtTime(endFreq, ctx.currentTime + duration);
+      gain.gain.setValueAtTime(0.12, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + duration);
+    } catch(e) { /* ignore */ }
+  }
+
+  function playPickup() { playFreqSweep(440, 660, 0.08); }
+  function playSnap() { playTone(600, 0.05, 'sine', 0.1); }
+  function playInvalid() { playTone(100, 0.1, 'sawtooth', 0.06); }
+  function playOrderComplete() {
+    try {
+      const ctx = ensureAudio();
+      if (!ctx) return;
+      [262, 330, 392].forEach((f, i) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(f, ctx.currentTime + i * 0.1);
+        gain.gain.setValueAtTime(0.12, ctx.currentTime + i * 0.1);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.1 + 0.25);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(ctx.currentTime + i * 0.1);
+        osc.stop(ctx.currentTime + i * 0.1 + 0.3);
+      });
+    } catch(e) { /* ignore */ }
+  }
+  function playFail() { playFreqSweep(300, 150, 0.3, 'sawtooth'); }
+  function playVictory() {
+    try {
+      const ctx = ensureAudio();
+      if (!ctx) return;
+      [523, 659, 784, 1047].forEach((f, i) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(f, ctx.currentTime + i * 0.12);
+        gain.gain.setValueAtTime(0.12, ctx.currentTime + i * 0.12);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.12 + 0.35);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(ctx.currentTime + i * 0.12);
+        osc.stop(ctx.currentTime + i * 0.12 + 0.4);
+      });
+    } catch(e) { /* ignore */ }
+  }
+  function playClick() { playTone(800, 0.03, 'sine', 0.06); }
+
+  // ===== HAPTICS =====
+  function vibrate(p) {
+    if (navigator.vibrate) navigator.vibrate(p);
+  }
+  function hapticPickup() { vibrate(10); }
+  function hapticSnap() { vibrate(15); }
+  function hapticComplete() { vibrate(30); }
+
+  // ===== TOAST =====
+  let toastTimer = null;
+  function showToast(msg, type = '') {
+    toast.textContent = msg;
+    toast.className = 'toast ' + type;
+    clearTimeout(toastTimer);
+    requestAnimationFrame(() => {
+      toast.classList.add('show');
+      toastTimer = setTimeout(() => toast.classList.remove('show'), 1800);
+    });
+  }
+
+  // ===== ORDER GENERATION =====
+  function getLevelConfig(levelNum) {
+    return LEVELS.find(l => l.id === levelNum) || LEVELS[0];
+  }
+
+  function generateOrders(levelNum) {
+    const cfg = getLevelConfig(levelNum);
+    const available = ALL_INGREDIENTS.filter(ing => cfg.ingredients.includes(ing.id));
+    const orders = [];
+    const customers = [
+      { name: '田中', emoji: '👨‍🦰' },
+      { name: '佐藤', emoji: '👩‍🦱' },
+      { name: '山田', emoji: '👨‍🦳' },
+      { name: '伊藤', emoji: '👩‍🦰' },
+      { name: '小林', emoji: '🧑‍🦲' },
+      { name: '渡边', emoji: '👨‍🦲' },
+    ];
+
+    for (let i = 0; i < cfg.orders; i++) {
+      const count = Math.min(3 + i % 3, cfg.ingredients.length);
+      const shuffled = [...available].sort(() => Math.random() - 0.5);
+      const ingredientIds = shuffled.slice(0, count).map(ing => ing.id);
+      const customer = customers[i % customers.length];
+
+      orders.push({
+        id: i + 1,
+        customer: customer,
+        ingredients: ingredientIds,
+        template: cfg.templates[i % cfg.templates.length],
+        timeLimit: cfg.time,
+        reward: 100 + (levelNum - 1) * 20,
+      });
+    }
+    return orders;
+  }
+
+  // ===== SCREEN MANAGEMENT =====
+  function showScreen(screenId) {
+    [splash, game, result].forEach(s => {
+      s.classList.remove('active');
+      s.classList.add('hidden');
+    });
+    const target = $(screenId);
+    target.classList.remove('hidden');
+    requestAnimationFrame(() => target.classList.add('active'));
+  }
+
+  // ===== GAME SETUP =====
+  function initGame() {
+    const cfg = getLevelConfig(state.level);
+    state.orders = generateOrders(state.level);
+    state.currentOrderIndex = 0;
+    state.placedItems = [];
+    state.combo = 0;
+    state.maxCombo = 0;
+    state.ordersCompleted = 0;
+    state.currentOrder = state.orders[0];
+    state.score = 0;
+
+    buildPlatingSlots();
+    buildIngredientTray();
+    buildProgressDots();
+    showOrder(state.orders[0]);
+    updateScore();
+    updateCombo();
+    startTimer();
+  }
+
+  function buildPlatingSlots() {
+    platingArea.innerHTML = '<span class="plating-area-label">摆盘区</span>';
+    for (let i = 0; i < 6; i++) {
+      const zone = document.createElement('div');
+      zone.className = 'snap-zone pulse';
+      zone.dataset.slotIndex = i;
+      zone.dataset.compId = 'snap-zone-' + i;
+      zone.setAttribute('tabindex', '-1');
+      zone.setAttribute('role', 'button');
+      zone.setAttribute('aria-label', 'Plating slot ' + (i + 1));
+      const hint = document.createElement('span');
+      hint.className = 'slot-hint';
+      hint.textContent = '○';
+      zone.appendChild(hint);
+      platingArea.appendChild(zone);
+    }
+  }
+
+  function buildIngredientTray() {
+    const cfg = getLevelConfig(state.level);
+    // Keep title
+    ingredientTray.innerHTML = '<div class="tray-title">食材</div>';
+    cfg.ingredients.forEach(ingId => {
+      const ing = ALL_INGREDIENTS.find(i => i.id === ingId);
+      if (!ing) return;
+            const ingredientCount = cfg.orders * 2; // Enough for all orders in level
+      const card = document.createElement('div');
+      card.className = 'ingredient-card';
+      card.dataset.ingredientId = ing.id;
+      card.dataset.compId = 'ingredient-' + ing.id;
+      card.setAttribute('tabindex', '0');
+      card.setAttribute('role', 'option');
+      card.setAttribute('aria-label', ing.name);
+      card.innerHTML = `
+        <span class="ing-emoji">${ing.emoji}</span>
+        <span class="ing-name">${ing.name}</span>
+        <span class="ing-count">${ingredientCount}</span>
+      `;
+
+      // Pointer events for drag
+      card.addEventListener('pointerdown', onIngredientPointerDown);
+
+      // Keyboard support
+      card.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onIngredientKeyboardPick(card, ing);
+        }
+      });
+
+      ingredientTray.appendChild(card);
+    });
+  }
+
+  function buildProgressDots() {
+    progressDots.innerHTML = '';
+    state.orders.forEach((_, i) => {
+      const dot = document.createElement('span');
+      dot.className = 'progress-dot' + (i === 0 ? ' current' : '');
+      progressDots.appendChild(dot);
+    });
+  }
+
+  function showOrder(order) {
+    state.currentOrder = order;
+    state.timeRemaining = order.timeLimit;
+    state.totalTime = order.timeLimit;
+    customerDisplay.textContent = order.customer.emoji + ' ' + order.customer.name;
+    timerValue.textContent = order.timeLimit;
+    timerBar.style.width = '100%';
+    timerBar.className = 'timer-bar';
+
+    // Build order ticket with ingredient requirements
+    const orderIngredients = order.ingredients.map(id => ALL_INGREDIENTS.find(i => i.id === id)).filter(Boolean);
+
+    // Clear and re-populate plating slots for new order
+    const slots = platingArea.querySelectorAll('.snap-zone');
+    slots.forEach(slot => {
+      slot.className = 'snap-zone pulse';
+      slot.innerHTML = '<span class="slot-hint">○</span>';
+      slot.dataset.occupied = 'false';
+    });
+    state.placedItems = [];
+
+    // Build order ticket note
+    const orderNote = document.createElement('div');
+    orderNote.style.cssText = 'position:absolute;bottom:4px;left:50%;transform:translateX(-50%);display:flex;gap:4px;font-size:0.85rem;opacity:0.5;pointer-events:none;z-index:1;';
+    orderNote.id = 'orderIngredientsHint';
+    orderIngredients.forEach(ing => {
+      const span = document.createElement('span');
+      span.textContent = ing.emoji;
+      span.title = ing.name;
+      orderNote.appendChild(span);
+    });
+
+    const existing = platingArea.querySelector('#orderIngredientsHint');
+    if (existing) existing.remove();
+    platingArea.appendChild(orderNote);
+  }
+
+  // ===== DRAG & DROP =====
+  let dragState = null;
+
+  function onIngredientPointerDown(e) {
+    e.preventDefault();
+    const card = e.currentTarget;
+    if (card.classList.contains('used')) return;
+
+    const ingId = card.dataset.ingredientId;
+    const ing = ALL_INGREDIENTS.find(i => i.id === ingId);
+    if (!ing) return;
+
+    const rect = card.getBoundingClientRect();
+
+    playPickup();
+    hapticPickup();
+
+    dragState = {
+      ingredientId: ingId,
+      emoji: ing.emoji,
+      card: card,
+      startX: e.clientX,
+      startY: e.clientY,
+      offsetX: rect.width / 2,
+      offsetY: rect.height / 2,
+    };
+
+    card.classList.add('dragging');
+
+    // Show drag preview
+    dragPreview.textContent = ing.emoji;
+    dragPreview.style.display = 'block';
+    dragPreview.style.left = e.clientX + 'px';
+    dragPreview.style.top = e.clientY + 'px';
+
+    card.setPointerCapture(e.pointerId);
+    card.addEventListener('pointermove', onPointerMove);
+    card.addEventListener('pointerup', onPointerUp);
+    card.addEventListener('pointercancel', onPointerCancel);
+  }
+
+  function onPointerMove(e) {
+    e.preventDefault();
+    if (!dragState) return;
+
+    dragPreview.style.left = e.clientX + 'px';
+    dragPreview.style.top = e.clientY + 'px';
+
+    // Check proximity to snap zones
+    const zones = platingArea.querySelectorAll('.snap-zone');
+    let nearest = null, minDist = Infinity;
+
+    zones.forEach(zone => {
+      if (zone.dataset.occupied === 'true') return;
+      const r = zone.getBoundingClientRect();
+      const cx = r.left + r.width / 2;
+      const cy = r.top + r.height / 2;
+      const dist = Math.hypot(e.clientX - cx, e.clientY - cy);
+      if (dist < SNAP_RADIUS && dist < minDist) {
+        minDist = dist;
+        nearest = zone;
+      }
+    });
+
+    zones.forEach(z => z.classList.remove('highlight'));
+    if (nearest) {
+      nearest.classList.add('highlight');
+    }
+  }
+
+  function onPointerUp(e) {
+    e.preventDefault();
+    if (!dragState) return;
+
+    const card = dragState.card;
+    card.removeEventListener('pointermove', onPointerMove);
+    card.removeEventListener('pointerup', onPointerUp);
+    card.removeEventListener('pointercancel', onPointerCancel);
+
+    // Check drop
+    const zones = platingArea.querySelectorAll('.snap-zone');
+    let dropped = false;
+    zones.forEach(zone => {
+      zone.classList.remove('highlight');
+      if (zone.dataset.occupied === 'true') return;
+      if (dropped) return;
+      const r = zone.getBoundingClientRect();
+      const cx = r.left + r.width / 2;
+      const cy = r.top + r.height / 2;
+      const dist = Math.hypot(e.clientX - cx, e.clientY - cy);
+      if (dist < SNAP_RADIUS) {
+        dropIngredient(dragState.ingredientId, dragState.emoji, zone, parseInt(zone.dataset.slotIndex));
+        dropped = true;
+      }
+    });
+
+    if (!dropped) {
+      // Return to tray
+      playInvalid();
+      showToast('放回食材盘', 'warning');
+    }
+
+    card.classList.remove('dragging');
+    dragPreview.style.display = 'none';
+    dragState = null;
+  }
+
+  function onPointerCancel(e) {
+    if (dragState) {
+      dragState.card.classList.remove('dragging');
+      dragPreview.style.display = 'none';
+      const card = dragState.card;
+      card.removeEventListener('pointermove', onPointerMove);
+      card.removeEventListener('pointerup', onPointerUp);
+      card.removeEventListener('pointercancel', onPointerCancel);
+      dragState = null;
+    }
+  }
+
+  function dropIngredient(ingredientId, emoji, zone, slotIndex) {
+    // Decrease count in tray
+    const cards = ingredientTray.querySelectorAll('.ingredient-card');
+    let found = false;
+    cards.forEach(card => {
+      if (card.dataset.ingredientId === ingredientId && !card.classList.contains('used') && !found) {
+        const countEl = card.querySelector('.ing-count');
+        let count = parseInt(countEl.textContent) - 1;
+        if (count <= 0) {
+          card.classList.add('used');
+          countEl.textContent = '0';
+        } else {
+          countEl.textContent = count;
+        }
+        found = true;
+      }
+    });
+
+    playSnap();
+    hapticSnap();
+
+    // Place ingredient in slot
+    zone.dataset.occupied = 'true';
+    zone.className = 'snap-zone has-ingredient';
+    zone.innerHTML = '';
+    const ingEl = document.createElement('span');
+    ingEl.className = 'placed-ingredient';
+    ingEl.textContent = emoji;
+    zone.appendChild(ingEl);
+    const check = document.createElement('span');
+    check.className = 'placed-check';
+    check.textContent = '✓';
+    zone.appendChild(check);
+
+    state.placedItems.push({ ingredientId, slotIndex, emoji });
+
+    // Check if order is complete
+    checkOrderCompletion();
+  }
+
+  // ===== ORDER MATCHING =====
+  function checkOrderCompletion() {
+    const order = state.currentOrder;
+    if (!order) return;
+
+    const placedIds = state.placedItems.map(p => p.ingredientId);
+    const required = [...order.ingredients];
+
+    const matched = required.every(id => placedIds.includes(id));
+
+    if (matched && placedIds.length === required.length) {
+      // Order complete!
+      completeOrder();
+    }
+  }
+
+  function completeOrder() {
+    stopTimer();
+    playOrderComplete();
+    hapticComplete();
+
+    // Calculate score
+    const timeRatio = state.timeRemaining / state.totalTime;
+    let speedMultiplier = 1.0;
+    if (timeRatio > 0.66) speedMultiplier = 1.5;
+    else if (timeRatio > 0.33) speedMultiplier = 1.0;
+    else speedMultiplier = 0.75;
+
+    const orderScore = Math.round(state.currentOrder.reward * speedMultiplier);
+
+    // Combo
+    state.combo++;
+    state.maxCombo = Math.max(state.maxCombo, state.combo);
+    const comboMultiplier = state.combo >= 3 ? 1 + (state.combo - 2) * 0.2 : 1.0;
+    const finalOrderScore = Math.round(orderScore * Math.min(comboMultiplier, 2.0));
+
+    state.score += finalOrderScore;
+    state.ordersCompleted++;
+
+    updateScore();
+    updateCombo();
+
+    // Show order result popup
+    showOrderResult(finalOrderScore);
+  }
+
+  function showOrderResult(points) {
+    orderResultEmoji.textContent = '✅';
+    orderResultLabel.textContent = '订单完成!';
+    orderResultPoints.textContent = '+' + points;
+
+    if (state.combo >= 2) {
+      orderResultCombo.textContent = '🔥 Combo x' + state.combo + '!';
+      orderResultCombo.style.display = 'block';
+    } else {
+      orderResultCombo.style.display = 'none';
+    }
+
+    state.phase = 'orderResult';
+    orderResult.classList.add('active');
+  }
+
+  function onOrderContinue() {
+    orderResult.classList.remove('active');
+    playClick();
+
+    // Update progress dots
+    const dots = progressDots.querySelectorAll('.progress-dot');
+    dots.forEach((dot, i) => {
+      dot.classList.remove('current');
+      if (i < state.ordersCompleted) dot.classList.add('done');
+    });
+
+    state.currentOrderIndex++;
+    if (state.currentOrderIndex >= state.orders.length) {
+      // All orders complete — WIN
+      onWin();
+    } else {
+      const nextOrder = state.orders[state.currentOrderIndex];
+      showOrder(nextOrder);
+      // Update current dot
+      const newDots = progressDots.querySelectorAll('.progress-dot');
+      if (newDots[state.currentOrderIndex]) {
+        newDots[state.currentOrderIndex].classList.add('current');
+      }
+      startTimer();
+    }
+  }
+
+  // ===== TIMER =====
+  function startTimer() {
+    stopTimer();
+    state.timerInterval = setInterval(() => {
+      state.timeRemaining--;
+      timerValue.textContent = Math.max(0, state.timeRemaining);
+
+      const pct = Math.max(0, (state.timeRemaining / state.totalTime) * 100);
+      timerBar.style.width = pct + '%';
+
+      timerBar.className = 'timer-bar';
+      if (pct < 25) timerBar.classList.add('danger');
+      else if (pct < 50) timerBar.classList.add('warning');
+
+      const timerDisplay = $('timerDisplay').querySelector('span:last-child');
+      if (state.timeRemaining <= 10) {
+        timerDisplay.parentElement.classList.add('warning');
+      } else {
+        timerDisplay.parentElement.classList.remove('warning');
+      }
+
+      if (state.timeRemaining <= 0) {
+        stopTimer();
+        onTimeUp();
+      }
+    }, 1000);
+  }
+
+  function stopTimer() {
+    if (state.timerInterval) {
+      clearInterval(state.timerInterval);
+      state.timerInterval = null;
+    }
+    const timerDisplay = $('timerDisplay').querySelector('span:last-child');
+    if (timerDisplay) timerDisplay.parentElement.classList.remove('warning');
+  }
+
+  function onTimeUp() {
+    playFail();
+    vibrate(100);
+    state.phase = 'lose';
+    showToast('时间到!', 'danger');
+    setTimeout(() => showResultScreen(false), 500);
+  }
+
+  function onWin() {
+    playVictory();
+    vibrate(30);
+    state.phase = 'win';
+    showResultScreen(true);
+  }
+
+  // ===== RESULT SCREEN =====
+  function showResultScreen(won) {
+    stopTimer();
+    showScreen('result');
+
+    const isNewHigh = state.score > state.highScore;
+    if (isNewHigh) {
+      state.highScore = state.score;
+      localStorage.setItem(STORAGE_KEY, state.highScore);
+      localStorage.setItem(LEVEL_KEY, Math.max(parseInt(localStorage.getItem(LEVEL_KEY)) || 1, state.level));
+    }
+
+    if (won) {
+      resultTitle.textContent = '🍣 通关!';
+      resultSubtitle.textContent = '寿司大师！精准出餐，完美!';
+    } else {
+      resultTitle.textContent = '😅 未完成';
+      resultSubtitle.textContent = '再接再厉，下次一定!';
+    }
+
+    finalScore.textContent = state.score;
+    highScore.textContent = state.highScore;
+
+    // Stars
+    const accuracy = state.ordersCompleted / Math.max(state.orders.length, 1);
+    let stars = 0;
+    if (won) {
+      if (accuracy >= 1 && state.maxCombo >= 3) stars = 3;
+      else if (accuracy >= 0.8) stars = 2;
+      else stars = 1;
+    } else {
+      stars = state.ordersCompleted > 0 ? 1 : 0;
+    }
+
+    resultStars.forEach((star, i) => {
+      star.classList.toggle('filled', i < stars);
+    });
+
+    // Buttons
+    replayBtn.textContent = '再来一局';
+    replayBtn.onclick = () => { playClick(); startGame(); };
+
+    if (won && state.level < LEVELS.length) {
+      nextLevelBtn.style.display = 'block';
+      nextLevelBtn.textContent = '下一关';
+      nextLevelBtn.onclick = () => { playClick(); state.level++; startGame(); };
+    } else {
+      nextLevelBtn.style.display = 'none';
+    }
+  }
+
+  // ===== UPDATE DISPLAYS =====
+  function updateScore() {
+    scoreDisplay.textContent = state.score;
+  }
+
+  function updateCombo() {
+    if (state.combo >= 2) {
+      comboDisplay.classList.add('active');
+      comboCount.textContent = state.combo;
+    } else {
+      comboDisplay.classList.remove('active');
+    }
+  }
+
+  // ===== KEYBOARD SUPPORT =====
+  function onIngredientKeyboardPick(card, ing) {
+    if (card.classList.contains('used')) return;
+    playPickup();
+    hapticPickup();
+
+    // Find first empty slot
+    const slots = platingArea.querySelectorAll('.snap-zone');
+    for (const zone of slots) {
+      if (zone.dataset.occupied !== 'true') {
+        const slotIndex = parseInt(zone.dataset.slotIndex);
+        dropIngredient(ing.id, ing.emoji, zone, slotIndex);
+        break;
+      }
+    }
+  }
+
+  function handleKeyDown(e) {
+    if (state.phase === 'title') {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        startBtn.click();
+      }
+    } else if (state.phase === 'orderResult') {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        orderNextBtn.click();
+      }
+    } else if (state.phase === 'win' || state.phase === 'lose') {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        if (document.activeElement !== replayBtn) replayBtn.focus();
+      }
+    }
+
+    // Ingredient keyboard navigation
+    if (state.phase === 'playing' && (e.key >= '1' && e.key <= '9')) {
+      const idx = parseInt(e.key) - 1;
+      const cards = ingredientTray.querySelectorAll('.ingredient-card:not(.used)');
+      if (cards[idx]) {
+        cards[idx].focus();
+        const ingId = cards[idx].dataset.ingredientId;
+        const ing = ALL_INGREDIENTS.find(i => i.id === ingId);
+        if (ing) onIngredientKeyboardPick(cards[idx], ing);
+      }
+    }
+  }
+
+  // ===== KEYBOARD TAB CYCLE =====
+  document.addEventListener('keydown', handleKeyDown);
+
+  // ===== GAME START =====
+  function startGame() {
+    state.phase = 'playing';
+    showScreen('game');
+    initGame();
+  }
+
+  startBtn.addEventListener('click', (e) => {
+    ensureAudio();
+    playClick();
+    startGame();
+  });
+
+  orderNextBtn.addEventListener('click', () => {
+    playClick();
+    onOrderContinue();
+  });
+
+  // ===== SOUND TOGGLE (tap splash area) =====
+  document.addEventListener('click', () => {
+    if (!audioCtx) ensureAudio();
+  }, { once: true });
+
+  // ===== INIT — show splash =====
+  showScreen('splash');
+})();
+</script>
+<script type="application/x-design-tweaks+json" id="design-preview-tweaks">
+[
+	{
+		"current":"#E74C3C",
+		"compId":"splash-start-btn",
+		"param":"bg",
+		"cssProp":"background-color",
+		"label":"Start button color",
+		"type":"color",
+		"target":"element"
+	},
+	{
+		"current":"#16A34A",
+		"compId":"result-replay-btn",
+		"param":"bg",
+		"cssProp":"background-color",
+		"label":"Replay button color",
+		"type":"color",
+		"target":"element"
+	},
+	{
+		"current":"900",
+		"compId":"splash-title",
+		"param":"weight",
+		"cssProp":"font-weight",
+		"options":[
+			{
+				"label":"Bold",
+				"value":"700"
+			},
+			{
+				"label":"Extra Bold",
+				"value":"800"
+			},
+			{
+				"label":"Black",
+				"value":"900"
+			}
+		],
+		"label":"Title weight",
+		"type":"select",
+		"target":"element"
+	},
+	{
+		"unit":"px",
+		"current":16,
+		"min":8,
+		"compId":"platingArea",
+		"param":"padding",
+		"max":32,
+		"cssProp":"padding",
+		"step":4,
+		"label":"Plating padding",
+		"type":"range",
+		"target":"element"
+	},
+	{
+		"current":"#5D4432",
+		"compId":"order-next-btn",
+		"param":"bg",
+		"cssProp":"background-color",
+		"label":"Continue button color",
+		"type":"color",
+		"target":"element"
+	}
+]
+</script>
+</body>
+</html>
