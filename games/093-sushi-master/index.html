@@ -609,7 +609,12 @@
 
   // ===== CONSTANTS =====
   const LS_PREFIX = 'sushi-master:';
-  const SNAP_RADIUS = 15;
+  const SNAP_RADIUS = 30;
+  const TEMPLATE_SLOTS = {
+    'A': [0, 1, 2],    // Top row
+    'B': [3, 4, 5],    // Bottom row
+    'C': [0, 1, 3, 4], // Left two columns + middle-left
+  };
   const STORAGE_KEY = LS_PREFIX + 'highScore';
   const LEVEL_KEY = LS_PREFIX + 'unlockedLevel';
 
@@ -639,7 +644,7 @@
   // ===== STATE =====
   let state = {
     phase: 'title', // 'title' | 'playing' | 'orderResult' | 'win' | 'lose'
-    level: 1,
+    level: parseInt(localStorage.getItem(LEVEL_KEY)) || 1,
     score: 0,
     combo: 0,
     highScore: parseInt(localStorage.getItem(STORAGE_KEY)) || 0,
@@ -732,10 +737,11 @@
     } catch(e) { /* ignore */ }
   }
 
-  function playPickup() { playFreqSweep(440, 660, 0.08); }
-  function playSnap() { playTone(600, 0.05, 'sine', 0.1); }
-  function playInvalid() { playTone(100, 0.1, 'sawtooth', 0.06); }
+  function playPickup() { if (!state.soundEnabled) return; playFreqSweep(440, 660, 0.08); }
+  function playSnap() { if (!state.soundEnabled) return; playTone(600, 0.05, 'sine', 0.1); }
+  function playInvalid() { if (!state.soundEnabled) return; playTone(100, 0.1, 'sawtooth', 0.06); }
   function playOrderComplete() {
+    if (!state.soundEnabled) return;
     try {
       const ctx = ensureAudio();
       if (!ctx) return;
@@ -753,7 +759,7 @@
       });
     } catch(e) { /* ignore */ }
   }
-  function playFail() { playFreqSweep(300, 150, 0.3, 'sawtooth'); }
+  function playFail() { if (!state.soundEnabled) return; playFreqSweep(300, 150, 0.3, 'sawtooth'); }
   function playVictory() {
     try {
       const ctx = ensureAudio();
@@ -772,7 +778,7 @@
       });
     } catch(e) { /* ignore */ }
   }
-  function playClick() { playTone(800, 0.03, 'sine', 0.06); }
+  function playClick() { if (!state.soundEnabled) return; playTone(800, 0.03, 'sine', 0.06); }
 
   // ===== HAPTICS =====
   function vibrate(p) {
@@ -945,6 +951,30 @@
       slot.dataset.occupied = 'false';
     });
     state.placedItems = [];
+
+    // Show plating template hint
+    const templateNames = { 'A': '一列', 'B': '二列', 'C': 'L形' };
+    const templateName = templateNames[order.template] || '';
+    const templateLabel = document.createElement('div');
+    templateLabel.style.cssText = 'position:absolute;top:24px;left:50%;transform:translateX(-50%);font-size:0.65rem;color:var(--primary);opacity:0.3;font-weight:600;letter-spacing:1px;pointer-events:none;z-index:1;';
+    templateLabel.id = 'templateHint';
+    templateLabel.textContent = '摆盘: ' + templateName;
+    const existingT = platingArea.querySelector('#templateHint');
+    if (existingT) existingT.remove();
+    platingArea.appendChild(templateLabel);
+
+    // Highlight valid slots for this template
+    const templateSlots = TEMPLATE_SLOTS[order.template] || [0,1,2,3,4,5];
+    const allSlots = platingArea.querySelectorAll('.snap-zone');
+    allSlots.forEach((slot, i) => {
+      if (templateSlots.includes(i)) {
+        slot.classList.add('pulse');
+        slot.style.opacity = '1';
+      } else {
+        slot.classList.remove('pulse');
+        slot.style.opacity = '0.25';
+      }
+    });
 
     // Build order ticket note
     const orderNote = document.createElement('div');
@@ -1131,7 +1161,14 @@
 
     const matched = required.every(id => placedIds.includes(id));
 
-    if (matched && placedIds.length === required.length) {
+    if (matched && placedIds.length >= required.length) {
+      // Check plating template matches
+      const templateSlots = TEMPLATE_SLOTS[order.template] || [0,1,2,3,4,5];
+      const slotsValid = state.placedItems.every(item => templateSlots.includes(item.slotIndex));
+      if (!slotsValid) {
+        showToast('摆盘位置不对!', 'warning');
+        return;
+      }
       // Order complete!
       completeOrder();
     }
@@ -1359,6 +1396,34 @@
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
         if (document.activeElement !== replayBtn) replayBtn.focus();
+      }
+    }
+
+    // Arrow key navigation between plating slots
+    if (state.phase === 'playing' && (e.key === 'ArrowLeft' || e.key === 'ArrowRight' || e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
+      e.preventDefault();
+      const slots = platingArea.querySelectorAll('.snap-zone');
+      let focusedIdx = -1;
+      slots.forEach((s, i) => { if (s === document.activeElement) focusedIdx = i; });
+      if (focusedIdx === -1) {
+        // Focus the first empty slot
+        for (let i = 0; i < slots.length; i++) {
+          if (slots[i].dataset.occupied !== 'true') { slots[i].focus(); break; }
+        }
+      } else {
+        let next = focusedIdx;
+        if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+          for (let i = 1; i <= slots.length; i++) {
+            const candidate = (focusedIdx + i) % slots.length;
+            if (slots[candidate].dataset.occupied !== 'true') { next = candidate; break; }
+          }
+        } else {
+          for (let i = 1; i <= slots.length; i++) {
+            const candidate = (focusedIdx - i + slots.length) % slots.length;
+            if (slots[candidate].dataset.occupied !== 'true') { next = candidate; break; }
+          }
+        }
+        slots[next].focus();
       }
     }
 
