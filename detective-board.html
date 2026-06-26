@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>侦探线索板 — Detective Board</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Outfit:wght@600;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --surface: #09090B;
+    --surface-card: #141416;
+    --surface-elevated: #1c1c22;
+    --primary: #8B5CF6;
+    --primary-dim: #6d3de6;
+    --secondary: #F43F5E;
+    --warning: #D97706;
+    --danger: #DC2626;
+    --text: #FAFAFA;
+    --text-muted: #9ca3af;
+    --text-dim: #6b7280;
+    --border: rgba(255, 255, 255, 0.08);
+    --border-light: rgba(255, 255, 255, 0.15);
+    --font-display: 'Outfit', system-ui, sans-serif;
+    --font-body: 'Outfit', system-ui, sans-serif;
+    --font-mono: 'JetBrains Mono', 'Courier New', monospace;
+    --space-xs: 4px; --space-sm: 8px; --space-md: 16px; --space-lg: 24px; --space-xl: 32px;
+    --radius-sm: 4px; --radius-md: 8px; --radius-lg: 12px;
+    --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+    --duration-fast: 200ms; --duration-slow: 400ms;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: var(--font-body); background: var(--surface); color: var(--text);
+    min-height: 100vh; display: grid; grid-template-rows: auto 1fr auto; line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  .board-header {
+    position: relative; padding: var(--space-lg) var(--space-xl); text-align: center;
+    border-bottom: 1px solid var(--border); overflow: hidden;
+  }
+  .board-header::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    background: linear-gradient(90deg, var(--primary), var(--secondary), var(--warning)); opacity: 0.6;
+  }
+  .board-header h1 {
+    font-family: var(--font-display); font-size: 1.5rem; font-weight: 900;
+    letter-spacing: 0.05em; color: var(--text); display: flex; align-items: center;
+    justify-content: center; gap: var(--space-sm);
+  }
+  .board-header h1 .badge-icon {
+    display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px;
+    border-radius: 50%; background: linear-gradient(135deg, var(--primary), var(--secondary)); flex-shrink: 0;
+  }
+  .board-header .subtitle {
+    font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-muted);
+    margin-top: var(--space-xs); letter-spacing: 0.2em; text-transform: uppercase;
+  }
+  .board-header .case-ref {
+    position: absolute; right: var(--space-xl); top: 50%; transform: translateY(-50%);
+    font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-dim); letter-spacing: 0.1em;
+  }
+  .board-main {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 0; min-height: 0; flex: 1;
+  }
+  .clues-panel {
+    background: var(--surface-card); border-right: 1px solid var(--border);
+    padding: var(--space-lg); overflow-y: auto; display: flex; flex-direction: column;
+  }
+  .clues-panel .panel-label {
+    font-family: var(--font-mono); font-size: 0.7rem; text-transform: uppercase;
+    letter-spacing: 0.15em; color: var(--primary); margin-bottom: var(--space-lg);
+    padding-bottom: var(--space-sm); border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .clues-panel .panel-label .clue-count {
+    font-family: var(--font-body); font-size: 0.65rem; color: var(--text-dim);
+    background: var(--surface-elevated); padding: 2px 8px; border-radius: 99px;
+  }
+  .clues-list { display: flex; flex-direction: column; gap: var(--space-md); flex: 1; }
+  .clue-card {
+    position: relative; background: var(--surface-elevated); border: 1px solid var(--border);
+    border-radius: var(--radius-md); padding: var(--space-md); cursor: pointer;
+    transition: transform var(--duration-fast) var(--ease-out), border-color var(--duration-fast) var(--ease-out), box-shadow var(--duration-fast) var(--ease-out);
+    user-select: none;
+  }
+  .clue-card:hover {
+    transform: translateY(-2px); border-color: var(--border-light);
+    box-shadow: 0 4px 20px rgba(139, 92, 246, 0.10);
+  }
+  .clue-card:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+  .clue-card .clue-header { display: flex; align-items: flex-start; gap: var(--space-sm); }
+  .clue-card .clue-marker {
+    flex-shrink: 0; width: 10px; height: 10px; border-radius: 50%; margin-top: 6px;
+    background: var(--text-dim); border: 1px solid var(--border-light);
+    transition: all var(--duration-fast) var(--ease-out);
+  }
+  .clue-card.visited .clue-marker {
+    background: var(--warning); border-color: var(--warning);
+    box-shadow: 0 0 8px rgba(217, 119, 6, 0.4);
+  }
+  .clue-card .clue-title {
+    font-family: var(--font-display); font-size: 1.05rem; font-weight: 600;
+    color: var(--text); flex: 1; line-height: 1.4;
+  }
+  .clue-card .clue-expand-icon {
+    flex-shrink: 0; font-family: var(--font-mono); font-size: 0.75rem;
+    color: var(--text-dim); transition: transform var(--duration-slow) var(--ease-out); margin-top: 3px;
+  }
+  .clue-card.expanded .clue-expand-icon { transform: rotate(180deg); }
+  .clue-card .clue-summary {
+    font-family: var(--font-mono); font-size: 0.82rem; color: var(--text-muted);
+    margin-top: var(--space-sm); margin-left: 26px; line-height: 1.5; opacity: 0.8;
+    display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden;
+  }
+  .clue-card .clue-detail {
+    margin-top: 0; max-height: 0; overflow: hidden;
+    transition: max-height var(--duration-slow) var(--ease-out), margin-top var(--duration-slow) var(--ease-out), opacity var(--duration-slow) var(--ease-out);
+    opacity: 0;
+  }
+  .clue-card.expanded .clue-detail { max-height: 400px; margin-top: var(--space-md); opacity: 1; }
+  .clue-card .clue-detail-inner {
+    margin-left: 26px; padding: var(--space-md); background: rgba(0,0,0,0.25);
+    border-radius: var(--radius-sm); border-left: 2px solid var(--primary);
+    font-family: var(--font-mono); font-size: 0.85rem; color: var(--text-muted); line-height: 1.7;
+  }
+  .clue-card .clue-detail-inner strong { color: var(--text); font-weight: 600; }
+  .clue-card .clue-detail-inner .highlight { color: var(--warning); }
+  .clue-card .clue-tags { display: flex; gap: var(--space-xs); margin-top: var(--space-sm); margin-left: 26px; flex-wrap: wrap; }
+  .clue-card .clue-tag {
+    font-family: var(--font-mono); font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.08em;
+    padding: 2px 8px; border-radius: 99px; background: rgba(139,92,246,0.12);
+    color: var(--primary); border: 1px solid rgba(139,92,246,0.2);
+  }
+  .clue-card .clue-tag.tag-crit { background: rgba(220,38,38,0.12); color: var(--danger); border-color: rgba(220,38,38,0.2); }
+  .clue-card.visited { border-left: 3px solid var(--warning); }
+  .reasoning-panel { background: var(--surface); padding: var(--space-lg); display: flex; flex-direction: column; overflow: hidden; }
+  .reasoning-panel .panel-label {
+    font-family: var(--font-mono); font-size: 0.7rem; text-transform: uppercase;
+    letter-spacing: 0.15em; color: var(--secondary); margin-bottom: var(--space-lg);
+    padding-bottom: var(--space-sm); border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .reasoning-panel .panel-label .save-status {
+    font-family: var(--font-body); font-size: 0.65rem; color: var(--text-dim);
+    transition: color var(--duration-fast) var(--ease-out);
+  }
+  .reasoning-panel .panel-label .save-status.saved { color: var(--primary); }
+  .reasoning-panel textarea {
+    flex: 1; width: 100%; min-height: 200px; padding: var(--space-md);
+    background: var(--surface-elevated); border: 1px solid var(--border);
+    border-radius: var(--radius-md); color: var(--text); font-family: var(--font-mono);
+    font-size: 0.9rem; line-height: 1.7; resize: none; outline: none;
+    transition: border-color var(--duration-fast) var(--ease-out), box-shadow var(--duration-fast) var(--ease-out);
+    caret-color: var(--primary);
+  }
+  .reasoning-panel textarea::placeholder { color: var(--text-dim); font-style: italic; }
+  .reasoning-panel textarea:focus {
+    border-color: var(--primary); box-shadow: 0 0 0 1px var(--primary), 0 0 20px rgba(139,92,246,0.08);
+  }
+  .reasoning-panel .reasoning-actions { display: flex; gap: var(--space-sm); margin-top: var(--space-md); align-items: center; }
+  .reasoning-panel .btn {
+    font-family: var(--font-body); font-size: 0.8rem; font-weight: 500;
+    padding: var(--space-sm) var(--space-md); border-radius: var(--radius-sm);
+    border: 1px solid var(--border); cursor: pointer;
+    transition: all var(--duration-fast) var(--ease-out); letter-spacing: 0.03em;
+  }
+  .reasoning-panel .btn:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+  .reasoning-panel .btn-primary { background: var(--primary); color: #fff; border-color: var(--primary); }
+  .reasoning-panel .btn-primary:hover { background: var(--primary-dim); border-color: var(--primary-dim); box-shadow: 0 2px 12px rgba(139,92,246,0.3); }
+  .reasoning-panel .btn-ghost { background: transparent; color: var(--text-muted); }
+  .reasoning-panel .btn-ghost:hover { background: var(--surface-elevated); color: var(--text); }
+  .reasoning-panel .btn-danger { background: transparent; color: var(--text-muted); border-color: transparent; }
+  .reasoning-panel .btn-danger:hover { color: var(--danger); border-color: rgba(220,38,38,0.3); background: rgba(220,38,38,0.08); }
+  .reasoning-panel .save-feedback { font-family: var(--font-mono); font-size: 0.7rem; color: var(--primary); opacity: 0; transition: opacity var(--duration-fast) var(--ease-out); margin-left: auto; }
+  .reasoning-panel .save-feedback.visible { opacity: 1; }
+  .board-footer {
+    padding: var(--space-sm) var(--space-xl); background: var(--surface-card);
+    border-top: 1px solid var(--border); display: flex; justify-content: space-between;
+    align-items: center; font-family: var(--font-mono); font-size: 0.65rem;
+    color: var(--text-dim); letter-spacing: 0.05em;
+  }
+  .board-footer .status-dot {
+    display: inline-block; width: 6px; height: 6px; border-radius: 50%;
+    background: var(--warning); margin-right: 6px; animation: pulse 2s ease-in-out infinite;
+  }
+  @keyframes pulse { 0%,100% { opacity: 0.4; } 50% { opacity: 1; } }
+  .board-footer .footer-right { display: flex; gap: var(--space-lg); }
+  @media (max-width: 768px) {
+    .board-header { padding: var(--space-md); }
+    .board-header .case-ref { display: none; }
+    .board-main { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
+    .clues-panel { border-right: none; border-bottom: 1px solid var(--border); padding: var(--space-md); max-height: 50vh; }
+    .reasoning-panel { padding: var(--space-md); }
+    .reasoning-panel textarea { min-height: 150px; }
+  }
+  .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+</style>
+</head>
+<body>
+<header class="board-header" data-comp-id="board-header">
+  <h1>
+    <span class="badge-icon">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+      </svg>
+    </span>
+    侦探线索板
+  </h1>
+  <p class="subtitle">Detective Board — Case File Active</p>
+  <span class="case-ref">CASE #BH-2026-0315</span>
+</header>
+<main class="board-main" data-comp-id="board-main">
+  <section class="clues-panel" data-comp-id="clues-panel" aria-label="线索列表">
+    <div class="panel-label"><span>物证线索 / Evidence</span><span class="clue-count" id="clueCount">3 items</span></div>
+    <div class="clues-list" id="cluesList" role="list"></div>
+  </section>
+  <section class="reasoning-panel" data-comp-id="reasoning-panel" aria-label="推理笔记">
+    <div class="panel-label"><span>推理笔记 / Notes</span><span class="save-status" id="saveStatus">auto-save active</span></div>
+    <textarea id="reasoningInput" placeholder="将你的推理记录在此处…&#10;记录关键观察、时间线分析、嫌疑人动机……" aria-label="推理记录文本框" spellcheck="true" data-comp-id="reasoning-textarea"></textarea>
+    <div class="reasoning-actions">
+      <button class="btn btn-primary" id="saveBtn" data-comp-id="btn-save"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> 保存</button>
+      <button class="btn btn-ghost" id="copyBtn" data-comp-id="btn-copy"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> 复制</button>
+      <span class="save-feedback" id="saveFeedback">已保存</span>
+      <button class="btn btn-danger" id="clearBtn" data-comp-id="btn-clear"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> 清空</button>
+    </div>
+  </section>
+</main>
+<footer class="board-footer" data-comp-id="board-footer">
+  <span><span class="status-dot"></span>Case Active — <span id="visitedCount">0</span>/3 clues examined</span>
+  <span class="footer-right"><span>data persists in localStorage</span><span>v1.0</span></span>
+</footer>
+<script>
+(function () {
+  'use strict';
+
+  /* ── Clue data ── */
+  var clues = [
+    {
+      id: 'clue-1',
+      title: '银行金库脚印',
+      summary: '3月15日晚8点，金库门口发现一串脚印，尺码42，品牌为 Nike Air Max。脚印方向显示——进入金库，但无离开痕迹。',
+      detail: '3月15日晚8点整，金库安防系统记录到东侧门短暂开启。脚印尺码为 <strong>42 码</strong>，经鉴定为 <strong>Nike Air Max 270</strong> 鞋底花纹。<br><br>关键疑点：<br>• 脚印仅显示 <strong class="highlight">进入</strong> 方向，无任何离开痕迹<br>• 鞋底花纹与金库员工登记的当日值班人员鞋履不符<br>• 地面未发现拖拽、擦拭或掩盖脚印的痕迹。',
+      tags: ['物证', '关键']
+    },
+    {
+      id: 'clue-2',
+      title: '值班表异常',
+      summary: '当晚值班保安为李某，他声称当晚7:30因胃病提前离岗。监控显示李某7:25离开，但8:15有人用他的门禁卡刷开了后门。',
+      detail: '当晚值班保安为 <strong>李某</strong>。据李某口供，当晚 7:00 左右他突感胃部不适，向值班组长电话请假后于 <strong>7:25</strong> 离开大楼。<br><br>门禁系统记录显示：<strong>8:15 PM</strong>，李某的员工卡刷开了金库区域的侧后门。<br><br>疑点分析：<br>• 李某的卡在 7:25-8:15 之间无任何出口刷卡记录，说明卡可能早已被复制或偷取<br>• 李某声称卡片一直在自己身上<br>• 该后门通往金库的监控盲区通道。',
+      tags: ['人证', '时间线']
+    },
+    {
+      id: 'clue-3',
+      title: '办公室的咖啡杯',
+      summary: '第二天清晨，经理办公室的桌上发现一只温热的咖啡杯。杯口唇印经化验为 MAC #402 口红——经理的妻子不用这个色号。',
+      detail: '案发次日清晨 6:45，保洁员在 <strong>总经理办公室</strong> 的桌上发现一只残留咖啡液的陶瓷杯。杯身温热，推测使用时间在 1-2 小时内。<br><br>法医化验结果：<br>• 杯口提取的唇印经光谱分析为 <strong>MAC 魅可 #402</strong> 色号口红<br>• 总经理的妻子经比对，其常用口红为 YSL #12 和 Chanel #58，<strong>从未使用过 MAC 产品</strong><br><br>办公室门禁记录显示凌晨 4:30-5:30 之间无授权人员进入。',
+      tags: ['物证', '关键']
+    }
+  ];
+
+  var LS_KEY = 'detective-board-state';
+
+  /* ── DOM refs ── */
+  var $ = document.getElementById.bind(document);
+  var el = {
+    cluesList: $('cluesList'),
+    reasoningInput: $('reasoningInput'),
+    saveBtn: $('saveBtn'),
+    copyBtn: $('copyBtn'),
+    clearBtn: $('clearBtn'),
+    saveFeedback: $('saveFeedback'),
+    visitedCount: $('visitedCount'),
+    saveStatus: $('saveStatus')
+  };
+
+  /* ── State ── */
+  var state = {
+    reasoning: '',
+    visitedClues: [],
+    expandedClue: null
+  };
+  var feedbackTimer = null;
+
+  /* ── Persistence ── */
+  function loadState() {
+    try {
+      var raw = localStorage.getItem(LS_KEY);
+      if (raw) {
+        var data = JSON.parse(raw);
+        state.reasoning = data.reasoning || '';
+        state.visitedClues = Array.isArray(data.visitedClues) ? data.visitedClues : [];
+        state.expandedClue = null;
+      }
+    } catch (_) { /* localStorage unavailable */ }
+  }
+
+  function saveState() {
+    try {
+      state.reasoning = el.reasoningInput.value;
+      localStorage.setItem(LS_KEY, JSON.stringify(state));
+    } catch (_) { /* localStorage unavailable */ }
+  }
+
+  function showFeedback() {
+    el.saveFeedback.classList.add('visible');
+    if (feedbackTimer) clearTimeout(feedbackTimer);
+    feedbackTimer = setTimeout(function () {
+      el.saveFeedback.classList.remove('visible');
+    }, 1800);
+  }
+
+  function updateVisitedCount() {
+    el.visitedCount.textContent = state.visitedClues.length;
+  }
+
+  /* ── Render clues ── */
+  function renderClues() {
+    el.cluesList.innerHTML = '';
+
+    clues.forEach(function (clue) {
+      var card = document.createElement('div');
+      var isVisited = state.visitedClues.indexOf(clue.id) !== -1;
+      var isExpanded = state.expandedClue === clue.id;
+
+      card.className = 'clue-card';
+      if (isVisited) card.classList.add('visited');
+      if (isExpanded) card.classList.add('expanded');
+      card.setAttribute('role', 'listitem');
+      card.setAttribute('tabindex', '0');
+      card.setAttribute('data-clue-id', clue.id);
+
+      /* tags */
+      var tagsHtml = clue.tags.map(function (t) {
+        var cls = 'clue-tag';
+        if (t === '关键') cls += ' tag-crit';
+        return '<span class="' + cls + '">' + t + '</span>';
+      }).join('');
+
+      card.innerHTML =
+        '<div class="clue-header">' +
+          '<span class="clue-marker" aria-hidden="true"></span>' +
+          '<span class="clue-title">' + clue.title + '</span>' +
+          '<span class="clue-expand-icon" aria-hidden="true">▾</span>' +
+        '</div>' +
+        '<div class="clue-summary">' + clue.summary + '</div>' +
+        '<div class="clue-tags">' + tagsHtml + '</div>' +
+        '<div class="clue-detail">' +
+          '<div class="clue-detail-inner">' + clue.detail + '</div>' +
+        '</div>';
+
+      /* ── Toggle expand/collapse ── */
+      function handleToggle() {
+        var wasExpanded = card.classList.contains('expanded');
+
+        // Collapse all other cards
+        var expandedCards = document.querySelectorAll('.clue-card.expanded');
+        for (var i = 0; i < expandedCards.length; i++) {
+          if (expandedCards[i] !== card) {
+            expandedCards[i].classList.remove('expanded');
+          }
+        }
+
+        if (wasExpanded) {
+          // Collapse this card
+          card.classList.remove('expanded');
+          state.expandedClue = null;
+        } else {
+          // Expand this card
+          card.classList.add('expanded');
+          state.expandedClue = clue.id;
+
+          // Mark as visited on first expand
+          if (state.visitedClues.indexOf(clue.id) === -1) {
+            state.visitedClues.push(clue.id);
+            card.classList.add('visited');
+            updateVisitedCount();
+          }
+        }
+        saveState();
+      }
+
+      card.addEventListener('click', handleToggle);
+      card.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          handleToggle();
+        }
+      });
+
+      el.cluesList.appendChild(card);
+    });
+
+    updateVisitedCount();
+  }
+
+  /* ── Reasoning textarea ── */
+  function setupReasoning() {
+    el.reasoningInput.value = state.reasoning;
+
+    var autoSaveTimer = null;
+
+    el.reasoningInput.addEventListener('input', function () {
+      el.saveStatus.textContent = 'unsaved changes';
+      el.saveStatus.classList.remove('saved');
+      if (autoSaveTimer) clearTimeout(autoSaveTimer);
+      autoSaveTimer = setTimeout(function () {
+        saveState();
+        el.saveStatus.textContent = 'auto-saved';
+        el.saveStatus.classList.add('saved');
+      }, 500);
+    });
+
+    el.saveBtn.addEventListener('click', function () {
+      saveState();
+      showFeedback();
+      el.saveStatus.textContent = 'manually saved';
+      el.saveStatus.classList.add('saved');
+    });
+
+    el.copyBtn.addEventListener('click', function () {
+      var btn = el.copyBtn;
+      navigator.clipboard.writeText(el.reasoningInput.value).then(function () {
+        btn.textContent = '已复制';
+        setTimeout(function () {
+          btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> 复制';
+        }, 2000);
+      }).catch(function () {
+        el.reasoningInput.select();
+      });
+    });
+
+    el.clearBtn.addEventListener('click', function () {
+      if (el.reasoningInput.value.trim() && confirm('确认清空所有推理记录？此操作不可撤销。')) {
+        el.reasoningInput.value = '';
+        saveState();
+        showFeedback();
+        el.saveStatus.textContent = 'cleared';
+        el.saveStatus.classList.remove('saved');
+        el.reasoningInput.focus();
+      }
+    });
+  }
+
+  /* ── Keyboard shortcuts ── */
+  document.addEventListener('keydown', function (e) {
+    if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+      e.preventDefault();
+      saveState();
+      showFeedback();
+    }
+  });
+
+  /* ── Init ── */
+  loadState();
+  renderClues();
+  setupReasoning();
+  el.saveStatus.textContent = 'auto-save active';
+})();
+</script>
+</body>
+</html>
