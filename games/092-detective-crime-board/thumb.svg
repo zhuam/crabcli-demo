@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#09090B"/>
+      <stop offset="100%" stop-color="#18181B"/>
+    </linearGradient>
+    <linearGradient id="glow" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#8B5CF6"/>
+      <stop offset="100%" stop-color="#F43F5E"/>
+    </linearGradient>
+    <filter id="shadow">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#8B5CF6" flood-opacity="0.3"/>
+    </filter>
+  </defs>
+  <rect width="200" height="200" fill="url(#bg)" rx="16"/>
+  <!-- Magnifying glass -->
+  <circle cx="100" cy="75" r="30" fill="none" stroke="#8B5CF6" stroke-width="4" opacity="0.7"/>
+  <line x1="122" y1="97" x2="145" y2="120" stroke="#8B5CF6" stroke-width="5" stroke-linecap="round" opacity="0.7"/>
+  <!-- Evidence board grid lines -->
+  <line x1="40" y1="145" x2="160" y2="145" stroke="#2A2A32" stroke-width="1"/>
+  <line x1="40" y1="160" x2="160" y2="160" stroke="#2A2A32" stroke-width="1"/>
+  <line x1="40" y1="175" x2="160" y2="175" stroke="#2A2A32" stroke-width="1"/>
+  <!-- Clue pins -->
+  <circle cx="65" cy="148" r="5" fill="#8B5CF6"/>
+  <circle cx="100" cy="148" r="5" fill="#F43F5E"/>
+  <circle cx="135" cy="148" r="5" fill="#16A34A"/>
+  <circle cx="80" cy="163" r="5" fill="#D97706"/>
+  <circle cx="115" cy="163" r="5" fill="#A78BFA"/>
+  <!-- Connection thread lines -->
+  <line x1="65" y1="148" x2="100" y2="75" stroke="#8B5CF6" stroke-width="1" opacity="0.4" stroke-dasharray="3,3"/>
+  <line x1="135" y1="148" x2="100" y2="75" stroke="#F43F5E" stroke-width="1" opacity="0.4" stroke-dasharray="3,3"/>
+  <line x1="100" y1="148" x2="100" y2="75" stroke="#16A34A" stroke-width="1" opacity="0.4" stroke-dasharray="3,3"/>
+  <!-- Silhouette figure in magnifying glass -->
+  <circle cx="100" cy="63" r="7" fill="#A1A1AA" opacity="0.5"/>
+  <path d="M85 90 Q92 78 100 78 Q108 78 115 90" fill="#A1A1AA" opacity="0.5"/>
+  <!-- Title -->
+  <text x="100" y="195" text-anchor="middle" font-family="'Outfit',sans-serif" font-size="11" font-weight="bold" fill="#FAFAFA">Detective Board</text>
+</svg>

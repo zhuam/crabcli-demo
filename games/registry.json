@@ -391,6 +391,20 @@
       "players": "1",
       "version": "1.0.0",
       "rating": 4.0
+    },
+    {
+      "id": "detective-crime-board",
+      "name": "Detective Crime Board",
+      "description": "线索板上拼接证据找出凶手 — 拖拽线索匹配嫌疑人，解开多重案件",
+      "category": "puzzle",
+      "tags": ["singleplayer", "puzzle", "detective", "drag", "short-session"],
+      "thumbnail": "/games/092-detective-crime-board/thumb.svg",
+      "path": "/games/092-detective-crime-board/",
+      "hasServer": false,
+      "players": "1",
+      "version": "1.0.0",
+      "featured": true,
+      "rating": 4.0
     }
   ],
   "categories": [
