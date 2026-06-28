@@ -1,11 +1,34 @@
 {
   "games": [
     {
+      "id": "spaceship-builder",
+      "name": "Spaceship Builder",
+      "description": "拼装飞船零件，发射探索太空",
+      "category": "sandbox",
+      "tags": [
+        "singleplayer",
+        "sandbox",
+        "building",
+        "short-session"
+      ],
+      "thumbnail": "/games/091-spaceship-builder/thumb.png",
+      "path": "/games/091-spaceship-builder/",
+      "hasServer": false,
+      "players": "1",
+      "version": "1.0.0",
+      "featured": true,
+      "rating": 4.0
+    },
+    {
       "id": "trivia-royale",
       "name": "Astrocade Trivia Royale",
       "description": "Real-time multiplayer trivia battle against 2-8 players",
       "category": "puzzle",
-      "tags": ["multiplayer", "websocket", "trivia"],
+      "tags": [
+        "multiplayer",
+        "websocket",
+        "trivia"
+      ],
       "thumbnail": "/games/trivia-royale/thumb.png",
       "path": "/games/trivia-royale/",
       "hasServer": true,
@@ -20,7 +43,12 @@
       "name": "Idle Dungeon Heroes",
       "description": "英雄自动闯关挂机，派遣、装备、升级并在三分钟内通关副本",
       "category": "idle",
-      "tags": ["singleplayer", "idle", "rpg", "short-session"],
+      "tags": [
+        "singleplayer",
+        "idle",
+        "rpg",
+        "short-session"
+      ],
       "thumbnail": "/games/094-idle-dungeon-heroes/thumb.png",
       "path": "/games/094-idle-dungeon-heroes/",
       "hasServer": false,
@@ -34,7 +62,11 @@
       "name": "Idle Lemonade Stand",
       "description": "Build your lemonade empire one cup at a time",
       "category": "idle",
-      "tags": ["singleplayer", "idle", "management"],
+      "tags": [
+        "singleplayer",
+        "idle",
+        "management"
+      ],
       "thumbnail": "/games/idle-lemonade/thumb.png",
       "path": "/games/idle-lemonade/",
       "hasServer": false,
@@ -48,7 +80,12 @@
       "name": "Cosmic Shooter",
       "description": "Defend the galaxy from waves of pixel aliens",
       "category": "action",
-      "tags": ["singleplayer", "action", "shooter", "short-session"],
+      "tags": [
+        "singleplayer",
+        "action",
+        "shooter",
+        "short-session"
+      ],
       "thumbnail": "/games/cosmic-shooter/thumb.png",
       "path": "/games/cosmic-shooter/",
       "hasServer": false,
@@ -62,7 +99,12 @@
       "name": "Neon Block Pop",
       "description": "Pop colorful blocks in this neon puzzle game",
       "category": "puzzle",
-      "tags": ["singleplayer", "puzzle", "colorful", "short-session"],
+      "tags": [
+        "singleplayer",
+        "puzzle",
+        "colorful",
+        "short-session"
+      ],
       "thumbnail": "/games/001-neon-block-pop/thumb.svg",
       "path": "/games/001-neon-block-pop/",
       "hasServer": false,
@@ -76,7 +118,13 @@
       "name": "Stickman Archer Duel",
       "description": "弓箭对射决斗 — 蓄力、瞄准、射击！精确计算轨迹击败对手",
       "category": "action",
-      "tags": ["singleplayer", "action", "archery", "physics", "short-session"],
+      "tags": [
+        "singleplayer",
+        "action",
+        "archery",
+        "physics",
+        "short-session"
+      ],
       "thumbnail": "/games/002-stickman-archer-duel/thumb.svg",
       "path": "/games/002-stickman-archer-duel/",
       "hasServer": false,
@@ -90,7 +138,13 @@
       "name": "Cube Labyrinth Roll",
       "description": "倾斜迷宫滚动方块到终点 — 重力感应+触控的 3D 迷宫游戏",
       "category": "puzzle",
-      "tags": ["singleplayer", "puzzle", "3d", "physics", "short-session"],
+      "tags": [
+        "singleplayer",
+        "puzzle",
+        "3d",
+        "physics",
+        "short-session"
+      ],
       "thumbnail": "/games/003-cube-labyrinth-roll/thumb.svg",
       "path": "/games/003-cube-labyrinth-roll/",
       "hasServer": false,
@@ -104,7 +158,13 @@
       "name": "Pirate Gold Merge",
       "description": "合并金币财宝，打造海盗帝国 — 滑动合并同类宝藏，解锁传奇海贼装备",
       "category": "puzzle",
-      "tags": ["singleplayer", "puzzle", "merge", "pirate", "short-session"],
+      "tags": [
+        "singleplayer",
+        "puzzle",
+        "merge",
+        "pirate",
+        "short-session"
+      ],
       "thumbnail": "/games/004-pirate-gold-merge/thumb.svg",
       "path": "/games/004-pirate-gold-merge/",
       "hasServer": false,
@@ -118,7 +178,13 @@
       "name": "Sky Guardian 3D",
       "description": "3D 空战防御 — 控制炮塔击落敌机，保护你的领空",
       "category": "action",
-      "tags": ["singleplayer", "action", "3d", "shooter", "short-session"],
+      "tags": [
+        "singleplayer",
+        "action",
+        "3d",
+        "shooter",
+        "short-session"
+      ],
       "thumbnail": "/games/005-sky-guardian-3d/thumb.svg",
       "path": "/games/005-sky-guardian-3d/",
       "hasServer": false,
@@ -132,7 +198,13 @@
       "name": "Mushroom Kingdom Run",
       "description": "蘑菇王国跑酷 — 跳跃、滑铲、收集金币，跑过三个主题王国",
       "category": "action",
-      "tags": ["singleplayer", "action", "runner", "platformer", "short-session"],
+      "tags": [
+        "singleplayer",
+        "action",
+        "runner",
+        "platformer",
+        "short-session"
+      ],
       "thumbnail": "/games/006-mushroom-kingdom-run/thumb.svg",
       "path": "/games/006-mushroom-kingdom-run/",
       "hasServer": false,
@@ -146,7 +218,14 @@
       "name": "Chess Online Blitz",
       "description": "2+1 分钟增量快棋 — 经典国际象棋，对战 AI 或本地双人",
       "category": "strategy",
-      "tags": ["multiplayer", "chess", "board", "pvp", "ai", "short-session"],
+      "tags": [
+        "multiplayer",
+        "chess",
+        "board",
+        "pvp",
+        "ai",
+        "short-session"
+      ],
       "thumbnail": "/games/007-chess-online-blitz/thumb.svg",
       "path": "/games/007-chess-online-blitz/",
       "hasServer": false,
@@ -160,7 +239,13 @@
       "name": "Punch Monkey Cafe",
       "description": "🐒🍹 Monkey cafe — take orders, mix fruit punches, serve customers, earn profit across 3 days!",
       "category": "casual",
-      "tags": ["singleplayer", "management", "simulation", "drag", "short-session"],
+      "tags": [
+        "singleplayer",
+        "management",
+        "simulation",
+        "drag",
+        "short-session"
+      ],
       "thumbnail": "/games/008-punch-monkey-cafe/thumb.svg",
       "path": "/games/008-punch-monkey-cafe/",
       "hasServer": false,
@@ -174,7 +259,13 @@
       "name": "Sort Till You Cant",
       "description": "颜色水管分类，倒入相同颜色 — sort colored water layers into matching bottles!",
       "category": "puzzle",
-      "tags": ["singleplayer", "puzzle", "sorting", "logic", "short-session"],
+      "tags": [
+        "singleplayer",
+        "puzzle",
+        "sorting",
+        "logic",
+        "short-session"
+      ],
       "thumbnail": "/games/070-sort-till-you-cant/thumb.svg",
       "path": "/games/070-sort-till-you-cant/",
       "hasServer": false,
@@ -188,7 +279,13 @@
       "name": "Garden Keeper",
       "description": "花园养护模拟 — 种植、浇水、修剪，打造你的梦幻花园",
       "category": "idle",
-      "tags": ["singleplayer", "idle", "management", "garden", "short-session"],
+      "tags": [
+        "singleplayer",
+        "idle",
+        "management",
+        "garden",
+        "short-session"
+      ],
       "thumbnail": "/games/041-garden-keeper/thumb.svg",
       "path": "/games/041-garden-keeper/",
       "hasServer": false,
@@ -202,7 +299,13 @@
       "name": "Connect Four Online",
       "description": "经典四子棋在线对战 — 横竖斜四子连珠即可获胜",
       "category": "strategy",
-      "tags": ["multiplayer", "board", "pvp", "classic", "short-session"],
+      "tags": [
+        "multiplayer",
+        "board",
+        "pvp",
+        "classic",
+        "short-session"
+      ],
       "thumbnail": "/games/063-connect-four-online/thumb.svg",
       "path": "/games/063-connect-four-online/",
       "hasServer": false,
@@ -216,7 +319,13 @@
       "name": "Auto Spa Dash",
       "description": "自动化水疗中心 — 建造设施、雇佣员工、优化动线最大化收入",
       "category": "idle",
-      "tags": ["singleplayer", "idle", "management", "automation", "short-session"],
+      "tags": [
+        "singleplayer",
+        "idle",
+        "management",
+        "automation",
+        "short-session"
+      ],
       "thumbnail": "/games/071-auto-spa-dash/thumb.svg",
       "path": "/games/071-auto-spa-dash/",
       "hasServer": false,
@@ -230,7 +339,13 @@
       "name": "Paws and Claws Clinic",
       "description": "宠物诊所模拟 — 接诊、诊断、治疗可爱的小动物们",
       "category": "idle",
-      "tags": ["singleplayer", "idle", "management", "pets", "short-session"],
+      "tags": [
+        "singleplayer",
+        "idle",
+        "management",
+        "pets",
+        "short-session"
+      ],
       "thumbnail": "/games/072-paws-and-claws-clinic/thumb.svg",
       "path": "/games/072-paws-and-claws-clinic/",
       "hasServer": false,
@@ -244,7 +359,13 @@
       "name": "Baby Shark Manicure",
       "description": "鲨鱼宝宝美甲沙龙 — 为可爱鲨鱼顾客设计美甲款式",
       "category": "casual",
-      "tags": ["singleplayer", "casual", "creative", "touch", "short-session"],
+      "tags": [
+        "singleplayer",
+        "casual",
+        "creative",
+        "touch",
+        "short-session"
+      ],
       "thumbnail": "/games/073-baby-shark-manicure/thumb.svg",
       "path": "/games/073-baby-shark-manicure/",
       "hasServer": false,
@@ -258,7 +379,13 @@
       "name": "Case Crafters",
       "description": "手机壳设计工坊 — 设计、装饰、打造独一无二的手机壳",
       "category": "casual",
-      "tags": ["singleplayer", "casual", "creative", "design", "short-session"],
+      "tags": [
+        "singleplayer",
+        "casual",
+        "creative",
+        "design",
+        "short-session"
+      ],
       "thumbnail": "/games/074-case-crafters/thumb.svg",
       "path": "/games/074-case-crafters/",
       "hasServer": false,
@@ -272,7 +399,13 @@
       "name": "Sparkle Sweep",
       "description": "亮晶晶清洁大作战 — 滑动清扫 glitter 和星星，收集闪耀金币",
       "category": "casual",
-      "tags": ["singleplayer", "casual", "cleaning", "touch", "short-session"],
+      "tags": [
+        "singleplayer",
+        "casual",
+        "cleaning",
+        "touch",
+        "short-session"
+      ],
       "thumbnail": "/games/075-sparkle-sweep/thumb.svg",
       "path": "/games/075-sparkle-sweep/",
       "hasServer": false,
@@ -286,7 +419,11 @@
       "name": "Dice",
       "description": "Minimal dice roller — click for a fair 1–6 with a short animation",
       "category": "casual",
-      "tags": ["singleplayer", "classic", "minimal"],
+      "tags": [
+        "singleplayer",
+        "classic",
+        "minimal"
+      ],
       "path": "/games/dice/",
       "hasServer": false,
       "players": "1",
@@ -298,7 +435,12 @@
       "name": "Word Ladder Climb",
       "description": "改一个字母连成新词，沿词梯爬到顶层目标词",
       "category": "puzzle",
-      "tags": ["singleplayer", "word", "puzzle", "short-session"],
+      "tags": [
+        "singleplayer",
+        "word",
+        "puzzle",
+        "short-session"
+      ],
       "path": "/games/096-word-ladder-climb/",
       "hasServer": false,
       "players": "1",
@@ -310,7 +452,12 @@
       "name": "Knight vs Slime",
       "description": "骑士在洞穴击退史莱姆，攻击→闪避→拾取，击败 Boss 通关",
       "category": "action",
-      "tags": ["singleplayer", "action", "roguelite", "short-session"],
+      "tags": [
+        "singleplayer",
+        "action",
+        "roguelite",
+        "short-session"
+      ],
       "thumbnail": "/games/095-knight-vs-slime/thumb.png",
       "path": "/games/095-knight-vs-slime/",
       "hasServer": false,
@@ -324,7 +471,11 @@
       "name": "猜数字",
       "description": "猜 1-100 之间的数字，看看几次能猜对",
       "category": "casual",
-      "tags": ["singleplayer", "puzzle", "minimal"],
+      "tags": [
+        "singleplayer",
+        "puzzle",
+        "minimal"
+      ],
       "path": "/games/guess-number/",
       "hasServer": false,
       "players": "1",
@@ -336,7 +487,12 @@
       "name": "猜单词",
       "description": "猜出隐藏的英文单词，每次猜错减少一次机会，Hangman 风格",
       "category": "puzzle",
-      "tags": ["singleplayer", "word", "puzzle", "hangman"],
+      "tags": [
+        "singleplayer",
+        "word",
+        "puzzle",
+        "hangman"
+      ],
       "path": "/games/word-guess/",
       "hasServer": false,
       "players": "1",
@@ -348,7 +504,11 @@
       "name": "Pet Run IO",
       "description": "Pet Run IO — cute pet runner",
       "category": "action",
-      "tags": ["singleplayer", "action", "runner"],
+      "tags": [
+        "singleplayer",
+        "action",
+        "runner"
+      ],
       "path": "/games/097-pet-run-io/",
       "hasServer": false,
       "players": "1",
@@ -360,7 +520,11 @@
       "name": "Solar Snake",
       "description": "Solar Snake — classic snake in space",
       "category": "casual",
-      "tags": ["singleplayer", "casual", "classic"],
+      "tags": [
+        "singleplayer",
+        "casual",
+        "classic"
+      ],
       "path": "/games/098-solar-snake/",
       "hasServer": false,
       "players": "1",
@@ -372,7 +536,11 @@
       "name": "Idle Lemonade Stand",
       "description": "Idle Lemonade Stand — build your lemonade empire",
       "category": "idle",
-      "tags": ["singleplayer", "idle", "management"],
+      "tags": [
+        "singleplayer",
+        "idle",
+        "management"
+      ],
       "path": "/games/099-idle-lemonade-stand/",
       "hasServer": false,
       "players": "1",
@@ -384,7 +552,13 @@
       "name": "Sushi Master",
       "description": "寿司店出餐，捏饭·加料·摆盘，精准完成订单过关！",
       "category": "casual",
-      "tags": ["singleplayer", "management", "drag", "simulation", "short-session"],
+      "tags": [
+        "singleplayer",
+        "management",
+        "drag",
+        "simulation",
+        "short-session"
+      ],
       "thumbnail": "/games/093-sushi-master/thumb.svg",
       "path": "/games/093-sushi-master/",
       "hasServer": false,
@@ -397,7 +571,13 @@
       "name": "Detective Crime Board",
       "description": "线索板上拼接证据找出凶手 — 拖拽线索匹配嫌疑人，解开多重案件",
       "category": "puzzle",
-      "tags": ["singleplayer", "puzzle", "detective", "drag", "short-session"],
+      "tags": [
+        "singleplayer",
+        "puzzle",
+        "detective",
+        "drag",
+        "short-session"
+      ],
       "thumbnail": "/games/092-detective-crime-board/thumb.svg",
       "path": "/games/092-detective-crime-board/",
       "hasServer": false,
@@ -408,11 +588,35 @@
     }
   ],
   "categories": [
-    { "id": "all", "name": "All", "icon": "🎮" },
-    { "id": "puzzle", "name": "Puzzle", "icon": "🧩" },
-    { "id": "idle", "name": "Idle", "icon": "🏪" },
-    { "id": "action", "name": "Action", "icon": "⚡" },
-    { "id": "strategy", "name": "Strategy", "icon": "♟️" },
-    { "id": "casual", "name": "Casual", "icon": "🎯" }
+    {
+      "id": "all",
+      "name": "All",
+      "icon": "🎮"
+    },
+    {
+      "id": "puzzle",
+      "name": "Puzzle",
+      "icon": "🧩"
+    },
+    {
+      "id": "idle",
+      "name": "Idle",
+      "icon": "🏪"
+    },
+    {
+      "id": "action",
+      "name": "Action",
+      "icon": "⚡"
+    },
+    {
+      "id": "strategy",
+      "name": "Strategy",
+      "icon": "♟️"
+    },
+    {
+      "id": "casual",
+      "name": "Casual",
+      "icon": "🎯"
+    }
   ]
 }

@@ -1,0 +1,2355 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Spaceship Builder</title>
+<style>
+  /* ===== DESIGN SYSTEM TOKENS ===== */
+  :root {
+    --bg-deep: #0a0e1a;
+    --bg-surface: #111827;
+    --bg-card: #1a2236;
+    --bg-elevated: #243056;
+    --text-primary: #e8edf5;
+    --text-secondary: #8899b4;
+    --text-muted: #556580;
+    --accent-cyan: #22d3ee;
+    --accent-blue: #3b82f6;
+    --accent-orange: #f97316;
+    --accent-green: #22c55e;
+    --accent-red: #ef4444;
+    --accent-purple: #a855f7;
+    --accent-gold: #fbbf24;
+    --border-subtle: rgba(255,255,255,0.06);
+    --border-accent: rgba(34,211,238,0.3);
+    --glow-cyan: 0 0 20px rgba(34,211,238,0.15);
+    --glow-orange: 0 0 20px rgba(249,115,22,0.2);
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 16px;
+    --radius-xl: 24px;
+    --font-sans: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    --font-mono: 'Cascadia Code', 'JetBrains Mono', 'Consolas', monospace;
+    --transition-fast: 0.15s ease;
+    --transition-med: 0.3s ease;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: var(--font-sans);
+    background: var(--bg-deep);
+    color: var(--text-primary);
+    overflow: hidden;
+    height: 100dvh;
+    width: 100dvw;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: none;
+  }
+
+  /* ===== STARFIELD CANVAS ===== */
+  #starfield-canvas {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  /* ===== SCREEN CONTAINERS ===== */
+  .screen {
+    position: absolute;
+    inset: 0;
+    display: none;
+    flex-direction: column;
+    z-index: 1;
+  }
+  .screen.active { display: flex; }
+
+  /* ===== TITLE SCREEN ===== */
+  #screen-title {
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    gap: 24px;
+    background: radial-gradient(ellipse 80% 60% at 50% 40%, rgba(34,211,238,0.08) 0%, transparent 70%),
+                radial-gradient(ellipse 60% 50% at 50% 80%, rgba(249,115,22,0.05) 0%, transparent 60%),
+                var(--bg-deep);
+    padding: 24px;
+  }
+
+  #screen-title .logo-rocket {
+    font-size: 72px;
+    animation: float 3s ease-in-out infinite;
+    filter: drop-shadow(0 0 30px rgba(34,211,238,0.3));
+  }
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-12px); }
+  }
+
+  .title-main {
+    font-size: clamp(32px, 7vw, 56px);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .title-sub {
+    font-size: clamp(14px, 2.5vw, 18px);
+    color: var(--text-secondary);
+    line-height: 1.5;
+    max-width: 400px;
+  }
+
+  .title-stats {
+    display: flex;
+    gap: 32px;
+    margin-top: 8px;
+  }
+
+  .title-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .title-stat-value {
+    font-family: var(--font-mono);
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--accent-cyan);
+  }
+
+  .title-stat-label {
+    font-size: 12px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .btn-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 40px;
+    border: none;
+    border-radius: var(--radius-xl);
+    font-size: 18px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .btn-primary.cyan {
+    background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue));
+    color: var(--bg-deep);
+    box-shadow: var(--glow-cyan);
+  }
+
+  .btn-primary.cyan:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 30px rgba(34,211,238,0.25);
+  }
+
+  .btn-primary.cyan:active {
+    transform: scale(0.97);
+  }
+
+  .btn-primary.orange {
+    background: linear-gradient(135deg, var(--accent-orange), #ea580c);
+    color: #fff;
+    box-shadow: var(--glow-orange);
+  }
+
+  .btn-primary.orange:hover {
+    transform: scale(1.05);
+  }
+
+  .btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 24px;
+    border: 1px solid var(--border-accent);
+    border-radius: var(--radius-lg);
+    background: rgba(34,211,238,0.08);
+    color: var(--accent-cyan);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+  }
+
+  .btn-secondary:hover {
+    background: rgba(34,211,238,0.15);
+    transform: scale(1.03);
+  }
+
+  .title-parts-preview {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+  }
+
+  .mini-part-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: var(--radius-sm);
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+  }
+
+  .mini-part-icon.locked {
+    opacity: 0.3;
+    filter: grayscale(1);
+  }
+
+  /* ===== GAME SCREEN (BUILDING + FLIGHT) ===== */
+  #screen-game {
+    background: var(--bg-deep);
+  }
+
+  /* Top HUD Bar */
+  .hud-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 16px;
+    background: var(--bg-surface);
+    border-bottom: 1px solid var(--border-subtle);
+    z-index: 10;
+    min-height: 48px;
+    flex-shrink: 0;
+  }
+
+  .hud-left, .hud-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .hud-back-btn {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 16px;
+    cursor: pointer;
+    padding: 6px;
+    border-radius: var(--radius-sm);
+    transition: color var(--transition-fast);
+  }
+
+  .hud-back-btn:hover { color: var(--text-primary); }
+
+  .hud-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: var(--radius-sm);
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+  }
+
+  .hud-item .hud-icon { font-size: 14px; }
+
+  .hud-item .hud-value {
+    font-family: var(--font-mono);
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  .hud-item .hud-label {
+    font-size: 11px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .hud-item.altitude .hud-value { color: var(--accent-cyan); }
+  .hud-item.timer .hud-value { color: var(--accent-gold); }
+  .hud-item.timer.urgent .hud-value { color: var(--accent-red); animation: pulse-text 0.5s ease infinite; }
+  .hud-item.thrust .hud-value { color: var(--accent-orange); }
+  .hud-item.fuel .hud-value { color: var(--accent-green); }
+
+  @keyframes pulse-text {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+
+  /* Phase indicator */
+  .phase-badge {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    padding: 3px 10px;
+    border-radius: 20px;
+    background: rgba(34,211,238,0.12);
+    color: var(--accent-cyan);
+    border: 1px solid var(--border-accent);
+  }
+
+  .phase-badge.flight {
+    background: rgba(249,115,22,0.12);
+    color: var(--accent-orange);
+    border-color: rgba(249,115,22,0.3);
+  }
+
+  /* ===== MAIN GAME AREA ===== */
+  .game-layout {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+    position: relative;
+  }
+
+  /* Parts Palette (left sidebar) */
+  .sidebar-parts {
+    width: 160px;
+    display: flex;
+    flex-direction: column;
+    background: var(--bg-surface);
+    border-right: 1px solid var(--border-subtle);
+    flex-shrink: 0;
+    padding: 12px;
+    gap: 2px;
+    overflow-y: auto;
+  }
+
+  .sidebar-header {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--text-muted);
+    padding: 6px 4px 8px;
+    border-bottom: 1px solid var(--border-subtle);
+    margin-bottom: 6px;
+  }
+
+  .part-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    padding: 8px 6px;
+    border-radius: var(--radius-md);
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    cursor: grab;
+    transition: all var(--transition-fast);
+    position: relative;
+  }
+
+  .part-card:hover {
+    border-color: var(--border-accent);
+    box-shadow: var(--glow-cyan);
+    transform: translateY(-1px);
+  }
+
+  .part-card:active {
+    cursor: grabbing;
+    transform: scale(0.95);
+  }
+
+  .part-card.locked {
+    opacity: 0.5;
+    cursor: not-allowed;
+    filter: grayscale(0.6);
+  }
+
+  .part-card.locked:hover {
+    border-color: var(--border-subtle);
+    box-shadow: none;
+    transform: none;
+  }
+
+  .part-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: var(--radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+  }
+
+  .part-icon.body { background: rgba(59,130,246,0.12); }
+  .part-icon.engine { background: rgba(249,115,22,0.12); }
+  .part-icon.wing { background: rgba(34,211,238,0.12); }
+  .part-icon.booster { background: rgba(168,85,247,0.12); }
+  .part-icon.cosmetic { background: rgba(34,197,94,0.12); }
+  .part-icon.tail { background: rgba(244,114,182,0.12); }
+
+  .part-name {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-primary);
+    line-height: 1.2;
+  }
+
+  .part-stats {
+    font-size: 9px;
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+  }
+
+  .part-lock-icon {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    font-size: 12px;
+  }
+
+  /* Build Area (center) */
+  .build-area {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    background:
+      radial-gradient(ellipse at 50% 50%, rgba(34,211,238,0.02) 0%, transparent 60%),
+      var(--bg-deep);
+    overflow: hidden;
+  }
+
+  .build-grid {
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+    background-size: 30px 30px;
+    pointer-events: none;
+  }
+
+  .ship-assembly {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+    padding: 20px;
+  }
+
+  .ship-part-placed {
+    width: 60px;
+    height: 48px;
+    border-radius: var(--radius-sm);
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    position: relative;
+    transition: all var(--transition-med);
+  }
+
+  .ship-part-placed.welded {
+    border-color: var(--accent-cyan);
+    box-shadow: 0 0 12px rgba(34,211,238,0.2);
+  }
+
+  .ship-part-placed .weld-dot {
+    position: absolute;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--accent-cyan);
+    box-shadow: 0 0 6px rgba(34,211,238,0.5);
+  }
+  .ship-part-placed .weld-dot.top { top: -3px; left: 50%; transform: translateX(-50%); }
+  .ship-part-placed .weld-dot.bottom { bottom: -3px; left: 50%; transform: translateX(-50%); }
+  .ship-part-placed .weld-dot.left { left: -3px; top: 50%; transform: translateY(-50%); }
+  .ship-part-placed .weld-dot.right { right: -3px; top: 50%; transform: translateY(-50%); }
+
+  .ship-connector {
+    width: 4px;
+    height: 12px;
+    background: var(--accent-cyan);
+    opacity: 0.3;
+    border-radius: 2px;
+  }
+
+  .snap-indicator {
+    position: absolute;
+    width: 70px;
+    height: 56px;
+    border: 2px dashed var(--accent-cyan);
+    border-radius: var(--radius-sm);
+    opacity: 0;
+    animation: snap-pulse 1s ease-in-out infinite;
+    pointer-events: none;
+  }
+
+  .snap-indicator.visible { opacity: 0.6; }
+
+  @keyframes snap-pulse {
+    0%, 100% { opacity: 0.4; }
+    50% { opacity: 0.8; }
+  }
+
+  /* Drag ghost */
+  .drag-ghost {
+    position: fixed;
+    pointer-events: none;
+    z-index: 100;
+    display: none;
+    opacity: 0.85;
+    transform: scale(1.1) rotate(-2deg);
+    filter: drop-shadow(0 8px 24px rgba(34,211,238,0.3));
+  }
+
+  /* Right Dashboard Panel */
+  .dashboard-panel {
+    width: 180px;
+    display: flex;
+    flex-direction: column;
+    background: var(--bg-surface);
+    border-left: 1px solid var(--border-subtle);
+    flex-shrink: 0;
+    padding: 12px;
+    gap: 8px;
+    overflow-y: auto;
+  }
+
+  .dash-card {
+    background: var(--bg-card);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-subtle);
+    padding: 10px;
+  }
+
+  .dash-card-title {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+  }
+
+  .altitude-meter {
+    position: relative;
+    height: 120px;
+    background: var(--bg-deep);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    border: 1px solid var(--border-subtle);
+  }
+
+  .altitude-fill {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 30%;
+    background: linear-gradient(to top, var(--accent-cyan), rgba(34,211,238,0.2));
+    transition: height 0.5s ease;
+    border-radius: 0 0 5px 5px;
+  }
+
+  .altitude-target {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: var(--accent-orange);
+    top: 10%;
+    z-index: 2;
+  }
+
+  .altitude-target::after {
+    content: '🎯 3000m';
+    position: absolute;
+    right: 4px;
+    top: -10px;
+    font-size: 8px;
+    color: var(--accent-orange);
+    font-family: var(--font-mono);
+    font-weight: 600;
+  }
+
+  .altitude-value {
+    position: absolute;
+    bottom: 4px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: var(--font-mono);
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--accent-cyan);
+    text-shadow: 0 0 10px rgba(34,211,238,0.3);
+    z-index: 3;
+  }
+
+  /* Ship stats */
+  .ship-stat-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 4px 0;
+    font-size: 12px;
+  }
+
+  .ship-stat-row .stat-label {
+    color: var(--text-muted);
+  }
+
+  .ship-stat-row .stat-value {
+    font-family: var(--font-mono);
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  .ship-stat-row .stat-value.good { color: var(--accent-green); }
+  .ship-stat-row .stat-value.warn { color: var(--accent-orange); }
+  .ship-stat-row .stat-value.bad { color: var(--accent-red); }
+
+  /* Progress bar (parts count) */
+  .progress-bar {
+    height: 6px;
+    background: var(--bg-deep);
+    border-radius: 3px;
+    overflow: hidden;
+    margin-top: 6px;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent-cyan), var(--accent-blue));
+    border-radius: 3px;
+    transition: width 0.3s ease;
+  }
+
+  /* Unlock preview */
+  .unlock-preview {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    color: var(--text-muted);
+    padding: 4px 0;
+  }
+
+  .unlock-preview .next-part {
+    font-size: 16px;
+    opacity: 0.4;
+    filter: grayscale(1) brightness(0.5);
+  }
+
+  /* Bottom Bar */
+  .bottom-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 16px;
+    background: var(--bg-surface);
+    border-top: 1px solid var(--border-subtle);
+    flex-shrink: 0;
+    min-height: 60px;
+    gap: 12px;
+  }
+
+  .bottom-bar .parts-tray {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    flex: 1;
+    padding: 2px 0;
+  }
+
+  .bottom-bar .tray-part {
+    flex-shrink: 0;
+    width: 44px;
+    height: 44px;
+    border-radius: var(--radius-sm);
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    cursor: grab;
+    transition: all var(--transition-fast);
+  }
+
+  .bottom-bar .tray-part:hover {
+    border-color: var(--border-accent);
+    transform: translateY(-2px);
+  }
+
+  .bottom-bar .tray-part.locked {
+    opacity: 0.3;
+    cursor: not-allowed;
+  }
+
+  .btn-launch {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 32px;
+    border: none;
+    border-radius: var(--radius-xl);
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    background: linear-gradient(135deg, var(--accent-orange), #ea580c);
+    color: #fff;
+    box-shadow: var(--glow-orange);
+    transition: all var(--transition-fast);
+    flex-shrink: 0;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .btn-launch:hover:not(:disabled) {
+    transform: scale(1.04);
+    box-shadow: 0 0 30px rgba(249,115,22,0.3);
+  }
+
+  .btn-launch:active:not(:disabled) {
+    transform: scale(0.96);
+  }
+
+  .btn-launch:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+  }
+
+  .btn-launch .launch-pulse {
+    position: absolute;
+    inset: -2px;
+    border-radius: inherit;
+    border: 2px solid var(--accent-orange);
+    opacity: 0;
+    animation: launch-ripple 2s ease-out infinite;
+  }
+
+  @keyframes launch-ripple {
+    0% { transform: scale(1); opacity: 0.6; }
+    100% { transform: scale(1.15); opacity: 0; }
+  }
+
+  .btn-reset {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    background: var(--bg-card);
+    color: var(--text-secondary);
+    font-size: 13px;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    flex-shrink: 0;
+  }
+
+  .btn-reset:hover {
+    border-color: var(--accent-red);
+    color: var(--accent-red);
+    background: rgba(239,68,68,0.08);
+  }
+
+  /* "Too Heavy" warning */
+  .warning-toast {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    padding: 12px 24px;
+    border-radius: var(--radius-lg);
+    background: rgba(239,68,68,0.15);
+    border: 1px solid rgba(239,68,68,0.3);
+    color: var(--accent-red);
+    font-weight: 600;
+    font-size: 14px;
+    backdrop-filter: blur(8px);
+    display: none;
+    z-index: 20;
+    text-align: center;
+  }
+
+  /* ===== FLIGHT SCREEN OVERLAY ===== */
+  #flight-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 5;
+    display: none;
+    flex-direction: column;
+    background: linear-gradient(to bottom, rgba(10,14,26,0.9), rgba(10,14,26,0.4));
+  }
+
+  #flight-overlay.active { display: flex; }
+
+  .flight-sky {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .flight-stars {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+
+  .flight-rocket {
+    font-size: 80px;
+    position: relative;
+    z-index: 2;
+    filter: drop-shadow(0 0 30px rgba(249,115,22,0.4));
+    transition: transform 0.1s;
+  }
+
+  .flight-rocket.shaking {
+    animation: rocket-shake 0.15s ease infinite;
+  }
+
+  @keyframes rocket-shake {
+    0%, 100% { transform: translate(0, 0) rotate(0deg); }
+    25% { transform: translate(1px, -1px) rotate(0.5deg); }
+    75% { transform: translate(-1px, 1px) rotate(-0.5deg); }
+  }
+
+  .flight-flame {
+    font-size: 40px;
+    margin-top: -10px;
+    z-index: 1;
+    animation: flame-flicker 0.1s ease infinite alternate;
+    filter: drop-shadow(0 0 20px rgba(249,115,22,0.5));
+  }
+
+  .flight-flame.out {
+    display: none;
+  }
+
+  @keyframes flame-flicker {
+    0% { transform: scaleY(1) scaleX(0.9); opacity: 0.8; }
+    100% { transform: scaleY(1.15) scaleX(1.1); opacity: 1; }
+  }
+
+  .flight-altitude-big {
+    font-family: var(--font-mono);
+    font-size: clamp(40px, 8vw, 64px);
+    font-weight: 800;
+    color: var(--accent-cyan);
+    text-shadow: 0 0 40px rgba(34,211,238,0.3);
+    z-index: 2;
+  }
+
+  .flight-altitude-unit {
+    font-size: clamp(16px, 3vw, 24px);
+    color: var(--text-secondary);
+    font-weight: 400;
+  }
+
+  .flight-status-text {
+    font-size: 14px;
+    color: var(--text-secondary);
+    margin-top: 8px;
+    z-index: 2;
+  }
+
+  /* Countdown overlay */
+  .countdown-overlay {
+    position: absolute;
+    inset: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background: rgba(10,14,26,0.85);
+    z-index: 30;
+    backdrop-filter: blur(4px);
+  }
+
+  .countdown-overlay.active { display: flex; }
+
+  .countdown-number {
+    font-size: 120px;
+    font-weight: 800;
+    color: var(--accent-orange);
+    text-shadow: 0 0 60px rgba(249,115,22,0.4);
+    animation: count-pop 0.8s ease;
+    font-family: var(--font-mono);
+  }
+
+  @keyframes count-pop {
+    0% { transform: scale(2); opacity: 0; }
+    50% { transform: scale(1); opacity: 1; }
+    100% { transform: scale(0.9); opacity: 0.6; }
+  }
+
+  /* ===== RESULT OVERLAY ===== */
+  .result-overlay {
+    position: absolute;
+    inset: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 40;
+    background: rgba(10,14,26,0.85);
+    backdrop-filter: blur(8px);
+    padding: 24px;
+  }
+
+  .result-overlay.active { display: flex; }
+
+  .result-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-xl);
+    padding: 32px;
+    max-width: 420px;
+    width: 100%;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    animation: result-enter 0.5s ease;
+    box-shadow: 0 24px 80px rgba(0,0,0,0.4);
+  }
+
+  @keyframes result-enter {
+    0% { transform: scale(0.8) translateY(20px); opacity: 0; }
+    100% { transform: scale(1) translateY(0); opacity: 1; }
+  }
+
+  .result-card.win {
+    border-color: rgba(34,211,238,0.3);
+  }
+
+  .result-card.lose {
+    border-color: rgba(239,68,68,0.2);
+  }
+
+  .result-icon {
+    font-size: 64px;
+    margin-bottom: -8px;
+  }
+
+  .result-title {
+    font-size: 28px;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+  }
+
+  .result-card.win .result-title { color: var(--accent-cyan); }
+  .result-card.lose .result-title { color: var(--accent-red); }
+
+  .result-stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px;
+    width: 100%;
+    margin: 8px 0;
+  }
+
+  .result-stat {
+    background: var(--bg-card);
+    border-radius: var(--radius-md);
+    padding: 10px;
+    border: 1px solid var(--border-subtle);
+  }
+
+  .result-stat-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+  }
+
+  .result-stat-value {
+    font-family: var(--font-mono);
+    font-size: 18px;
+    font-weight: 700;
+    margin-top: 2px;
+  }
+
+  .result-stat-value.gold { color: var(--accent-gold); }
+  .result-stat-value.cyan { color: var(--accent-cyan); }
+  .result-stat-value.green { color: var(--accent-green); }
+
+  .result-new-record {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 16px;
+    border-radius: var(--radius-lg);
+    background: rgba(251,191,36,0.1);
+    border: 1px solid rgba(251,191,36,0.25);
+    color: var(--accent-gold);
+    font-size: 13px;
+    font-weight: 700;
+  }
+
+  .result-new-record.hidden { display: none; }
+
+  .result-unlock {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    border-radius: var(--radius-md);
+    background: rgba(168,85,247,0.1);
+    border: 1px solid rgba(168,85,247,0.2);
+    color: var(--accent-purple);
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  .result-unlock.hidden { display: none; }
+
+  .result-tip {
+    font-size: 12px;
+    color: var(--text-secondary);
+    font-style: italic;
+    padding: 4px 8px;
+  }
+
+  .result-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+    margin-top: 4px;
+  }
+
+  .result-actions .btn-primary { justify-content: center; width: 100%; }
+  .result-actions .btn-secondary { justify-content: center; width: 100%; }
+
+  /* ===== RESPONSIVE (Tablet) ===== */
+  @media (max-width: 820px) {
+    .sidebar-parts { display: none; }
+    .dashboard-panel { width: 150px; }
+    .bottom-bar .tray-part { width: 38px; height: 38px; font-size: 16px; }
+  }
+
+  /* ===== RESPONSIVE (Mobile) ===== */
+  @media (max-width: 600px) {
+    .sidebar-parts, .dashboard-panel { display: none; }
+
+    .hud-bar { padding: 6px 10px; flex-wrap: wrap; gap: 4px; min-height: 40px; }
+    .hud-item { padding: 2px 6px; }
+    .hud-item .hud-value { font-size: 13px; }
+    .hud-item .hud-label { display: none; }
+    .phase-badge { display: none; }
+
+    .bottom-bar { padding: 6px 10px; min-height: 52px; }
+    .btn-launch { padding: 10px 20px; font-size: 14px; }
+    .btn-launch .btn-label-mobile-hide { display: none; }
+
+    .result-card { padding: 24px 16px; }
+    .result-icon { font-size: 48px; }
+    .result-title { font-size: 24px; }
+    .result-stats-grid { grid-template-columns: 1fr 1fr; gap: 4px; }
+
+    #screen-title .logo-rocket { font-size: 48px; }
+    .title-stats { gap: 16px; }
+
+    .build-area { min-height: 300px; }
+    .ship-part-placed { width: 44px; height: 36px; font-size: 18px; }
+    .flight-rocket { font-size: 56px; }
+    .flight-altitude-big { font-size: 32px; }
+  }
+
+  /* ===== ANIMATIONS ===== */
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  @keyframes slideUp {
+    from { transform: translateY(16px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+
+  .anim-fade-in { animation: fadeIn 0.3s ease; }
+  .anim-slide-up { animation: slideUp 0.4s ease; }
+
+  /* Sparkle particles (CSS-based) */
+  .sparkle-container {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    overflow: hidden;
+    z-index: 3;
+  }
+
+  .sparkle {
+    position: absolute;
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: var(--accent-cyan);
+    animation: sparkle-float 2s ease-out forwards;
+    opacity: 0;
+  }
+
+  @keyframes sparkle-float {
+    0% { transform: translate(0, 0) scale(1); opacity: 1; }
+    100% { transform: translate(var(--dx), var(--dy)) scale(0); opacity: 0; }
+  }
+
+  /* Weld flash */
+  .weld-flash {
+    position: absolute;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(34,211,238,0.6), transparent);
+    animation: weld-flash-anim 0.5s ease forwards;
+    pointer-events: none;
+  }
+
+  @keyframes weld-flash-anim {
+    0% { width: 20px; height: 20px; opacity: 1; }
+    100% { width: 80px; height: 80px; opacity: 0; }
+  }
+
+  /* Confetti for win */
+  .confetti-piece {
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    animation: confetti-fall 3s ease-in forwards;
+    opacity: 0;
+  }
+
+  @keyframes confetti-fall {
+    0% { transform: translateY(-20px) rotate(0deg); opacity: 1; }
+    100% { transform: translateY(calc(100vh + 20px)) rotate(720deg); opacity: 0; }
+  }
+
+  /* Shake screen */
+  .shake-screen {
+    animation: screen-shake 0.3s ease;
+  }
+
+  @keyframes screen-shake {
+    0%, 100% { transform: translate(0, 0); }
+    20% { transform: translate(-4px, 2px); }
+    40% { transform: translate(4px, -2px); }
+    60% { transform: translate(-2px, 4px); }
+    80% { transform: translate(2px, -4px); }
+  }
+</style>
+</head>
+<body>
+
+<!-- ===== STARFIELD CANVAS ===== -->
+<canvas id="starfield-canvas"></canvas>
+
+<!-- ===== TITLE SCREEN ===== -->
+<div id="screen-title" class="screen active">
+  <div class="logo-rocket">🚀</div>
+  <h1 class="title-main">Spaceship Builder</h1>
+  <p class="title-sub">拖拽零件，拼装飞船，发射探索太空</p>
+
+  <div class="title-stats">
+    <div class="title-stat">
+      <span class="title-stat-value" id="stat-best-value">0m</span>
+      <span class="title-stat-label">最高纪录</span>
+    </div>
+    <div class="title-stat">
+      <span class="title-stat-value" id="stat-games-value">0</span>
+      <span class="title-stat-label">已玩局数</span>
+    </div>
+    <div class="title-stat">
+      <span class="title-stat-value" id="stat-wins-value">0</span>
+      <span class="title-stat-label">胜利</span>
+    </div>
+  </div>
+
+  <div class="title-parts-preview">
+    <div class="mini-part-icon">🧑‍🚀</div>
+    <div class="mini-part-icon">🔥</div>
+    <div class="mini-part-icon">🪽</div>
+    <div class="mini-part-icon locked" id="mini-preview-booster">⚡</div>
+    <div class="mini-part-icon locked" id="mini-preview-engine-l">🛸</div>
+  </div>
+
+  <button class="btn-primary cyan" id="btn-start-building" onclick="switchScreen('game')">
+    🚀 开始建造
+  </button>
+
+  <div style="font-size:12px;color:var(--text-muted);margin-top:8px;">
+    拖拽零件到焊点 · 焊接成型 · 点火发射
+  </div>
+</div>
+
+<!-- ===== GAME SCREEN ===== -->
+<div id="screen-game" class="screen">
+
+  <!-- Top HUD Bar -->
+  <div class="hud-bar">
+    <div class="hud-left">
+      <button class="hud-back-btn" onclick="switchScreen('title')">←</button>
+      <span class="phase-badge" id="phase-badge">🧊 建造</span>
+    </div>
+    <div class="hud-right">
+      <div class="hud-item altitude" id="hud-altitude" style="display:none;">
+        <span class="hud-icon">📏</span>
+        <span class="hud-value" id="hud-alt-value">0m</span>
+      </div>
+      <div class="hud-item timer" id="hud-timer" style="display:none;">
+        <span class="hud-icon">⏱</span>
+        <span class="hud-value" id="hud-timer-value">3:00</span>
+      </div>
+      <div class="hud-item thrust" id="hud-thrust" style="display:none;">
+        <span class="hud-icon">🔥</span>
+        <span class="hud-value" id="hud-thrust-value">0</span>
+      </div>
+      <div class="hud-item fuel" id="hud-fuel" style="display:none;">
+        <span class="hud-icon">⛽</span>
+        <span class="hud-value" id="hud-fuel-value">0</span>
+      </div>
+      <button class="hud-back-btn" id="btn-sound-toggle" style="font-size:16px;">🔊</button>
+    </div>
+  </div>
+
+  <!-- ===== MAIN GAME LAYOUT ===== -->
+  <div class="game-layout">
+
+    <!-- Left Sidebar: Parts Palette -->
+    <div class="sidebar-parts" id="sidebar-parts">
+      <div class="sidebar-header">零件库</div>
+    </div>
+
+    <!-- Center: Build Area -->
+    <div class="build-area" id="build-area">
+      <div class="build-grid"></div>
+
+      <!-- Ship Assembly -->
+      <div class="ship-assembly" id="ship-assembly">
+        <!-- Ship parts rendered dynamically -->
+      </div>
+
+      <!-- Snap indicator -->
+      <div class="snap-indicator" id="snap-indicator"></div>
+
+      <!-- Drag Ghost -->
+      <div class="drag-ghost" id="drag-ghost"></div>
+
+      <!-- Too Heavy Warning -->
+      <div class="warning-toast" id="warning-too-heavy">
+        ⚠️ 飞船过重！需要更多推力
+      </div>
+
+      <!-- Sparkle container -->
+      <div class="sparkle-container" id="sparkle-container"></div>
+    </div>
+
+    <!-- Right Sidebar: Dashboard -->
+    <div class="dashboard-panel" id="dashboard-panel">
+      <div class="dash-card">
+        <div class="dash-card-title">高度计</div>
+        <div class="altitude-meter">
+          <div class="altitude-target" id="altitude-target-line"></div>
+          <div class="altitude-fill" id="altitude-fill" style="height:0%;"></div>
+          <div class="altitude-value" id="altitude-display">0m</div>
+        </div>
+      </div>
+
+      <div class="dash-card">
+        <div class="dash-card-title">飞船状态</div>
+        <div class="ship-stat-row">
+          <span class="stat-label">零件</span>
+          <span class="stat-value" id="stat-parts-value">0/8</span>
+        </div>
+        <div class="progress-bar">
+          <div class="progress-fill" id="parts-progress-fill" style="width:0%;"></div>
+        </div>
+        <div class="ship-stat-row">
+          <span class="stat-label">重量</span>
+          <span class="stat-value" id="stat-weight-value">0t</span>
+        </div>
+        <div class="ship-stat-row">
+          <span class="stat-label">推力</span>
+          <span class="stat-value" id="stat-thrust-value">0</span>
+        </div>
+        <div class="ship-stat-row">
+          <span class="stat-label">推重比</span>
+          <span class="stat-value" id="stat-twr-value">0</span>
+        </div>
+      </div>
+
+      <div class="dash-card">
+        <div class="dash-card-title">零件解锁</div>
+        <div class="unlock-preview">
+          <span class="next-part" id="unlock-next-icon">⚡</span>
+          <span id="unlock-text">下一解锁: 助推器</span>
+        </div>
+        <div class="unlock-preview" style="opacity:0.6;">
+          <span class="next-part" id="unlock-next-icon-2">🛸</span>
+          <span id="unlock-text-2">再解锁: 大型引擎</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Bottom Action Bar -->
+  <div class="bottom-bar">
+    <div class="parts-tray" id="parts-tray"></div>
+
+    <div style="display:flex;gap:8px;align-items:center;">
+      <button class="btn-launch" id="btn-launch" onclick="startLaunch()">
+        <span class="launch-pulse"></span>
+        🔥 <span class="btn-label-mobile-hide">发射!</span>
+      </button>
+      <button class="btn-reset" onclick="resetGame()">
+        🔄 重置
+      </button>
+    </div>
+  </div>
+
+</div>
+
+<!-- ===== FLIGHT OVERLAY ===== -->
+<div id="flight-overlay">
+  <div class="flight-sky">
+    <div class="flight-stars"></div>
+    <div class="flight-altitude-big" id="flight-alt-big">
+      0<span class="flight-altitude-unit">m</span>
+    </div>
+    <div class="flight-rocket" id="flight-rocket">🚀</div>
+    <div class="flight-flame" id="flight-flame">🔥</div>
+    <div class="flight-status-text" id="flight-status">准备发射 ...</div>
+  </div>
+</div>
+
+<!-- ===== COUNTDOWN OVERLAY ===== -->
+<div class="countdown-overlay" id="countdown-overlay">
+  <div class="countdown-number" id="countdown-number">3</div>
+</div>
+
+<!-- ===== RESULT OVERLAY (WIN) ===== -->
+<div class="result-overlay" id="result-overlay-win">
+  <div class="result-card win">
+    <div class="result-icon">🏆</div>
+    <h2 class="result-title">抵达太空!</h2>
+
+    <div class="result-new-record" id="result-new-record">
+      ⭐ 新纪录!
+    </div>
+
+    <div class="result-stats-grid">
+      <div class="result-stat">
+        <div class="result-stat-label">最高高度</div>
+        <div class="result-stat-value gold" id="rst-h-value">0m</div>
+      </div>
+      <div class="result-stat">
+        <div class="result-stat-label">目标高度</div>
+        <div class="result-stat-value cyan" id="rst-t-value">0m</div>
+      </div>
+      <div class="result-stat">
+        <div class="result-stat-label">得分</div>
+        <div class="result-stat-value gold" id="rst-s-value">0</div>
+      </div>
+      <div class="result-stat">
+        <div class="result-stat-label">零件</div>
+        <div class="result-stat-value green" id="rst-p-value">0个</div>
+      </div>
+    </div>
+
+    <div class="result-unlock" id="result-unlock">
+      🔓 解锁新零件: <strong id="unlock-part-name">-</strong>
+    </div>
+
+    <div class="result-actions">
+      <button class="btn-primary cyan" onclick="replayGame()">🚀 再来一局</button>
+      <button class="btn-secondary" onclick="switchScreen('title')">← 返回主菜单</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== RESULT OVERLAY (LOSE) ===== -->
+<div class="result-overlay" id="result-overlay-lose">
+  <div class="result-card lose">
+    <div class="result-icon" id="result-icon-lose">💥</div>
+    <h2 class="result-title" id="result-title-lose">飞船坠毁</h2>
+
+    <div class="result-stats-grid">
+      <div class="result-stat">
+        <div class="result-stat-label">最高高度</div>
+        <div class="result-stat-value" id="rst-lh-value">0m</div>
+      </div>
+      <div class="result-stat">
+        <div class="result-stat-label">目标高度</div>
+        <div class="result-stat-value cyan" id="rst-lt-value">0m</div>
+      </div>
+      <div class="result-stat">
+        <div class="result-stat-label">得分</div>
+        <div class="result-stat-value" id="rst-ls-value">0</div>
+      </div>
+      <div class="result-stat">
+        <div class="result-stat-label">历史最佳</div>
+        <div class="result-stat-value gold" id="rst-lb-value">0m</div>
+      </div>
+    </div>
+
+    <div class="result-tip" id="result-tip">
+      💡 提示：试试加装更多推进器！
+    </div>
+
+    <div class="result-actions">
+      <button class="btn-primary cyan" onclick="replayGame()">🔄 再来一局</button>
+      <button class="btn-secondary" onclick="switchScreen('title')">← 返回主菜单</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// SPACESHIP BUILDER — Full Game Implementation
+// ============================================================
+
+// ===== CONFIG =====
+var CONFIG = {
+  G: 9.8,
+  MAX_GAME_SEC: 180,
+  TARGET_HEIGHT: 3000,
+  MAX_PARTS: 10,
+  FUEL_BURN_RATE: 12,
+  SNAP_RADIUS: 40,
+  GRID_SIZE: 60,
+  PART_BASE_H: 48,
+  PART_BASE_W: 60,
+  AIR_DENSITY_SEA: 1.225,
+  AIR_DENSITY_TOP_ALT: 5000
+};
+
+// ===== PART DEFINITIONS =====
+var PARTS_DB = [
+  { id:'cockpit',  name:'驾驶舱',  icon:'🧑‍🚀', mass:2.0, type:'body',  drag:0.01, unlock:0,     thrust:0, fuel:0 },
+  { id:'fuselage', name:'机身',    icon:'📦',   mass:3.0, type:'body',  drag:0.02, unlock:0,     thrust:0, fuel:0 },
+  { id:'engine-s', name:'小型引擎',icon:'🔥',   mass:2.0, type:'engine',drag:0.01, unlock:0,     thrust:80,  fuel:100 },
+  { id:'wing-l',   name:'左翼',    icon:'🪽',   mass:1.5, type:'wing',  drag:0.03, unlock:0,     thrust:0, fuel:0, lift:0.3 },
+  { id:'wing-r',   name:'右翼',    icon:'🪽',   mass:1.5, type:'wing',  drag:0.03, unlock:0,     thrust:0, fuel:0, lift:0.3 },
+  { id:'tail',     name:'尾翼',    icon:'🔺',   mass:1.0, type:'tail',  drag:0.05, unlock:0,     thrust:0, fuel:0 },
+  { id:'engine-m', name:'中型引擎',icon:'⚡',   mass:3.0, type:'engine',drag:0.01, unlock:500,   thrust:130, fuel:150 },
+  { id:'booster',  name:'助推器',  icon:'💥',   mass:2.0, type:'booster',drag:0.03, unlock:1000, thrust:60,  fuel:60 },
+  { id:'engine-l', name:'大型引擎',icon:'🛸',   mass:5.0, type:'engine',drag:0.01, unlock:1500,  thrust:200, fuel:200 }
+];
+
+// ===== STORAGE =====
+var STORAGE_KEY = 'spaceship-builder';
+
+function loadData() {
+  try {
+    var raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch(e) {}
+  return { bestHeight:0, bestScore:0, gamesPlayed:0, wins:0, unlocked:0 };
+}
+
+function saveData(d) {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(d)); } catch(e) {}
+}
+
+// ===== GAME STATE =====
+var G = {
+  phase: 'title',      // title | build | countdown | flight | result
+  parts: [],            // [{ partId, id, icon }] - ship build
+  fuel: 0,
+  altitude: 0,
+  velocity: 0,
+  elapsed: 0,
+  score: 0,
+  target: CONFIG.TARGET_HEIGHT,
+  engineCount: 0,
+  totalThrust: 0,
+  totalMass: 0,
+  totalFuel: 0,
+  bestScore: 0,
+  bestHeight: 0,
+  gamesPlayed: 0,
+  wins: 0,
+  unlockedScore: 0,    // highest score ever achieved (for unlocks)
+  dragPart: null,       // { partId, icon, name } being dragged
+  animId: null,
+  soundEnabled: true,
+  audioCtx: null,
+  countdownVal: 3,
+  resultShown: false,
+  newUnlock: null
+};
+
+// ===== AUDIO =====
+function getAudioCtx() {
+  if (!G.audioCtx) {
+    G.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  return G.audioCtx;
+}
+
+function playTone(freq, duration, type, vol) {
+  if (!G.soundEnabled) return;
+  try {
+    var ctx = getAudioCtx();
+    var osc = ctx.createOscillator();
+    var gain = ctx.createGain();
+    osc.type = type || 'sine';
+    osc.frequency.setValueAtTime(freq, ctx.currentTime);
+    gain.gain.setValueAtTime(vol || 0.1, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + duration);
+  } catch(e) {}
+}
+
+function playClick() { playTone(800, 0.08, 'square', 0.05); }
+function playWeld() { playTone(1200, 0.12, 'sine', 0.08); playTone(1800, 0.1, 'sine', 0.05); }
+function playEngine() { playTone(100, 0.3, 'sawtooth', 0.04); }
+function playExplosion() {
+  if (!G.soundEnabled) return;
+  try {
+    var ctx = getAudioCtx();
+    var bufferSize = ctx.sampleRate * 0.4;
+    var buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+    var data = buffer.getChannelData(0);
+    for (var i = 0; i < bufferSize; i++) {
+      data[i] = (Math.random() * 2 - 1) * (1 - i / bufferSize);
+    }
+    var source = ctx.createBufferSource();
+    source.buffer = buffer;
+    var gain = ctx.createGain();
+    gain.gain.setValueAtTime(0.15, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
+    source.connect(gain);
+    gain.connect(ctx.destination);
+    source.start();
+  } catch(e) {}
+}
+function playVictory() {
+  playTone(523, 0.15, 'sine', 0.08);
+  setTimeout(function(){ playTone(659, 0.15, 'sine', 0.08); }, 150);
+  setTimeout(function(){ playTone(784, 0.2, 'sine', 0.08); }, 300);
+  setTimeout(function(){ playTone(1047, 0.4, 'sine', 0.1); }, 500);
+}
+function playCountBeep() {
+  playTone(600, 0.12, 'square', 0.06);
+}
+function playCountGo() {
+  playTone(1000, 0.25, 'square', 0.08);
+}
+
+function vibrate(pattern) {
+  try { navigator.vibrate && navigator.vibrate(pattern); } catch(e) {}
+}
+
+// ===== STARFIELD =====
+(function() {
+  var canvas = document.getElementById('starfield-canvas');
+  var ctx = canvas.getContext('2d');
+  var stars = [];
+
+  function resize() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+  }
+
+  function initStars() {
+    stars = [];
+    var count = Math.floor((canvas.width * canvas.height) / 3000);
+    for (var i = 0; i < count; i++) {
+      stars.push({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        r: Math.random() * 1.5 + 0.3,
+        a: Math.random() * 0.8 + 0.2,
+        s: Math.random() * 0.005 + 0.002
+      });
+    }
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    for (var i = 0; i < stars.length; i++) {
+      var star = stars[i];
+      star.a += Math.sin(Date.now() * star.s) * 0.003;
+      star.a = Math.max(0.1, Math.min(1, star.a));
+      ctx.beginPath();
+      ctx.arc(star.x, star.y, star.r, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(255,255,255,' + star.a + ')';
+      ctx.fill();
+      if (G.phase === 'flight') {
+        star.y -= G.velocity * 0.02;
+        if (star.y < -5) { star.y = canvas.height + 5; star.x = Math.random() * canvas.width; }
+      }
+    }
+    requestAnimationFrame(draw);
+  }
+
+  resize();
+  initStars();
+  draw();
+  window.addEventListener('resize', function(){ resize(); initStars(); });
+})();
+
+// ===== PARTS PALETTE RENDERING =====
+var partPaletteHTML = {};
+
+function getPartIcon(part) {
+  var cls = part.type;
+  if (cls === 'body') cls = 'body';
+  else if (cls === 'engine' || cls === 'booster') cls = 'engine';
+  else if (cls === 'wing') cls = 'wing';
+  else if (cls === 'tail') cls = 'tail';
+  else cls = 'cosmetic';
+  return cls;
+}
+
+function buildPartsUI() {
+  var sidebar = document.getElementById('sidebar-parts');
+  var tray = document.getElementById('parts-tray');
+  sidebar.innerHTML = '<div class="sidebar-header">零件库</div>';
+  tray.innerHTML = '';
+
+  for (var i = 0; i < PARTS_DB.length; i++) {
+    var p = PARTS_DB[i];
+    var unlocked = G.bestScore >= p.unlock;
+    var iconCls = getPartIcon(p);
+    var statsStr = p.thrust > 0 ? '推力' + p.thrust + ' · 燃料' + p.fuel
+                  : (p.lift ? p.mass + 't · 升力' + p.lift : p.mass + 't · 阻力' + p.drag);
+
+    // Sidebar card
+    var card = document.createElement('div');
+    card.className = 'part-card' + (unlocked ? '' : ' locked');
+    card.dataset.partId = p.id;
+    card.innerHTML =
+      '<div class="part-icon ' + iconCls + '">' + p.icon + '</div>' +
+      '<span class="part-name">' + p.name + '</span>' +
+      '<span class="part-stats">' + statsStr + '</span>' +
+      (!unlocked ? '<span class="part-lock-icon">🔒</span>' : '');
+    sidebar.appendChild(card);
+
+    // Tray part
+    var tp = document.createElement('div');
+    tp.className = 'tray-part' + (unlocked ? '' : ' locked');
+    tp.dataset.partId = p.id;
+    tp.textContent = p.icon;
+    tray.appendChild(tp);
+  }
+}
+
+// ===== SHIP RENDERING =====
+function renderShip() {
+  var assembly = document.getElementById('ship-assembly');
+  assembly.innerHTML = '';
+
+  if (G.parts.length === 0) {
+    // Empty state: show placeholder
+    assembly.innerHTML = '<div style="color:var(--text-muted);font-size:14px;padding:40px;text-align:center;">拖拽零件到此处开始建造</div>';
+    return;
+  }
+
+  for (var i = 0; i < G.parts.length; i++) {
+    var p = G.parts[i];
+    var partDef = getPartDef(p.partId);
+    var div = document.createElement('div');
+    div.className = 'ship-part-placed welded';
+    div.style.zIndex = 5 - i;
+    div.innerHTML = (partDef ? partDef.icon : '⬜') +
+      (i > 0 ? '<span class="weld-dot top"></span>' : '') +
+      (i < G.parts.length - 1 ? '<span class="weld-dot bottom"></span>' : '');
+    assembly.appendChild(div);
+
+    if (i < G.parts.length - 1) {
+      var conn = document.createElement('div');
+      conn.className = 'ship-connector';
+      assembly.appendChild(conn);
+    }
+  }
+
+  // Update snap indicator position
+  var snapInd = document.getElementById('snap-indicator');
+  if (G.parts.length > 0 && G.parts.length < CONFIG.MAX_PARTS) {
+    snapInd.style.display = 'block';
+  } else {
+    snapInd.style.display = 'none';
+  }
+}
+
+function getPartDef(id) {
+  for (var i = 0; i < PARTS_DB.length; i++) {
+    if (PARTS_DB[i].id === id) return PARTS_DB[i];
+  }
+  return null;
+}
+
+// ===== SHIP STATS =====
+function recalcShipStats() {
+  var mass = 0, thrust = 0, fuel = 0, drag = 0, engineCount = 0;
+  for (var i = 0; i < G.parts.length; i++) {
+    var pd = getPartDef(G.parts[i].partId);
+    if (!pd) continue;
+    mass += pd.mass;
+    drag += pd.drag;
+    if (pd.thrust > 0) {
+      thrust += pd.thrust;
+      fuel += pd.fuel;
+      engineCount++;
+    }
+  }
+  G.totalMass = mass;
+  G.totalThrust = thrust;
+  G.totalFuel = fuel;
+  G.engineCount = engineCount;
+
+  var twr = mass > 0 ? thrust / (mass * CONFIG.G) : 0;
+
+  // Update dashboard
+  document.getElementById('stat-parts-value').textContent = G.parts.length + '/' + CONFIG.MAX_PARTS;
+  document.getElementById('parts-progress-fill').style.width = (G.parts.length / CONFIG.MAX_PARTS * 100) + '%';
+  document.getElementById('stat-weight-value').textContent = mass.toFixed(1) + 't';
+
+  var thrustEl = document.getElementById('stat-thrust-value');
+  thrustEl.textContent = thrust;
+  thrustEl.className = 'stat-value' + (thrust > 0 ? ' good' : '');
+
+  var twrEl = document.getElementById('stat-twr-value');
+  twrEl.textContent = twr.toFixed(2);
+  if (twr >= 1.0) twrEl.className = 'stat-value good';
+  else if (twr >= 0.5) twrEl.className = 'stat-value warn';
+  else twrEl.className = 'stat-value bad';
+
+  // Launch button state
+  var launchBtn = document.getElementById('btn-launch');
+  var warning = document.getElementById('warning-too-heavy');
+  var canLift = engineCount > 0 && twr >= 0.5;
+  launchBtn.disabled = !canLift || G.parts.length === 0;
+  warning.style.display = (!canLift && G.parts.length > 0) ? 'block' : 'none';
+
+  // HUD alt update
+  document.getElementById('hud-alt-value').textContent = Math.round(G.altitude) + 'm';
+}
+
+// ===== DRAG AND DROP =====
+function initDragDrop() {
+  var buildArea = document.getElementById('build-area');
+
+  function getPartsPaletteElements() {
+    return document.querySelectorAll('.part-card:not(.locked)');
+  }
+
+  function onPointerDown(e) {
+    var target = e.target.closest('.part-card:not(.locked), .tray-part:not(.locked)');
+    if (!target) return;
+    var partId = target.dataset.partId;
+    var pd = getPartDef(partId);
+    if (!pd) return;
+
+    // Check if ship is full
+    if (G.parts.length >= CONFIG.MAX_PARTS) {
+      showToast('已达到最大零件数 (' + CONFIG.MAX_PARTS + ')');
+      return;
+    }
+
+    G.dragPart = { partId: partId, icon: pd.icon, name: pd.name };
+
+    var ghost = document.getElementById('drag-ghost');
+    ghost.style.display = 'block';
+    ghost.innerHTML = '<div class="part-icon engine" style="width:48px;height:48px;font-size:28px;background:var(--bg-elevated);border-radius:8px;">' + pd.icon + '</div>';
+
+    var pos = getPointerPos(e);
+    ghost.style.left = (pos.x - 30) + 'px';
+    ghost.style.top = (pos.y - 30) + 'px';
+
+    playClick();
+    vibrate(15);
+
+    // Show snap indicator
+    var snapInd = document.getElementById('snap-indicator');
+    snapInd.className = 'snap-indicator visible';
+
+    e.preventDefault();
+  }
+
+  function onPointerMove(e) {
+    if (!G.dragPart) return;
+    var pos = getPointerPos(e);
+    var ghost = document.getElementById('drag-ghost');
+    ghost.style.left = (pos.x - 30) + 'px';
+    ghost.style.top = (pos.y - 30) + 'px';
+
+    // Check if over build area for snap indication
+    var buildRect = buildArea.getBoundingClientRect();
+    var snapInd = document.getElementById('snap-indicator');
+    var inBuildArea = pos.x >= buildRect.left && pos.x <= buildRect.right &&
+                      pos.y >= buildRect.top && pos.y <= buildRect.bottom;
+    snapInd.style.display = inBuildArea && G.parts.length < CONFIG.MAX_PARTS ? 'block' : 'none';
+    if (inBuildArea) snapInd.className = 'snap-indicator visible';
+
+    e.preventDefault();
+  }
+
+  function onPointerUp(e) {
+    if (!G.dragPart) return;
+    var pos = getPointerPos(e);
+    var buildRect = buildArea.getBoundingClientRect();
+
+    // Check if dropped in build area
+    var inBuildArea = pos.x >= buildRect.left && pos.x <= buildRect.right &&
+                      pos.y >= buildRect.top && pos.y <= buildRect.bottom;
+
+    if (inBuildArea) {
+      // Add part to ship
+      addPartToShip(G.dragPart.partId);
+      playWeld();
+      vibrate(30);
+      spawnSparkles(buildArea);
+      spawnWeldFlash(buildArea, pos);
+    }
+
+    // Clean up
+    G.dragPart = null;
+    var ghost = document.getElementById('drag-ghost');
+    ghost.style.display = 'none';
+    document.getElementById('snap-indicator').className = 'snap-indicator';
+    document.getElementById('snap-indicator').style.display = 'block';
+
+    e.preventDefault();
+  }
+
+  function getPointerPos(e) {
+    if (e.touches) {
+      return { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    }
+    return { x: e.clientX, y: e.clientY };
+  }
+
+  // Mouse events on document
+  document.addEventListener('mousedown', onPointerDown);
+  document.addEventListener('mousemove', onPointerMove);
+  document.addEventListener('mouseup', onPointerUp);
+
+  // Touch events
+  document.addEventListener('touchstart', onPointerDown, { passive: false });
+  document.addEventListener('touchmove', onPointerMove, { passive: false });
+  document.addEventListener('touchend', onPointerUp, { passive: false });
+
+  // Also attach to parts tray directly
+  document.addEventListener('pointerdown', function(e) {
+    var tp = e.target.closest('.tray-part:not(.locked)');
+    if (tp) {
+      var partId = tp.dataset.partId;
+      var pd = getPartDef(partId);
+      if (!pd || G.parts.length >= CONFIG.MAX_PARTS) return;
+      // Direct click: add to ship
+      addPartToShip(partId);
+      playWeld();
+      vibrate(30);
+      spawnSparkles(buildArea);
+    }
+  });
+}
+
+function addPartToShip(partId) {
+  G.parts.push({ partId: partId, id: Date.now() + '_' + Math.random() });
+  renderShip();
+  recalcShipStats();
+}
+
+// ===== SPARKLE / WELD EFFECTS =====
+function spawnSparkles(container) {
+  var c = document.getElementById('sparkle-container');
+  for (var i = 0; i < 8; i++) {
+    var s = document.createElement('div');
+    s.className = 'sparkle';
+    s.style.left = Math.random() * 100 + '%';
+    s.style.top = Math.random() * 100 + '%';
+    s.style.setProperty('--dx', (Math.random() - 0.5) * 60 + 'px');
+    s.style.setProperty('--dy', -Math.random() * 60 + 'px');
+    s.style.background = ['var(--accent-cyan)', 'var(--accent-orange)', 'var(--accent-gold)', 'var(--accent-blue)'][Math.floor(Math.random() * 4)];
+    s.style.animationDelay = Math.random() * 0.3 + 's';
+    c.appendChild(s);
+    setTimeout(function() { if (s.parentNode) s.parentNode.removeChild(s); }, 2000);
+  }
+}
+
+function spawnWeldFlash(container, pos) {
+  var rect = container.getBoundingClientRect();
+  var f = document.createElement('div');
+  f.className = 'weld-flash';
+  f.style.left = (pos.x - rect.left - 40) + 'px';
+  f.style.top = (pos.y - rect.top - 40) + 'px';
+  container.appendChild(f);
+  setTimeout(function() { if (f.parentNode) f.parentNode.removeChild(f); }, 500);
+}
+
+function showToast(msg) {
+  var el = document.getElementById('warning-too-heavy');
+  el.textContent = '⚠️ ' + msg;
+  el.style.display = 'block';
+  setTimeout(function() { el.style.display = 'none'; }, 2000);
+}
+
+// ===== SCREEN SWITCHING =====
+function switchScreen(name) {
+  if (G.animId) { cancelAnimationFrame(G.animId); G.animId = null; }
+  document.querySelectorAll('.screen').forEach(function(s) { s.classList.remove('active'); });
+  document.getElementById('result-overlay-win').classList.remove('active');
+  document.getElementById('result-overlay-lose').classList.remove('active');
+  document.getElementById('countdown-overlay').classList.remove('active');
+  document.getElementById('flight-overlay').classList.remove('active');
+
+  if (name === 'title') {
+    G.phase = 'title';
+    loadTitleStats();
+    document.getElementById('screen-title').classList.add('active');
+  } else if (name === 'game') {
+    resetGame();
+    document.getElementById('screen-game').classList.add('active');
+  }
+}
+
+function loadTitleStats() {
+  var data = loadData();
+  G.bestScore = data.bestScore || 0;
+  G.bestHeight = data.bestHeight || 0;
+  G.gamesPlayed = data.gamesPlayed || 0;
+  G.wins = data.wins || 0;
+  G.unlockedScore = data.bestScore || 0;
+
+  document.getElementById('stat-best-value').textContent = G.bestHeight + 'm';
+  document.getElementById('stat-games-value').textContent = G.gamesPlayed;
+  document.getElementById('stat-wins-value').textContent = G.wins;
+
+  // Update mini part previews
+  document.getElementById('mini-preview-booster').className = 'mini-part-icon' + (G.bestScore >= 1000 ? '' : ' locked');
+  document.getElementById('mini-preview-engine-l').className = 'mini-part-icon' + (G.bestScore >= 1500 ? '' : ' locked');
+}
+
+// ===== LAUNCH SEQUENCE =====
+function startLaunch() {
+  if (G.parts.length === 0) return;
+  if (G.engineCount === 0) return;
+  if (G.totalThrust <= 0) return;
+
+  // Check if too heavy
+  var twr = G.totalThrust / (G.totalMass * CONFIG.G);
+  if (twr < 0.5) {
+    document.getElementById('warning-too-heavy').style.display = 'block';
+    setTimeout(function() { document.getElementById('warning-too-heavy').style.display = 'none'; }, 2000);
+    return;
+  }
+
+  // Switch to countdown
+  G.phase = 'countdown';
+  G.countdownVal = 3;
+  G.altitude = 0;
+  G.velocity = 0;
+  G.elapsed = 0;
+  G.fuel = G.totalFuel;
+  G.score = 0;
+  G.resultShown = false;
+  G.newUnlock = null;
+
+  // Hide HUD items, show flight ones
+  document.getElementById('hud-altitude').style.display = 'flex';
+  document.getElementById('hud-timer').style.display = 'flex';
+  document.getElementById('hud-thrust').style.display = 'flex';
+  document.getElementById('hud-fuel').style.display = 'flex';
+  document.getElementById('phase-badge').textContent = '🔥 飞行';
+  document.getElementById('phase-badge').className = 'phase-badge flight';
+
+  // Show flight overlay
+  var flight = document.getElementById('flight-overlay');
+  flight.classList.add('active');
+
+  // Show countdown
+  var cd = document.getElementById('countdown-overlay');
+  var cdNum = document.getElementById('countdown-number');
+  cd.classList.add('active');
+  cdNum.textContent = '3';
+  playCountBeep();
+
+  var count = 3;
+  function tickCountdown() {
+    count--;
+    if (count > 0) {
+      cdNum.textContent = count;
+      cdNum.style.animation = 'none';
+      setTimeout(function() { cdNum.style.animation = 'count-pop 0.8s ease'; }, 10);
+      playCountBeep();
+      setTimeout(tickCountdown, 800);
+    } else if (count === 0) {
+      cdNum.textContent = '🚀';
+      cdNum.style.fontSize = '80px';
+      playCountGo();
+      setTimeout(function() {
+        cd.classList.remove('active');
+        cdNum.style.fontSize = '120px';
+        startFlight();
+      }, 600);
+    }
+  }
+  setTimeout(tickCountdown, 800);
+}
+
+function startFlight() {
+  G.phase = 'flight';
+  document.getElementById('flight-status').textContent = '加速上升中 ...';
+  document.getElementById('flight-rocket').className = 'flight-rocket shaking';
+  document.getElementById('flight-flame').className = 'flight-flame';
+  playEngine();
+  G.animId = requestAnimationFrame(flightLoop);
+}
+
+// ===== FLIGHT PHYSICS LOOP =====
+var lastFlightTime = 0;
+
+function flightLoop(timestamp) {
+  if (G.phase !== 'flight') return;
+
+  var dt = lastFlightTime ? Math.min((timestamp - lastFlightTime) / 1000, 0.05) : 0.016;
+  lastFlightTime = timestamp;
+
+  // Physics: 1D vertical flight
+  var mass = G.totalMass;
+  var thrust = G.engineCount > 0 && G.fuel > 0 ? G.totalThrust : 0;
+  var dragCoeff = 0;
+  for (var i = 0; i < G.parts.length; i++) {
+    var pd = getPartDef(G.parts[i].partId);
+    if (pd) dragCoeff += pd.drag;
+  }
+
+  // Air density decreases with altitude
+  var altRatio = Math.min(G.altitude / CONFIG.AIR_DENSITY_TOP_ALT, 1);
+  var airDensity = CONFIG.AIR_DENSITY_SEA * (1 - altRatio * 0.85);
+  var dragForce = 0.5 * airDensity * G.velocity * G.velocity * dragCoeff * 0.5;
+  var gravityForce = mass * CONFIG.G;
+  var netForce = thrust - gravityForce - dragForce;
+  var acceleration = netForce / mass;
+
+  // Burn fuel
+  if (G.fuel > 0 && thrust > 0) {
+    G.fuel -= CONFIG.FUEL_BURN_RATE * dt * G.engineCount;
+    if (G.fuel < 0) G.fuel = 0;
+  }
+
+  // Update velocity and altitude
+  G.velocity += acceleration * dt;
+  if (G.velocity < 0) G.velocity = 0; // Can't go below ground
+  G.altitude += G.velocity * dt;
+  G.elapsed += dt;
+
+  // Fuel out check
+  if (G.fuel <= 0 && G.altitude < CONFIG.TARGET_HEIGHT) {
+    document.getElementById('flight-flame').className = 'flight-flame out';
+    document.getElementById('flight-status').textContent = '燃料耗尽，坠落中 ...';
+    // Coast for a bit then fail
+    if (G.velocity < 1 && G.altitude < CONFIG.TARGET_HEIGHT) {
+      endFlight(false, '燃料耗尽');
+      return;
+    }
+  }
+
+  // Win check
+  if (G.altitude >= CONFIG.TARGET_HEIGHT) {
+    endFlight(true);
+    return;
+  }
+
+  // Timeout check
+  if (G.elapsed >= CONFIG.MAX_GAME_SEC) {
+    endFlight(false, '时间到');
+    return;
+  }
+
+  // Update UI
+  updateFlightUI();
+
+  G.animId = requestAnimationFrame(flightLoop);
+}
+
+function updateFlightUI() {
+  // Big altitude display
+  document.getElementById('flight-alt-big').innerHTML =
+    Math.round(G.altitude).toLocaleString() + '<span class="flight-altitude-unit">m</span>';
+
+  // HUD
+  document.getElementById('hud-alt-value').textContent = Math.round(G.altitude) + 'm';
+  var totalSec = Math.max(0, Math.ceil(CONFIG.MAX_GAME_SEC - G.elapsed));
+  var min = Math.floor(totalSec / 60);
+  var sec = totalSec % 60;
+  var timerEl = document.getElementById('hud-timer-value');
+  timerEl.textContent = min + ':' + (sec < 10 ? '0' : '') + sec;
+  timerEl.parentNode.className = 'hud-item timer' + (totalSec <= 30 ? ' urgent' : '');
+
+  document.getElementById('hud-thrust-value').textContent = Math.round(G.totalThrust);
+  document.getElementById('hud-fuel-value').textContent = Math.round(G.fuel);
+
+  // Dashboard altitude meter
+  var altPct = Math.min(G.altitude / CONFIG.TARGET_HEIGHT * 100, 100);
+  document.getElementById('altitude-fill').style.height = altPct + '%';
+  document.getElementById('altitude-display').textContent = Math.round(G.altitude) + 'm';
+  document.getElementById('altitude-target-line').style.top = '10%';
+
+  // Status text
+  if (G.velocity > 50) {
+    document.getElementById('flight-status').textContent = '超音速上升! 🔥';
+  } else if (G.velocity > 20) {
+    document.getElementById('flight-status').textContent = '加速上升中 ...';
+  } else if (G.velocity > 5) {
+    document.getElementById('flight-status').textContent = '稳定上升';
+  } else if (G.fuel <= 0) {
+    document.getElementById('flight-status').textContent = '燃料耗尽，坠落中 ...';
+  } else {
+    document.getElementById('flight-status').textContent = '缓慢爬升';
+  }
+}
+
+// ===== END FLIGHT =====
+function endFlight(won, reason) {
+  G.phase = 'result';
+  if (G.animId) { cancelAnimationFrame(G.animId); G.animId = null; }
+  lastFlightTime = 0;
+
+  // Calculate score
+  var altScore = Math.round(G.altitude * 10);
+  var fuelBonus = G.totalFuel > 0 ? Math.round((G.fuel / G.totalFuel) * 200) : 0;
+  var partBonus = Math.max(0, (G.parts.length - 3)) * 50;
+  G.score = altScore + fuelBonus + partBonus;
+
+  // Update stats
+  G.gamesPlayed++;
+  if (won) G.wins++;
+
+  // Check records
+  var isNewBest = false;
+  if (G.altitude > G.bestHeight || G.score > G.bestScore) {
+    if (G.altitude > G.bestHeight) G.bestHeight = Math.round(G.altitude);
+    if (G.score > G.bestScore) G.bestScore = G.score;
+    isNewBest = true;
+
+    // Check unlocks
+    var newUnlock = null;
+    for (var i = 0; i < PARTS_DB.length; i++) {
+      var p = PARTS_DB[i];
+      if (p.unlock > 0 && G.bestScore >= p.unlock) {
+        newUnlock = p;
+      }
+    }
+    G.newUnlock = newUnlock;
+  }
+
+  // Save to localStorage
+  var data = loadData();
+  data.bestHeight = Math.max(data.bestHeight || 0, Math.round(G.altitude));
+  data.bestScore = Math.max(data.bestScore || 0, G.score);
+  data.gamesPlayed = (data.gamesPlayed || 0) + 1;
+  if (won) data.wins = (data.wins || 0) + 1;
+  saveData(data);
+
+  // Update title stats
+  loadTitleStats();
+
+  // Effects
+  if (won) {
+    playVictory();
+    vibrate([100, 50, 100, 50, 200]);
+    showResultWin(isNewBest);
+  } else {
+    playExplosion();
+    vibrate([50, 30, 50, 30, 100]);
+    screenShake();
+    showResultLose(reason);
+  }
+}
+
+function screenShake() {
+  var game = document.getElementById('screen-game');
+  game.classList.add('shake-screen');
+  setTimeout(function() { game.classList.remove('shake-screen'); }, 300);
+}
+
+function showResultWin(isNewBest) {
+  document.getElementById('result-overlay-win').classList.add('active');
+
+  var newRecEl = document.getElementById('result-new-record');
+  newRecEl.className = 'result-new-record' + (isNewBest ? '' : ' hidden');
+
+  document.getElementById('rst-h-value').textContent = Math.round(G.altitude).toLocaleString() + 'm';
+  document.getElementById('rst-t-value').textContent = CONFIG.TARGET_HEIGHT.toLocaleString() + 'm';
+  document.getElementById('rst-s-value').textContent = G.score;
+  document.getElementById('rst-p-value').textContent = G.parts.length + '个';
+
+  var unlockEl = document.getElementById('result-unlock');
+  if (G.newUnlock) {
+    unlockEl.className = 'result-unlock';
+    document.getElementById('unlock-part-name').textContent = G.newUnlock.icon + ' ' + G.newUnlock.name;
+  } else {
+    unlockEl.className = 'result-unlock hidden';
+  }
+
+  // Confetti
+  spawnConfetti();
+}
+
+function showResultLose(reason) {
+  document.getElementById('result-overlay-lose').classList.add('active');
+
+  document.getElementById('rst-lh-value').textContent = Math.round(G.altitude).toLocaleString() + 'm';
+  document.getElementById('rst-lt-value').textContent = CONFIG.TARGET_HEIGHT.toLocaleString() + 'm';
+  document.getElementById('rst-ls-value').textContent = G.score;
+  document.getElementById('rst-lb-value').textContent = G.bestHeight.toLocaleString() + 'm';
+
+  // Show different tips based on reason
+  var tips = [
+    '💡 提示：试试加装更多推进器！',
+    '💡 提示：中型引擎推力更大！',
+    '💡 提示：平衡重量和推力是关键',
+    '💡 提示：别忘了装燃料充足的引擎'
+  ];
+  document.getElementById('result-tip').textContent = tips[Math.floor(Math.random() * tips.length)];
+
+  if (reason === '燃料耗尽') {
+    document.getElementById('result-title-lose').textContent = '燃料耗尽';
+    document.getElementById('result-icon-lose').textContent = '⛽';
+  } else if (reason === '时间到') {
+    document.getElementById('result-title-lose').textContent = '时间到';
+    document.getElementById('result-icon-lose').textContent = '⏱';
+  } else {
+    document.getElementById('result-title-lose').textContent = '飞船坠毁';
+    document.getElementById('result-icon-lose').textContent = '💥';
+  }
+}
+
+function spawnConfetti() {
+  var container = document.getElementById('result-overlay-win');
+  var colors = ['var(--accent-cyan)', 'var(--accent-orange)', 'var(--accent-gold)', 'var(--accent-purple)', 'var(--accent-green)'];
+  for (var i = 0; i < 40; i++) {
+    var c = document.createElement('div');
+    c.className = 'confetti-piece';
+    c.style.left = Math.random() * 100 + '%';
+    c.style.top = '-10px';
+    c.style.background = colors[Math.floor(Math.random() * colors.length)];
+    c.style.width = (Math.random() * 6 + 4) + 'px';
+    c.style.height = (Math.random() * 6 + 4) + 'px';
+    c.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+    c.style.animationDelay = Math.random() * 2 + 's';
+    c.style.animationDuration = (Math.random() * 2 + 2) + 's';
+    container.appendChild(c);
+    setTimeout(function() { if (c.parentNode) c.parentNode.removeChild(c); }, 5000);
+  }
+}
+
+// ===== RESET & REPLAY =====
+function resetGame() {
+  if (G.animId) { cancelAnimationFrame(G.animId); G.animId = null; }
+  lastFlightTime = 0;
+
+  G.phase = 'build';
+  G.parts = [];
+  G.fuel = 0;
+  G.altitude = 0;
+  G.velocity = 0;
+  G.elapsed = 0;
+  G.score = 0;
+  G.engineCount = 0;
+  G.totalThrust = 0;
+  G.totalMass = 0;
+  G.totalFuel = 0;
+  G.resultShown = false;
+  G.newUnlock = null;
+
+  document.getElementById('flight-overlay').classList.remove('active');
+  document.getElementById('result-overlay-win').classList.remove('active');
+  document.getElementById('result-overlay-lose').classList.remove('active');
+  document.getElementById('countdown-overlay').classList.remove('active');
+
+  document.getElementById('hud-altitude').style.display = 'none';
+  document.getElementById('hud-timer').style.display = 'none';
+  document.getElementById('hud-thrust').style.display = 'none';
+  document.getElementById('hud-fuel').style.display = 'none';
+  document.getElementById('phase-badge').textContent = '🧊 建造';
+  document.getElementById('phase-badge').className = 'phase-badge';
+
+  // Remove confetti
+  document.querySelectorAll('#result-overlay-win .confetti-piece').forEach(function(el) {
+    el.parentNode.removeChild(el);
+  });
+
+  renderShip();
+  recalcShipStats();
+  buildPartsUI();
+}
+
+function replayGame() {
+  var gameScreen = document.getElementById('screen-game');
+  gameScreen.classList.add('active');
+  resetGame();
+}
+
+// ===== SOUND TOGGLE =====
+var soundBtn = document.getElementById('btn-sound-toggle');
+soundBtn.addEventListener('click', function() {
+  G.soundEnabled = !G.soundEnabled;
+  soundBtn.textContent = G.soundEnabled ? '🔊' : '🔇';
+});
+
+// ===== KEYBOARD SUPPORT =====
+var KEYS = {
+  'r': function() { resetGame(); },
+  ' ': function(e) { e.preventDefault(); if (G.phase === 'build') startLaunch(); },
+  'Enter': function(e) { if (G.phase === 'build') startLaunch(); },
+  'Escape': function() { switchScreen('title'); },
+  '1': function() { if (G.phase !== 'build') return; var cards = document.querySelectorAll('.part-card:not(.locked)'); if (cards.length > 0) addPartToShip(cards[0].dataset.partId); },
+  '2': function() { if (G.phase !== 'build') return; var cards = document.querySelectorAll('.part-card:not(.locked)'); if (cards.length > 1) addPartToShip(cards[1].dataset.partId); },
+  '3': function() { if (G.phase !== 'build') return; var cards = document.querySelectorAll('.part-card:not(.locked)'); if (cards.length > 2) addPartToShip(cards[2].dataset.partId); }
+};
+
+document.addEventListener('keydown', function(e) {
+  var handler = KEYS[e.key];
+  if (handler) handler(e);
+});
+
+// ===== INIT =====
+document.addEventListener('DOMContentLoaded', function() {
+  loadTitleStats();
+  resetGame();
+  initDragDrop();
+
+  // Start with title screen
+  document.querySelectorAll('.screen').forEach(function(s) { s.classList.remove('active'); });
+  document.getElementById('screen-title').classList.add('active');
+  G.phase = 'title';
+
+  // Hide countdown initially
+  document.getElementById('countdown-overlay').classList.remove('active');
+  document.getElementById('flight-overlay').classList.remove('active');
+
+  console.log('🚀 Spaceship Builder loaded!');
+});
+</script>
+</body>
+</html>
