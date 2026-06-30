@@ -567,6 +567,26 @@
       "rating": 4.0
     },
     {
+      "id": "hyper-casual-hop",
+      "name": "Hyper Casual Hop",
+      "description": "节奏跳跃方块 — 空格/点击命中节拍，连跳得分，解锁新主题",
+      "category": "casual",
+      "tags": [
+        "singleplayer",
+        "rhythm",
+        "jumping",
+        "music",
+        "short-session"
+      ],
+      "thumbnail": "/games/090-hyper-casual-hop/thumb.svg",
+      "path": "/games/090-hyper-casual-hop/",
+      "hasServer": false,
+      "players": "1",
+      "version": "1.0.0",
+      "featured": true,
+      "rating": 4.5
+    },
+    {
       "id": "detective-crime-board",
       "name": "Detective Crime Board",
       "description": "线索板上拼接证据找出凶手 — 拖拽线索匹配嫌疑人，解开多重案件",

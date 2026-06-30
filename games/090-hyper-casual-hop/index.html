@@ -1,0 +1,1413 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no">
+  <meta name="theme-color" content="#0a0e27">
+  <title>Hyper Casual Hop</title>
+  <link rel="stylesheet" href="/games/shared/game-frame.css">
+  <style>
+    :root {
+      --bg-deep: #0a0e27;
+      --theme-primary: #FFD700;
+      --theme-accent: #FF6B35;
+      --text-primary: #FFFFFF;
+      --text-muted: rgba(255,255,255,0.5);
+      --danger: #DC2626;
+      --success: #10B981;
+      --focus-ring: #00FFFF;
+      --font-display: 'Audiowide', 'Orbitron', system-ui, sans-serif;
+      --font-body: system-ui, -apple-system, sans-serif;
+      --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg-deep);
+      color: var(--text-primary);
+      font-family: var(--font-body);
+      overflow: hidden;
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+
+    .screen { display: none; flex-direction: column; align-items: center; width: 100%; position: fixed; inset: 0; }
+    .screen.active { display: flex; }
+
+    /* ── Title Screen ── */
+    .title-screen { justify-content: center; gap: 20px; text-align: center; z-index: 1; }
+    .title-icon {
+      width: 80px; height: 80px; border-radius: 20%;
+      background: linear-gradient(135deg, var(--theme-primary), var(--theme-accent));
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 0 40px rgba(255,215,0,0.4);
+      margin: 0 auto; font-size: 40px; transform: rotate(-10deg);
+      transition: background 0.3s ease, box-shadow 0.3s ease;
+    }
+    @media (prefers-reduced-motion: no-preference) {
+      .title-icon { animation: hop-pulse 1.5s ease-in-out infinite alternate; }
+    }
+    @keyframes hop-pulse {
+      0% { transform: rotate(-10deg) translateY(0); box-shadow: 0 0 40px rgba(255,215,0,0.4); }
+      100% { transform: rotate(-10deg) translateY(-8px); box-shadow: 0 0 60px rgba(255,215,0,0.7); }
+    }
+    .title-text {
+      font-family: var(--font-display); font-size: 40px; font-weight: 400;
+      letter-spacing: 0.08em; color: var(--theme-primary);
+      text-shadow: 0 0 24px rgba(255,215,0,0.5); line-height: 1.2;
+    }
+    .title-subtitle { font-size: 12px; color: var(--text-muted); letter-spacing: 0.2em; text-transform: uppercase; margin-top: -8px; }
+    .tap-to-start {
+      font-family: var(--font-display); font-size: 16px; letter-spacing: 0.2em;
+      color: var(--text-muted); margin-top: 8px;
+    }
+    @media (prefers-reduced-motion: no-preference) {
+      .tap-to-start { animation: pulse-text 1.2s ease-in-out infinite alternate; }
+    }
+    @keyframes pulse-text { 0% { opacity: 0.3; } 100% { opacity: 0.9; } }
+    .title-best { font-family: var(--font-mono); font-size: 14px; color: var(--text-muted); margin-top: 4px; }
+    .title-best span { color: var(--theme-primary); font-weight: 700; }
+
+    .btn-primary {
+      font-family: var(--font-display); font-size: 16px; letter-spacing: 0.15em; text-transform: uppercase;
+      background: linear-gradient(135deg, var(--theme-primary), var(--theme-accent));
+      color: #0a0e27; border: none; border-radius: 9999px;
+      padding: 14px 48px; min-height: 50px; cursor: pointer;
+      box-shadow: 0 0 24px rgba(255,215,0,0.3), 0 4px 16px rgba(0,0,0,0.3);
+      transition: transform 150ms ease, box-shadow 150ms ease;
+      margin-top: 8px;
+    }
+    .btn-primary:hover { transform: scale(1.05); box-shadow: 0 0 36px rgba(255,215,0,0.5); }
+    .btn-primary:active { transform: scale(0.97); }
+    .btn-primary:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 4px; }
+
+    /* ── Theme Swatches ── */
+    .theme-section { display: flex; flex-direction: column; gap: 8px; align-items: center; margin-top: 4px; }
+    .theme-section-label { font-size: 10px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--text-muted); }
+    .theme-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; justify-content: center; }
+    .swatch {
+      width: 34px; height: 34px; border-radius: 50%; border: 2px solid transparent;
+      cursor: pointer; position: relative; transition: transform 150ms ease, border-color 150ms ease;
+    }
+    .swatch:hover { transform: scale(1.12); }
+    .swatch.selected { border-color: var(--focus-ring); box-shadow: 0 0 8px rgba(0,255,255,0.4); }
+    .swatch.locked { opacity: 0.3; cursor: default; }
+    .swatch.locked:hover { transform: none; }
+    .swatch-lock { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 12px; }
+    .swatch-unlock-hint { position: absolute; bottom: -14px; left: 50%; transform: translateX(-50%); font-size: 7px; color: var(--text-muted); white-space: nowrap; }
+
+    /* ── Playing Screen ── */
+    .play-screen { justify-content: center; z-index: 1; padding: 0; }
+    .canvas-wrapper {
+      position: relative; width: 100%; max-width: 400px; aspect-ratio: 2/3;
+      border-radius: 16px; overflow: hidden;
+      box-shadow: 0 0 60px rgba(0,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.04);
+    }
+    .canvas-wrapper canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+
+    /* ── HUD ── */
+    .hud {
+      position: absolute; top: 0; left: 0; right: 0;
+      padding: 10px 14px; display: flex; align-items: center; justify-content: space-between;
+      pointer-events: none; z-index: 2;
+    }
+    .hud-left { display: flex; align-items: center; gap: 8px; }
+    .hud-score {
+      font-family: var(--font-mono); font-size: 18px; font-weight: 700;
+      text-shadow: 0 0 8px rgba(0,255,255,0.3);
+    }
+    .hud-high { font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); }
+    .hud-right { display: flex; align-items: center; gap: 6px; }
+    .hud-lives { font-size: 16px; letter-spacing: 2px; }
+    .speed-badge {
+      font-family: var(--font-mono); font-size: 10px; padding: 2px 8px;
+      border-radius: 9999px; background: rgba(139,92,246,0.25);
+      color: #8B5CF6; border: 1px solid rgba(139,92,246,0.3);
+    }
+    .hud-combo {
+      position: absolute; top: 44px; left: 14px;
+      font-family: var(--font-display); font-size: 16px;
+      transition: all 200ms ease;
+      pointer-events: none; z-index: 2;
+    }
+
+    /* ── Game Over Overlay ── */
+    .gameover-overlay {
+      position: absolute; inset: 0; background: rgba(0,0,0,0.8);
+      z-index: 10; display: none; flex-direction: column; align-items: center;
+      justify-content: center; gap: 8px; border-radius: 16px;
+      backdrop-filter: blur(8px);
+    }
+    .gameover-overlay.active { display: flex; }
+    .gameover-heading {
+      font-family: var(--font-display); font-size: 28px; letter-spacing: 0.1em;
+      color: var(--danger); text-shadow: 0 0 16px rgba(220,38,38,0.5);
+    }
+    .gameover-score-label { font-size: 11px; color: var(--text-muted); letter-spacing: 0.2em; text-transform: uppercase; }
+    .gameover-score-value { font-family: var(--font-mono); font-size: 48px; font-weight: 700; line-height: 1.1; }
+    .gameover-new-best {
+      font-family: var(--font-display); font-size: 14px; color: var(--theme-primary);
+      letter-spacing: 0.1em; text-shadow: 0 0 12px rgba(255,215,0,0.5);
+    }
+    @media (prefers-reduced-motion: no-preference) {
+      .gameover-new-best { animation: celebrate 0.6s ease-in-out infinite alternate; }
+    }
+    @keyframes celebrate { 0% { transform: scale(1); } 100% { transform: scale(1.12); } }
+    .gameover-best { font-family: var(--font-mono); font-size: 12px; color: var(--text-muted); }
+    .btn-replay {
+      font-family: var(--font-display); font-size: 15px; letter-spacing: 0.12em; text-transform: uppercase;
+      background: linear-gradient(135deg, var(--theme-primary), var(--theme-accent));
+      color: #0a0e27; border: none; border-radius: 9999px;
+      padding: 12px 40px; min-height: 44px; cursor: pointer;
+      box-shadow: 0 0 20px rgba(255,215,0,0.3), 0 4px 12px rgba(0,0,0,0.3);
+      margin-top: 6px; transition: transform 150ms ease, box-shadow 150ms ease;
+    }
+    .btn-replay:hover { transform: scale(1.05); }
+    .btn-replay:active { transform: scale(0.97); }
+    .btn-replay:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 4px; }
+
+    /* ── Judgment feedback ── */
+    .judgment-pop {
+      position: absolute; top: 35%; left: 50%; transform: translate(-50%, -50%);
+      font-family: var(--font-display); font-size: 28px; font-weight: 700;
+      pointer-events: none; z-index: 5; text-shadow: 0 0 20px currentColor;
+    }
+    @media (prefers-reduced-motion: no-preference) {
+      .judgment-pop { animation: judgment-fly 0.5s ease-out forwards; }
+    }
+    @keyframes judgment-fly {
+      0% { opacity: 1; transform: translate(-50%, -50%) scale(1.3); }
+      100% { opacity: 0; transform: translate(-50%, -80%) scale(1) translateY(-30px); }
+    }
+
+    /* ── Mute Toggle ── */
+    .mute-btn {
+      position: fixed; top: 12px; right: 12px; z-index: 10001;
+      width: 40px; height: 40px; border: none;
+      background: rgba(255,255,255,0.1); border-radius: 50%;
+      font-size: 18px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: background 150ms ease; color: var(--text-primary);
+      backdrop-filter: blur(4px);
+    }
+    .mute-btn:hover { background: rgba(255,255,255,0.2); }
+    .mute-btn:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
+
+    .sr-only {
+      position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+      overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0;
+    }
+
+    /* Score popup */
+    .score-pop {
+      position: absolute; top: 20%; left: 50%; transform: translateX(-50%);
+      font-family: var(--font-mono); font-size: 20px; font-weight: 700;
+      pointer-events: none; z-index: 4;
+    }
+    @media (prefers-reduced-motion: no-preference) {
+      .score-pop { animation: score-pop-anim 0.5s ease-out forwards; }
+    }
+    @keyframes score-pop-anim {
+      0% { opacity: 1; transform: translateX(-50%) scale(1.4); }
+      100% { opacity: 0; transform: translateX(-50%) scale(1) translateY(-20px); }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Back to Hub -->
+<a href="/" class="back-to-hub" onclick="window.recordPlayed&&window.recordPlayed('hyper-casual-hop')" aria-label="Back to hub">&larr; Hub</a>
+
+<!-- Mute toggle -->
+<button class="mute-btn" id="muteBtn" aria-label="Toggle sound" aria-pressed="false">🔊</button>
+
+<!-- ═══════ TITLE SCREEN ═══════ -->
+<div class="screen title-screen active" id="titleScreen" role="region" aria-label="Title screen">
+  <div class="title-icon" aria-hidden="true">⬜</div>
+  <h1 class="title-text">HYPER<br>CASUAL HOP</h1>
+  <p class="title-subtitle">踩着节拍，不断跳跃</p>
+  <p class="tap-to-start">TAP TO START</p>
+  <p class="title-best" id="titleBest">Best: <span>0</span></p>
+  <div class="theme-section" id="themeSection">
+    <span class="theme-section-label">Theme</span>
+    <div class="theme-row" id="themeSwatches"></div>
+  </div>
+</div>
+
+<!-- ═══════ PLAYING SCREEN ═══════ -->
+<div class="screen play-screen" id="playScreen" role="region" aria-label="Game screen">
+  <div class="canvas-wrapper" id="canvasWrapper">
+    <canvas id="gameCanvas" width="400" height="600"></canvas>
+    <!-- HUD -->
+    <div class="hud">
+      <div class="hud-left">
+        <span class="hud-score" id="scoreDisplay">0</span>
+        <span class="hud-high" id="hudHigh">HI: 0</span>
+      </div>
+      <div class="hud-right">
+        <span class="speed-badge" id="speedBadge">x1.0</span>
+        <span class="hud-lives" id="livesDisplay">❤❤❤</span>
+      </div>
+    </div>
+    <div class="hud-combo" id="comboDisplay"></div>
+    <!-- Judgment popup container -->
+    <div id="popupContainer" style="position:absolute;inset:0;pointer-events:none;z-index:5"></div>
+    <!-- Score popup container -->
+    <div id="scorePopContainer" style="position:absolute;inset:0;pointer-events:none;z-index:4"></div>
+    <!-- Game Over Overlay -->
+    <div class="gameover-overlay" id="gameoverOverlay" role="dialog" aria-label="Game over">
+      <h2 class="gameover-heading">GAME OVER</h2>
+      <p class="gameover-score-label">Score</p>
+      <p class="gameover-score-value" id="goScore">0</p>
+      <p class="gameover-new-best" id="goNewBest" style="display:none">NEW BEST!</p>
+      <p class="gameover-best" id="goBest">Best: 0</p>
+      <p style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted)" id="goComboInfo"></p>
+      <button class="btn-replay" id="replayBtn" aria-label="Play again">再来一局</button>
+    </div>
+  </div>
+</div>
+
+<!-- Aria live region -->
+<div class="sr-only" role="status" aria-live="polite" id="ariaLive">Score: 0</div>
+
+<script>
+(function() {
+  'use strict';
+
+  // ══════════════════════════════════════════════
+  //  CONSTANTS
+  // ══════════════════════════════════════════════
+  var W = 400, H = 600;
+  var JUDGE_X = 80;        // judgment zone x position (left side)
+  var JUDGE_RADIUS = 55;   // visual radius of judgment zone
+  var BLOCK_SIZE = 44;
+  var BLOCK_SPAWN_X = 460;
+  var PLAYER_Y = 380;      // player's y position (ground level)
+  var GRAVITY = 0.6;
+  var JUMP_VEL = -9;
+  var STORAGE_KEY = 'hyper-hop-highscore';
+  var THEME_KEY = 'hyper-hop-theme';
+  var MUTED_KEY = 'hyper-hop-muted';
+  var INITIAL_BPM = 120;
+  var MAX_BPM = 200;
+  var COMBO_PER_BPM = 10;  // +5 BPM every 10 combo
+  var LIVES_MAX = 3;
+  var PERFECT_WINDOW = 50;  // ±50ms
+  var GOOD_WINDOW = 120;    // ±120ms (includes perfect)
+  var INPUT_DEBOUNCE = 150; // ms
+  var SLOWMO_DURATION = 500; // ms of slow-mo after death
+  var SLOWMO_SCALE = 0.3;
+
+  // ── THEMES ──
+  var THEMES = [
+    { id: 'neon-pop',     name: '霓虹脉冲', unlock: 0,   primary: '#FFD700', accent: '#FF6B35', bg: '#0a0e27', glow: '255,215,0' },
+    { id: 'ocean-drift',  name: '深海律动', unlock: 50,  primary: '#60A5FA', accent: '#34D399', bg: '#0a1628', glow: '96,165,250' },
+    { id: 'sunset-rush',  name: '落日狂奔', unlock: 100, primary: '#F97316', accent: '#EF4444', bg: '#1a0a0a', glow: '249,115,22' },
+    { id: 'void-walker',  name: '虚空行者', unlock: 200, primary: '#8B5CF6', accent: '#A78BFA', bg: '#0a0a1e', glow: '139,92,246' },
+    { id: 'starlight',    name: '星辰闪耀', unlock: 350, primary: '#FBBF24', accent: '#F472B6', bg: '#0a0e1a', glow: '251,191,36' }
+  ];
+
+  // ── DOM refs ──
+  var titleScreen = document.getElementById('titleScreen');
+  var playScreen = document.getElementById('playScreen');
+  var canvas = document.getElementById('gameCanvas');
+  var ctx = canvas.getContext('2d');
+  var canvasWrapper = document.getElementById('canvasWrapper');
+  var scoreDisplay = document.getElementById('scoreDisplay');
+  var hudHigh = document.getElementById('hudHigh');
+  var speedBadge = document.getElementById('speedBadge');
+  var livesDisplay = document.getElementById('livesDisplay');
+  var comboDisplay = document.getElementById('comboDisplay');
+  var goScore = document.getElementById('goScore');
+  var goBest = document.getElementById('goBest');
+  var goNewBest = document.getElementById('goNewBest');
+  var goComboInfo = document.getElementById('goComboInfo');
+  var gameoverOverlay = document.getElementById('gameoverOverlay');
+  var titleBest = document.getElementById('titleBest');
+  var ariaLive = document.getElementById('ariaLive');
+  var popupContainer = document.getElementById('popupContainer');
+  var scorePopContainer = document.getElementById('scorePopContainer');
+
+  // ── State ──
+  var gameState = 'TITLE'; // TITLE | PLAYING | GAMEOVER
+  var score = 0;
+  var highScore = 0;
+  var combo = 0;
+  var maxCombo = 0;
+  var lives = LIVES_MAX;
+  var bpm = INITIAL_BPM;
+  var tickAccum = 0;
+  var beatPhase = 0;
+  var lastInputTime = 0;
+  var slowMoUntil = 0;
+
+  // Player
+  var player = { x: JUDGE_X, y: PLAYER_Y, vy: 0, jumping: false, grounded: true };
+  // Platforms / blocks
+  var blocks = [];
+  var nextBlockId = 0;
+  var blockSpawnTimer = 0;
+  var currentBlock = null;   // the next block reaching judgment zone
+  var judgedBlocks = {};     // block IDs that have been judged
+  var pendingBlock = null;   // block currently in judgment zone
+
+  // Particles
+  var particles = [];
+  var screenFlash = 0;       // >0 = red flash
+  var shakeActive = false;
+  var shakeStart = 0;
+
+  // Theme
+  var currentTheme = THEMES[0];
+  var muted = false;
+  var audioCtx = null;
+  var prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // Timing
+  var lastTime = 0;
+  var rafId = null;
+  var scrollSpeed = 0;
+  var beatDuration = 0;      // ms per beat
+
+  // ── Loading ──
+  highScore = loadHighScore();
+  muted = loadMuted();
+  currentTheme = loadTheme();
+  applyCSSTheme(currentTheme);
+  updateMuteBtn();
+  updateTitleBest();
+  buildSwatches();
+  showScreen('TITLE');
+
+  // ══════════════════════════════════════════════
+  //  AUDIO (Web Audio API)
+  // ══════════════════════════════════════════════
+  function ensureAudioCtx() {
+    if (!audioCtx) {
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+  }
+
+  function playSound(type) {
+    if (muted || !audioCtx) return;
+    var now = audioCtx.currentTime;
+    var osc, gain;
+
+    switch (type) {
+      case 'perfect':
+        osc = audioCtx.createOscillator();
+        gain = audioCtx.createGain();
+        osc.connect(gain); gain.connect(audioCtx.destination);
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(440, now);
+        osc.frequency.linearRampToValueAtTime(660, now + 0.06);
+        osc.frequency.linearRampToValueAtTime(880, now + 0.12);
+        gain.gain.setValueAtTime(0.18, now);
+        gain.gain.linearRampToValueAtTime(0, now + 0.18);
+        osc.start(now); osc.stop(now + 0.18);
+        break;
+      case 'good':
+        osc = audioCtx.createOscillator();
+        gain = audioCtx.createGain();
+        osc.connect(gain); gain.connect(audioCtx.destination);
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(440, now);
+        gain.gain.setValueAtTime(0.12, now);
+        gain.gain.linearRampToValueAtTime(0, now + 0.08);
+        osc.start(now); osc.stop(now + 0.08);
+        break;
+      case 'miss':
+        osc = audioCtx.createOscillator();
+        gain = audioCtx.createGain();
+        osc.connect(gain); gain.connect(audioCtx.destination);
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(200, now);
+        osc.frequency.linearRampToValueAtTime(60, now + 0.15);
+        gain.gain.setValueAtTime(0.15, now);
+        gain.gain.linearRampToValueAtTime(0, now + 0.15);
+        osc.start(now); osc.stop(now + 0.15);
+        break;
+      case 'start':
+        osc = audioCtx.createOscillator();
+        gain = audioCtx.createGain();
+        osc.connect(gain); gain.connect(audioCtx.destination);
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(330, now);
+        osc.frequency.linearRampToValueAtTime(660, now + 0.1);
+        osc.frequency.linearRampToValueAtTime(880, now + 0.2);
+        gain.gain.setValueAtTime(0.15, now);
+        gain.gain.linearRampToValueAtTime(0, now + 0.25);
+        osc.start(now); osc.stop(now + 0.25);
+        break;
+      case 'highscore':
+        osc = audioCtx.createOscillator();
+        gain = audioCtx.createGain();
+        osc.connect(gain); gain.connect(audioCtx.destination);
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(440, now);
+        osc.frequency.setValueAtTime(660, now + 0.08);
+        osc.frequency.setValueAtTime(880, now + 0.16);
+        osc.frequency.setValueAtTime(1047, now + 0.24);
+        gain.gain.setValueAtTime(0.18, now);
+        gain.gain.linearRampToValueAtTime(0, now + 0.35);
+        osc.start(now); osc.stop(now + 0.35);
+        break;
+      case 'combo5':
+        osc = audioCtx.createOscillator();
+        gain = audioCtx.createGain();
+        osc.connect(gain); gain.connect(audioCtx.destination);
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(880, now);
+        gain.gain.setValueAtTime(0.08, now);
+        gain.gain.linearRampToValueAtTime(0, now + 0.05);
+        osc.start(now); osc.stop(now + 0.05);
+        break;
+    }
+  }
+
+  function vibrate(pattern) {
+    if (muted) return;
+    if (navigator.vibrate) navigator.vibrate(pattern);
+  }
+
+  // ══════════════════════════════════════════════
+  //  LOCAL STORAGE
+  // ══════════════════════════════════════════════
+  function loadHighScore() {
+    try { return parseInt(localStorage.getItem(STORAGE_KEY)) || 0; } catch(e) { return 0; }
+  }
+  function saveHighScore(s) {
+    try {
+      var cur = loadHighScore();
+      if (s > cur) { localStorage.setItem(STORAGE_KEY, String(s)); return true; }
+      return false;
+    } catch(e) { return false; }
+  }
+  function loadMuted() {
+    try { return localStorage.getItem(MUTED_KEY) === 'true'; } catch(e) { return false; }
+  }
+  function loadTheme() {
+    try {
+      var id = localStorage.getItem(THEME_KEY) || 'neon-pop';
+      for (var i = 0; i < THEMES.length; i++) {
+        if (THEMES[i].id === id) return THEMES[i];
+      }
+    } catch(e) {}
+    return THEMES[0];
+  }
+  function saveTheme(t) {
+    try { localStorage.setItem(THEME_KEY, t.id); } catch(e) {}
+  }
+  function recordPlayed() {
+    try {
+      var recent = JSON.parse(localStorage.getItem('recentlyPlayed') || '[]');
+      var filtered = recent.filter(function(p) { return p.id !== 'hyper-casual-hop'; });
+      filtered.unshift({ id: 'hyper-casual-hop', playedAt: Date.now() });
+      localStorage.setItem('recentlyPlayed', JSON.stringify(filtered.slice(0, 10)));
+    } catch(e) {}
+  }
+  function isUnlocked(item) { return highScore >= item.unlock; }
+
+  // ══════════════════════════════════════════════
+  //  THEME / CSS
+  // ══════════════════════════════════════════════
+  function applyCSSTheme(t) {
+    document.documentElement.style.setProperty('--bg-deep', t.bg);
+    document.documentElement.style.setProperty('--theme-primary', t.primary);
+    document.documentElement.style.setProperty('--theme-accent', t.accent);
+    document.body.style.background = t.bg;
+  }
+
+  function applyTheme(t) {
+    currentTheme = t;
+    saveTheme(t);
+    applyCSSTheme(t);
+    buildSwatches();
+    updateTitleBest();
+  }
+
+  // ══════════════════════════════════════════════
+  //  MUTE
+  // ══════════════════════════════════════════════
+  var muteBtn = document.getElementById('muteBtn');
+  muteBtn.addEventListener('click', function() {
+    muted = !muted;
+    try { localStorage.setItem(MUTED_KEY, String(muted)); } catch(e) {}
+    updateMuteBtn();
+    if (!muted) ensureAudioCtx();
+  });
+  function updateMuteBtn() {
+    muteBtn.textContent = muted ? '🔇' : '🔊';
+    muteBtn.setAttribute('aria-pressed', String(muted));
+  }
+
+  // ══════════════════════════════════════════════
+  //  SCREENS
+  // ══════════════════════════════════════════════
+  function showScreen(name) {
+    titleScreen.classList.remove('active');
+    playScreen.classList.remove('active');
+    gameoverOverlay.classList.remove('active');
+    if (name === 'TITLE') {
+      titleScreen.classList.add('active');
+      updateTitleBest();
+      document.title = 'Hyper Casual Hop';
+    } else if (name === 'PLAYING') {
+      playScreen.classList.add('active');
+      updateHUD();
+    } else if (name === 'GAMEOVER') {
+      playScreen.classList.add('active');
+      gameoverOverlay.classList.add('active');
+    }
+    gameState = name;
+  }
+
+  function updateTitleBest() {
+    titleBest.querySelector('span').textContent = loadHighScore();
+    buildSwatches();
+  }
+
+  function updateHUD() {
+    scoreDisplay.textContent = score;
+    hudHigh.textContent = 'HI: ' + loadHighScore();
+    livesDisplay.textContent = '';
+    for (var i = 0; i < lives; i++) livesDisplay.textContent += '❤';
+    for (var j = lives; j < LIVES_MAX; j++) livesDisplay.textContent += '🖤';
+
+    // Speed badge
+    var speedFactor = (bpm / INITIAL_BPM).toFixed(1);
+    speedBadge.textContent = 'x' + speedFactor;
+
+    // Combo
+    if (combo >= 2) {
+      comboDisplay.textContent = '🔥 ' + combo;
+      comboDisplay.style.color = combo >= 10 ? '#FF6B35' : (combo >= 5 ? '#00FFFF' : '#FFFFFF');
+      comboDisplay.style.fontSize = combo >= 20 ? '22px' : (combo >= 10 ? '18px' : '16px');
+    } else {
+      comboDisplay.textContent = '';
+    }
+  }
+
+  // ══════════════════════════════════════════════
+  //  GAME INIT
+  // ══════════════════════════════════════════════
+  function initGame() {
+    score = 0;
+    combo = 0;
+    maxCombo = 0;
+    lives = LIVES_MAX;
+    bpm = INITIAL_BPM;
+    tickAccum = 0;
+    beatPhase = 0;
+    lastInputTime = 0;
+    slowMoUntil = 0;
+    blocks = [];
+    nextBlockId = 0;
+    blockSpawnTimer = 0;
+    currentBlock = null;
+    judgedBlocks = {};
+    pendingBlock = null;
+    particles = [];
+    screenFlash = 0;
+    shakeActive = false;
+    shakeStart = 0;
+    player.x = JUDGE_X;
+    player.y = PLAYER_Y;
+    player.vy = 0;
+    player.jumping = false;
+    player.grounded = true;
+    scrollSpeed = calcScrollSpeed(bpm);
+    beatDuration = 60000 / bpm;
+    updateHUD();
+    recordPlayed();
+  }
+
+  function calcScrollSpeed(b) { return (b / 60) * 400; } // px/s
+  function calcBeatDuration(b) { return 60000 / b; }
+
+  // ══════════════════════════════════════════════
+  //  BLOCK / PLATFORM LOGIC
+  // ══════════════════════════════════════════════
+  function spawnBlock() {
+    var id = nextBlockId++;
+    // Y positions: variety near the ground level
+    var baseY = PLAYER_Y + 22; // ground level for platforms
+    blocks.push({
+      id: id,
+      x: BLOCK_SPAWN_X,
+      y: baseY,
+      w: BLOCK_SIZE,
+      h: 12,            // thin platform
+      judged: false
+    });
+  }
+
+  function getBlockLeft(block) { return block.x - block.w / 2; }
+  function getBlockRight(block) { return block.x + block.w / 2; }
+  function getBlockTop(block) { return block.y - block.h / 2; }
+  function getBlockBottom(block) { return block.y + block.h / 2; }
+
+  function isBlockInZone(block) {
+    var blockCenterX = block.x;
+    return Math.abs(blockCenterX - JUDGE_X) < BLOCK_SIZE * 0.6;
+  }
+
+  // ══════════════════════════════════════════════
+  //  JUDGMENT
+  // ══════════════════════════════════════════════
+  function judge(inputTime) {
+    // Find the closest un-judged block to judgment zone
+    var closest = null;
+    var closestDist = Infinity;
+    for (var i = 0; i < blocks.length; i++) {
+      var b = blocks[i];
+      if (b.judged) continue;
+      var dist = Math.abs(b.x - JUDGE_X);
+      if (dist < closestDist && dist < BLOCK_SIZE * 2) {
+        closestDist = dist;
+        closest = b;
+      }
+    }
+    if (!closest) {
+      // No block nearby — early/late tap
+      return { result: 'miss', closest: null, dist: Infinity };
+    }
+
+    // Convert distance to time offset
+    var timeDist = (closestDist / scrollSpeed) * 1000; // ms
+
+    if (timeDist <= PERFECT_WINDOW) {
+      return { result: 'perfect', block: closest, dist: timeDist };
+    } else if (timeDist <= GOOD_WINDOW) {
+      return { result: 'good', block: closest, dist: timeDist };
+    } else {
+      return { result: 'miss', block: closest, dist: timeDist };
+    }
+  }
+
+  function handleInput() {
+    var now = performance.now();
+    if (now - lastInputTime < INPUT_DEBOUNCE) return;
+    lastInputTime = now;
+
+    if (gameState === 'TITLE') {
+      ensureAudioCtx();
+      startGame();
+      return;
+    }
+    if (gameState === 'GAMEOVER') {
+      startGame();
+      return;
+    }
+    if (gameState !== 'PLAYING') return;
+
+    // Player jump visual
+    if (player.grounded) {
+      player.grounded = false;
+      player.jumping = true;
+      player.vy = JUMP_VEL;
+    }
+
+    // Judge timing
+    var j = judge(now);
+    if (j.result === 'perfect') {
+      combo++;
+      if (combo > maxCombo) maxCombo = combo;
+      var multiplier = 1 + Math.floor(combo / 5) * 0.5;
+      var points = Math.round(10 * multiplier);
+      score += points;
+      j.block.judged = true;
+      showJudgment('PERFECT', '#FFD700');
+      showScorePopup('+' + points, '#FFD700');
+      playSound('perfect');
+      vibrate([15, 30]);
+      spawnParticles(j.block.x, j.block.y, '#FFD700', 12);
+      beatHitEffect(1.3);
+      updateBPM();
+      updateHUD();
+      ariaLive.textContent = 'Perfect! Score: ' + score + '. Combo: ' + combo;
+    } else if (j.result === 'good') {
+      score += 5;
+      combo = Math.max(0, combo);
+      j.block.judged = true;
+      showJudgment('GOOD', '#FFFFFF');
+      showScorePopup('+5', '#FFFFFF');
+      playSound('good');
+      vibrate(20);
+      spawnParticles(j.block.x, j.block.y, '#FFFFFF', 6);
+      beatHitEffect(1.0);
+      updateHUD();
+      ariaLive.textContent = 'Good. Score: ' + score;
+    } else {
+      // Miss
+      triggerMiss();
+    }
+  }
+
+  function triggerMiss() {
+    combo = 0;
+    lives--;
+    screenFlash = 150; // ms of red flash
+    playSound('miss');
+    vibrate([100, 50, 100]);
+    showJudgment('MISS', '#DC2626');
+    updateHUD();
+    ariaLive.textContent = 'Miss! Lives: ' + lives;
+
+    if (lives <= 0) {
+      die();
+    }
+  }
+
+  function updateBPM() {
+    // +5 BPM every 10 combo, up to MAX_BPM
+    var targetBpm = Math.min(MAX_BPM, INITIAL_BPM + Math.floor(combo / COMBO_PER_BPM) * 5);
+    if (targetBpm > bpm) {
+      // Ease to new BPM over 2-3 beats
+      bpm = Math.min(targetBpm, bpm + 1);
+    }
+    // Recalculate
+    scrollSpeed = calcScrollSpeed(bpm);
+    beatDuration = calcBeatDuration(bpm);
+  }
+
+  function autoMissCheck() {
+    // Check blocks that passed the judgment zone without being judged
+    var missed = [];
+    for (var i = 0; i < blocks.length; i++) {
+      var b = blocks[i];
+      if (!b.judged && b.x < JUDGE_X - BLOCK_SIZE * 0.8) {
+        missed.push(b);
+      }
+    }
+    if (missed.length > 0) {
+      triggerMiss();
+      // Mark all missed blocks as judged
+      for (var j = 0; j < missed.length; j++) {
+        missed[j].judged = true;
+      }
+    }
+  }
+
+  // ══════════════════════════════════════════════
+  //  DIE / GAME OVER
+  // ══════════════════════════════════════════════
+  function die() {
+    gameState = 'GAMEOVER';
+    slowMoUntil = performance.now() + SLOWMO_DURATION;
+    playSound('highscore');
+    vibrate([50, 30, 50, 30, 100]);
+
+    if (!prefersReduced) {
+      shakeActive = true;
+      shakeStart = performance.now();
+    }
+
+    var isNewBest = saveHighScore(score);
+    goScore.textContent = score;
+    goBest.textContent = 'Best: ' + loadHighScore();
+    goNewBest.style.display = isNewBest ? 'block' : 'none';
+    goComboInfo.textContent = 'Max Combo: ' + maxCombo;
+
+    setTimeout(function() {
+      showScreen('GAMEOVER');
+      document.getElementById('replayBtn').focus();
+      ariaLive.textContent = 'Game Over! Score: ' + score + (isNewBest ? ' New best!' : '');
+    }, prefersReduced ? 100 : 600);
+  }
+
+  // ══════════════════════════════════════════════
+  //  GAME START
+  // ══════════════════════════════════════════════
+  function startGame() {
+    initGame();
+    showScreen('PLAYING');
+    document.title = 'Hyper Casual Hop — Score: 0';
+    playSound('start');
+    lastTime = performance.now();
+    if (rafId) cancelAnimationFrame(rafId);
+    rafId = requestAnimationFrame(gameLoop);
+  }
+
+  // ══════════════════════════════════════════════
+  //  GAME LOOP (Fixed Timestep)
+  // ══════════════════════════════════════════════
+  function gameLoop(timestamp) {
+    var rawDt = timestamp - lastTime;
+    lastTime = timestamp;
+
+    // Slow-motion on death
+    if (timestamp < slowMoUntil) {
+      rawDt *= SLOWMO_SCALE;
+    }
+
+    // Cap to prevent spiral of death
+    var dt = Math.min(rawDt, 33); // ~30fps minimum
+
+    if (gameState === 'PLAYING') {
+      tickAccum += dt;
+
+      // Fixed timestep at ~60fps
+      var step = 1000 / 60;
+      while (tickAccum >= step) {
+        update(dt);
+        tickAccum -= step;
+      }
+    }
+
+    render(dt, timestamp);
+    if (gameState === 'PLAYING' || (gameState === 'GAMEOVER' && timestamp < slowMoUntil)) {
+      rafId = requestAnimationFrame(gameLoop);
+    }
+  }
+
+  // ══════════════════════════════════════════════
+  //  UPDATE
+  // ══════════════════════════════════════════════
+  function update(dt) {
+    // Update BPM easing
+    var targetBpm = Math.min(MAX_BPM, INITIAL_BPM + Math.floor(combo / COMBO_PER_BPM) * 5);
+    if (bpm < targetBpm) {
+      bpm = Math.min(targetBpm, bpm + 0.5);
+      scrollSpeed = calcScrollSpeed(bpm);
+      beatDuration = calcBeatDuration(bpm);
+    }
+
+    // Update beat phase
+    var beatDt = (bpm / 60) * (dt / 1000);
+    beatPhase = (beatPhase + beatDt) % 1;
+
+    // Spawn blocks on beat
+    var spawnInterval = 60000 / bpm; // ms per beat
+    blockSpawnTimer += dt;
+    if (blockSpawnTimer >= spawnInterval) {
+      blockSpawnTimer -= spawnInterval;
+      spawnBlock();
+    }
+
+    // Move blocks left
+    var dx = scrollSpeed * (dt / 1000);
+    for (var i = blocks.length - 1; i >= 0; i--) {
+      blocks[i].x -= dx;
+      // Remove blocks that are far off-screen left
+      if (blocks[i].x < -100) {
+        if (!blocks[i].judged) {
+          // Block passed without judgment
+          blocks[i].judged = true; // mark to avoid double trigger
+        }
+        blocks.splice(i, 1);
+      }
+    }
+
+    // Auto-miss check for blocks passing judgment zone
+    autoMissCheck();
+
+    // Player physics (visual hop)
+    if (!player.grounded) {
+      player.vy += GRAVITY;
+      player.y += player.vy;
+      if (player.y >= PLAYER_Y) {
+        player.y = PLAYER_Y;
+        player.vy = 0;
+        player.grounded = true;
+        player.jumping = false;
+      }
+    }
+
+    // Screen flash decay
+    if (screenFlash > 0) screenFlash -= dt;
+
+    // Shake decay
+    if (shakeActive) {
+      var elapsed = timestamp - shakeStart;
+      if (elapsed > 250) {
+        shakeActive = false;
+      }
+    }
+
+    // Update particles
+    updateParticles(dt);
+
+    // Update score display constantly
+    updateHUD();
+  }
+
+  // Update timestamp track for shake
+  var timestamp = 0;
+
+  // ══════════════════════════════════════════════
+  //  RENDER
+  // ══════════════════════════════════════════════
+  function render(dt, ts) {
+    timestamp = ts || performance.now();
+    ctx.save();
+
+    // Screen shake
+    if (shakeActive && !prefersReduced) {
+      var elapsed = timestamp - shakeStart;
+      if (elapsed < 200) {
+        var intensity = 3 * (1 - elapsed / 200);
+        ctx.translate(
+          (Math.random() - 0.5) * intensity * 2,
+          (Math.random() - 0.5) * intensity * 2
+        );
+      } else {
+        shakeActive = false;
+      }
+    }
+
+    // ── Background ──
+    ctx.fillStyle = currentTheme.bg;
+    ctx.fillRect(0, 0, W, H);
+
+    // ── Grid lines ──
+    ctx.strokeStyle = 'rgba(255,255,255,0.03)';
+    ctx.lineWidth = 0.5;
+    for (var i = 0; i <= 20; i++) {
+      var x = i * 40;
+      ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
+    }
+    for (var j = 0; j <= 30; j++) {
+      var y = j * 40;
+      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+    }
+
+    // ── Ground line ──
+    ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(0, PLAYER_Y + 28);
+    ctx.lineTo(W, PLAYER_Y + 28);
+    ctx.stroke();
+
+    // ── Judgment Zone ──
+    drawJudgeZone(ts);
+
+    // ── Blocks / Platforms ──
+    for (var k = 0; k < blocks.length; k++) {
+      drawBlock(blocks[k], ts);
+    }
+
+    // ── Player ──
+    drawPlayer(ts);
+
+    // ── Particles ──
+    drawParticles();
+
+    // ── Screen flash (miss) ──
+    if (screenFlash > 0) {
+      ctx.fillStyle = 'rgba(220, 38, 38, ' + (screenFlash / 150 * 0.25) + ')';
+      ctx.fillRect(0, 0, W, H);
+    }
+
+    ctx.restore();
+  }
+
+  // ── Draw Judgment Zone with Breathing Glow ──
+  function drawJudgeZone(ts) {
+    var t = ts || performance.now();
+    var breathAlpha = prefersReduced ? 0.3 : 0.1 + 0.7 * Math.abs(Math.sin(beatPhase * Math.PI));
+
+    // Outer glow ring
+    var gradient = ctx.createRadialGradient(JUDGE_X, PLAYER_Y, JUDGE_RADIUS * 0.1,
+                                            JUDGE_X, PLAYER_Y, JUDGE_RADIUS * 1.8);
+    var glowColor = currentTheme.glow;
+    gradient.addColorStop(0, 'rgba(' + glowColor + ',' + (0.08 + breathAlpha * 0.2) + ')');
+    gradient.addColorStop(0.5, 'rgba(' + glowColor + ',' + (breathAlpha * 0.12) + ')');
+    gradient.addColorStop(1, 'rgba(' + glowColor + ',0)');
+    ctx.fillStyle = gradient;
+    ctx.beginPath();
+    ctx.arc(JUDGE_X, PLAYER_Y, JUDGE_RADIUS * 1.8, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Judgment line (vertical indicator line)
+    ctx.strokeStyle = 'rgba(' + glowColor + ',' + (0.1 + breathAlpha * 0.2) + ')';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([4, 6]);
+    ctx.beginPath();
+    ctx.moveTo(JUDGE_X, PLAYER_Y - 120);
+    ctx.lineTo(JUDGE_X, PLAYER_Y + 60);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Inner bright ring
+    ctx.strokeStyle = 'rgba(' + glowColor + ',' + (0.15 + breathAlpha * 0.25) + ')';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.arc(JUDGE_X, PLAYER_Y, JUDGE_RADIUS * 0.6, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // Beat indicator dot at center bottom
+    var dotAlpha = prefersReduced ? 0.5 : 0.2 + 0.8 * beatPhase;
+    ctx.fillStyle = 'rgba(' + glowColor + ',' + (0.3 + breathAlpha * 0.5) + ')';
+    ctx.beginPath();
+    ctx.arc(JUDGE_X, PLAYER_Y + 20, 3 + breathAlpha * 3, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // ── Draw Block ──
+  function drawBlock(block, ts) {
+    var t = ts || performance.now();
+    var x = block.x, y = block.y;
+    var halfW = block.w / 2, halfH = block.h / 2;
+
+    // Glow for blocks approaching zone
+    var distToJudge = Math.abs(block.x - JUDGE_X);
+    var glowIntensity = Math.max(0, 1 - distToJudge / 200);
+    var alpha = block.judged ? 0.3 : 1;
+
+    ctx.save();
+    ctx.globalAlpha = alpha;
+
+    if (!block.judged && !prefersReduced) {
+      ctx.shadowBlur = 6 + glowIntensity * 8;
+      ctx.shadowColor = currentTheme.primary;
+    }
+
+    // Block body (platform)
+    var gradient = ctx.createLinearGradient(x - halfW, y, x + halfW, y);
+    var primaryColor = block.judged ? 'rgba(100,100,100,0.5)' : currentTheme.primary;
+    var accentColor = block.judged ? 'rgba(80,80,80,0.5)' : currentTheme.accent;
+    gradient.addColorStop(0, primaryColor);
+    gradient.addColorStop(1, accentColor);
+    ctx.fillStyle = gradient;
+
+    // Rounded rectangle platform
+    var r = 4;
+    ctx.beginPath();
+    ctx.moveTo(x - halfW + r, y - halfH);
+    ctx.lineTo(x + halfW - r, y - halfH);
+    ctx.quadraticCurveTo(x + halfW, y - halfH, x + halfW, y - halfH + r);
+    ctx.lineTo(x + halfW, y + halfH - r);
+    ctx.quadraticCurveTo(x + halfW, y + halfH, x + halfW - r, y + halfH);
+    ctx.lineTo(x - halfW + r, y + halfH);
+    ctx.quadraticCurveTo(x - halfW, y + halfH, x - halfW, y + halfH - r);
+    ctx.lineTo(x - halfW, y - halfH + r);
+    ctx.quadraticCurveTo(x - halfW, y - halfH, x - halfW + r, y - halfH);
+    ctx.closePath();
+    ctx.fill();
+
+    // Top highlight
+    ctx.fillStyle = 'rgba(255,255,255,0.15)';
+    ctx.fillRect(x - halfW + 4, y - halfH + 1, block.w - 8, 3);
+
+    // Beat-synced pulse on platform
+    if (!block.judged && !prefersReduced) {
+      var pulseScale = 1 + 0.08 * Math.abs(Math.sin(beatPhase * Math.PI));
+      ctx.strokeStyle = 'rgba(' + currentTheme.glow + ',' + (0.2 * pulseScale) + ')';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(x - halfW * pulseScale, y - halfH * pulseScale * 0.5,
+                     block.w * pulseScale, block.h * pulseScale * 0.5);
+    }
+
+    ctx.restore();
+  }
+
+  // ── Draw Player ──
+  function drawPlayer(ts) {
+    var t = ts || performance.now();
+    var px = player.x, py = player.y;
+    var size = 26;
+
+    ctx.save();
+
+    // Shadow
+    if (player.jumping) {
+      ctx.fillStyle = 'rgba(0,0,0,0.2)';
+      ctx.beginPath();
+      ctx.ellipse(px, PLAYER_Y + 30, 14, 4, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Body
+    var bounce = player.grounded ? Math.abs(Math.sin(beatPhase * Math.PI * 2)) * 2 : 0;
+
+    if (!prefersReduced) {
+      ctx.shadowBlur = 10;
+      ctx.shadowColor = currentTheme.primary;
+    }
+
+    // Gradient from theme
+    var grad = ctx.createLinearGradient(px - size / 2, py - size, px + size / 2, py);
+    grad.addColorStop(0, currentTheme.primary);
+    grad.addColorStop(1, currentTheme.accent);
+    ctx.fillStyle = grad;
+
+    var r = 5;
+    var cx = px, cy = py - size / 2 - bounce;
+    ctx.beginPath();
+    ctx.moveTo(cx - size / 2 + r, cy);
+    ctx.lineTo(cx + size / 2 - r, cy);
+    ctx.quadraticCurveTo(cx + size / 2, cy, cx + size / 2, cy + r);
+    ctx.lineTo(cx + size / 2, cy + size - r);
+    ctx.quadraticCurveTo(cx + size / 2, cy + size, cx + size / 2 - r, cy + size);
+    ctx.lineTo(cx - size / 2 + r, cy + size);
+    ctx.quadraticCurveTo(cx - size / 2, cy + size, cx - size / 2, cy + size - r);
+    ctx.lineTo(cx - size / 2, cy + r);
+    ctx.quadraticCurveTo(cx - size / 2, cy, cx - size / 2 + r, cy);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.restore();
+
+    // Eyes
+    ctx.fillStyle = '#0a0e27';
+    ctx.beginPath();
+    ctx.arc(cx - 5, cy + 8, 3, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(cx + 5, cy + 8, 3, 0, Math.PI * 2);
+    ctx.fill();
+    // Pupils
+    ctx.fillStyle = '#FFFFFF';
+    ctx.beginPath();
+    ctx.arc(cx - 4, cy + 7, 1.2, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(cx + 6, cy + 7, 1.2, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Jump trail
+    if (player.jumping && !prefersReduced) {
+      ctx.fillStyle = 'rgba(' + currentTheme.glow + ',0.15)';
+      ctx.beginPath();
+      ctx.arc(cx, cy + size + 5 + (PLAYER_Y - py) * 0.3, 4, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  // ══════════════════════════════════════════════
+  //  PARTICLES
+  // ══════════════════════════════════════════════
+  function spawnParticles(cx, cy, color, count) {
+    if (prefersReduced) return;
+    count = count || 8;
+    for (var i = 0; i < count; i++) {
+      var angle = (i / count) * Math.PI * 2 + Math.random() * 0.3;
+      var speed = 2 + Math.random() * 3;
+      particles.push({
+        x: cx, y: cy,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed - 2,
+        life: 1,
+        decay: 0.02 + Math.random() * 0.02,
+        size: 2 + Math.random() * 3,
+        color: color
+      });
+    }
+  }
+
+  function updateParticles(dt) {
+    for (var i = particles.length - 1; i >= 0; i--) {
+      var p = particles[i];
+      p.x += p.vx;
+      p.y += p.vy;
+      p.vy += 0.05;
+      p.life -= p.decay * (dt / 16);
+      if (p.life <= 0) {
+        particles.splice(i, 1);
+      }
+    }
+    // Cap particles
+    if (particles.length > 50) {
+      particles.splice(0, particles.length - 50);
+    }
+  }
+
+  function drawParticles() {
+    for (var i = 0; i < particles.length; i++) {
+      var p = particles[i];
+      ctx.globalAlpha = p.life;
+      ctx.fillStyle = p.color;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.size * p.life, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  // ══════════════════════════════════════════════
+  //  VISUAL FEEDBACK
+  // ══════════════════════════════════════════════
+  function showJudgment(text, color) {
+    if (prefersReduced) return;
+    var el = document.createElement('div');
+    el.className = 'judgment-pop';
+    el.textContent = text;
+    el.style.color = color;
+    el.style.fontSize = text === 'PERFECT' ? '32px' : '24px';
+    popupContainer.appendChild(el);
+    setTimeout(function() { el.remove(); }, 550);
+  }
+
+  function showScorePopup(text, color) {
+    if (prefersReduced) return;
+    var el = document.createElement('div');
+    el.className = 'score-pop';
+    el.textContent = text;
+    el.style.color = color;
+    scorePopContainer.appendChild(el);
+    setTimeout(function() { el.remove(); }, 550);
+  }
+
+  function beatHitEffect(scale) {
+    // Visual effect handled inside render via pulsation on hit
+    // This can be extended for screen effects
+  }
+
+  // ══════════════════════════════════════════════
+  //  INPUT
+  // ══════════════════════════════════════════════
+  // Keyboard
+  document.addEventListener('keydown', function(e) {
+    var key = e.key;
+    var tag = (e.target && e.target.tagName || '').toLowerCase();
+    if (tag === 'input' || tag === 'textarea') return;
+
+    if (key === ' ' || key === 'Enter' || key === 'ArrowUp') {
+      e.preventDefault();
+      handleInput();
+    }
+  });
+
+  // Click / touch on canvas
+  canvas.addEventListener('click', function(e) {
+    e.preventDefault();
+    handleInput();
+  });
+
+  canvas.addEventListener('touchstart', function(e) {
+    e.preventDefault();
+    handleInput();
+  }, { passive: false });
+
+  // D-Pad / Play again click compatibility
+  document.getElementById('replayBtn').addEventListener('click', function() {
+    ensureAudioCtx();
+    startGame();
+  });
+
+  // Title screen click anywhere
+  titleScreen.addEventListener('click', function(e) {
+    if (e.target.closest('.swatch') || e.target.closest('.mute-btn') || e.target.closest('.back-to-hub')) return;
+    handleInput();
+  });
+
+  titleScreen.addEventListener('touchstart', function(e) {
+    if (e.target.closest('.swatch') || e.target.closest('.mute-btn') || e.target.closest('.back-to-hub')) return;
+    e.preventDefault();
+    handleInput();
+  }, { passive: false });
+
+  // ══════════════════════════════════════════════
+  //  THEME SWATCHES
+  // ══════════════════════════════════════════════
+  function buildSwatches() {
+    var container = document.getElementById('themeSwatches');
+    container.innerHTML = '';
+    var hs = loadHighScore();
+
+    THEMES.forEach(function(t) {
+      var el = document.createElement('div');
+      el.className = 'swatch' + (t.id === currentTheme.id ? ' selected' : '') + (hs < t.unlock ? ' locked' : '');
+      el.style.background = 'linear-gradient(135deg, ' + t.primary + ', ' + t.accent + ')';
+      el.setAttribute('role', 'button');
+      el.setAttribute('aria-label', t.name + (hs < t.unlock ? ' (unlock at ' + t.unlock + ')' : ''));
+      el.title = t.name + (hs < t.unlock ? ' — unlock at ' + t.unlock : '');
+      if (hs < t.unlock) {
+        el.innerHTML = '<span class="swatch-lock">🔒</span><span class="swatch-unlock-hint">' + t.unlock + '</span>';
+      }
+      el.addEventListener('click', function() {
+        if (hs < t.unlock) return;
+        applyTheme(t);
+      });
+      container.appendChild(el);
+    });
+  }
+
+  // ══════════════════════════════════════════════
+  //  TITLE ICON COLOR
+  // ══════════════════════════════════════════════
+  function updateTitleIcon() {
+    var icon = document.querySelector('.title-icon');
+    if (icon) {
+      icon.style.background = 'linear-gradient(135deg, ' + currentTheme.primary + ', ' + currentTheme.accent + ')';
+      icon.style.boxShadow = '0 0 40px ' + currentTheme.primary + '66';
+    }
+    var titleText = document.querySelector('.title-text');
+    if (titleText) {
+      titleText.style.color = currentTheme.primary;
+      titleText.style.textShadow = '0 0 24px ' + currentTheme.primary + '80';
+    }
+  }
+  updateTitleIcon();
+
+  // Override buildSwatches to also update title
+  var origBuildSwatches = buildSwatches;
+  buildSwatches = function() {
+    origBuildSwatches();
+    updateTitleIcon();
+  };
+
+  // ── Render a preview on canvas for title screen ──
+  (function renderPreview() {
+    ctx.fillStyle = currentTheme.bg;
+    ctx.fillRect(0, 0, W, H);
+
+    // Ground line
+    ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(0, PLAYER_Y + 28);
+    ctx.lineTo(W, PLAYER_Y + 28);
+    ctx.stroke();
+
+    // Draw some static blocks
+    var blockPositions = [150, 200, 260, 320, 380];
+    for (var i = 0; i < blockPositions.length; i++) {
+      var bx = blockPositions[i];
+      var by = PLAYER_Y;
+      ctx.save();
+      ctx.globalAlpha = 0.6;
+      ctx.fillStyle = i % 2 === 0 ? currentTheme.primary : currentTheme.accent;
+      ctx.beginPath();
+      ctx.roundRect(bx - 22, by - 6, 44, 12, 4);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    // Draw judgment zone
+    drawJudgeZone(performance.now());
+
+    // Draw player
+    ctx.save();
+    ctx.shadowBlur = 10;
+    ctx.shadowColor = currentTheme.primary;
+    var grad = ctx.createLinearGradient(player.x - 13, player.y - 26, player.x + 13, player.y);
+    grad.addColorStop(0, currentTheme.primary);
+    grad.addColorStop(1, currentTheme.accent);
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.roundRect(player.x - 13, player.y - 26, 26, 26, 5);
+    ctx.fill();
+    ctx.restore();
+    // Eyes
+    ctx.fillStyle = '#0a0e27';
+    ctx.beginPath(); ctx.arc(player.x - 5, player.y - 18, 3, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(player.x + 5, player.y - 18, 3, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#FFF';
+    ctx.beginPath(); ctx.arc(player.x - 4, player.y - 19, 1.2, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(player.x + 6, player.y - 19, 1.2, 0, Math.PI * 2); ctx.fill();
+  })();
+
+})();
+</script>
+</body>
+</html>
