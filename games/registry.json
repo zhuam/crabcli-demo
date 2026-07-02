@@ -605,6 +605,26 @@
       "version": "1.0.0",
       "featured": true,
       "rating": 4.0
+    },
+    {
+      "id": "bubble-tea-maker",
+      "name": "Bubble Tea Maker",
+      "description": "手工调制珍珠奶茶 — 选茶底→加配料→摇匀，3星过关解锁新口味",
+      "category": "casual",
+      "tags": [
+        "singleplayer",
+        "management",
+        "drag",
+        "simulation",
+        "short-session"
+      ],
+      "thumbnail": "/games/089-bubble-tea-maker/thumb.svg",
+      "path": "/games/089-bubble-tea-maker/",
+      "hasServer": false,
+      "players": "1",
+      "version": "1.0.0",
+      "featured": true,
+      "rating": 4.0
     }
   ],
   "categories": [
