@@ -1,0 +1,1127 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#3E2B1E">
+<title>Cooking Marathon — 烹饪马拉松</title>
+<link rel="stylesheet" href="/games/shared/game-frame.css">
+<style>
+/* ===== Cafe Design System Tokens ===== */
+:root {
+  --primary: #5D4432;
+  --primary-dark: #3E2B1E;
+  --secondary: #E9E3DD;
+  --surface: #F9F7F5;
+  --text: #3E2B1E;
+  --text-light: #7A6B5E;
+  --text-muted: #A69B92;
+  --success: #16A34A;
+  --warning: #D97706;
+  --danger: #DC2626;
+  --cooking-amber: #F59E0B;
+  --almost-orange: #EA580C;
+  --done-green: #22C55E;
+  --burned-red: #DC2626;
+  --idle-gray: #D1D5DB;
+  --cream: #F5F0EB;
+  --gold: #F59E0B;
+  --star-gold: #FBBF24;
+  --white: #FFFFFF;
+  --font: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', ui-monospace, monospace;
+  --radius: 12px;
+  --radius-lg: 20px;
+  --radius-pill: 28px;
+  --shadow-sm: 0 2px 8px rgba(62,43,30,0.08);
+  --shadow-md: 0 4px 16px rgba(62,43,30,0.12);
+  --shadow-lg: 0 8px 32px rgba(62,43,30,0.18);
+  --shadow-glow: 0 0 24px rgba(93,68,50,0.2);
+  --shadow-glow-green: 0 0 24px rgba(34,197,94,0.35);
+  --shadow-glow-amber: 0 0 20px rgba(245,158,11,0.3);
+  --transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  --bounce: 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+  --cafe-bg: #F9F7F5;
+  --cafe-card: #FFFFFF;
+  --cafe-border: rgba(93,68,50,0.12);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 100%; height: 100%; overflow: hidden; font-family: var(--font); background: var(--surface); color: var(--text); touch-action: none; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; }
+
+/* ===== Screen System ===== */
+.screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; transition: transform 0.4s cubic-bezier(0.4,0,0.2,1), opacity 0.4s ease; will-change: transform, opacity; }
+.screen.hidden { transform: translateY(32px); opacity: 0; pointer-events: none; z-index: 0; }
+.screen.active { transform: translateY(0); opacity: 1; z-index: 5; }
+
+/* ===== SPLASH ===== */
+#splash { background: linear-gradient(150deg, var(--primary-dark) 0%, #4A3425 40%, var(--primary) 100%); justify-content: center; align-items: center; padding: 32px; text-align: center; position: relative; overflow: hidden; z-index: 10; }
+#splash::before { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 20%, rgba(245,158,11,0.1) 0%, transparent 60%), radial-gradient(ellipse at 75% 80%, rgba(233,227,221,0.06) 0%, transparent 50%); pointer-events: none; }
+
+.splash-deco { position: absolute; font-size: 4rem; opacity: 0.08; pointer-events: none; }
+.splash-deco-1 { top: 8%; left: 10%; transform: rotate(-15deg); }
+.splash-deco-2 { top: 15%; right: 12%; transform: rotate(20deg); }
+.splash-deco-3 { bottom: 12%; left: 15%; transform: rotate(-8deg); font-size: 3.5rem; }
+.splash-deco-4 { bottom: 8%; right: 8%; transform: rotate(10deg); font-size: 5rem; }
+
+.splash-icon { font-size: 5rem; line-height: 1; margin-bottom: 12px; filter: drop-shadow(0 4px 16px rgba(245,158,11,0.3)); animation: splash-float 3s ease-in-out infinite; }
+@keyframes splash-float { 0%, 100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-8px) scale(1.03); } }
+
+.splash-title { font-size: 2.8rem; font-weight: 800; color: var(--white); letter-spacing: -0.02em; line-height: 1.15; position: relative; z-index: 1; }
+.splash-title span { background: linear-gradient(135deg, var(--gold), #F97316); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+.splash-subtitle { font-size: 1rem; color: rgba(255,255,255,0.65); margin-top: 6px; font-weight: 400; letter-spacing: 0.08em; position: relative; z-index: 1; }
+
+.splash-best { margin-top: 20px; display: inline-flex; align-items: center; gap: 8px; padding: 8px 18px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12); border-radius: var(--radius-pill); font-size: 0.85rem; color: rgba(255,255,255,0.75); position: relative; z-index: 1; }
+.splash-best strong { color: var(--gold); font-weight: 700; }
+
+.splash-play-btn { margin-top: 36px; padding: 16px 56px; border: none; border-radius: var(--radius-pill); background: linear-gradient(135deg, var(--gold), #F97316); color: var(--white); font-family: var(--font); font-size: 1.15rem; font-weight: 700; cursor: pointer; position: relative; z-index: 1; box-shadow: 0 4px 24px rgba(245,158,11,0.35); transition: transform var(--bounce), box-shadow var(--transition); }
+.splash-play-btn:hover { transform: scale(1.04); box-shadow: 0 6px 32px rgba(245,158,11,0.45); }
+.splash-play-btn:active { transform: scale(0.97); }
+.splash-play-btn:focus-visible { outline: 3px solid var(--gold); outline-offset: 4px; }
+.splash-hint { margin-top: 16px; font-size: 0.8rem; color: rgba(255,255,255,0.4); position: relative; z-index: 1; }
+.splash-hint kbd { display: inline-block; padding: 2px 8px; background: rgba(255,255,255,0.1); border-radius: 4px; font-family: var(--font-mono); font-size: 0.75rem; color: rgba(255,255,255,0.6); }
+
+/* ===== COUNTDOWN ===== */
+#countdown-screen { position: absolute; inset: 0; z-index: 20; background: var(--primary-dark); display: flex; justify-content: center; align-items: center; opacity: 0; pointer-events: none; transition: opacity 0.2s; }
+#countdown-screen.active { opacity: 1; pointer-events: all; }
+.cd-number { font-size: 8rem; font-weight: 800; font-family: var(--font-mono); color: var(--gold); text-shadow: 0 0 60px rgba(245,158,11,0.4); animation: cd-pulse 0.7s ease-out; }
+@keyframes cd-pulse { 0% { transform: scale(1.6); opacity: 0; } 50% { transform: scale(1); opacity: 1; } 100% { transform: scale(0.95); opacity: 0.8; } }
+.cd-label { font-size: 1.2rem; color: rgba(255,255,255,0.5); text-align: center; margin-top: 12px; letter-spacing: 0.15em; }
+
+/* ===== GAMEPLAY ===== */
+#gameplay { background: var(--cafe-bg); padding: 0; z-index: 5; }
+.game-bar { display: flex; align-items: center; justify-content: space-between; padding: 12px 20px; background: var(--white); border-bottom: 1px solid var(--cafe-border); box-shadow: var(--shadow-sm); position: relative; z-index: 2; flex-shrink: 0; }
+.game-bar__section { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; }
+.game-bar__label { color: var(--text-muted); font-size: 0.7rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.06em; }
+.game-bar__timer { font-family: var(--font-mono); font-size: 1.4rem; font-weight: 700; color: var(--text); font-variant-numeric: tabular-nums; }
+.game-bar__timer.warning { color: var(--danger); animation: timer-blink 0.6s ease-in-out infinite; }
+@keyframes timer-blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+.game-bar__score { font-family: var(--font-mono); font-size: 1.2rem; font-weight: 700; color: var(--primary); font-variant-numeric: tabular-nums; }
+.game-bar__level { display: flex; align-items: center; gap: 6px; padding: 4px 14px; background: var(--secondary); border-radius: var(--radius-pill); font-size: 0.8rem; font-weight: 600; color: var(--primary); }
+.game-bar__combo { font-family: var(--font-mono); font-size: 0.85rem; font-weight: 700; color: var(--gold); }
+
+.game-area { flex: 1; display: grid; grid-template-columns: 1fr 280px; gap: 0; overflow: hidden; position: relative; }
+.cooking-area { padding: 24px 28px; display: flex; flex-direction: column; gap: 20px; overflow-y: auto; }
+.cooking-area__label { font-size: 0.75rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.1em; }
+
+.pot-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
+
+.pot-card { position: relative; background: var(--white); border: 2px solid var(--cafe-border); border-radius: var(--radius-lg); padding: 20px; display: flex; flex-direction: column; align-items: center; gap: 10px; transition: border-color var(--transition), box-shadow var(--transition), transform 0.15s; min-height: 160px; cursor: pointer; touch-action: none; }
+.pot-card.state-idle { border-color: var(--idle-gray); background: #FAFAFA; }
+.pot-card.state-idle .pot-icon { opacity: 0.35; }
+.pot-card.state-cooking { border-color: var(--cooking-amber); box-shadow: var(--shadow-glow-amber); }
+.pot-card.state-cooking .pot-icon { animation: pot-simmer 2s ease-in-out infinite; }
+@keyframes pot-simmer { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.03) translateY(-2px); } }
+.pot-card.state-almost { border-color: var(--almost-orange); box-shadow: 0 0 20px rgba(234,88,12,0.3); animation: pot-urgent 0.8s ease-in-out infinite; }
+@keyframes pot-urgent { 0%, 100% { box-shadow: 0 0 16px rgba(234,88,12,0.25); } 50% { box-shadow: 0 0 28px rgba(234,88,12,0.45); } }
+.pot-card.state-almost .pot-icon { animation: pot-simmer 0.6s ease-in-out infinite; }
+.pot-card.state-done { border-color: var(--done-green); box-shadow: var(--shadow-glow-green); background: linear-gradient(135deg, #F0FFF4, var(--white)); }
+.pot-card.state-done .pot-icon { animation: pot-done-bounce 0.5s ease-in-out; }
+@keyframes pot-done-bounce { 0% { transform: scale(1); } 30% { transform: scale(1.15) rotate(-5deg); } 60% { transform: scale(0.95) rotate(3deg); } 100% { transform: scale(1) rotate(0); } }
+.pot-card.state-burned { border-color: var(--burned-red); background: linear-gradient(135deg, #FFF5F5, #FEF2F2); box-shadow: 0 0 16px rgba(220,38,38,0.25); animation: pot-shake 0.4s ease-in-out 3; }
+@keyframes pot-shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
+.pot-card.droppable { outline: 3px dashed var(--primary); outline-offset: -3px; background: rgba(93,68,50,0.04); }
+
+.pot-icon { font-size: 2.8rem; line-height: 1; transition: opacity var(--transition); }
+.pot-label { font-size: 0.75rem; font-weight: 500; color: var(--text-muted); }
+.pot-badge { position: absolute; top: -8px; right: -8px; min-width: 32px; height: 32px; padding: 0 8px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 700; font-family: var(--font-mono); color: var(--white); box-shadow: 0 2px 8px rgba(0,0,0,0.15); font-variant-numeric: tabular-nums; }
+.pot-badge.badge-cooking { background: var(--cooking-amber); }
+.pot-badge.badge-almost { background: var(--almost-orange); }
+.pot-badge.badge-done { background: var(--done-green); }
+.pot-badge.badge-burned { background: var(--burned-red); }
+.pot-food { font-size: 0.8rem; font-weight: 500; color: var(--text-light); padding: 4px 14px; background: var(--secondary); border-radius: var(--radius-pill); }
+.pot-progress { width: 100%; height: 4px; background: var(--secondary); border-radius: 2px; overflow: hidden; margin-top: 4px; }
+.pot-progress__fill { height: 100%; border-radius: 2px; transition: width 0.3s, background-color var(--transition); }
+.pot-progress__fill.idle { background: var(--idle-gray); }
+.pot-progress__fill.cooking { background: var(--cooking-amber); }
+.pot-progress__fill.almost { background: var(--almost-orange); }
+.pot-progress__fill.done { background: var(--done-green); }
+.pot-progress__fill.burned { background: var(--burned-red); }
+
+.ingredient-shelf { background: var(--cream); border-radius: var(--radius-lg); padding: 16px 20px; display: flex; flex-direction: column; gap: 10px; }
+.ingredient-shelf__header { display: flex; justify-content: space-between; align-items: center; }
+.ingredient-shelf__title { font-size: 0.7rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; }
+.ingredient-row { display: flex; gap: 12px; flex-wrap: wrap; }
+.ingredient-item { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 16px; background: var(--white); border: 2px solid var(--cafe-border); border-radius: var(--radius); cursor: grab; transition: transform var(--transition), border-color var(--transition), box-shadow var(--transition); min-width: 72px; touch-action: none; position: relative; }
+.ingredient-item:hover { transform: translateY(-2px); border-color: var(--primary); box-shadow: var(--shadow-md); }
+.ingredient-item:active { cursor: grabbing; transform: scale(0.95); }
+.ingredient-item.dragging { opacity: 0.4; }
+.ingredient-item:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
+.ingredient-item__icon { font-size: 1.6rem; line-height: 1; }
+.ingredient-item__name { font-size: 0.7rem; font-weight: 500; color: var(--text-light); }
+.ingredient-item__count { font-size: 0.65rem; font-family: var(--font-mono); color: var(--text-muted); font-weight: 600; font-variant-numeric: tabular-nums; }
+
+/* ===== ORDER QUEUE ===== */
+.order-panel { background: var(--white); border-left: 1px solid var(--cafe-border); display: flex; flex-direction: column; overflow: hidden; }
+.order-panel__header { padding: 16px 18px 12px; border-bottom: 1px solid var(--cafe-border); display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+.order-panel__title { font-size: 0.8rem; font-weight: 700; color: var(--text); display: flex; align-items: center; gap: 6px; }
+.order-panel__count { font-size: 0.7rem; font-family: var(--font-mono); color: var(--text-muted); font-weight: 600; }
+.order-list { flex: 1; padding: 12px 16px; display: flex; flex-direction: column; gap: 10px; overflow-y: auto; }
+.order-card { background: var(--surface); border: 1px solid var(--cafe-border); border-radius: var(--radius); padding: 14px 16px; display: flex; flex-direction: column; gap: 6px; transition: all var(--transition); position: relative; }
+.order-card.urgent { border-color: var(--danger); background: #FFF5F5; }
+.order-card.completed { opacity: 0.5; text-decoration: line-through; transform: scale(0.95); }
+.order-card__top { display: flex; justify-content: space-between; align-items: center; }
+.order-card__dish { display: flex; align-items: center; gap: 8px; }
+.order-card__icon { font-size: 1.3rem; }
+.order-card__name { font-size: 0.85rem; font-weight: 600; color: var(--text); }
+.order-card__timer { font-family: var(--font-mono); font-size: 0.85rem; font-weight: 700; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+.order-card.urgent .order-card__timer { color: var(--danger); animation: timer-blink 0.6s ease-in-out infinite; }
+.order-card__recipe { display: flex; gap: 4px; flex-wrap: wrap; }
+.order-card__tag { font-size: 0.65rem; padding: 2px 8px; background: var(--secondary); border-radius: 4px; color: var(--text-light); }
+.order-card__progress { height: 3px; background: var(--secondary); border-radius: 2px; overflow: hidden; }
+.order-card__progress-fill { height: 100%; background: var(--success); border-radius: 2px; transition: width 0.3s; }
+.order-card.urgent .order-card__progress-fill { background: var(--danger); }
+
+/* ===== RESULT ===== */
+#result { background: linear-gradient(150deg, var(--primary-dark) 0%, var(--primary) 100%); justify-content: center; align-items: center; padding: 40px 32px; text-align: center; position: relative; overflow: hidden; z-index: 10; }
+#result::before { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 40%, rgba(34,197,94,0.08) 0%, transparent 60%); pointer-events: none; }
+#result.lose::before { background: radial-gradient(ellipse at 50% 40%, rgba(220,38,38,0.08) 0%, transparent 60%); }
+.result-icon { font-size: 5rem; line-height: 1; margin-bottom: 12px; position: relative; z-index: 1; }
+.result-icon.win-clear { animation: result-bounce 1s ease-in-out 2; }
+.result-icon.lose-clear { animation: result-shake 0.5s ease-in-out 3; }
+@keyframes result-bounce { 0%, 100% { transform: translateY(0) scale(1); } 30% { transform: translateY(-12px) scale(1.1); } 60% { transform: translateY(-5px) scale(1.05); } }
+@keyframes result-shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
+.result-title { font-size: 2.4rem; font-weight: 800; color: var(--white); position: relative; z-index: 1; }
+.result-title.win-color { color: var(--done-green); }
+.result-title.lose-color { color: #F87171; }
+.result-subtitle { font-size: 0.9rem; color: rgba(255,255,255,0.55); margin-top: 4px; position: relative; z-index: 1; }
+.result-card { margin-top: 28px; padding: 24px 36px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.1); border-radius: var(--radius-lg); backdrop-filter: blur(12px); display: inline-flex; flex-direction: column; align-items: center; gap: 12px; position: relative; z-index: 1; }
+.result-stat { display: flex; justify-content: space-between; width: 100%; min-width: 240px; padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.06); }
+.result-stat:last-child { border-bottom: none; }
+.result-stat__label { font-size: 0.8rem; color: rgba(255,255,255,0.55); }
+.result-stat__value { font-size: 0.9rem; font-weight: 700; color: var(--white); font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+.result-stat__value.new-record { color: var(--gold); display: flex; align-items: center; gap: 6px; }
+.result-buttons { margin-top: 32px; display: flex; flex-direction: column; align-items: center; gap: 12px; position: relative; z-index: 1; }
+.result-btn-primary { padding: 16px 56px; border: none; border-radius: var(--radius-pill); background: linear-gradient(135deg, var(--gold), #F97316); color: var(--white); font-family: var(--font); font-size: 1.1rem; font-weight: 700; cursor: pointer; box-shadow: 0 4px 24px rgba(245,158,11,0.35); transition: transform var(--bounce), box-shadow var(--transition); }
+.result-btn-primary:hover { transform: scale(1.04); box-shadow: 0 6px 32px rgba(245,158,11,0.45); }
+.result-btn-primary:active { transform: scale(0.97); }
+.result-btn-primary:focus-visible { outline: 3px solid var(--gold); outline-offset: 4px; }
+.result-btn-secondary { padding: 12px 32px; border: 1px solid rgba(255,255,255,0.2); border-radius: var(--radius-pill); background: transparent; color: rgba(255,255,255,0.7); font-family: var(--font); font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: all var(--transition); }
+.result-btn-secondary:hover { background: rgba(255,255,255,0.08); color: var(--white); }
+.result-btn-secondary:focus-visible { outline: 3px solid rgba(255,255,255,0.4); outline-offset: 4px; }
+
+.new-record-banner { margin-top: 16px; padding: 8px 24px; background: linear-gradient(135deg, rgba(245,158,11,0.2), rgba(249,115,22,0.2)); border: 1px solid rgba(245,158,11,0.3); border-radius: var(--radius-pill); font-size: 0.85rem; color: var(--gold); font-weight: 600; display: inline-flex; align-items: center; gap: 8px; position: relative; z-index: 1; animation: record-glow 1.5s ease-in-out infinite; }
+@keyframes record-glow { 0%, 100% { box-shadow: 0 0 12px rgba(245,158,11,0.15); } 50% { box-shadow: 0 0 28px rgba(245,158,11,0.35); } }
+
+/* ===== Drag Ghost ===== */
+.drag-ghost { position: fixed; pointer-events: none; z-index: 1000; font-size: 2rem; transform: translate(-50%, -50%); opacity: 0.85; transition: none; }
+
+/* ===== New Recipe Unlock ===== */
+.unlock-overlay { position: absolute; inset: 0; z-index: 30; background: rgba(62,43,30,0.9); display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 16px; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
+.unlock-overlay.active { opacity: 1; pointer-events: all; }
+.unlock-overlay__icon { font-size: 4rem; animation: unlock-bounce 0.6s ease-out; }
+@keyframes unlock-bounce { 0% { transform: scale(0); } 50% { transform: scale(1.2); } 100% { transform: scale(1); } }
+.unlock-overlay__title { font-size: 1.4rem; font-weight: 700; color: var(--gold); }
+.unlock-overlay__desc { font-size: 0.9rem; color: rgba(255,255,255,0.7); }
+.unlock-overlay__btn { margin-top: 8px; padding: 12px 32px; border: none; border-radius: var(--radius-pill); background: var(--gold); color: var(--white); font-family: var(--font); font-size: 1rem; font-weight: 700; cursor: pointer; }
+
+/* ===== Scrollbar ===== */
+.order-list::-webkit-scrollbar, .cooking-area::-webkit-scrollbar { width: 4px; }
+.order-list::-webkit-scrollbar-track, .cooking-area::-webkit-scrollbar-track { background: transparent; }
+.order-list::-webkit-scrollbar-thumb, .cooking-area::-webkit-scrollbar-thumb { background: var(--cafe-border); border-radius: 2px; }
+
+/* ===== Responsive ===== */
+@media (max-width: 860px) { .game-area { grid-template-columns: 1fr; } .order-panel { border-left: none; border-top: 1px solid var(--cafe-border); max-height: 220px; } .splash-title { font-size: 2.2rem; } .pot-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; } .cooking-area { padding: 16px; } }
+@media (max-width: 480px) { .splash-title { font-size: 1.8rem; } .pot-grid { grid-template-columns: 1fr; } .game-bar { padding: 8px 14px; flex-wrap: wrap; gap: 8px; } .game-bar__timer { font-size: 1.1rem; } .result-card { min-width: unset; width: 100%; padding: 20px; } }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; } }
+</style>
+</head>
+<body>
+<a class="back-to-hub" href="/" onclick="event.preventDefault(); showScreen('splash'); document.getElementById('splash').classList.contains('active') || (window.location.href='/');">← Arcade</a>
+
+<!-- SPLASH -->
+<div id="splash" class="screen active">
+  <div class="splash-deco splash-deco-1">🍳</div>
+  <div class="splash-deco splash-deco-2">🥘</div>
+  <div class="splash-deco splash-deco-3">🧑‍🍳</div>
+  <div class="splash-deco splash-deco-4">🍲</div>
+  <div class="splash-icon">🍳</div>
+  <h1 class="splash-title">Cooking<br><span>马拉松</span></h1>
+  <p class="splash-subtitle">🍝 多锅并行 · 限时烹饪挑战</p>
+  <div class="splash-best">🏆 最高分 <strong id="bestScore">0</strong> · 最高关卡 <strong id="bestLevel">0</strong></div>
+  <button class="splash-play-btn" id="playBtn">▶ PLAY</button>
+  <p class="splash-hint">拖拽食材到锅中 · <kbd>Tab</kbd>+<kbd>Enter</kbd> 键盘模式</p>
+</div>
+
+<!-- COUNTDOWN -->
+<div id="countdown-screen">
+  <div style="text-align:center;">
+    <div class="cd-number" id="cdNumber">3</div>
+    <div class="cd-label" id="cdLabel">准备开始！</div>
+  </div>
+</div>
+
+<!-- GAMEPLAY -->
+<div id="gameplay" class="screen hidden">
+  <div class="game-bar">
+    <div class="game-bar__section">
+      <span class="game-bar__label">⏱</span>
+      <span class="game-bar__timer" id="gameTimer">0:00</span>
+    </div>
+    <div class="game-bar__section">
+      <span class="game-bar__level" id="levelDisplay">🏆 Lv.1</span>
+    </div>
+    <div class="game-bar__section">
+      <span class="game-bar__label">⭐</span>
+      <span class="game-bar__score" id="scoreDisplay">0</span>
+    </div>
+    <div class="game-bar__section">
+      <span class="game-bar__label">🔥</span>
+      <span class="game-bar__score" id="comboDisplay" style="color:var(--gold);">x1</span>
+    </div>
+  </div>
+
+  <div class="game-area">
+    <div class="cooking-area">
+      <div class="pot-grid" id="potGrid"></div>
+
+      <div class="ingredient-shelf">
+        <div class="ingredient-shelf__header">
+          <span class="ingredient-shelf__title">🧺 食材</span>
+          <span class="ingredient-shelf__title" id="ordersNeeded">目标: 0 份订单</span>
+        </div>
+        <div class="ingredient-row" id="ingredientRow"></div>
+      </div>
+    </div>
+
+    <div class="order-panel">
+      <div class="order-panel__header">
+        <span class="order-panel__title">📋 订单</span>
+        <span class="order-panel__count" id="orderCount">0 个</span>
+      </div>
+      <div class="order-list" id="orderList"></div>
+    </div>
+  </div>
+
+  <div class="unlock-overlay" id="unlockOverlay">
+    <div class="unlock-overlay__icon">🎉</div>
+    <div class="unlock-overlay__title" id="unlockTitle">新菜谱解锁！</div>
+    <div class="unlock-overlay__desc" id="unlockDesc">🍝 番茄意面</div>
+    <button class="unlock-overlay__btn" id="unlockBtn">继续</button>
+  </div>
+</div>
+
+<!-- RESULT -->
+<div id="result" class="screen hidden">
+  <div class="result-icon" id="resultIcon">🎉</div>
+  <h2 class="result-title" id="resultTitle">恭喜通关！</h2>
+  <p class="result-subtitle" id="resultSubtitle">Level 1 挑战完成</p>
+  <div class="result-card" id="resultCard"></div>
+  <div class="new-record-banner" id="newRecordBanner" style="display:none;">🏆 新纪录！</div>
+  <div class="result-buttons">
+    <button class="result-btn-primary" id="replayBtn">🔄 再来一局</button>
+    <button class="result-btn-secondary" id="homeBtn">🏠 返回大厅</button>
+  </div>
+</div>
+
+<script>
+(function(){
+'use strict';
+
+/* ---------- Audio ---------- */
+let audioCtx = null;
+function ensureAudio(){
+  if(audioCtx) return audioCtx;
+  try{ const Ctx = window.AudioContext || window.webkitAudioContext; if(!Ctx) return null; audioCtx = new Ctx(); }catch(_){}
+  return audioCtx;
+}
+function tone(freq, dur, type, vol, glide){
+  const c = ensureAudio(); if(!c) return;
+  try{
+    const o = c.createOscillator(); const g = c.createGain();
+    o.type = type || 'sine';
+    o.frequency.setValueAtTime(freq, c.currentTime);
+    if(glide) o.frequency.linearRampToValueAtTime(glide, c.currentTime + dur);
+    g.gain.setValueAtTime(vol || 0.18, c.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.0001, c.currentTime + dur);
+    o.connect(g).connect(c.destination); o.start(); o.stop(c.currentTime + dur + 0.02);
+  }catch(_){}
+}
+function sfxPick(){ tone(600, 0.06, 'sine', 0.12); }
+function sfxDrop(){ tone(400, 0.08, 'triangle', 0.15, 500); }
+function sfxDone(){ tone(880, 0.1, 'sine', 0.14); setTimeout(()=>tone(1100, 0.12, 'sine', 0.14), 100); }
+function sfxBurn(){ tone(180, 0.2, 'sawtooth', 0.1, 120); }
+function sfxScore(){ tone(660, 0.08, 'sine', 0.1); setTimeout(()=>tone(880, 0.1, 'sine', 0.12), 80); }
+function sfxFail(){ tone(300, 0.15, 'sawtooth', 0.08, 200); setTimeout(()=>tone(200, 0.2, 'sawtooth', 0.08), 150); }
+function sfxTick(){ tone(1000, 0.04, 'sine', 0.06); }
+function sfxWin(){ tone(523, 0.12, 'sine', 0.14); setTimeout(()=>tone(659, 0.12, 'sine', 0.14), 120); setTimeout(()=>tone(784, 0.16, 'sine', 0.16), 240); }
+function sfxNewRecord(){ tone(523, 0.1, 'sine', 0.12); setTimeout(()=>tone(659, 0.1, 'sine', 0.12), 100); setTimeout(()=>tone(784, 0.1, 'sine', 0.14), 200); setTimeout(()=>tone(1047, 0.2, 'sine', 0.16), 300); }
+
+/* ---------- Vibration ---------- */
+function vibrate(pat){ try{ if(navigator.vibrate) navigator.vibrate(pat); }catch(_){} }
+
+/* ---------- Ingredients & Recipes ---------- */
+const INGREDIENTS = [
+  { id:'tomato', icon:'🍅', name:'番茄' },
+  { id:'pasta', icon:'🍝', name:'意面' },
+  { id:'lettuce', icon:'🥬', name:'生菜' },
+  { id:'meat', icon:'🥩', name:'牛排' },
+  { id:'mushroom', icon:'🍄', name:'蘑菇' },
+  { id:'carrot', icon:'🥕', name:'胡萝卜' },
+  { id:'onion', icon:'🧅', name:'洋葱' },
+  { id:'egg', icon:'🥚', name:'鸡蛋' },
+  { id:'rice', icon:'🍚', name:'米饭' },
+  { id:'shrimp', icon:'🦐', name:'虾仁' },
+];
+
+const RECIPES = [
+  { id:'pasta-tomato', name:'番茄意面', icon:'🍝', ingredients:['tomato','pasta'], levelUnlock:1 },
+  { id:'salad', name:'田园沙拉', icon:'🥗', ingredients:['lettuce','carrot','tomato'], levelUnlock:1 },
+  { id:'steak', name:'香煎牛排', icon:'🥩', ingredients:['meat'], levelUnlock:2 },
+  { id:'mushroom-soup', name:'蘑菇浓汤', icon:'🥣', ingredients:['mushroom','carrot','onion'], levelUnlock:2 },
+  { id:'fried-rice', name:'蛋炒饭', icon:'🍛', ingredients:['rice','egg','carrot'], levelUnlock:3 },
+  { id:'shrimp-pasta', name:'虾仁意面', icon:'🍤', ingredients:['pasta','shrimp','tomato'], levelUnlock:3 },
+  { id:'omelette', name:'番茄炒蛋', icon:'🍳', ingredients:['egg','tomato','onion'], levelUnlock:4 },
+  { id:'seafood-soup', name:'海鲜汤', icon:'🥘', ingredients:['shrimp','mushroom','onion','carrot'], levelUnlock:4 },
+];
+
+/* ---------- Level Config ---------- */
+const LEVELS = [
+  { pots:2, orderSlots:3, time:90, ordersNeeded:3, recipesUnlock:1, label:'Lv.1 · 新手入门' },
+  { pots:2, orderSlots:3, time:120, ordersNeeded:5, recipesUnlock:2, label:'Lv.2 · 小试牛刀' },
+  { pots:3, orderSlots:4, time:150, ordersNeeded:8, recipesUnlock:3, label:'Lv.3 · 渐入佳境' },
+  { pots:3, orderSlots:4, time:150, ordersNeeded:10, recipesUnlock:4, label:'Lv.4 · 大厨挑战' },
+  { pots:4, orderSlots:5, time:180, ordersNeeded:12, recipesUnlock:4, label:'Lv.5 · 烹饪马拉松' },
+];
+
+/* ---------- Game State ---------- */
+let g = {
+  level:0, score:0, combo:1, maxCombo:1,
+  timeLeft:0, totalTime:0,
+  orders: [], ordersCompleted: 0, ordersBurned: 0,
+  pots: [], ingredients: {},
+  gameRunning: false,
+  roundTimer: null,
+  gameLoop: null,
+  orderSpawnTimer: null,
+};
+
+/* ---------- Storage ---------- */
+const STORAGE_KEY = 'cooking_marathon_data';
+function loadData(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(!raw) return { bestScore:0, bestLevel:0, gamesPlayed:0, totalWins:0 };
+    return JSON.parse(raw);
+  }catch(_){ return { bestScore:0, bestLevel:0, gamesPlayed:0, totalWins:0 }; }
+}
+function saveData(){
+  try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); }catch(_){}
+}
+let data = loadData();
+
+/* ---------- DOM ---------- */
+const $ = id => document.getElementById(id);
+const screens = ['splash','gameplay','result'];
+const screenEls = { splash:$('splash'), gameplay:$('gameplay'), result:$('result') };
+
+function showScreen(id){
+  screens.forEach(s => {
+    const el = screenEls[s];
+    if(s === id){ el.classList.remove('hidden'); el.classList.add('active'); }
+    else{ el.classList.remove('active'); el.classList.add('hidden'); }
+  });
+  if(id !== 'gameplay') $('unlockOverlay').classList.remove('active');
+  if(id === 'splash'){ updateSplash(); }
+}
+
+/* ---------- Splash ---------- */
+function updateSplash(){
+  $('bestScore').textContent = data.bestScore.toLocaleString();
+  $('bestLevel').textContent = data.bestLevel;
+}
+$('playBtn').addEventListener('click', startCountdown);
+$('playBtn').addEventListener('keydown', e => { if(e.key==='Enter'||e.key===' ') { e.preventDefault(); startCountdown(); } });
+$('homeBtn').addEventListener('click', ()=>{ showScreen('splash'); });
+
+/* ---------- Countdown ---------- */
+function startCountdown(){
+  ensureAudio();
+  showScreen('gameplay');
+  const cd = $('countdown-screen');
+  cd.classList.add('active');
+  let count = 3;
+  $('cdNumber').textContent = '3';
+  $('cdLabel').textContent = '准备开始！';
+  const interval = setInterval(() => {
+    count--;
+    if(count > 0){
+      sfxTick();
+      $('cdNumber').textContent = count;
+      $('cdNumber').style.animation = 'none';
+      void $('cdNumber').offsetWidth;
+      $('cdNumber').style.animation = 'cd-pulse 0.7s ease-out';
+      const labels = {3:'准备开始！',2:'准备食材…',1:'集中注意！'};
+      $('cdLabel').textContent = labels[count] || '';
+    } else if(count === 0){
+      sfxDone();
+      $('cdNumber').textContent = 'GO!';
+      $('cdNumber').style.fontSize = '6rem';
+      $('cdLabel').textContent = '🔥 开始烹饪！';
+      clearInterval(interval);
+      setTimeout(() => {
+        cd.classList.remove('active');
+        startGame();
+      }, 600);
+    }
+  }, 900);
+}
+
+/* ---------- Game Init ---------- */
+function startGame(){
+  const lv = LEVELS[g.level] || LEVELS[LEVELS.length-1];
+  g.timeLeft = lv.time;
+  g.totalTime = lv.time;
+  g.score = 0;
+  g.combo = 1;
+  g.maxCombo = 1;
+  g.ordersCompleted = 0;
+  g.ordersBurned = 0;
+  g.gameRunning = true;
+  g.orders = [];
+  g.ordersBurned = 0;
+
+  // Init ingredients
+  g.ingredients = {};
+  INGREDIENTS.forEach(ing => { g.ingredients[ing.id] = 20; });
+
+  // Init pots
+  g.pots = [];
+  for(let i=0; i<lv.pots; i++){
+    g.pots.push({
+      index:i, state:'idle', recipe:null, progress:0, startTime:0, cookTime:0,
+      burnTimer:null,
+    });
+  }
+
+  // Build DOM
+  buildPots();
+  buildIngredients();
+  updateUI();
+
+  // Start loops
+  $('ordersNeeded').textContent = `目标: ${lv.ordersNeeded} 份订单`;
+  spawnOrders();
+  if(g.orderSpawnTimer) clearInterval(g.orderSpawnTimer);
+  g.orderSpawnTimer = setInterval(() => { if(g.gameRunning) trySpawnOrder(); }, 8000);
+
+  if(g.gameLoop) cancelAnimationFrame(g.gameLoop);
+  const lastFrame = { time: performance.now() };
+  const SNAP = 45;
+
+  function loop(now){
+    if(!g.gameRunning) return;
+    const dt = Math.min((now - lastFrame.time) / 1000, 0.1);
+    lastFrame.time = now;
+
+    // Update timers
+    g.timeLeft -= dt;
+    if(g.timeLeft <= 0){
+      g.timeLeft = 0;
+      endGame(false);
+      return;
+    }
+
+    // Update pots
+    g.pots.forEach(pot => {
+      if(pot.state === 'cooking' || pot.state === 'almost'){
+        const elapsed = now - pot.startTime;
+        pot.progress = Math.min(elapsed / (pot.cookTime * 1000), 1);
+        if(pot.progress >= 0.85 && pot.state === 'cooking'){
+          pot.state = 'almost';
+        }
+        if(pot.progress >= 1 && pot.state !== 'done' && pot.state !== 'burned'){
+          pot.state = 'done';
+          pot.progress = 1;
+          sfxDone();
+          vibrate([20,100,20]);
+          document.title = '🍳 菜好了！';
+        }
+      }
+      if(pot.state === 'done'){
+        const doneElapsed = now - (pot.startTime + pot.cookTime * 1000);
+        if(doneElapsed > 5000 && pot.state !== 'burned'){
+          pot.state = 'burned';
+          sfxBurn();
+          vibrate([100,50,100]);
+          g.ordersBurned++;
+        }
+      }
+    });
+
+    updateUI();
+    g.gameLoop = requestAnimationFrame(loop);
+  }
+  g.gameLoop = requestAnimationFrame(loop);
+}
+
+/* ---------- Pot DOM ---------- */
+function buildPots(){
+  const grid = $('potGrid');
+  grid.innerHTML = '';
+  g.pots.forEach((pot, i) => {
+    const card = document.createElement('div');
+    card.className = 'pot-card state-idle';
+    card.dataset.potIndex = i;
+    card.innerHTML = `
+      <div class="pot-badge badge-cooking" style="display:none;"></div>
+      <div class="pot-icon">🍲</div>
+      <div class="pot-label">灶位 ${i+1}</div>
+      <div class="pot-food">空闲中</div>
+      <div class="pot-progress"><div class="pot-progress__fill idle" style="width:0%"></div></div>
+    `;
+    grid.appendChild(card);
+  });
+  setupDragAndDrop();
+}
+
+/* ---------- Ingredient DOM ---------- */
+function buildIngredients(){
+  const row = $('ingredientRow');
+  row.innerHTML = '';
+  const currentLevel = g.level;
+  const maxUnlock = LEVELS[currentLevel] ? LEVELS[currentLevel].recipesUnlock : 4;
+  const unlockedIngIds = new Set();
+  for(let i=0; i<RECIPES.length && i<maxUnlock; i++){
+    RECIPES[i].ingredients.forEach(id => unlockedIngIds.add(id));
+  }
+  // Always show basic ingredients
+  ['tomato','pasta','lettuce','carrot'].forEach(id => unlockedIngIds.add(id));
+
+  INGREDIENTS.forEach(ing => {
+    if(!unlockedIngIds.has(ing.id)) return;
+    const el = document.createElement('div');
+    el.className = 'ingredient-item';
+    el.dataset.ingredient = ing.id;
+    el.innerHTML = `
+      <span class="ingredient-item__icon">${ing.icon}</span>
+      <span class="ingredient-item__name">${ing.name}</span>
+      <span class="ingredient-item__count">x${g.ingredients[ing.id] || 0}</span>
+    `;
+    el.tabIndex = 0;
+    row.appendChild(el);
+  });
+}
+
+/* ---------- Drag & Drop ---------- */
+function setupDragAndDrop(){
+  let dragEl = null;
+  let dragIngId = null;
+  let ghost = null;
+  const pots = $('potGrid').querySelectorAll('.pot-card');
+  const items = $('ingredientRow').querySelectorAll('.ingredient-item');
+
+  function onPointerDown(e){
+    const item = e.currentTarget;
+    const ingId = item.dataset.ingredient;
+    if((g.ingredients[ingId] || 0) <= 0) return;
+    if(!g.gameRunning) return;
+    dragIngId = ingId;
+    dragEl = item;
+    item.classList.add('dragging');
+    sfxPick();
+
+    ghost = document.createElement('div');
+    ghost.className = 'drag-ghost';
+    ghost.textContent = item.querySelector('.ingredient-item__icon').textContent;
+    document.body.appendChild(ghost);
+    moveGhost(e);
+
+    item.setPointerCapture(e.pointerId);
+    item.addEventListener('pointermove', onPointerMove);
+    item.addEventListener('pointerup', onPointerUp);
+    item.addEventListener('pointercancel', onPointerUp);
+  }
+
+  function onPointerMove(e){
+    moveGhost(e);
+    const overPot = getPotUnder(e.clientX, e.clientY);
+    pots.forEach(p => p.classList.remove('droppable'));
+    if(overPot && g.pots[overPot].state === 'idle'){
+      pots[overPot].classList.add('droppable');
+    }
+  }
+
+  function onPointerUp(e){
+    if(dragEl) dragEl.classList.remove('dragging');
+    if(ghost){ ghost.remove(); ghost = null; }
+    pots.forEach(p => p.classList.remove('droppable'));
+
+    if(dragEl){
+      dragEl.removeEventListener('pointermove', onPointerMove);
+      dragEl.removeEventListener('pointerup', onPointerUp);
+      dragEl.removeEventListener('pointercancel', onPointerUp);
+    }
+
+    const overPot = getPotUnder(e.clientX, e.clientY);
+    if(overPot !== null && g.pots[overPot].state === 'idle' && dragIngId && g.gameRunning){
+      // Check if ingredient is valid for any active recipe
+      if(g.ingredients[dragIngId] > 0){
+        putIngredientInPot(overPot, dragIngId);
+      }
+    }
+    dragEl = null;
+    dragIngId = null;
+  }
+
+  function moveGhost(e){
+    if(ghost){
+      ghost.style.left = e.clientX + 'px';
+      ghost.style.top = e.clientY + 'px';
+    }
+  }
+
+  function getPotUnder(x, y){
+    for(let i=0; i<pots.length; i++){
+      const r = pots[i].getBoundingClientRect();
+      if(x >= r.left-10 && x <= r.right+10 && y >= r.top-10 && y <= r.bottom+10){
+        return i;
+      }
+    }
+    return null;
+  }
+
+  items.forEach(item => {
+    item.addEventListener('pointerdown', onPointerDown);
+    item.addEventListener('keydown', (e) => {
+      if(e.key === 'Enter' || e.key === ' '){
+        e.preventDefault();
+        // Keyboard mode: select ingredient, then select pot
+        handleKeyboardSelect(item);
+      }
+    });
+  });
+}
+
+/* ---------- Keyboard Mode ---------- */
+let kbSelectedIngredient = null;
+function handleKeyboardSelect(item){
+  const ingId = item.dataset.ingredient;
+  if((g.ingredients[ingId] || 0) <= 0 || !g.gameRunning) return;
+
+  if(kbSelectedIngredient === ingId){
+    kbSelectedIngredient = null;
+    $('ingredientRow').querySelectorAll('.ingredient-item').forEach(el => el.style.outline = '');
+    return;
+  }
+
+  kbSelectedIngredient = ingId;
+  $('ingredientRow').querySelectorAll('.ingredient-item').forEach(el => el.style.outline = '');
+  item.style.outline = '3px solid var(--gold)';
+  sfxPick();
+}
+
+document.addEventListener('keydown', (e) => {
+  if(!g.gameRunning && !screenEls.result.classList.contains('active') && !screenEls.splash.classList.contains('active')) return;
+
+  if(e.key === 'Escape'){
+    kbSelectedIngredient = null;
+    $('ingredientRow').querySelectorAll('.ingredient-item').forEach(el => el.style.outline = '');
+    return;
+  }
+
+  if(kbSelectedIngredient && (e.key >= '1' && e.key <= '4')){
+    const idx = parseInt(e.key) - 1;
+    if(idx < g.pots.length && g.pots[idx].state === 'idle'){
+      putIngredientInPot(idx, kbSelectedIngredient);
+      kbSelectedIngredient = null;
+      $('ingredientRow').querySelectorAll('.ingredient-item').forEach(el => el.style.outline = '');
+    }
+    return;
+  }
+
+  // R to restart on result screen
+  if(e.key === 'r' && screenEls.result.classList.contains('active')){
+    $('replayBtn').click();
+  }
+});
+
+/* ---------- Cooking Logic ---------- */
+function putIngredientInPot(potIdx, ingId){
+  const pot = g.pots[potIdx];
+  if(pot.state !== 'idle') return;
+
+  // Try to find an order that uses this ingredient
+  const activeOrders = g.orders.filter(o => !o.completed);
+  const currentRecipes = getAvailableRecipes();
+  
+  // Find matching recipe
+  let bestRecipe = null;
+  let bestOrder = null;
+
+  // Check each active order's recipe
+  for(const order of activeOrders){
+    const recipe = currentRecipes.find(r => r.id === order.recipeId);
+    if(!recipe) continue;
+    if(recipe.ingredients.includes(ingId)){
+      // Check if there's a free pot
+      bestRecipe = recipe;
+      bestOrder = order;
+      break;
+    }
+  }
+
+  if(!bestRecipe){
+    sfxFail();
+    vibrate(50);
+    return;
+  }
+
+  // Consume ingredient
+  g.ingredients[ingId] = Math.max(0, (g.ingredients[ingId] || 0) - 1);
+  sfxDrop();
+  vibrate(10);
+
+  // Calculate cook time (2-5 seconds based on number of ingredients)
+  const cookTime = 2 + bestRecipe.ingredients.length * 1.5;
+
+  // Set pot cooking
+  pot.state = 'cooking';
+  pot.recipe = bestRecipe;
+  pot.startTime = performance.now();
+  pot.cookTime = cookTime;
+  pot.progress = 0;
+
+  // Store which order this pot serves
+  pot.servingOrder = bestOrder;
+  bestOrder.potIndex = potIdx;
+
+  updateIngredients();
+}
+
+function collectFromPot(potIdx){
+  const pot = g.pots[potIdx];
+  if(pot.state !== 'done') return;
+  if(!pot.servingOrder || pot.servingOrder.completed) return;
+
+  const order = pot.servingOrder;
+  order.completed = true;
+  g.ordersCompleted++;
+
+  // Score: base 100 * combo multiplier
+  const baseScore = 100 * g.combo;
+  g.score += baseScore;
+  g.combo = Math.min(g.combo + 1, 10);
+  if(g.combo > g.maxCombo) g.maxCombo = g.combo;
+
+  sfxScore();
+  vibrate([20,100,20]);
+
+  // Reset pot
+  pot.state = 'idle';
+  pot.recipe = null;
+  pot.progress = 0;
+  pot.servingOrder = null;
+
+  updateUI();
+  updateIngredients();
+
+  // Check win condition
+  const lv = LEVELS[g.level] || LEVELS[LEVELS.length-1];
+  if(g.ordersCompleted >= lv.ordersNeeded){
+    endGame(true);
+  }
+}
+
+/* ---------- Orders ---------- */
+function getAvailableRecipes(){
+  const lv = LEVELS[g.level] || LEVELS[LEVELS.length-1];
+  const count = lv.recipesUnlock;
+  return RECIPES.slice(0, count);
+}
+
+function spawnOrders(){
+  const lv = LEVELS[g.level] || LEVELS[LEVELS.length-1];
+  const recipes = getAvailableRecipes();
+  const active = g.orders.filter(o => !o.completed).length;
+  const toSpawn = Math.max(0, lv.orderSlots - active);
+
+  for(let i=0; i<toSpawn; i++){
+    spawnOneOrder();
+  }
+  renderOrders();
+}
+
+function spawnOneOrder(){
+  const recipes = getAvailableRecipes();
+  if(!recipes.length) return;
+  const recipe = recipes[Math.floor(Math.random() * recipes.length)];
+  const totalTime = 20 + Math.random() * 25; // 20-45 seconds
+  g.orders.push({
+    recipeId: recipe.id,
+    timeLeft: totalTime,
+    totalTime: totalTime,
+    completed: false,
+    potIndex: -1,
+  });
+}
+
+function trySpawnOrder(){
+  const lv = LEVELS[g.level] || LEVELS[LEVELS.length-1];
+  const active = g.orders.filter(o => !o.completed).length;
+  if(active < lv.orderSlots){
+    spawnOneOrder();
+    renderOrders();
+  }
+}
+
+function renderOrders(){
+  const list = $('orderList');
+  const recipes = getAvailableRecipes();
+  list.innerHTML = '';
+  const active = g.orders.filter(o => !o.completed);
+  const completed = g.orders.filter(o => o.completed);
+
+  // Show active orders first
+  active.forEach((order, i) => {
+    const recipe = recipes.find(r => r.id === order.recipeId);
+    if(!recipe) return;
+    const pct = (1 - order.timeLeft / order.totalTime) * 100;
+    const card = document.createElement('div');
+    card.className = 'order-card' + (order.timeLeft < 8 ? ' urgent' : '');
+    card.innerHTML = `
+      <div class="order-card__top">
+        <div class="order-card__dish"><span class="order-card__icon">${recipe.icon}</span><span class="order-card__name">${recipe.name}</span></div>
+        <span class="order-card__timer">⏳ ${Math.ceil(order.timeLeft)}s</span>
+      </div>
+      <div class="order-card__recipe">${recipe.ingredients.map(id => { const ing = INGREDIENTS.find(i=>i.id===id); return ing ? `<span class="order-card__tag">${ing.icon} ${ing.name}</span>` : ''; }).join('')}</div>
+      <div class="order-card__progress"><div class="order-card__progress-fill" style="width:${pct}%"></div></div>
+    `;
+    list.appendChild(card);
+  });
+
+  // Completed
+  completed.forEach(order => {
+    const recipe = recipes.find(r => r.id === order.recipeId);
+    if(!recipe) return;
+    const card = document.createElement('div');
+    card.className = 'order-card completed';
+    card.innerHTML = `
+      <div class="order-card__top">
+        <div class="order-card__dish"><span class="order-card__icon">${recipe.icon}</span><span class="order-card__name">${recipe.name}</span></div>
+        <span class="order-card__timer">✓</span>
+      </div>
+    `;
+    list.appendChild(card);
+  });
+
+  $('orderCount').textContent = `${active.length} 个进行中`;
+}
+
+/* ---------- UI Updates ---------- */
+function updateUI(){
+  const m = Math.floor(g.timeLeft / 60);
+  const s = Math.floor(g.timeLeft % 60);
+  const timer = $('gameTimer');
+  timer.textContent = `${m}:${s.toString().padStart(2, '0')}`;
+  timer.classList.toggle('warning', g.timeLeft <= 15);
+
+  $('scoreDisplay').textContent = g.score;
+  $('comboDisplay').textContent = `x${g.combo}`;
+  $('levelDisplay').textContent = `🏆 ${LEVELS[g.level] ? LEVELS[g.level].label : 'Lv.MAX'}`;
+
+  // Update pot states
+  const cards = $('potGrid').querySelectorAll('.pot-card');
+  g.pots.forEach((pot, i) => {
+    const card = cards[i];
+    if(!card) return;
+
+    // Update state class
+    ['state-idle','state-cooking','state-almost','state-done','state-burned'].forEach(cls => card.classList.remove(cls));
+    card.classList.add('state-' + pot.state);
+
+    const badge = card.querySelector('.pot-badge');
+    const food = card.querySelector('.pot-food');
+    const fill = card.querySelector('.pot-progress__fill');
+
+    if(pot.state === 'idle'){
+      badge.style.display = 'none';
+      food.textContent = '空闲中';
+      fill.className = 'pot-progress__fill idle';
+      fill.style.width = '0%';
+    } else if(pot.state === 'cooking'){
+      badge.style.display = 'flex';
+      badge.className = 'pot-badge badge-cooking';
+      const remaining = Math.max(0, pot.cookTime - (performance.now() - pot.startTime) / 1000);
+      badge.textContent = Math.ceil(remaining) + 's';
+      food.textContent = pot.recipe ? pot.recipe.icon + ' ' + pot.recipe.name : '烹饪中';
+      fill.className = 'pot-progress__fill cooking';
+      fill.style.width = (pot.progress * 100) + '%';
+    } else if(pot.state === 'almost'){
+      badge.style.display = 'flex';
+      badge.className = 'pot-badge badge-almost';
+      const remaining = Math.max(0, pot.cookTime - (performance.now() - pot.startTime) / 1000);
+      badge.textContent = Math.ceil(remaining) + 's';
+      food.textContent = pot.recipe ? pot.recipe.icon + ' ' + pot.recipe.name : '即将完成';
+      fill.className = 'pot-progress__fill almost';
+      fill.style.width = (pot.progress * 100) + '%';
+    } else if(pot.state === 'done'){
+      badge.style.display = 'flex';
+      badge.className = 'pot-badge badge-done';
+      badge.textContent = '✓';
+      food.textContent = '✅ 完成！点击上菜';
+      fill.className = 'pot-progress__fill done';
+      fill.style.width = '100%';
+    } else if(pot.state === 'burned'){
+      badge.style.display = 'flex';
+      badge.className = 'pot-badge badge-burned';
+      badge.textContent = '✕';
+      food.textContent = '🔥 烤焦了';
+      fill.className = 'pot-progress__fill burned';
+      fill.style.width = '100%';
+    }
+
+    // Click to collect done pot
+    card.onclick = () => {
+      if(pot.state === 'done') collectFromPot(i);
+    };
+    card.onkeydown = (e) => {
+      if((e.key === 'Enter' || e.key === ' ') && pot.state === 'done'){
+        e.preventDefault();
+        collectFromPot(i);
+      }
+    };
+    card.tabIndex = 0;
+  });
+
+  renderOrders();
+}
+
+function updateIngredients(){
+  const items = $('ingredientRow').querySelectorAll('.ingredient-item');
+  items.forEach(item => {
+    const id = item.dataset.ingredient;
+    const count = g.ingredients[id] || 0;
+    item.querySelector('.ingredient-item__count').textContent = 'x' + count;
+    item.style.opacity = count <= 0 ? '0.3' : '1';
+  });
+}
+
+/* ---------- Game Loop Correction ---------- */
+(function(){
+  let lastCorrection = performance.now();
+  setInterval(() => {
+    if(!g.gameRunning) return;
+    const now = performance.now();
+    const dt = Math.min((now - lastCorrection) / 1000, 0.5);
+    lastCorrection = now;
+
+    g.orders.forEach(order => {
+      if(order.completed) return;
+      order.timeLeft -= dt;
+      if(order.timeLeft <= 0){
+        order.timeLeft = 0;
+        order.completed = true;
+        g.ordersBurned++;
+        if(order.potIndex >= 0 && g.pots[order.potIndex]){
+          const p = g.pots[order.potIndex];
+          if(p.servingOrder === order){
+            p.state = 'idle';
+            p.recipe = null;
+            p.progress = 0;
+            p.servingOrder = null;
+          }
+        }
+      }
+    });
+    renderOrders();
+  }, 200);
+})();
+
+/* ---------- End Game ---------- */
+function endGame(win){
+  g.gameRunning = false;
+  if(g.gameLoop) cancelAnimationFrame(g.gameLoop);
+  if(g.orderSpawnTimer) clearInterval(g.orderSpawnTimer);
+
+  const lv = LEVELS[g.level] || LEVELS[LEVELS.length-1];
+  const isNewBest = g.score > data.bestScore;
+  if(isNewBest){
+    data.bestScore = g.score;
+  }
+  if(g.level + 1 > data.bestLevel) data.bestLevel = g.level + 1;
+  data.gamesPlayed++;
+  if(win) data.totalWins++;
+  saveData();
+
+  showResult(win, isNewBest);
+}
+
+function showResult(win, isNewBest){
+  const lv = LEVELS[g.level] || LEVELS[LEVELS.length-1];
+  const result = $('result');
+  result.classList.remove('lose');
+  if(!win) result.classList.add('lose');
+
+  $('resultIcon').className = 'result-icon ' + (win ? 'win-clear' : 'lose-clear');
+  $('resultIcon').textContent = win ? '🎉' : '😢';
+  $('resultTitle').className = 'result-title ' + (win ? 'win-color' : 'lose-color');
+  $('resultTitle').textContent = win ? '恭喜通关！' : '时间到！';
+  $('resultSubtitle').textContent = win ? `${lv.label} 挑战完成` : `还需 ${Math.max(0, lv.ordersNeeded - g.ordersCompleted)} 份订单`;
+
+  const starRating = win ? (g.ordersBurned === 0 ? '⭐⭐⭐' : g.ordersBurned <= 2 ? '⭐⭐' : '⭐') : '⭐';
+
+  $('resultCard').innerHTML = [
+    '<div class="result-stat"><span class="result-stat__label">🍽 完成订单</span><span class="result-stat__value">' + g.ordersCompleted + ' / ' + lv.ordersNeeded + '</span></div>',
+    '<div class="result-stat"><span class="result-stat__label">⭐ 当前得分</span><span class="result-stat__value" style="color:var(--gold);">' + g.score.toLocaleString() + '</span></div>',
+    '<div class="result-stat"><span class="result-stat__label">🏆 历史最高</span><span class="result-stat__value ' + (isNewBest ? 'new-record' : '') + '">' + (isNewBest ? '🎉 ' : '') + data.bestScore.toLocaleString() + (isNewBest ? ' ✨新纪录' : '') + '</span></div>',
+    '<div class="result-stat"><span class="result-stat__label">🔥 烧焦次数</span><span class="result-stat__value" style="color:#F87171;">' + g.ordersBurned + '</span></div>',
+    '<div class="result-stat"><span class="result-stat__label">🏅 关卡评价</span><span class="result-stat__value">' + starRating + '</span></div>',
+  ].join('');
+
+  const banner = $('newRecordBanner');
+  if(isNewBest){
+    banner.style.display = 'inline-flex';
+    banner.textContent = '🏆 新纪录！ ' + g.score.toLocaleString() + ' 分';
+    sfxNewRecord();
+  } else {
+    banner.style.display = 'none';
+  }
+
+  showScreen('result');
+  setTimeout(() => { $('replayBtn').focus(); }, 1500);
+}
+
+/* ---------- Replay ---------- */
+$('replayBtn').addEventListener('click', function(){
+  const lv = LEVELS[g.level] || LEVELS[LEVELS.length-1];
+  const win = g.ordersCompleted >= lv.ordersNeeded;
+  if(win && g.level < LEVELS.length - 1){
+    g.level++;
+    // Show unlock overlay if new recipes
+    const newLv = LEVELS[g.level];
+    if(newLv && newLv.recipesUnlock > (LEVELS[g.level-1] ? LEVELS[g.level-1].recipesUnlock : 0)){
+      const unlocked = RECIPES.slice(0, newLv.recipesUnlock);
+      const lastRecipe = unlocked[unlocked.length - 1];
+      showUnlock(lastRecipe, () => {
+        startCountdown();
+      });
+      return;
+    }
+  } else if(win && g.level >= LEVELS.length - 1) {
+    g.level = 0; // loop back
+  }
+  startCountdown();
+});
+
+function showUnlock(recipe, callback){
+  const overlay = $('unlockOverlay');
+  $('unlockTitle').textContent = '🎉 新菜谱解锁！';
+  $('unlockDesc').textContent = recipe.icon + ' ' + recipe.name;
+  overlay.classList.add('active');
+  sfxWin();
+  $('unlockBtn').onclick = function(){
+    overlay.classList.remove('active');
+    if(callback) callback();
+  };
+  $('unlockBtn').focus();
+}
+
+/* ---------- Init ---------- */
+updateSplash();
+showScreen('splash');
+
+})();
+</script>
+</body>
+</html>

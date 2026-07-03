@@ -1,6 +1,24 @@
 {
   "games": [
     {
+      "id": "cooking-marathon",
+      "name": "Cooking Marathon",
+      "description": "马拉松式烹饪订单，多锅同时进行 — 拖食材、烹饪、上菜，限时完成订单",
+      "category": "casual",
+      "tags": [
+        "singleplayer",
+        "management",
+        "drag",
+        "simulation",
+        "timed",
+        "short-session"
+      ],
+      "path": "/games/087-cooking-marathon/",
+      "hasServer": false,
+      "players": "1",
+      "version": "1.0.0"
+    },
+    {
       "id": "spaceship-builder",
       "name": "Spaceship Builder",
       "description": "拼装飞船零件，发射探索太空",
