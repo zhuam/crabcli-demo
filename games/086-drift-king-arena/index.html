@@ -620,6 +620,76 @@ function getTrackLayout(trackId){
 }
 
 /* ============================================================
+   WALL COLLISION UTILITY
+   ============================================================ */
+function distToSegmentSq(px, py, x1, y1, x2, y2){
+  const dx = x2 - x1, dy = y2 - y1;
+  const lenSq = dx*dx + dy*dy;
+  if(lenSq === 0) return (px-x1)*(px-x1) + (py-y1)*(py-y1);
+  let t = ((px-x1)*dx + (py-y1)*dy) / lenSq;
+  t = Math.max(0, Math.min(1, t));
+  const cx = x1 + t*dx, cy = y1 + t*dy;
+  return (px-cx)*(px-cx) + (py-cy)*(py-cy);
+}
+
+function resolveWallCollision(c, dt){
+  const layout = getTrackLayout(state.trackId);
+  const carRadius = Math.min(W, H) * 0.035;
+  const carR2 = carRadius * carRadius;
+  let collided = false;
+
+  // Check outer walls (canvas boundary with margin)
+  const margin = 20;
+  let bx = c.x, by = c.y;
+  let bounced = false;
+
+  if(c.x < margin){
+    c.x = margin;
+    bounced = true;
+  } else if(c.x > W - margin){
+    c.x = W - margin;
+    bounced = true;
+  }
+  if(c.y < margin){
+    c.y = margin;
+    bounced = true;
+  } else if(c.y > H - margin){
+    c.y = H - margin;
+    bounced = true;
+  }
+
+  if(bounced) collided = true;
+
+  // Check inner walls (track obstacles)
+  if(layout.innerWalls){
+    for(const w of layout.innerWalls){
+      const wx1 = w.x1 * W, wy1 = w.y1 * H;
+      const wx2 = w.x2 * W, wy2 = w.y2 * H;
+      const d2 = distToSegmentSq(c.x, c.y, wx1, wy1, wx2, wy2);
+      if(d2 < carR2){
+        collided = true;
+        // Push car away from wall
+        const midX = (wx1+wx2)/2, midY = (wy1+wy2)/2;
+        const dx = c.x - midX, dy = c.y - midY;
+        const dist = Math.sqrt(dx*dx + dy*dy) || 1;
+        c.x += (dx/dist) * (carRadius - Math.sqrt(d2)) * 0.5;
+        c.y += (dy/dist) * (carRadius - Math.sqrt(d2)) * 0.5;
+        break;
+      }
+    }
+  }
+
+  if(collided && c.speed > 30 && !state._wallHitCooldown){
+    // Apply rebound
+    c.speed *= -0.3;
+    state.score = Math.max(0, state.score - 50);
+    SFX.crash();
+    try{ navigator.vibrate(80); }catch(e){}
+    state._wallHitCooldown = 0.3;
+  }
+}
+
+/* ============================================================
    GAME INIT
    ============================================================ */
 function initGameState(){
@@ -636,6 +706,7 @@ function initGameState(){
   state.isDrifting = false;
   state.started = false;
   state.ended = false;
+  state._wallHitCooldown = 0;
 
   const ci = state.carId;
   const c = CARS[ci];
@@ -753,10 +824,9 @@ function update(dt){
   c.x += velX;
   c.y += velY;
 
-  // Wall collision (keep inside track)
-  const margin = 20;
-  c.x = Math.max(margin, Math.min(W - margin, c.x));
-  c.y = Math.max(margin, Math.min(H - margin, c.y));
+  // Wall collision (track boundary + inner walls)
+  resolveWallCollision(c, dt);
+  if(state._wallHitCooldown > 0) state._wallHitCooldown -= dt;
 
   // Skid marks fade
   for(let i=skidMarks.length-1; i>=0; i--){
@@ -789,6 +859,9 @@ function render(){
 
   // Track surface
   trackSurface();
+
+  // Render walls
+  renderWalls();
 
   // Skid marks
   renderSkidMarks();
@@ -860,6 +933,21 @@ function trackSurface(){
   ctx.arc(W*0.5, H*0.5, 6, 0, Math.PI*2);
   ctx.fillStyle = 'oklch(0.90 0.02 80 / 0.1)';
   ctx.fill();
+}
+
+function renderWalls(){
+  const layout = getTrackLayout(state.trackId);
+  if(!layout || !layout.innerWalls) return;
+  ctx.strokeStyle = 'oklch(0.65 0.22 30 / 0.6)';
+  ctx.lineWidth = 3;
+  ctx.setLineDash([6, 4]);
+  for(const w of layout.innerWalls){
+    ctx.beginPath();
+    ctx.moveTo(w.x1*W, w.y1*H);
+    ctx.lineTo(w.x2*W, w.y2*H);
+    ctx.stroke();
+  }
+  ctx.setLineDash([]);
 }
 
 function renderSkidMarks(){
@@ -1000,6 +1088,9 @@ function endGame(won){
     if(c.unlock && c.unlock.type === 'totalScore' && state.cumulativeScore >= c.unlock.value){
       state.unlockedCars.push(i);
       unlocked = true;
+    } else if(c.unlock && c.unlock.type === 'tracks' && state.unlockedTracks.length >= c.unlock.value){
+      state.unlockedCars.push(i);
+      unlocked = true;
     }
   });
   TRACKS.forEach((t,i)=>{
@@ -1109,12 +1200,8 @@ function resetGame(){
    GAME LOOP
    ============================================================ */
 function loop(ts){
-  if(state.phase !== 'playing' && state.phase !== 'countdown'){
-    rafId = requestAnimationFrame(loop);
-    return;
-  }
-  if(state.ended){
-    rafId = requestAnimationFrame(loop);
+  if(state.ended || (state.phase !== 'playing' && state.phase !== 'countdown')){
+    rafId = 0;
     return;
   }
 
@@ -1165,8 +1252,8 @@ document.addEventListener('keyup', e=>{ keys[e.key] = false; });
 // Touch & Pointer (pointer events handle mouse+pen+touch with touch-action:none)
 function getCanvasPos(e){
   const rect = canvas.getBoundingClientRect();
-  const cx = (e.clientX !== undefined ? e.clientX : e.changedTouches?.[0]?.clientX || 0) - rect.left;
-  const cy = (e.clientY !== undefined ? e.clientY : e.changedTouches?.[0]?.clientY || 0) - rect.top;
+  const cx = (e.clientX - rect.left) || 0;
+  const cy = (e.clientY - rect.top) || 0;
   return { x:cx, y:cy };
 }
 
@@ -1216,14 +1303,11 @@ function handlePointerEnd(e){
   _pointerActive = false;
 }
 
-// Use both pointer (mouse+pen) and touch events with gating
+// Only pointer events (covers mouse+pen+touch with touch-action:none on body)
 canvas.addEventListener('pointerdown', handlePointerStart);
 canvas.addEventListener('pointermove', handlePointerMove);
 canvas.addEventListener('pointerup', handlePointerEnd);
 canvas.addEventListener('pointercancel', ()=>{ touchSteer=0; touchAccel=0; _pointerActive=false; });
-canvas.addEventListener('touchstart', (e)=>{ if(!_pointerActive) handlePointerStart(e); });
-canvas.addEventListener('touchmove', handlePointerMove);
-canvas.addEventListener('touchend', handlePointerEnd);
 
 // Mouse: click to toggle accelerate
 canvas.addEventListener('mousedown', (e) => {
@@ -1293,13 +1377,4 @@ function init(){
   window.addEventListener('resize', ()=>{
     if(canvas) resizeCanvas();
   });
-
-  showScreen('screen-splash');
-}
-
-init();
-
-})();
-</script>
-</body>
-</html>
+                                                                            
