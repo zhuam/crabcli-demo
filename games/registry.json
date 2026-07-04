@@ -1,6 +1,26 @@
 {
   "games": [
     {
+      "id": "color-sort-balls",
+      "name": "Color Sort Balls",
+      "description": "不同颜色的球排序入管 · 拖拽解压，同色归管",
+      "category": "puzzle",
+      "tags": [
+        "singleplayer",
+        "puzzle",
+        "sorting",
+        "drag",
+        "short-session"
+      ],
+      "thumbnail": "/games/100-color-sort-balls/thumb.svg",
+      "path": "/games/100-color-sort-balls/",
+      "hasServer": false,
+      "players": "1",
+      "version": "1.0.0",
+      "featured": true,
+      "rating": 4.0
+    },
+    {
       "id": "cooking-marathon",
       "name": "Cooking Marathon",
       "description": "马拉松式烹饪订单，多锅同时进行 — 拖食材、烹饪、上菜，限时完成订单",
