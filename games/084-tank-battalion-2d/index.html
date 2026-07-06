@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Macondo&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../games/shared/game-frame.css" />
 <style>
 :root {
   --primary: #3B82F6;
@@ -280,7 +281,6 @@ body::after{
   cursor:pointer;
 }
 .fire-btn:active{background:rgba(220,38,38,0.4);transform:scale(0.92)}
-.fire-btn.cooldown{opacity:0.5;border-color:rgba(220,38,38,0.15)}
 @media(max-width:500px){
   :root{--canvas-size:92vw}
   .game-logo{font-size:1.5rem;letter-spacing:3px}
@@ -292,6 +292,7 @@ body::after{
 </style>
 </head>
 <body>
+<a href="/" class="back-to-hub" aria-label="Back to hub">&larr; Hub</a>
 <div id="game-wrap">
   <canvas id="game-canvas" width="416" height="416"></canvas>
 
@@ -365,6 +366,12 @@ const DIR = { UP:0, RIGHT:1, DOWN:2, LEFT:3 };
 const DX = [0,1,0,-1];
 const DY = [-1,0,1,0];
 
+const POWERUP = { EXTRA_LIFE:0, SHIELD:1, SPEED_BOOST:2 };
+const POWERUP_COLORS = ['#16A34A','#22D3EE','#FBBF24'];
+const POWERUP_GLYPH = ['❤','🛡','⚡'];
+const SHIELD_DURATION = 3; // seconds
+const SPEED_BOOST_DURATION = 3;
+
 const LS_KEY = 'tank_battalion_best';
 
 const WAVES = [
@@ -394,8 +401,6 @@ const dpr = Math.min(window.devicePixelRatio || 1, 2);
 canvas.width = W * dpr;
 canvas.height = H * dpr;
 ctx.scale(dpr, dpr);
-canvas.style.width = W + 'px';
-canvas.style.height = H + 'px';
 
 // === DOM REFS ===
 const screenTitle = document.getElementById('screen-title');
@@ -419,10 +424,14 @@ let muted = false;
 try { muted = localStorage.getItem('tank_battalion_muted') === '1'; } catch(e){}
 
 function initAudio(){
-  if(actx) return;
-  const C = window.AudioContext || window.webkitAudioContext;
-  if(!C) return;
-  actx = new C();
+  if(!actx){
+    const C = window.AudioContext || window.webkitAudioContext;
+    if(!C) return;
+    actx = new C();
+  }
+  if(actx.state === 'suspended'){
+    actx.resume().catch(function(){});
+  }
 }
 
 function playSound(type, freq, duration, vol, sweep){
@@ -457,6 +466,23 @@ function sfxWin(){
   setTimeout(()=>playSound('sine', 659, 0.15, 0.08), 150);
   setTimeout(()=>playSound('sine', 784, 0.15, 0.08), 300);
   setTimeout(()=>playSound('sine', 1047, 0.25, 0.08), 450);
+}
+function sfxPowerUp(){ playSound('sine', 660, 0.1, 0.08, 990); setTimeout(function(){playSound('sine', 880, 0.12, 0.08, 1100);}, 80); }
+
+// === POWER-UP COLLECTION ===
+function collectPowerUp(type){
+  sfxPowerUp();
+  haptic([10,10,10]);
+  if(type === POWERUP.EXTRA_LIFE){
+    lives++;
+    addFloatingText(player.x, player.y - 20, '+1 ❤', '#16A34A');
+  } else if(type === POWERUP.SHIELD){
+    player.shieldTimer = SHIELD_DURATION;
+    addFloatingText(player.x, player.y - 20, '🛡', '#22D3EE');
+  } else if(type === POWERUP.SPEED_BOOST){
+    player.speedBoostTimer = SPEED_BOOST_DURATION;
+    addFloatingText(player.x, player.y - 20, '⚡', '#FBBF24');
+  }
 }
 
 // === HAPTIC ===
@@ -511,7 +537,7 @@ function destroyCell(x, y){
 }
 
 // === ENTITIES ===
-let player, enemies, bullets, explosions, floatingTexts;
+let player, enemies, bullets, explosions, floatingTexts, powerups;
 let keys = {};
 let gameState = 'title'; // title | playing | won | lost | wave_transition
 let waveIndex = 0;
@@ -521,11 +547,14 @@ let score = 0;
 let kills = 0;
 let lives = 3;
 let waveTransitionTimer = 0;
-let waveBannerTimer = 0;
 let gameTimer = 0;
 let lastTime = 0;
 let screenShake = {x:0, y:0, intensity:0};
 let animId = null;
+
+function createPowerUp(x, y, type){
+  return { x, y, type, alive: true, bob: Math.random() * Math.PI * 2 };
+}
 
 function createTank(x, y, dir, isPlayer, hp){
   return {
@@ -536,7 +565,6 @@ function createTank(x, y, dir, isPlayer, hp){
     speed: isPlayer ? PLAYER_SPEED : 60,
     fireTimer: 0,
     fireInterval: isPlayer ? PLAYER_FIRE_INTERVAL : 1.2 + Math.random() * 0.8,
-    moveTimer: 0,
     alive: true,
     gridX: Math.round(x / TILE),
     gridY: Math.round(y / TILE),
@@ -544,6 +572,9 @@ function createTank(x, y, dir, isPlayer, hp){
     targetX: x,
     targetY: y,
     lerpT: 1,
+    shieldTimer: isPlayer ? 0 : 0,
+    speedBoostTimer: isPlayer ? 0 : 0,
+    baseSpeed: isPlayer ? PLAYER_SPEED : 60,
   };
 }
 
@@ -624,6 +655,11 @@ function checkBulletHit(bullet){
           score += e.isBoss ? 500 : 100;
           addExplosion(e.x, e.y, '#DC2626', 10);
           addFloatingText(e.x, e.y - 16, '+' + (e.isBoss ? 500 : 100));
+          // Power-up drop (20% chance)
+          if(Math.random() < 0.2){
+            var puType = Math.floor(Math.random() * 3);
+            powerups.push(createPowerUp(e.x, e.y, puType));
+          }
           sfxExplode();
           haptic([20,10,20]);
         } else {
@@ -652,6 +688,12 @@ function checkBulletHit(bullet){
 }
 
 function playerHit(){
+  // Shield blocks damage
+  if(player.shieldTimer > 0){
+    sfxPowerUp();
+    addExplosion(player.x, player.y, '#22D3EE', 4);
+    return;
+  }
   lives--;
   sfxHit();
   haptic([20,10,20]);
@@ -750,8 +792,6 @@ function updateEnemy(e, dt){
         return;
       }
     }
-    // If blocked, try a different direction next frame
-    e.moveTimer = 0.1; // slight delay before retry
   }
 
   if(e.moving){
@@ -805,8 +845,8 @@ function update(dt){
 
   gameTimer += dt;
 
-  // Timer check
-  if(gameTimer >= TOTAL_TIME){
+  // Timer check — only game-over if enemies still alive (prefer win)
+  if(gameTimer >= TOTAL_TIME && enemies.filter(function(e){return e.alive;}).length > 0){
     gameOver();
     return;
   }
@@ -815,6 +855,19 @@ function update(dt){
   if(screenShake.intensity > 0){
     screenShake.intensity -= dt * 20;
     if(screenShake.intensity < 0) screenShake.intensity = 0;
+  }
+
+  // Power-up timer countdown
+  if(player && player.alive){
+    if(player.shieldTimer > 0) player.shieldTimer -= dt;
+    if(player.shieldTimer < 0) player.shieldTimer = 0;
+    if(player.speedBoostTimer > 0){
+      player.speedBoostTimer -= dt;
+      player.speed = player.baseSpeed * 1.5;
+    } else {
+      player.speed = player.baseSpeed;
+    }
+    if(player.speedBoostTimer < 0) player.speedBoostTimer = 0;
   }
 
   // Wave transition
@@ -826,8 +879,17 @@ function update(dt){
     return;
   }
 
-  // Wave banner timeout
-  if(waveBannerTimer > 0) waveBannerTimer -= dt;
+  // Power-up collection
+  if(powerups && player && player.alive && !player.moving){
+    for(var pi = 0; pi < powerups.length; pi++){
+      var pu = powerups[pi];
+      if(!pu.alive) continue;
+      if(Math.abs(pu.x - player.x) < TILE/2 && Math.abs(pu.y - player.y) < TILE/2){
+        pu.alive = false;
+        collectPowerUp(pu.type);
+      }
+    }
+  }
 
   // Spawn enemies
   if(waveIndex < WAVES.length && enemiesSpawned < WAVES[waveIndex].count){
@@ -930,13 +992,17 @@ function update(dt){
   }
   floatingTexts = floatingTexts.filter(ft => ft.life > 0);
 
+  // Remove dead power-ups
+  if(powerups) powerups = powerups.filter(function(pu){ return pu.alive; });
+
   // Remove dead bullets
   bullets = bullets.filter(b => b.alive);
 
   // Remove dead enemies
   enemies = enemies.filter(e => e.alive);
 
-  // Check if wave cleared
+  // Check if wave cleared (guard race condition with base destroyed)
+  if(gameState !== 'playing') return;
   if(enemiesSpawned >= WAVES[waveIndex].count && enemies.filter(e=>e.alive).length === 0){
     if(waveIndex >= WAVES.length - 1){
       winGame();
@@ -945,7 +1011,6 @@ function update(dt){
       enemiesSpawned = 0;
       spawnTimer = 0;
       waveTransitionTimer = 3; // 3 second breather
-      waveBannerTimer = 1.5;
       waveBanner.textContent = `WAVE ${waveIndex} / ${WAVES.length} CLEAR!`;
       waveBanner.classList.add('show');
       sfxWaveClear();
@@ -955,7 +1020,6 @@ function update(dt){
 
 function startNextWave(){
   waveBanner.textContent = `WAVE ${waveIndex+1}`;
-  waveBannerTimer = 1;
   setTimeout(() => waveBanner.classList.remove('show'), 500);
 }
 
@@ -1029,6 +1093,39 @@ function render(){
   // Player
   if(player && player.alive){
     drawTank(player.x, player.y, player.dir, '#3B82F6', '#2563EB', false);
+    // Shield visual indicator
+    if(player.shieldTimer > 0){
+      ctx.strokeStyle = 'rgba(34,211,238,' + (0.3 + 0.3 * Math.sin(performance.now() / 150)) + ')';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(player.x, player.y, TILE/2 + 2, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.strokeStyle = 'rgba(34,211,238,0.1)';
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.arc(player.x, player.y, TILE/2 + 1, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+  }
+
+  // Power-ups
+  if(powerups){
+    for(var pi = 0; pi < powerups.length; pi++){
+      var pu = powerups[pi];
+      if(!pu.alive) continue;
+      pu.bob += 0.02;
+      var bobY = Math.sin(pu.bob) * 3;
+      ctx.globalAlpha = 0.9;
+      ctx.fillStyle = POWERUP_COLORS[pu.type];
+      ctx.shadowColor = POWERUP_COLORS[pu.type];
+      ctx.shadowBlur = 10;
+      ctx.font = '18px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(POWERUP_GLYPH[pu.type], pu.x, pu.y + bobY);
+      ctx.shadowBlur = 0;
+      ctx.globalAlpha = 1;
+    }
   }
 
   // Bullets
@@ -1174,6 +1271,7 @@ function startGame(){
   bullets = [];
   explosions = [];
   floatingTexts = [];
+  powerups = [];
   waveIndex = 0;
   enemiesSpawned = 0;
   spawnTimer = 1.5;
@@ -1182,7 +1280,6 @@ function startGame(){
   lives = 3;
   gameTimer = 0;
   waveTransitionTimer = 0;
-  waveBannerTimer = 0;
   screenShake = {x:0, y:0, intensity:0};
   gameState = 'playing';
   waveBanner.classList.remove('show');
@@ -1190,6 +1287,7 @@ function startGame(){
 
   screenTitle.classList.add('hidden');
   screenResult.classList.add('hidden');
+  if(typeof recordPlayed === 'function') recordPlayed('tank-battalion-2d');
 }
 
 function resetToTitle(){
@@ -1201,6 +1299,16 @@ function resetToTitle(){
 function updateHud(){
   const best = loadBest();
   hsBadge.textContent = `🏆 最高分: ${best.bestScore}`;
+}
+
+// === HUB INTEGRATION ===
+function recordPlayed(id){
+  try {
+    var recent = JSON.parse(localStorage.getItem('recentlyPlayed') || '[]');
+    var filtered = recent.filter(function(p) { return p.id !== id; });
+    filtered.unshift({ id: id, playedAt: Date.now() });
+    localStorage.setItem('recentlyPlayed', JSON.stringify(filtered.slice(0, 10)));
+  } catch(e){}
 }
 
 // === GAME LOOP ===
