@@ -537,7 +537,8 @@ function destroyCell(x, y){
 }
 
 // === ENTITIES ===
-let player, enemies, bullets, explosions, floatingTexts, powerups;
+let player;
+let enemies = [], bullets = [], explosions = [], floatingTexts = [], powerups = [];
 let keys = {};
 let gameState = 'title'; // title | playing | won | lost | wave_transition
 let waveIndex = 0;
@@ -566,8 +567,8 @@ function createTank(x, y, dir, isPlayer, hp){
     fireTimer: 0,
     fireInterval: isPlayer ? PLAYER_FIRE_INTERVAL : 1.2 + Math.random() * 0.8,
     alive: true,
-    gridX: Math.round(x / TILE),
-    gridY: Math.round(y / TILE),
+    gridX: Math.round((x - TILE / 2) / TILE),
+    gridY: Math.round((y - TILE / 2) / TILE),
     moving: false,
     targetX: x,
     targetY: y,
@@ -1052,7 +1053,8 @@ function render(){
     ctx.stroke();
   }
 
-  // Cells
+  // Cells (guard: grid initialized in startGame)
+  if(grid && grid.length >= ROWS){
   for(let gy=0; gy<ROWS; gy++){
     for(let gx=0; gx<COLS; gx++){
       const c = grid[gy][gx];
@@ -1083,6 +1085,7 @@ function render(){
       }
     }
   }
+  } // end guard: grid.length >= ROWS
 
   // Enemies
   for(let e of enemies){
