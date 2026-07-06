@@ -663,6 +663,26 @@
       "version": "1.0.0",
       "featured": true,
       "rating": 4.0
+    },
+    {
+      "id": "tank-battalion-2d",
+      "name": "Tank Battalion 2D",
+      "description": "2D 坦克守卫基地 — 方向键移动，空格射击，波次战斗，保护基地",
+      "category": "action",
+      "tags": [
+        "singleplayer",
+        "shooting",
+        "action",
+        "classic",
+        "short-session"
+      ],
+      "thumbnail": "/games/084-tank-battalion-2d/thumb.svg",
+      "path": "/games/084-tank-battalion-2d/",
+      "hasServer": false,
+      "players": "1",
+      "version": "1.0.0",
+      "featured": false,
+      "rating": 4.0
     }
   ],
   "categories": [
