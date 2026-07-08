@@ -701,6 +701,25 @@
       "players": "1",
       "version": "1.0.0",
       "rating": 4.0
+    },
+    {
+      "id": "pizza-stack-frenzy",
+      "name": "Pizza Stack Frenzy",
+      "description": "订单要求堆叠特定配料的披萨 — 拖配料 → 堆叠 → 出炉，完成订单过关",
+      "category": "casual",
+      "tags": [
+        "singleplayer",
+        "casual",
+        "drag",
+        "simulation",
+        "short-session",
+        "food"
+      ],
+      "thumbnail": "/games/082-pizza-stack-frenzy/thumb.svg",
+      "path": "/games/082-pizza-stack-frenzy/",
+      "hasServer": false,
+      "players": "1",
+      "version": "1.0.0"
     }
   ],
   "categories": [
