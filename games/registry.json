@@ -683,6 +683,24 @@
       "version": "1.0.0",
       "featured": false,
       "rating": 4.0
+    },
+    {
+      "id": "idle-coffee-tycoon",
+      "name": "Idle Coffee Tycoon",
+      "description": "经营咖啡帝国，挂机产收益 — 升级店铺·招员工·扩张全城",
+      "category": "idle",
+      "tags": [
+        "singleplayer",
+        "idle",
+        "management",
+        "clicker"
+      ],
+      "thumbnail": "/games/083-idle-coffee-tycoon/thumb.svg",
+      "path": "/games/083-idle-coffee-tycoon/",
+      "hasServer": false,
+      "players": "1",
+      "version": "1.0.0",
+      "rating": 4.0
     }
   ],
   "categories": [
