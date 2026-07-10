@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 200" fill="none">
+  <rect width="300" height="200" rx="12" fill="#0e0d0c"/>
+  <defs>
+    <linearGradient id="bg-grad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1a1a2e" stop-opacity="0.5"/>
+      <stop offset="100%" stop-color="#0e0d0c"/>
+    </linearGradient>
+  </defs>
+  <rect width="300" height="200" rx="12" fill="url(#bg-grad)"/>
+  <!-- Cube faces in isometric view -->
+  <!-- Top face (yellow) -->
+  <polygon points="150,45 210,70 150,95 90,70" fill="#ffd500" stroke="#ccaa00" stroke-width="1.5"/>
+  <!-- Top stickers 3x3 grid -->
+  <line x1="130" y1="62" x2="170" y2="62" stroke="#ccaa00" stroke-width="0.8"/>
+  <line x1="110" y1="78" x2="190" y2="78" stroke="#ccaa00" stroke-width="0.8"/>
+  <line x1="130" y1="62" x2="110" y2="78" stroke="#ccaa00" stroke-width="0.8"/>
+  <line x1="150" y1="55" x2="150" y2="88" stroke="#ccaa00" stroke-width="0.8"/>
+  <line x1="170" y1="62" x2="190" y2="78" stroke="#ccaa00" stroke-width="0.8"/>
+  <!-- Right face (red) -->
+  <polygon points="210,70 210,130 150,155 150,95" fill="#b90000" stroke="#880000" stroke-width="1.5"/>
+  <line x1="210" y1="90" x2="150" y2="115" stroke="#880000" stroke-width="0.8"/>
+  <line x1="210" y1="110" x2="150" y2="135" stroke="#880000" stroke-width="0.8"/>
+  <line x1="190" y1="73" x2="190" y2="133" stroke="#880000" stroke-width="0.8"/>
+  <line x1="170" y1="76" x2="170" y2="136" stroke="#880000" stroke-width="0.8"/>
+  <!-- Front face (white) -->
+  <polygon points="150,95 150,155 90,130 90,70" fill="#ffffff" stroke="#cccccc" stroke-width="1.5"/>
+  <line x1="150" y1="115" x2="90" y2="90" stroke="#cccccc" stroke-width="0.8"/>
+  <line x1="150" y1="135" x2="90" y2="110" stroke="#cccccc" stroke-width="0.8"/>
+  <line x1="130" y1="92" x2="130" y2="152" stroke="#cccccc" stroke-width="0.8"/>
+  <line x1="110" y1="88" x2="110" y2="148" stroke="#cccccc" stroke-width="0.8"/>
+  <!-- Title text -->
+  <text x="150" y="170" text-anchor="middle" fill="white" font-family="system-ui,sans-serif" font-size="14" font-weight="700" letter-spacing="-0.3">Speed Cube</text>
+  <text x="150" y="184" text-anchor="middle" fill="rgba(255,255,255,0.5)" font-family="system-ui,sans-serif" font-size="10">Rotate. Solve. Beat the clock.</text>
+</svg>
