@@ -1558,6 +1558,9 @@ function startGame(size) {
   });
 }
 
+// Module-level variable for scope sharing between finishGame() and showResult()
+let oldFastestSec;
+
 function resetGame() {
   stopTimer();
   startGame(state.size);
@@ -1582,7 +1585,7 @@ function finishGame(type) {
   // Update stats
   const stats = loadStats();
   stats.gamesPlayed++;
-  let oldFastestSec = stats.sizeRecords[state.size].fastestSec;
+  oldFastestSec = stats.sizeRecords[state.size].fastestSec;
   if (isWin) {
     stats.wins++;
     const rec = stats.sizeRecords[state.size];
