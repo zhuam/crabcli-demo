@@ -720,6 +720,24 @@
       "hasServer": false,
       "players": "1",
       "version": "1.0.0"
+    },
+    {
+      "id": "speed-cube-solver",
+      "name": "Speed Cube Solver",
+      "description": "3D 魔方速拧挑战 — 拖拽旋转，限时还原",
+      "category": "puzzle",
+      "tags": [
+        "singleplayer",
+        "puzzle",
+        "3d",
+        "touch",
+        "short-session"
+      ],
+      "thumbnail": "/games/081-speed-cube-solver/thumb.svg",
+      "path": "/games/081-speed-cube-solver/",
+      "hasServer": false,
+      "players": "1",
+      "version": "1.0.0"
     }
   ],
   "categories": [

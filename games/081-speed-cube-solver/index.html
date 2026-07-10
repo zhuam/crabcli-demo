@@ -477,6 +477,10 @@ html, body {
 <body>
 
 <!-- Loading Screen -->
+<a href="/" class="back-to-hub">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7" stroke-linecap="round"/></svg>
+  <span>Arcade</span>
+</a>
 <div id="loading">
   <div class="loading-spinner"></div>
   <div class="loading-text">Loading Cube...</div>
@@ -584,6 +588,7 @@ html, body {
   </div>
 </div>
 
+<link rel="preload" as="script" href="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js" crossorigin="anonymous">
 <script type="importmap">
 {
   "imports": {
@@ -994,6 +999,50 @@ function generateScramble(size, steps) {
 
 function performScramble(scramble, callback) {
   state.isScrambling = true;
+
+  // Skip animation for users who prefer reduced motion
+  if (prefersReducedMotion()) {
+    // Apply all rotations instantly
+    for (const move of scramble) {
+      const faceName = move.face;
+      const axis = getAxisForFace(faceName);
+      const layer = getLayerForFace(state.cube, faceName);
+      const cubies = getCubiesInLayer(state.cube, axis, layer);
+      const pivot = new THREE.Object3D();
+      state.cube.group.add(pivot);
+      pivot.position.set(0, 0, 0);
+      for (const c of cubies) {
+        const worldPos = new THREE.Vector3();
+        c.getWorldPosition(worldPos);
+        state.cube.group.worldToLocal(worldPos);
+        pivot.attach(c);
+      }
+      const axisVec = getRotationAxisVec(axis);
+      const angle = move.dir * Math.PI / 2;
+      pivot.quaternion.setFromAxisAngle(axisVec, angle);
+      pivot.updateMatrixWorld(true);
+      const children = [...pivot.children];
+      for (const c of children) {
+        const worldPos = new THREE.Vector3();
+        const worldQuat = new THREE.Quaternion();
+        c.getWorldPosition(worldPos);
+        c.getWorldQuaternion(worldQuat);
+        state.cube.group.attach(c);
+        c.position.copy(state.cube.group.worldToLocal(worldPos.clone()));
+        c.quaternion.copy(worldQuat);
+      }
+      for (const c of state.cube.cubies) {
+        c.position.x = Math.round(c.position.x * 10) / 10;
+        c.position.y = Math.round(c.position.y * 10) / 10;
+        c.position.z = Math.round(c.position.z * 10) / 10;
+      }
+      state.cube.group.remove(pivot);
+    }
+    state.isScrambling = false;
+    if (callback) callback();
+    return;
+  }
+
   let idx = 0;
 
   function doNext() {
@@ -1004,7 +1053,6 @@ function performScramble(scramble, callback) {
     }
 
     const move = scramble[idx];
-    const totalDuration = ROTATION_ANIM_MS;
     const faceName = move.face;
     const axis = getAxisForFace(faceName);
     const layer = getLayerForFace(state.cube, faceName);
@@ -1031,57 +1079,70 @@ function isSolved() {
   if (!state.cube) return false;
   const cube = state.cube;
 
-  for (const faceName of ['right', 'left', 'up', 'down', 'front', 'back']) {
-    const axis = getAxisForFace(faceName);
-    const layer = getLayerForFace(cube, faceName);
-    const expectedColor = FACE_COLORS[faceName];
-    const cubies = getCubiesInLayer(cube, axis, layer);
+  // Local face directions for material indices 0-5
+  const localDirs = [
+    [1, 0, 0],   // index 0: right (+x)
+    [-1, 0, 0],  // index 1: left (-x)
+    [0, 1, 0],   // index 2: up (+y)
+    [0, -1, 0],  // index 3: down (-y)
+    [0, 0, 1],   // index 4: front (+z)
+    [0, 0, -1],  // index 5: back (-z)
+  ];
 
-    // Check each cubie's face that should face outward
+  const faceConfigs = [
+    { axis: 'x', layer: (cube.size - 1) / 2, expectedColor: COLORS.red, worldDir: [1, 0, 0] },
+    { axis: 'x', layer: -(cube.size - 1) / 2, expectedColor: COLORS.orange, worldDir: [-1, 0, 0] },
+    { axis: 'y', layer: (cube.size - 1) / 2, expectedColor: COLORS.white, worldDir: [0, 1, 0] },
+    { axis: 'y', layer: -(cube.size - 1) / 2, expectedColor: COLORS.yellow, worldDir: [0, -1, 0] },
+    { axis: 'z', layer: (cube.size - 1) / 2, expectedColor: COLORS.green, worldDir: [0, 0, 1] },
+    { axis: 'z', layer: -(cube.size - 1) / 2, expectedColor: COLORS.blue, worldDir: [0, 0, -1] },
+  ];
+
+  for (const config of faceConfigs) {
+    const cubies = getCubiesInLayer(cube, config.axis, config.layer);
+
     for (const c of cubies) {
-      const dir = new THREE.Vector3();
-      const faceNormal = new THREE.Vector3();
-      if (faceName === 'right') faceNormal.set(1, 0, 0);
-      else if (faceName === 'left') faceNormal.set(-1, 0, 0);
-      else if (faceName === 'up') faceNormal.set(0, 1, 0);
-      else if (faceName === 'down') faceNormal.set(0, -1, 0);
-      else if (faceName === 'front') faceNormal.set(0, 0, 1);
-      else if (faceName === 'back') faceNormal.set(0, 0, -1);
+      if (!Array.isArray(c.material)) continue;
 
-      // Transform normal by cubie's quaternion
-      const worldNormal = faceNormal.clone().applyQuaternion(c.quaternion);
+      // Transform each local direction by cubie's quaternion
+      // and check which one aligns with the expected world direction
+      let foundMatch = false;
 
-      // Check which world axis is most aligned
-      const absX = Math.abs(worldNormal.x);
-      const absY = Math.abs(worldNormal.y);
-      const absZ = Math.abs(worldNormal.z);
+      for (let matIdx = 0; matIdx < 6; matIdx++) {
+        const localDir = new THREE.Vector3(...localDirs[matIdx]);
+        const worldDir = localDir.applyQuaternion(c.quaternion);
 
-      let worldAxis, worldDir;
-      if (absX >= absY && absX >= absZ) { worldAxis = 'x'; worldDir = worldNormal.x > 0 ? 1 : -1; }
-      else if (absY >= absX && absY >= absZ) { worldAxis = 'y'; worldDir = worldNormal.y > 0 ? 1 : -1; }
-      else { worldAxis = 'z'; worldDir = worldNormal.z > 0 ? 1 : -1; }
+        // Round to nearest axis
+        worldDir.x = Math.round(worldDir.x);
+        worldDir.y = Math.round(worldDir.y);
+        worldDir.z = Math.round(worldDir.z);
 
-      // Map face to color
-      const faceToColor = {
-        'x_1': COLORS.right, 'x_-1': COLORS.left,
-        'y_1': COLORS.up, 'y_-1': COLORS.down,
-        'z_1': COLORS.front, 'z_-1': COLORS.back
-      };
-      const key = worldAxis + '_' + worldDir;
-      const expectedFaceColor = faceToColor[key];
+        // Check if this face points in the expected world direction
+        if (worldDir.x === config.worldDir[0] &&
+            worldDir.y === config.worldDir[1] &&
+            worldDir.z === config.worldDir[2]) {
 
-      // Get material color of the face that points in this direction
-      const matIdx = worldAxis === 'x' ? (worldDir === 1 ? 0 : 1) :
-                     worldAxis === 'y' ? (worldDir === 1 ? 2 : 3) :
-                     (worldDir === 1 ? 4 : 5);
-
-      // Check if the correct sticker color is at this face
-      if (Array.isArray(c.material)) {
-        const matColor = c.material[matIdx].color.getHex();
-        // Skip internal black faces
-        if (matColor !== COLORS.black && matColor !== expectedFaceColor) {
-          return false;
+          foundMatch = true;
+          const matColor = c.material[matIdx].color.getHex();
+          // Skip internal black faces
+          if (matColor !== COLORS.black && matColor !== config.expectedColor) {
+            return false;
+          }
+          break;
         }
+      }
+
+      // If cubie is on this face layer but no material points outward,
+      // it should be an internal cubie (all black faces)
+      if (!foundMatch) {
+        let allBlack = true;
+        for (let i = 0; i < 6; i++) {
+          if (c.material[i].color.getHex() !== COLORS.black) {
+            allBlack = false;
+            break;
+          }
+        }
+        if (!allBlack) return false;
       }
     }
   }
@@ -1155,14 +1216,8 @@ function onPointerMove(event) {
   const dy = event.clientY - state.dragStart.y;
   const dist = Math.sqrt(dx*dx + dy*dy);
 
-  // Drag threshold: rotate camera orbit
-  if (dist > 5 && !state.selectedFace) {
-    orbitGroup.rotation.y += dx * 0.005;
-    orbitGroup.rotation.x += dy * 0.005;
-    orbitGroup.rotation.x = Math.max(-0.8, Math.min(0.8, orbitGroup.rotation.x));
-    state.dragStart.x = event.clientX;
-    state.dragStart.y = event.clientY;
-  }
+  // Drag threshold: background drag is a no-op during gameplay
+  // (UX spec: camera does NOT orbit, the cube rotates, not the view)
 
   // If we have a selected face and enough drag, rotate
   if (state.selectedFace && dist > 20) {
@@ -1299,7 +1354,7 @@ function updateStats() {
 function calculateScore() {
   const timeBonus = Math.max(0, (MAX_GAME_SEC - state.elapsed) * 10);
   const sizeBonus = state.size === 3 ? 0 : state.size === 4 ? 200 : 500;
-  const moveEfficiency = Math.max(0, (100 - state.moves) * 2);
+  const moveEfficiency = Math.max(0, (200 - state.moves) * 1);
   return Math.round(timeBonus + sizeBonus + moveEfficiency);
 }
 
@@ -1421,8 +1476,10 @@ function playSweep(ctx, fromFreq, toFreq, dur, type, vol) {
   osc.stop(ctx.currentTime + dur);
 }
 
+let vibrateEnabled = true;
+
 function vibrate(pattern) {
-  if (state.muted) return;
+  if (!vibrateEnabled) return;
   try { navigator.vibrate && navigator.vibrate(pattern); }
   catch { /* ignore */ }
 }
@@ -1434,6 +1491,11 @@ function toggleMute() {
     ? '<path d="M11 5L6 9H2v6h4l5 4V5z" stroke-linecap="round"/><line x1="23" y1="9" x2="17" y2="15" stroke-linecap="round"/><line x1="17" y1="9" x2="23" y2="15" stroke-linecap="round"/>'
     : '<path d="M11 5L6 9H2v6h4l5 4V5z" stroke-linecap="round"/><path d="M19.07 4.93a10 10 0 010 14.14M15.54 8.46a5 5 0 010 7.07" stroke-linecap="round"/>';
   localStorage.setItem(LS_KEY + '_muted', state.muted ? '1' : '0');
+}
+
+// ─── REDUCED MOTION ───
+function prefersReducedMotion() {
+  return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 }
 
 // ─── SCREEN MANAGEMENT ───
@@ -1489,7 +1551,7 @@ function startGame(size) {
   els.statSize.textContent = `${size}×${size}`;
 
   // Generate and perform scramble as implicit tutorial
-  const scramble = generateScramble(size, size === 3 ? 22 : 30);
+  const scramble = generateScramble(size, size === 3 ? 18 : 22);
   performScramble(scramble, () => {
     state.isPlaying = true;
     startTimer();
@@ -1520,12 +1582,14 @@ function finishGame(type) {
   // Update stats
   const stats = loadStats();
   stats.gamesPlayed++;
+  let oldFastestSec = stats.sizeRecords[state.size].fastestSec;
   if (isWin) {
     stats.wins++;
     const rec = stats.sizeRecords[state.size];
     rec.wins = (rec.wins || 0) + 1;
     rec.gamesPlayed = (rec.gamesPlayed || 0) + 1;
 
+    oldFastestSec = rec.fastestSec;
     if (score > (rec.bestScore || 0)) rec.bestScore = score;
     if (rec.fastestSec === null || state.elapsed < rec.fastestSec) rec.fastestSec = state.elapsed;
     if (rec.fewestMoves === null || state.moves < rec.fewestMoves) rec.fewestMoves = state.moves;
@@ -1567,17 +1631,15 @@ function showResult(isWin, score, newUnlock) {
   if (isWin) {
     els.resultTime.textContent = formatTime(state.elapsed);
   } else {
-    els.resultTime.textContent = formatTime(MAX_GAME_SEC);
+    els.resultTime.textContent = formatTime(state.elapsed);
   }
   els.resultMoves.textContent = state.moves;
   els.resultTps.textContent = state.elapsed > 0 ? (state.moves / state.elapsed).toFixed(1) : '0.0';
   els.resultScore.textContent = isWin ? score : '—';
 
-  // New best check
-  const stats = loadStats();
-  const rec = stats.sizeRecords[state.size];
-  const isNewBest = isWin && rec.fastestSec !== null &&
-    Math.abs(state.elapsed - rec.fastestSec) < 0.01;
+  // New best check (compare against OLD value, before saveStats updated it)
+  const isNewBest = isWin && oldFastestSec !== null &&
+    state.elapsed < oldFastestSec;
   els.newBest.style.display = isNewBest ? 'inline-flex' : 'none';
 
   // Unlock display
@@ -1621,6 +1683,11 @@ function init() {
   els.backLink.addEventListener('click', () => showScreen('title'));
   els.btnReset.addEventListener('click', resetGame);
   els.btnMute.addEventListener('click', toggleMute);
+
+  // Hub integration: record played on title screen
+  if (typeof recordPlayed === 'function') {
+    recordPlayed('speed-cube-solver', { size: state.size });
+  }
 
   els.sizeSelector.addEventListener('click', (e) => {
     const pill = e.target.closest('.size-pill');
