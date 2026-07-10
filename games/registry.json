@@ -1,6 +1,27 @@
 {
   "games": [
     {
+      "id": "guinea-pig-jigsaw",
+      "name": "Guinea Pig Jigsaw",
+      "description": "豚鼠主题拼图 — 拖拽拼块，完成可爱豚鼠照片",
+      "category": "puzzle",
+      "tags": [
+        "singleplayer",
+        "puzzle",
+        "drag",
+        "cute",
+        "touch",
+        "short-session"
+      ],
+      "thumbnail": "/games/080-guinea-pig-jigsaw/thumb.svg",
+      "path": "/games/080-guinea-pig-jigsaw/",
+      "hasServer": false,
+      "players": "1",
+      "version": "1.0.0",
+      "featured": true,
+      "rating": 4.0
+    },
+    {
       "id": "color-sort-balls",
       "name": "Color Sort Balls",
       "description": "不同颜色的球排序入管 · 拖拽解压，同色归管",

@@ -1,0 +1,63 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" fill="none">
+  <rect width="200" height="200" rx="16" fill="#FDF8F0"/>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#FDF8F0"/>
+      <stop offset="100%" stop-color="#F5EDE0"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#C8825E"/>
+      <stop offset="100%" stop-color="#B06A45"/>
+    </linearGradient>
+  </defs>
+  <rect width="200" height="200" rx="16" fill="url(#bg)"/>
+  <!-- Puzzle grid hint (3x3) -->
+  <g opacity="0.12">
+    <rect x="32" y="28" width="44" height="44" rx="3" stroke="#3E2C24" stroke-width="1.5"/>
+    <rect x="78" y="28" width="44" height="44" rx="3" stroke="#3E2C24" stroke-width="1.5"/>
+    <rect x="124" y="28" width="44" height="44" rx="3" stroke="#3E2C24" stroke-width="1.5"/>
+    <rect x="32" y="74" width="44" height="44" rx="3" stroke="#3E2C24" stroke-width="1.5"/>
+    <rect x="78" y="74" width="44" height="44" rx="3" stroke="#3E2C24" stroke-width="1.5"/>
+    <rect x="124" y="74" width="44" height="44" rx="3" stroke="#3E2C24" stroke-width="1.5"/>
+    <rect x="32" y="120" width="44" height="44" rx="3" stroke="#3E2C24" stroke-width="1.5"/>
+    <rect x="78" y="120" width="44" height="44" rx="3" stroke="#3E2C24" stroke-width="1.5"/>
+    <rect x="124" y="120" width="44" height="44" rx="3" stroke="#3E2C24" stroke-width="1.5"/>
+  </g>
+  <!-- Guinea pig (center) -->
+  <ellipse cx="100" cy="115" rx="35" ry="25" fill="#C4956A"/>
+  <circle cx="100" cy="88" r="22" fill="#D4A67A"/>
+  <!-- Ears -->
+  <ellipse cx="80" cy="72" rx="8" ry="6" fill="#C4956A" transform="rotate(-15 80 72)"/>
+  <ellipse cx="120" cy="72" rx="8" ry="6" fill="#C4956A" transform="rotate(15 120 72)"/>
+  <ellipse cx="81" cy="73" rx="4" ry="3" fill="#E8C8A0" transform="rotate(-15 81 73)"/>
+  <ellipse cx="121" cy="73" rx="4" ry="3" fill="#E8C8A0" transform="rotate(15 121 73)"/>
+  <!-- Eyes -->
+  <circle cx="92" cy="86" r="3.5" fill="#1C1A17"/>
+  <circle cx="108" cy="86" r="3.5" fill="#1C1A17"/>
+  <circle cx="93" cy="85" r="1.2" fill="#fff"/>
+  <circle cx="109" cy="85" r="1.2" fill="#fff"/>
+  <!-- Nose -->
+  <ellipse cx="100" cy="93" rx="3" ry="2" fill="#8B6A4E"/>
+  <!-- Mouth -->
+  <path d="M95 97 Q100 102 105 97" stroke="#8B6A4E" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+  <!-- Whiskers -->
+  <line x1="65" y1="90" x2="86" y2="93" stroke="#A08060" stroke-width="0.8" opacity="0.6"/>
+  <line x1="67" y1="95" x2="87" y2="96" stroke="#A08060" stroke-width="0.8" opacity="0.6"/>
+  <line x1="114" y1="93" x2="135" y2="90" stroke="#A08060" stroke-width="0.8" opacity="0.6"/>
+  <line x1="113" y1="96" x2="133" y2="95" stroke="#A08060" stroke-width="0.8" opacity="0.6"/>
+  <!-- Missing piece (gaps showing it's a puzzle) -->
+  <rect x="36" y="72" width="12" height="12" rx="2" fill="#C8825E" opacity="0.4" transform="rotate(-8 36 72)"/>
+  <rect x="134" y="108" width="14" height="14" rx="2" fill="#C8825E" opacity="0.4" transform="rotate(5 134 108)"/>
+  <!-- Puzzle piece icons -->
+  <g transform="translate(10, 158)" opacity="0.5">
+    <rect x="0" y="0" width="12" height="12" rx="2" fill="#B06A45" transform="rotate(12 6 6)"/>
+  </g>
+  <g transform="translate(178, 150)" opacity="0.5">
+    <rect x="0" y="0" width="10" height="10" rx="2" fill="#B06A45" transform="rotate(-10 5 5)"/>
+  </g>
+  <!-- Title -->
+  <text x="100" y="172" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="15" font-weight="bold" fill="#3E2C24">Guinea Pig</text>
+  <text x="100" y="186" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="11" fill="#8B7D72">Jigsaw</text>
+  <!-- Accent line -->
+  <rect x="70" y="178" width="60" height="1.5" rx="0.75" fill="#C8825E" opacity="0.5"/>
+</svg>
