@@ -241,7 +241,7 @@ body {
 
 #board-canvas {
   width: 100%;
-  max-width: 360px;
+  max-width: 480px;
   aspect-ratio: 1 / 1;
   display: block;
   cursor: grab;
@@ -966,9 +966,7 @@ body {
 
   function getCanvasPos(e) {
     var rect = canvas.getBoundingClientRect();
-    var sx = canvas.width / rect.width;
-    var sy = canvas.height / rect.height;
-    return { x: (e.clientX - rect.left) * sx, y: (e.clientY - rect.top) * sy };
+    return { x: e.clientX - rect.left, y: e.clientY - rect.top };
   }
 
   function hitTest(px, py) {
@@ -1366,7 +1364,7 @@ body {
 
   function getCanvasSize() {
     var rect = canvas.parentElement.getBoundingClientRect();
-    var size = Math.min(rect.width - 16, rect.height - 16, 360);
+    var size = Math.min(rect.width - 16, rect.height - 16, 480);
     size = Math.max(size, 100); // Guard: ensure minimum size even if parent is hidden (display:none → rect size 0)
     var dpr = window.devicePixelRatio || 1;
     canvas.style.width = size + 'px';
