@@ -1,6 +1,27 @@
 {
   "games": [
     {
+      "id": "photo-puzzle-restore",
+      "name": "Photo Puzzle Restore",
+      "description": "被打乱的照片需重新还原 — 拖拽拼块，完成照片!",
+      "category": "puzzle",
+      "tags": [
+        "singleplayer",
+        "puzzle",
+        "drag",
+        "photo",
+        "touch",
+        "short-session"
+      ],
+      "thumbnail": "/games/078-photo-puzzle-restore/thumb.svg",
+      "path": "/games/078-photo-puzzle-restore/",
+      "hasServer": false,
+      "players": "1",
+      "version": "1.0.0",
+      "featured": true,
+      "rating": 4.0
+    },
+    {
       "id": "mario-pixel-painter",
       "name": "Mario Pixel Painter",
       "description": "超级马里奥主题像素涂色 — 选色涂格，完成经典像素画",
