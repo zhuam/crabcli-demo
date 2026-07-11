@@ -1,6 +1,28 @@
 {
   "games": [
     {
+      "id": "mario-pixel-painter",
+      "name": "Mario Pixel Painter",
+      "description": "超级马里奥主题像素涂色 — 选色涂格，完成经典像素画",
+      "category": "casual",
+      "tags": [
+        "singleplayer",
+        "casual",
+        "coloring",
+        "pixel",
+        "mario",
+        "touch",
+        "short-session"
+      ],
+      "thumbnail": "/games/079-mario-pixel-painter/thumb.svg",
+      "path": "/games/079-mario-pixel-painter/",
+      "hasServer": false,
+      "players": "1",
+      "version": "1.0.0",
+      "featured": true,
+      "rating": 4.0
+    },
+    {
       "id": "guinea-pig-jigsaw",
       "name": "Guinea Pig Jigsaw",
       "description": "豚鼠主题拼图 — 拖拽拼块，完成可爱豚鼠照片",
