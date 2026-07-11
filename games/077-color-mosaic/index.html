@@ -1,56 +1,49 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1,viewport-fit=cover,user-scalable=no">
-<meta name="theme-color" content="#0e0d0c">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#f9f9fc">
 <title>Color Mosaic — 按编号涂色</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/games/shared/game-frame.css">
 <style>
 /* ═══════════════════════════════════════════════════════
    Color Mosaic — Number-based pixel coloring game
-   Issue: #77
+   Issue: #77 — Modern-Minimal Redesign
    ═══════════════════════════════════════════════════════ */
 
-:root {
-  --retro-bg:#0e0d0c;
-  --retro-card:#1a1816;
-  --retro-border:#2e2a26;
-  --retro-glow:#3B82F6;
-  --retro-gold:#D97706;
-  --retro-soft:#f5f0e8;
-  --retro-text:#111827;
-  --retro-muted:rgba(17,24,39,0.5);
-  --retro-accent:#3B82F6;
-  --retro-accent-light:rgba(59,130,246,0.12);
-  --retro-success:#16A34A;
-  --retro-surface:#FFFFFF;
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 
-  --font-display:'Macondo','Outfit',cursive;
-  --font-mono:'JetBrains Mono','Geist Mono',ui-monospace,monospace;
-  --font-body:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
-
-  --radius-sm:8px;
-  --radius-md:12px;
-  --radius-lg:20px;
-  --radius-xl:28px;
-
-  /* Game palette colors */
-  --c1:#E52521; --c2:#0051A8; --c3:#049D10; --c4:#FBD000;
-  --c5:#F59E0B; --c6:#8B5CF6; --c7:#EC4899; --c8:#6B7280;
+:root{
+  --color-bg:oklch(0.99 0 0);
+  --color-surface:oklch(0.97 0 0);
+  --color-border:oklch(0.92 0 0);
+  --color-text:oklch(0.20 0 0);
+  --color-muted:oklch(0.55 0 0);
+  --color-accent:oklch(0.55 0.18 250);
+  --color-success:oklch(0.55 0.15 145);
+  --color-error:oklch(0.55 0.20 30);
+  --font-sans:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+  --font-mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Consolas,monospace;
+  --space-1:4px;--space-2:8px;--space-3:12px;--space-4:16px;--space-5:24px;--space-6:32px;--space-7:48px;
+  --radius-sm:4px;--radius-md:8px;--radius-lg:12px;--radius-xl:16px;
+  --ease-spring:cubic-bezier(0.34,1.56,0.64,1);--ease-smooth:cubic-bezier(0.4,0,0.2,1);
 }
 
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html{font-size:16px;-webkit-text-size-adjust:100%}
+
 body{
-  font-family:var(--font-body);
-  background:var(--retro-bg);
-  color:var(--retro-soft);
+  font-family:var(--font-sans);
+  background:var(--color-bg);
+  color:var(--color-text);
   min-height:100dvh;
   display:flex;
   align-items:center;
   justify-content:center;
-  padding:20px 16px;
+  padding:var(--space-5) var(--space-4);
   touch-action:manipulation;
   -webkit-user-select:none;
   user-select:none;
@@ -62,394 +55,476 @@ body{
   width:100%;
   max-width:420px;
   min-height:740px;
-  background:var(--retro-soft);
+  background:var(--color-bg);
+  border:1px solid var(--color-border);
   border-radius:var(--radius-xl);
-  box-shadow:0 8px 48px rgba(0,0,0,0.5),0 0 0 1px rgba(255,255,255,0.06);
+  box-shadow:0 2px 24px rgba(0,0,0,0.04),0 0 0 1px rgba(0,0,0,0.02);
   overflow:hidden;
   position:relative;
-  color:var(--retro-text);
+  display:flex;
+  flex-direction:column;
 }
 
 /* ─── Screen base ─── */
-.screen{display:none;flex-direction:column;}
+.screen{display:none;flex-direction:column;min-height:740px;}
 .screen.active{display:flex;}
 
-/* ═══ TITLE / LEVEL SELECT SCREEN ═══ */
-#screen-title{min-height:740px;}
+/* ═══ STATUS BAR ═══ */
+.status-bar{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:var(--space-2) var(--space-5) var(--space-1);
+  font-family:var(--font-mono);font-size:12px;font-weight:600;
+  color:var(--color-text);min-height:36px;flex-shrink:0;
+}
+.status-bar .icons{display:flex;gap:var(--space-1);align-items:center;}
+.status-bar .icons svg{fill:var(--color-text);opacity:0.4;}
+.status-bar .time{font-feature-settings:'tnum';}
 
+/* ═══ HEADER BAR ═══ */
 .header-bar{
   display:flex;justify-content:space-between;align-items:center;
-  padding:10px 16px;flex-shrink:0;
+  padding:var(--space-1) var(--space-4) 0;flex-shrink:0;
 }
 .header-bar .back-link{
-  font-family:var(--font-mono);font-size:13px;
-  color:var(--retro-muted);cursor:pointer;
+  display:flex;align-items:center;gap:var(--space-1);
+  font-family:var(--font-mono);font-size:12px;
+  color:var(--color-muted);cursor:pointer;
+  background:none;border:none;padding:var(--space-1) 0;
 }
-.header-bar .mute-btn{
-  font-size:18px;cursor:pointer;opacity:0.5;
-  background:none;border:none;padding:4px;
-  transition:opacity 0.2s;
+.header-bar .back-link svg{fill:none;stroke:var(--color-muted);stroke-width:2;stroke-linecap:round;stroke-linejoin:round;width:16px;height:16px;}
+.header-bar .actions{display:flex;gap:var(--space-2);}
+.mute-btn{
+  background:none;border:none;cursor:pointer;
+  font-size:16px;opacity:0.4;padding:var(--space-1);
+  color:var(--color-text);transition:opacity 0.2s;
 }
-.header-bar .mute-btn:hover{opacity:1;}
+.mute-btn:hover{opacity:0.7;}
 
+/* ═══ TITLE / LEVEL SELECT SCREEN ═══ */
 .title-section{
-  padding:12px 20px 4px;text-align:center;flex-shrink:0;
+  padding:var(--space-4) var(--space-5) var(--space-2);
+  text-align:center;flex-shrink:0;
 }
 .title-section h1{
-  font-family:var(--font-display);
-  font-size:30px;font-weight:400;
-  color:var(--retro-text);line-height:1.15;
+  font-family:var(--font-sans);font-size:31px;font-weight:600;
+  color:var(--color-text);line-height:1.2;letter-spacing:-0.01em;
 }
-.title-section h1 span{color:var(--retro-accent);}
+.title-section h1 span{color:var(--color-accent);}
 .title-section .subtitle{
-  font-size:13px;color:var(--retro-muted);margin-top:2px;
+  font-size:14px;color:var(--color-muted);margin-top:var(--space-1);font-weight:400;
 }
 
 /* Level cards */
 .puzzle-grid{
   display:grid;grid-template-columns:1fr 1fr;
-  gap:10px;padding:10px 14px 16px;flex:1;
-  overflow-y:auto;max-height:580px;
+  gap:var(--space-3);padding:var(--space-3) var(--space-4) var(--space-5);
+  flex:1;overflow-y:auto;
 }
 .puzzle-grid::-webkit-scrollbar{width:3px;}
-.puzzle-grid::-webkit-scrollbar-thumb{background:rgba(0,0,0,0.15);border-radius:4px;}
+.puzzle-grid::-webkit-scrollbar-thumb{background:var(--color-border);border-radius:4px;}
 
 .puzzle-card{
-  background:var(--retro-surface);
-  border:1.5px solid rgba(0,0,0,0.08);
-  border-radius:16px;padding:12px 10px;text-align:center;
-  cursor:pointer;transition:transform 0.2s,box-shadow 0.2s;
+  background:var(--color-surface);
+  border:1px solid var(--color-border);
+  border-radius:var(--radius-lg);
+  padding:var(--space-3) var(--space-3);
+  text-align:center;cursor:pointer;
+  transition:transform 0.25s var(--ease-spring), border-color 0.25s ease, box-shadow 0.25s ease;
   position:relative;overflow:hidden;
+  -webkit-tap-highlight-color:transparent;
 }
 .puzzle-card:hover{
-  transform:scale(1.02);
-  box-shadow:0 4px 20px rgba(59,130,246,0.12);
+  transform:translateY(-2px) scale(1.02);
+  border-color:var(--color-accent);
+  box-shadow:0 4px 16px rgba(0,0,0,0.04);
 }
 
 .puzzle-card .thumb{
   width:100%;aspect-ratio:1;
-  border-radius:10px;background:var(--retro-soft);
-  margin-bottom:6px;display:flex;
-  align-items:center;justify-content:center;
-  font-size:32px;border:1px solid rgba(0,0,0,0.06);
+  border-radius:var(--radius-sm);
+  background:var(--color-bg);
+  margin-bottom:var(--space-2);
+  display:flex;align-items:center;justify-content:center;
+  font-size:28px;
+  border:1px solid var(--color-border);
   position:relative;overflow:hidden;
 }
 
 .puzzle-card .name{
-  font-size:13px;font-weight:600;color:var(--retro-text);
+  font-size:13px;font-weight:600;color:var(--color-text);
 }
 .puzzle-card .meta{
-  display:flex;justify-content:center;gap:6px;margin-top:2px;
-  font-family:var(--font-mono);font-size:10px;
-  color:var(--retro-muted);text-transform:uppercase;
+  display:flex;justify-content:center;align-items:center;
+  gap:var(--space-2);margin-top:3px;
 }
 .puzzle-card .difficulty{
   display:inline-block;padding:1px 8px;border-radius:20px;
-  font-size:9px;font-weight:600;text-transform:uppercase;
+  font-family:var(--font-mono);font-size:9px;font-weight:600;
+  text-transform:uppercase;letter-spacing:0.06em;
 }
-.puzzle-card .difficulty.easy{background:rgba(22,163,74,0.12);color:var(--retro-success);}
-.puzzle-card .difficulty.medium{background:rgba(217,119,6,0.12);color:#D97706;}
-.puzzle-card .difficulty.hard{background:rgba(220,38,38,0.12);color:#DC2626;}
+.puzzle-card .difficulty.easy{background:oklch(0.93 0.05 200);color:oklch(0.40 0.15 200);}
+.puzzle-card .difficulty.medium{background:oklch(0.95 0.06 80);color:oklch(0.50 0.14 80);}
+.puzzle-card .difficulty.hard{background:oklch(0.93 0.08 30);color:oklch(0.45 0.18 30);}
+.puzzle-card .grid-size{
+  font-family:var(--font-mono);font-size:10px;color:var(--color-muted);
+}
+
+.stars{display:inline-flex;gap:2px;}
+.stars svg{fill:var(--game-3);}
 
 .puzzle-card.locked{
-  opacity:0.55;cursor:default;
+  opacity:0.5;cursor:default;
 }
-.puzzle-card.locked:hover{transform:none;box-shadow:none;}
+.puzzle-card.locked:hover{transform:none;border-color:var(--color-border);box-shadow:none;}
 .puzzle-card.locked .lock-overlay{
   position:absolute;inset:0;
   display:flex;align-items:center;justify-content:center;
-  font-size:26px;
-  background:rgba(255,255,255,0.35);
-  backdrop-filter:blur(2px);border-radius:16px;
+  background:rgba(255,255,255,0.3);
+  backdrop-filter:blur(4px);
+  border-radius:var(--radius-lg);z-index:2;
 }
-.puzzle-card.locked .thumb{filter:grayscale(0.6) brightness(0.85);}
+.puzzle-card.locked .lock-overlay svg{fill:var(--color-muted);width:24px;height:24px;}
+.puzzle-card.locked .thumb{filter:grayscale(0.5) brightness(0.9);}
 
-.puzzle-card .stars{
-  display:inline-flex;gap:2px;margin-left:4px;
+.puzzle-card.active{
+  border-color:var(--color-accent);
+  box-shadow:0 0 0 2px var(--color-accent), 0 4px 16px rgba(0,0,0,0.06);
 }
-.puzzle-card .stars svg{fill:var(--retro-gold);}
+
+.play-cta{
+  display:flex;align-items:center;justify-content:center;
+  gap:var(--space-2);
+  padding:var(--space-3) var(--space-5);margin:0 var(--space-4) var(--space-4);
+  background:var(--color-accent);color:white;
+  border:none;border-radius:var(--radius-lg);
+  font-family:var(--font-sans);font-size:15px;font-weight:600;
+  cursor:pointer;
+  transition:transform 0.25s var(--ease-spring), box-shadow 0.25s ease;
+  flex-shrink:0;
+}
+.play-cta:hover{transform:scale(1.02);box-shadow:0 6px 20px rgba(0,0,0,0.08);}
+.play-cta svg{fill:white;width:16px;height:16px;}
 
 /* ═══ GAME SCREEN ═══ */
-#screen-game{min-height:740px;padding:0;}
-
 .game-header{
   display:flex;justify-content:space-between;align-items:center;
-  padding:6px 14px;flex-shrink:0;border-bottom:1px solid rgba(0,0,0,0.06);
+  padding:var(--space-1) var(--space-4);flex-shrink:0;
 }
-.game-header .left{display:flex;align-items:center;gap:8px;}
+.game-header .left{display:flex;align-items:center;gap:var(--space-2);}
 .game-header .back-btn{
   background:none;border:none;cursor:pointer;
-  font-size:18px;color:var(--retro-muted);padding:2px;
+  padding:var(--space-1);color:var(--color-muted);
+}
+.game-header .back-btn svg{fill:none;stroke:var(--color-muted);stroke-width:2;stroke-linecap:round;stroke-linejoin:round;width:20px;height:20px;}
+.game-header .level-name{
+  font-size:13px;font-weight:600;color:var(--color-text);
 }
 .game-header .timer{
-  font-family:var(--font-mono);font-size:18px;font-weight:600;
-  color:var(--retro-text);font-variant-numeric:tabular-nums;
-}
-.game-header .timer .label{font-size:10px;font-weight:400;opacity:0.4;margin-right:2px;}
-.game-header .mute-btn{
-  font-size:16px;cursor:pointer;background:none;border:none;opacity:0.4;padding:4px;
-}
-
-/* Hint label */
-.hint-label{
-  font-size:12px;color:var(--retro-muted);
-  padding:4px 14px 2px;text-align:center;flex-shrink:0;
-  transition:opacity 0.3s;
+  font-family:var(--font-mono);font-size:16px;font-weight:600;
+  color:var(--color-text);font-feature-settings:'tnum';
 }
 
 /* Palette strip */
 .palette-strip{
-  display:flex;gap:6px;padding:6px 14px 8px;
+  display:flex;gap:var(--space-2);
+  padding:var(--space-2) var(--space-4) var(--space-2);
   overflow-x:auto;flex-shrink:0;
   -webkit-overflow-scrolling:touch;
 }
 .palette-strip::-webkit-scrollbar{height:0;}
 
 .palette-swatch{
-  display:flex;align-items:center;gap:4px;
-  padding:4px 10px 4px 6px;border-radius:20px;
-  border:2px solid transparent;
-  cursor:pointer;flex-shrink:0;
-  transition:all 0.2s;position:relative;
+  display:flex;flex-direction:column;align-items:center;gap:2px;
+  padding:var(--space-2) var(--space-2) var(--space-1);
+  border-radius:var(--radius-md);
+  border:2px solid transparent;cursor:pointer;
+  min-width:44px;flex-shrink:0;
+  transition:all 0.2s var(--ease-smooth);
+  position:relative;
   -webkit-tap-highlight-color:transparent;
 }
 .palette-swatch .color-dot{
-  width:22px;height:22px;border-radius:50%;flex-shrink:0;
-  border:1px solid rgba(0,0,0,0.1);
+  width:24px;height:24px;border-radius:var(--radius-sm);
+  flex-shrink:0;border:1px solid rgba(0,0,0,0.06);
+  transition:transform 0.2s var(--ease-spring);
 }
 .palette-swatch .num{
-  font-family:var(--font-mono);font-size:14px;font-weight:700;
-  color:var(--retro-text);
+  font-family:var(--font-mono);font-size:11px;font-weight:700;
+  color:var(--color-text);
 }
 .palette-swatch .count{
-  font-family:var(--font-mono);font-size:10px;
-  color:var(--retro-muted);
+  font-family:var(--font-mono);font-size:9px;
+  color:var(--color-muted);
 }
 .palette-swatch.active{
-  border-color:var(--retro-accent);
-  background:var(--retro-accent-light);
-  box-shadow:0 0 12px rgba(59,130,246,0.15);
-  transform:scale(1.05);
+  border-color:var(--color-accent);
+  background:color-mix(in oklch, var(--color-accent) 6%, transparent);
 }
-.palette-swatch.completed{opacity:0.35;pointer-events:none;}
-.palette-swatch.completed::after{
-  content:'✓';position:absolute;top:-4px;right:-4px;
-  font-size:10px;color:var(--retro-success);font-weight:700;
+.palette-swatch.active .color-dot{transform:scale(1.15);}
+.palette-swatch.completed{opacity:0.3;pointer-events:none;}
+.palette-swatch.completed .check-badge{
+  position:absolute;top:-4px;right:-4px;
+  width:16px;height:16px;
+  background:var(--color-text);
+  border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+}
+.palette-swatch.completed .check-badge svg{fill:white;width:10px;height:10px;}
+
+.hint-label{
+  font-size:12px;color:var(--color-muted);
+  padding:0 var(--space-4) var(--space-2);
+  text-align:center;flex-shrink:0;font-weight:400;
+  transition:opacity 0.3s, color 0.3s;
 }
 
-/* Game grid */
+/* Grid area */
 .grid-area{
   flex:1;display:flex;align-items:center;justify-content:center;
-  padding:4px 12px;min-height:280px;
+  padding:0 var(--space-4);min-height:280px;
 }
 .game-grid{
-  display:grid;gap:2px;
-  width:100%;
-  background:rgba(0,0,0,0.06);
-  padding:2px;border-radius:8px;
+  display:grid;gap:2px;width:100%;max-width:320px;
+  aspect-ratio:1;
+  border-radius:var(--radius-sm);
+  background:var(--color-surface);
+  padding:4px;
   touch-action:manipulation;
 }
-@media(min-width:420px){
-  .game-grid{max-width:360px;}
-}
 .gcell{
-  aspect-ratio:1;border-radius:2px;
+  aspect-ratio:1;border-radius:3px;
   display:flex;align-items:center;justify-content:center;
   font-family:var(--font-mono);font-size:11px;font-weight:600;
-  color:rgba(0,0,0,0.5);cursor:pointer;
-  position:relative;transition:all 0.12s ease;min-height:0;
+  color:var(--color-muted);cursor:pointer;
+  position:relative;transition:background 0.15s ease, transform 0.15s var(--ease-spring), box-shadow 0.15s ease;
+  min-height:0;
   -webkit-tap-highlight-color:transparent;
 }
-.gcell.unfilled{background:rgba(0,0,0,0.05);border:1px solid rgba(0,0,0,0.06);}
-.gcell.unfilled:hover{filter:brightness(0.95);}
-.gcell.highlight{
-  animation:pulse-glow 1s ease-in-out infinite;
-  box-shadow:inset 0 0 0 2px var(--retro-accent);
+.gcell.unfilled{background:var(--color-bg);border:1px solid var(--color-border);}
+.gcell.unfilled:hover{filter:brightness(0.97);}
+.gcell.unfilled .num{opacity:0.7;}
+.gcell.highlighted{
+  animation:pulse-glow 1.2s ease-in-out infinite;
+  box-shadow:inset 0 0 0 2px var(--color-accent), 0 0 6px color-mix(in oklch, var(--color-accent) 20%, transparent);
 }
-@keyframes pulse-glow{
-  0%,100%{opacity:1;}
-  50%{opacity:0.5;}
-}
-.gcell.filled{border:1px solid rgba(0,0,0,0.05);animation:pop-fill 0.15s ease-out;}
+@keyframes pulse-glow{0%,100%{opacity:1;}50%{opacity:0.6;}}
+.gcell.filled{border:1px solid transparent;animation:pop-fill 0.2s var(--ease-spring);}
 .gcell.filled .num{display:none;}
-.gcell.filled:active{transform:scale(0.92);}
+@keyframes pop-fill{0%{transform:scale(0.8);opacity:0.5;}100%{transform:scale(1);opacity:1;}}
+.gcell.wrong-fill{animation:shake 0.3s ease-out;background:color-mix(in oklch, var(--color-error) 20%, transparent)!important;}
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-3px)}40%{transform:translateX(3px)}60%{transform:translateX(-2px)}80%{transform:translateX(2px)}}
 .gcell.cursor-highlight{
-  box-shadow:inset 0 0 0 2.5px var(--retro-gold),0 0 8px rgba(217,119,6,0.3);
+  box-shadow:inset 0 0 0 2.5px var(--game-3), 0 0 8px rgba(245,158,11,0.3);
   z-index:2;
-}
-@keyframes pop-fill{
-  0%{transform:scale(0.82);opacity:0.6;}
-  100%{transform:scale(1);opacity:1;}
 }
 
 /* Progress bar */
 .progress-section{
-  padding:4px 14px 10px;flex-shrink:0;
-  border-top:1px solid rgba(0,0,0,0.06);
+  padding:var(--space-2) var(--space-4) var(--space-3);
+  flex-shrink:0;
 }
-.progress-track{
-  width:100%;height:6px;
-  background:rgba(0,0,0,0.08);
-  border-radius:8px;overflow:hidden;
+.progress-bar-track{
+  width:100%;height:4px;
+  background:var(--color-border);
+  border-radius:4px;overflow:hidden;
 }
-.progress-fill{
+.progress-bar-fill{
   height:100%;width:0%;
-  background:linear-gradient(90deg,var(--retro-accent),#8B5CF6);
-  border-radius:8px;transition:width 0.4s ease;
+  background:var(--color-accent);
+  border-radius:4px;
+  transition:width 0.5s var(--ease-smooth);
 }
 .progress-meta{
   display:flex;justify-content:space-between;
-  margin-top:4px;font-family:var(--font-mono);
-  font-size:11px;color:var(--retro-muted);
+  margin-top:var(--space-1);
+  font-family:var(--font-mono);font-size:10px;
+  color:var(--color-muted);font-feature-settings:'tnum';
 }
 
 /* ═══ RESULT SCREEN ═══ */
-#screen-result{min-height:740px;}
-.result-content{
+.results-content{
   flex:1;display:flex;flex-direction:column;
   align-items:center;justify-content:center;
-  padding:20px;text-align:center;
+  padding:var(--space-5);text-align:center;
   position:relative;overflow:hidden;
 }
 
-/* Confetti */
-.confetti{
+.confetti-container{
   position:absolute;inset:0;pointer-events:none;overflow:hidden;
 }
-@keyframes confetti-fall{
-  0%{transform:translateY(-20px) rotate(0deg);opacity:1;}
-  100%{transform:translateY(420px) rotate(720deg);opacity:0;}
+@keyframes confetti-drift{
+  0%{transform:translateY(-10px) rotate(0deg);opacity:1;}
+  100%{transform:translateY(420px) rotate(540deg);opacity:0;}
 }
-.confetti .particle{
-  position:absolute;width:6px;height:6px;border-radius:2px;
-  top:-10px;animation:confetti-fall 2.5s ease-in forwards;
-}
-
-.result-content .trophy{
-  font-size:48px;margin-bottom:6px;position:relative;z-index:1;
-  animation:bounce-in 0.5s ease-out;
-}
-@keyframes bounce-in{
-  0%{transform:scale(0);}
-  50%{transform:scale(1.2);}
-  70%{transform:scale(0.95);}
-  100%{transform:scale(1);}
+.confetti-container .particle{
+  position:absolute;width:5px;height:5px;border-radius:1px;
+  top:-8px;animation:confetti-drift 2.8s ease-in forwards;
 }
 
-.result-content .complete-title{
-  font-family:var(--font-display);font-size:26px;color:var(--retro-text);
+.check-icon-big{
+  width:56px;height:56px;border-radius:50%;
+  background:color-mix(in oklch, var(--color-accent) 10%, transparent);
+  display:flex;align-items:center;justify-content:center;
+  margin-bottom:var(--space-3);
+  animation:bounce-pop 0.5s var(--ease-spring);
   position:relative;z-index:1;
 }
-.result-content .complete-title span{color:var(--retro-accent);}
+.check-icon-big svg{fill:none;stroke:var(--color-accent);stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round;width:28px;height:28px;}
+@keyframes bounce-pop{0%{transform:scale(0);}60%{transform:scale(1.15);}100%{transform:scale(1);}}
 
-.new-best{
-  display:inline-flex;align-items:center;gap:4px;
-  font-family:var(--font-mono);font-size:11px;font-weight:600;
-  color:var(--retro-gold);
-  background:rgba(217,119,6,0.1);
-  padding:3px 10px;border-radius:20px;
-  margin:4px 0;position:relative;z-index:1;
+.results-content .complete-title{
+  font-family:var(--font-sans);font-size:25px;font-weight:600;
+  color:var(--color-text);letter-spacing:-0.01em;
+  position:relative;z-index:1;
+}
+.results-content .complete-subtitle{
+  font-size:14px;color:var(--color-muted);margin-top:var(--space-1);
+  position:relative;z-index:1;
 }
 
+.new-best{
+  display:inline-flex;align-items:center;gap:var(--space-1);
+  font-family:var(--font-mono);font-size:10px;font-weight:600;
+  color:var(--game-3);
+  background:color-mix(in oklch, var(--game-3) 10%, transparent);
+  padding:2px var(--space-3);border-radius:20px;
+  margin-top:var(--space-1);position:relative;z-index:1;
+}
+.new-best svg{fill:var(--game-3);width:10px;height:10px;}
+
 .score-card{
-  background:var(--retro-surface);
-  border:1.5px solid rgba(0,0,0,0.06);
-  border-radius:16px;padding:14px 20px;
-  margin:8px 0 14px;width:100%;max-width:220px;
+  background:var(--color-surface);
+  border:1px solid var(--color-border);
+  border-radius:var(--radius-lg);
+  padding:var(--space-5) var(--space-5);
+  margin:var(--space-4) 0;
+  width:100%;max-width:240px;
   position:relative;z-index:1;
 }
 .score-card .score-big{
-  font-family:var(--font-display);font-size:36px;
-  color:var(--retro-text);line-height:1;
+  font-family:var(--font-sans);font-size:39px;font-weight:600;
+  color:var(--color-text);line-height:1;
+  letter-spacing:-0.02em;font-feature-settings:'tnum';
 }
 .score-card .score-label{
   font-family:var(--font-mono);font-size:10px;
   text-transform:uppercase;letter-spacing:0.1em;
-  color:var(--retro-muted);margin-top:2px;
+  color:var(--color-muted);margin-top:2px;
 }
-.score-stats{
-  display:flex;justify-content:center;gap:14px;
-  margin-top:8px;padding-top:8px;
-  border-top:1px solid rgba(0,0,0,0.06);
+.score-card .score-stats{
+  display:flex;justify-content:center;
+  gap:var(--space-4);margin-top:var(--space-3);
+  padding-top:var(--space-3);
+  border-top:1px solid var(--color-border);
 }
-.score-stats div{text-align:center;}
-.score-stats .stat-val{
-  font-family:var(--font-mono);font-size:14px;
-  font-weight:600;color:var(--retro-text);
-  font-variant-numeric:tabular-nums;
+.score-card .score-stats div{text-align:center;}
+.score-card .score-stats .stat-val{
+  font-family:var(--font-mono);font-size:14px;font-weight:600;
+  color:var(--color-text);font-feature-settings:'tnum';
 }
-.score-stats .stat-label{
+.score-card .score-stats .stat-label{
   font-family:var(--font-mono);font-size:8px;
   text-transform:uppercase;letter-spacing:0.06em;
-  color:var(--retro-muted);
+  color:var(--color-muted);margin-top:2px;
 }
 
-.result-buttons{
-  display:flex;flex-direction:column;gap:8px;
-  width:100%;max-width:200px;position:relative;z-index:1;
+.results-buttons{
+  display:flex;flex-direction:column;
+  gap:var(--space-2);width:100%;max-width:200px;
+  position:relative;z-index:1;
 }
 .btn-primary{
   display:flex;align-items:center;justify-content:center;
-  gap:6px;font-size:14px;font-weight:600;
-  padding:12px 20px;border-radius:28px;
-  background:var(--retro-accent);color:white;
-  border:none;cursor:pointer;transition:transform 0.2s;
+  gap:var(--space-2);
+  font-family:var(--font-sans);font-size:14px;font-weight:600;
+  padding:var(--space-3) var(--space-5);
+  border-radius:var(--radius-lg);
+  background:var(--color-accent);color:white;
+  border:none;cursor:pointer;
+  transition:transform 0.2s var(--ease-spring), box-shadow 0.2s ease;
 }
-.btn-primary:hover{transform:scale(1.03);}
+.btn-primary:hover{transform:scale(1.02);box-shadow:0 6px 20px rgba(0,0,0,0.08);}
+.btn-primary svg{fill:white;width:14px;height:14px;}
 .btn-secondary{
   display:flex;align-items:center;justify-content:center;
-  gap:6px;font-size:13px;font-weight:500;
-  padding:10px 16px;border-radius:24px;
-  background:transparent;color:var(--retro-text);
-  border:1.5px solid rgba(0,0,0,0.12);
-  cursor:pointer;transition:all 0.2s;
+  gap:var(--space-2);
+  font-family:var(--font-sans);font-size:13px;font-weight:500;
+  padding:var(--space-2) var(--space-4);
+  border-radius:var(--radius-md);
+  background:transparent;color:var(--color-text);
+  border:1px solid var(--color-border);
+  cursor:pointer;
+  transition:all 0.2s ease;
 }
-.btn-secondary:hover{background:rgba(0,0,0,0.04);}
+.btn-secondary:hover{background:var(--color-surface);border-color:var(--color-muted);}
+.btn-secondary svg{fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;width:14px;height:14px;}
 
 /* ═══ RESPONSIVE ═══ */
 @media(max-width:480px){
-  .phone-frame{max-width:100%;min-height:100dvh;border-radius:0;}
+  .phone-frame{max-width:100%;min-height:100dvh;border-radius:0;border-left:none;border-right:none;}
   body{padding:0;}
-  #screen-title,.screen{min-height:100dvh;}
+  .screen{min-height:100dvh;}
 }
 @media(prefers-reduced-motion:reduce){
   *{transition:none!important;animation:none!important;}
-  .confetti{display:none;}
-  .gcell.highlight{animation:none;opacity:0.6;}
+  .confetti-container{display:none;}
+  .gcell.highlighted{animation:none;opacity:0.65;}
+  .gcell{transition:none!important;animation:none!important;}
+  .gcell.filled{animation:none;}
+  .check-icon-big{animation:none;}
 }
 
-/* ─── Mini grid thumbnails ─── */
-.mini-grid-cell{opacity:0;border-radius:1px;}
-.mini-grid-cell.show{opacity:1;}
+/* ═══ PALETTE COLORS ═══ */
+.game-1{--game-1:#E52521;} .game-2{--game-2:#0051A8;}
+.game-3{--game-3:#F59E0B;} .game-4{--game-4:#059669;}
+.game-5{--game-5:#7C3AED;} .game-6{--game-6:#0891B2;}
+.game-7{--game-7:#DC2626;} .game-8{--game-8:#0F766E;}
+.game-9{--game-9:#D97706;}
 </style>
 </head>
 <body>
 
 <div class="phone-frame" id="app">
+  <!-- ═══ STATUS BAR (global) ═══ -->
+  <div class="status-bar" id="status-bar">
+    <span class="time" id="status-time">9:41</span>
+    <div class="icons">
+      <svg width="14" height="10" viewBox="0 0 14 10"><rect x="1" y="1" width="12" height="8" rx="1.5" fill="none" stroke="currentColor" stroke-width="1"/><rect x="2" y="3" width="5" height="4" rx="0.5" fill="currentColor"/></svg>
+      <svg width="14" height="10" viewBox="0 0 14 10"><path d="M7 1C4.5 1 2.3 2.2 1 4c1.3 1.8 3.5 3 6 3s4.7-1.2 6-3c-1.3-1.8-3.5-3-6-3zm0 5a2 2 0 110-4 2 2 0 010 4z"/></svg>
+    </div>
+  </div>
+
   <!-- ═══ TITLE / LEVEL SELECT ═══ -->
   <section id="screen-title" class="screen active">
     <div class="header-bar">
-      <span style="font-family:var(--font-mono);font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--retro-muted);">ASTROCADE</span>
+      <button class="back-link" onclick="window.location.href='/'">
+        <svg viewBox="0 0 16 16"><path d="M10 2L4 8l6 6"/></svg>Arcade
+      </button>
       <button class="mute-btn" id="title-mute-btn" onclick="toggleMute()">🔊</button>
     </div>
 
     <div class="title-section">
       <h1>Color <span>Mosaic</span></h1>
-      <div class="subtitle">Choose your puzzle</div>
+      <div class="subtitle">Select a puzzle to begin</div>
     </div>
 
     <div class="puzzle-grid" id="level-grid"></div>
+
+    <button class="play-cta" id="play-cta" onclick="playSelected()" style="display:none;">
+      <svg viewBox="0 0 16 16"><path d="M4 2v12l10-6z"/></svg>Play Selected
+    </button>
   </section>
 
   <!-- ═══ GAMEPLAY ═══ -->
   <section id="screen-game" class="screen">
     <div class="game-header">
       <div class="left">
-        <button class="back-btn" onclick="goToMenu()">←</button>
-        <span class="timer" id="timer"><span class="label">⏱</span> 0:00</span>
+        <button class="back-btn" onclick="goToMenu()">
+          <svg viewBox="0 0 20 20"><path d="M12 4l-6 6 6 6"/></svg>
+        </button>
+        <span class="level-name" id="level-name">Twinkle Star</span>
       </div>
-      <div style="font-size:13px;font-weight:500;" id="level-name">Level 1</div>
-      <button class="mute-btn" id="game-mute-btn" onclick="toggleMute()">🔊</button>
+      <span class="timer" id="timer">0:00</span>
     </div>
 
     <div class="hint-label" id="hint-text">Select a color, then tap cells</div>
@@ -461,8 +536,8 @@ body{
     </div>
 
     <div class="progress-section">
-      <div class="progress-track">
-        <div class="progress-fill" id="progress-fill"></div>
+      <div class="progress-bar-track">
+        <div class="progress-bar-fill" id="progress-fill" style="width:0%;"></div>
       </div>
       <div class="progress-meta">
         <span id="progress-text">0 / 0</span>
@@ -473,18 +548,15 @@ body{
 
   <!-- ═══ RESULT ═══ -->
   <section id="screen-result" class="screen">
-    <div class="header-bar">
-      <span style="font-family:var(--font-mono);font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--retro-muted);">ASTROCADE</span>
-      <button class="mute-btn" onclick="toggleMute()">🔊</button>
-    </div>
-
-    <div class="result-content">
-      <div class="confetti" id="confetti"></div>
-      <div class="trophy" id="result-icon">🏆</div>
-      <div class="complete-title">Puzzle <span>Complete!</span></div>
+    <div class="results-content">
+      <div class="confetti-container" id="confetti"></div>
+      <div class="check-icon-big" id="result-icon-wrap">
+        <svg viewBox="0 0 28 28"><path d="M6 14l5 5 11-11"/></svg>
+      </div>
+      <div class="complete-title" id="result-title">Puzzle Complete</div>
+      <div class="complete-subtitle" id="result-subtitle">Twinkle Star · 1:42</div>
       <div class="new-best" id="new-best-badge" style="display:none;">
-        <svg width="12" height="12" viewBox="0 0 20 20"><path d="M10 1l2.4 7.2H20l-6.2 4.5 2.4 7.2L10 15.4l-6.2 4.5 2.4-7.2L0 8.2h7.6z" fill="currentColor"/></svg>
-        NEW BEST
+        <svg viewBox="0 0 20 20"><path d="M10 1l2.4 7.2H20l-6.2 4.5 2.4 7.2L10 15.4l-6.2 4.5 2.4-7.2L0 8.2h7.6z"/></svg>NEW BEST
       </div>
       <div class="score-card">
         <div class="score-big" id="result-score">0</div>
@@ -492,13 +564,19 @@ body{
         <div class="score-stats">
           <div><div class="stat-val" id="result-time">0:00</div><div class="stat-label">Time</div></div>
           <div><div class="stat-val" id="result-cells">0</div><div class="stat-label">Cells</div></div>
-          <div><div class="stat-val" id="result-bonus">1.0×</div><div class="stat-label">Bonus</div></div>
+          <div><div class="stat-val" id="result-bonus">1.0x</div><div class="stat-label">Bonus</div></div>
         </div>
       </div>
-      <div class="result-buttons">
-        <button class="btn-primary" onclick="playAgain()">▶ Play Again</button>
-        <button class="btn-secondary" id="btn-next" onclick="nextLevel()" style="display:none;">Next Puzzle</button>
-        <button class="btn-secondary" onclick="goToMenu()">☰ Menu</button>
+      <div class="results-buttons">
+        <button class="btn-primary" onclick="playAgain()">
+          <svg viewBox="0 0 14 14"><path d="M3 1v12l8-6z"/></svg>Play Again
+        </button>
+        <button class="btn-secondary" id="btn-next" onclick="nextLevel()" style="display:none;">
+          <svg viewBox="0 0 14 14"><path d="M3 1v12l8-6z"/></svg>Next Puzzle
+        </button>
+        <button class="btn-secondary" onclick="goToMenu()">
+          <svg viewBox="0 0 14 14"><path d="M2 3h10M2 7h10M2 11h10"/></svg>Menu
+        </button>
       </div>
     </div>
   </section>
@@ -518,19 +596,15 @@ body{
     '#049D10',       // 3 = Green
     '#FBD000',       // 4 = Yellow
     '#F59E0B',       // 5 = Orange
-    '#8B5CF6',       // 6 = Purple
-    '#EC4899',       // 7 = Pink
-    '#6B7280',       // 8 = Gray
+    '#7C3AED',       // 6 = Purple
+    '#DC2626',       // 7 = Pink/Red
+    '#0F766E',       // 8 = Teal
   ];
-
-  var COLOR_NAMES = ['','Red','Blue','Green','Yellow','Orange','Purple','Pink','Gray'];
 
   /* ═══════════════════════════════════════════
      LEVELS (12 total)
      ═══════════════════════════════════════════ */
 
-  /* Helper: create a grid with all cells set to color index.
-     Uses the same value for ALL cells — caller fills in pattern cells. */
   function makeGrid(rows, cols, fillVal) {
     var g = [];
     for (var r = 0; r < rows; r++) {
@@ -542,7 +616,6 @@ body{
     return g;
   }
 
-  /* Apply a pattern: call fn(r,c) to set cell value. */
   function pattern(grid, fn) {
     for (var r = 0; r < grid.length; r++) {
       for (var c = 0; c < grid[r].length; c++) {
@@ -552,370 +625,262 @@ body{
     return grid;
   }
 
-  /* Thumbnail preview data: small grid (8×8) for level select cards */
-  var THUMBS = {};
-
-  /* ─── EASY (10×10, 4 colors) ─── */
-  /* Level 1: Apple (red) */
+  /* Level 1: Twinkle Star (8x8, 4 colors) */
   function lvl1Grid() {
-    return pattern(makeGrid(10,10,0), function(r,c){
-      // Apple shape
-      if (r===0 && (c<2||c>7)) return 0;
-      if (r===1 && (c<1||c>8)) return 0;
-      if (r===2 && (c<0||c>9)) return 0;
-      if (r===3 && (c<0||c>9)) return 0;
-      if (r===4 && (c<0||c>9)) return 0;
-      if (r===5 && (c<0||c>9)) return 0;
-      if (r===6 && (c<0||c>9)) return 0;
-      if (r===7 && (c<1||c>8)) return 0;
-      if (r===8 && (c<2||c>7)) return 0;
-      if (r===9 && (c<4&&c>5)) return 0; // stem area
-      // Body
-      if (r===0 && c===4) return 3; // stem green
-      if (r===0 && c===5) return 3;
-      if (r===1 && c===4) return 3;
-      if (r===1 && c===5) return 3;
-      // Leaf
-      if (r===2 && c===8) return 3;
-      if (r===3 && c===8) return 3;
-      // Apple body red
-      if (r===2||r===3||r===4||r===5||r===6) return 1;
-      if (r===7 && (c>2&&c<7)) return 1;
-      if (r===8 && (c>3&&c<6)) return 1;
-      return 1;
+    return pattern(makeGrid(8,8,0), function(r,c){
+      if (r===0&&c!==3&&c!==4) return 0;
+      if (r===1&&c!==2&&c!==3&&c!==4&&c!==5) return 0;
+      if (r===2&&c!==1&&c!==2&&c!==3&&c!==4&&c!==5&&c!==6) return 0;
+      if (r===3&&c!==0&&c!==1&&c!==2&&c!==3&&c!==4&&c!==5&&c!==6&&c!==7) return 0;
+      if (r===4&&c!==0&&c!==1&&c!==2&&c!==3&&c!==4&&c!==5&&c!==6&&c!==7) return 0;
+      if (r===5&&c!==1&&c!==2&&c!==3&&c!==4&&c!==5&&c!==6) return 0;
+      if (r===6&&c!==2&&c!==3&&c!==4&&c!==5) return 0;
+      if (r===7&&c!==3&&c!==4) return 0;
+      return (r===3||r===4)&&c===3||(r===3||r===4)&&c===4?4:3;
     });
   }
 
-  /* Level 2: Heart (red/pink) */
+  /* Level 2: Heart Beat (8x8, 4 colors) */
   function lvl2Grid() {
-    return pattern(makeGrid(10,10,0), function(r,c){
-      if (r===0 && (c<2||c>7)) return 0;
-      if (r===1 && (c<1||c>8)) return 0;
-      if (r===2 && (c<0||c>9)) return 0;
-      if (r===3 && (c<0||c>9)) return 0;
-      if (r===4 && (c<0||c>9)) return 0;
-      if (r===5 && (c<0||c>9)) return 0;
-      if (r===6 && (c<1||c>8)) return 0;
-      if (r===7 && (c<2||c>7)) return 0;
-      if (r===8 && (c<3||c>6)) return 0;
-      if (r===9 && (c<4||c>5)) return 0;
-      // Two lobes
-      if ((r===0||r===1) && c>=2 && c<=4) return 7;
-      if ((r===0||r===1) && c>=5 && c<=7) return 7;
-      if (r===2 && c>=1 && c<=4) return 7;
-      if (r===2 && c>=5 && c<=8) return 7;
-      if (r===3 && c>=1 && c<=8) return 1;
-      if (r===4 && c>=1 && c<=8) return 1;
-      if (r===5 && c>=2 && c<=7) return 1;
-      if (r===6 && c>=3 && c<=6) return 1;
-      if (r===7 && c>=4 && c<=5) return 1;
-      return 0;
+    return pattern(makeGrid(8,8,0), function(r,c){
+      if (r===0&&(c<2||c>5)) return 0;
+      if (r===1&&(c<1||c>6)) return 0;
+      if (r===2&&(c<0||c>7)) return 0;
+      if (r===3&&(c<0||c>7)) return 0;
+      if (r===4&&(c<0||c>7)) return 0;
+      if (r===5&&(c<1||c>6)) return 0;
+      if (r===6&&(c<2||c>5)) return 0;
+      if (r===7&&(c<3||c>4)) return 0;
+      if (r===0&&c>=2&&c<=3) return 2;
+      if (r===0&&c>=4&&c<=5) return 2;
+      if (r===1&&(c===2||c===3||c===4||c===5)) return 7;
+      if (r===2&&(c===2||c===3||c===4||c===5)) return 7;
+      if (r===3&&(c===3||c===4)) return 4;
+      return 7;
     });
   }
 
-  /* Level 3: Star (yellow) */
+  /* Level 3: Shining Star (8x8, 4 colors) - actually just the original star */
   function lvl3Grid() {
-    return pattern(makeGrid(10,10,0), function(r,c){
-      // 5-pointed star shape
-      if (r===0 && c!==4) return 0;
-      if (r===1 && c!==3&&c!==4&&c!==5) return 0;
-      if (r===2 && c!==1&&c!==2&&c!==3&&c!==4&&c!==5&&c!==6&&c!==7) return 0;
-      if (r===3 && c!==0&&c!==1&&c!==2&&c!==3&&c!==4&&c!==5&&c!==6&&c!==7&&c!==8) return 0;
-      if (r===4 && c!==0&&c!==1&&c!==2&&c!==3&&c!==4&&c!==5&&c!==6&&c!==7&&c!==8) return 0;
-      if (r===5 && c!==1&&c!==2&&c!==3&&c!==4&&c!==5&&c!==6&&c!==7) return 0;
-      if (r===6 && c!==2&&c!==3&&c!==4&&c!==5&&c!==6) return 0;
-      if (r===7 && c!==3&&c!==4&&c!==5) return 0;
-      if (r===8 && c!==4) return 0;
-      if (r===9) return 0;
-      // Star points have yellow; center has orange accent
-      if ((r===3||r===4) && c===4) return 5;
-      return 4;
+    return pattern(makeGrid(8,8,0), function(r,c){
+      if (r===0&&c!==3&&c!==4) return 0;
+      if (r===1&&c!==2&&c!==3&&c!==4&&c!==5) return 0;
+      if (r===2&&c!==1&&c!==2&&c!==3&&c!==4&&c!==5&&c!==6) return 0;
+      if (r===3&&c!==0&&c!==1&&c!==2&&c!==3&&c!==4&&c!==5&&c!==6&&c!==7) return 0;
+      if (r===4&&c!==1&&c!==2&&c!==3&&c!==4&&c!==5&&c!==6) return 0;
+      if (r===5&&c!==2&&c!==3&&c!==4&&c!==5) return 0;
+      if (r===6&&c!==3&&c!==4) return 0;
+      if (r===7) return 0;
+      return (r===2||r===3)&&c===3||(r===2||r===3)&&c===4?4:3;
     });
   }
 
-  /* Level 4: Flower (multicolor) */
+  /* Level 4: Pink Flower (10x10, 4 colors) */
   function lvl4Grid() {
     return pattern(makeGrid(10,10,0), function(r,c){
-      if (r===0 && (c<3||c>6)) return 0;
-      if (r===1 && (c<2||c>7)) return 0;
-      if (r===2 && (c<1||c>8)) return 0;
-      if (r===3 && (c<0||c>9)) return 0;
-      if (r===4 && (c<0||c>9)) return 0;
-      if (r===5 && (c<1||c>8)) return 0;
-      if (r===6 && (c<2||c>7)) return 0;
-      if (r===7 && (c<3||c>6)) return 0;
-      if (r===8 && (c<4||c>5)) return 0;
+      if (r===0&&(c<3||c>6)) return 0;
+      if (r===1&&(c<2||c>7)) return 0;
+      if (r===2&&(c<1||c>8)) return 0;
+      if (r===3&&(c<0||c>9)) return 0;
+      if (r===4&&(c<0||c>9)) return 0;
+      if (r===5&&(c<1||c>8)) return 0;
+      if (r===6&&(c<2||c>7)) return 0;
+      if (r===7&&(c<3||c>6)) return 0;
+      if (r===8&&(c<4||c>5)) return 0;
       if (r===9) return 0;
-      // Petals
-      if (r===0||r===1) return 7; // top petals pink
-      if (r===2 && c>=2&&c<=4) return 7;
-      if (r===2 && c>=5&&c<=7) return 1;
-      if (r===3 && c>=1&&c<=3) return 7;
-      if (r===3 && c>=6&&c<=8) return 1;
-      if (r===4 && c>=1&&c<=2) return 7;
-      if (r===4 && c>=7&&c<=8) return 1;
-      if (r===5 && c>=2&&c<=3) return 3;
-      if (r===5 && c>=6&&c<=7) return 1;
-      if (r===6 && (c===3||c===4||c===5||c===6)) return 3;
-      if (r===7 && c===4||c===5) return 3;
-      // Center
-      if ((r===2||r===3||r===4||r===5) && c===4) return 4;
-      if ((r===2||r===3||r===4||r===5) && c===5) return 4;
+      if (r===0||r===1) return 7;
+      if ((r===2||r===3)&&c>=2&&c<=4) return 7;
+      if ((r===2||r===3)&&c>=5&&c<=7) return 1;
+      if (r===4&&(c===1||c===2)) return 7;
+      if (r===4&&(c===7||c===8)) return 1;
+      if (r===5&&(c===2||c===3)) return 3;
+      if (r===5&&(c===6||c===7)) return 1;
+      if ((r===6||r===7)&&c>=3&&c<=6) return 3;
+      if (r===8&&c>=4&&c<=5) return 3;
+      if ((r===2||r===3||r===4||r===5)&&c>=4&&c<=5) return 4;
       return 0;
     });
   }
 
-  /* ─── MEDIUM (15×15, 6 colors) ─── */
-  /* Level 5: House */
+  /* Level 5: Cozy House (10x10, 4 colors) */
   function lvl5Grid() {
-    return pattern(makeGrid(15,15,0), function(r,c){
-      // Roof triangle
-      if (r<2 && (c<5||c>9)) return 0;
-      if (r===2 && (c<4||c>10)) return 0;
-      if (r===3 && (c<3||c>11)) return 0;
-      if (r===4 && (c<2||c>12)) return 0;
-      if (r===5 && (c<1||c>13)) return 0;
-      // Walls
-      if (r>=6 && r<=12 && (c<1||c>13)) return 0;
-      if (r>12) return 0;
-      // Roof fill (red)
-      if (r<=5) return 1;
-      // Walls (yellow/white)
-      if (r>=6 && r<=12) {
-        // Window
-        if (r>=7 && r<=9 && c>=3 && c<=6) return 4;
-        if (r>=7 && r<=9 && c>=8 && c<=11) return 4;
-        // Door
-        if (r>=10 && r<=12 && c>=6 && c<=8) return 5;
-        // Wall
-        if (r>=6 && r<=12) return 4;
+    return pattern(makeGrid(10,10,0), function(r,c){
+      if (r<1&&(c<3||c>6)) return 0;
+      if (r===1&&(c<2||c>7)) return 0;
+      if (r===2&&(c<1||c>8)) return 0;
+      if (r===3&&(c<0||c>9)) return 0;
+      if (r>8) return 0;
+      if (r<=3) return 1;
+      if (r===4) return 2;
+      if (r>=5&&r<=8) {
+        if (r>=6&&r<=7&&c>=3&&c<=4) return 4;
+        if (r>=6&&r<=7&&c>=6&&c<=7) return 4;
+        if (r>=6&&r<=8&&c>=5&&c<=5) return 5;
+        if (r===8&&c>=5&&c<=5) return 5;
+        return 4;
       }
       return 4;
     });
   }
 
-  /* Level 6: Tree */
+  /* Level 6: Tall Tree (10x10, 4 colors) */
   function lvl6Grid() {
-    return pattern(makeGrid(15,15,0), function(r,c){
-      // Trunk
-      if (r>=9 && r<=13 && c>=6 && c<=8) return 5;
-      // Canopy — circle-ish
-      var dr = Math.abs(r-5), dc = Math.abs(c-7);
-      var dist = Math.sqrt(dr*dr + dc*dc);
-      if (dist <= 5 && r<=8) return 3;
-      if (dist <= 5.5 && r<=9) return 3;
-      // Fruits (red dots)
-      if ((r===3||r===4) && (c===4||c===10)) return 1;
-      if ((r===6||r===7) && (c===9||c===4)) return 1;
-      if (r===2 && c===7) return 1;
+    return pattern(makeGrid(10,10,0), function(r,c){
+      if (r>=7&&r<=9&&c>=4&&c<=5) return 5;
+      var dr=Math.abs(r-3), dc=Math.abs(c-4);
+      if (dr*dr+dc*dc<=9&&r<=5) return 3;
+      if (dr*dr+dc*dc<=12&&r<=6) return 3;
+      if ((r===1||r===2)&&(c===2||c===6)) return 1;
+      if ((r===4||r===5)&&(c===1||c===7)) return 1;
+      if (r===0&&c===4) return 1;
       return 0;
     });
   }
 
-  /* Level 7: Fish */
+  /* Level 7: Blue Fish (12x12, 5 colors) */
   function lvl7Grid() {
-    return pattern(makeGrid(15,15,0), function(r,c){
-      // Body ellipse
-      var cr=6, cc=5; // center row/col for body
-      var dr = Math.abs(r-cr), dc = Math.abs(c-cc);
-      // Body
-      if (dr*2 + dc > 6) return 0;
-      // Tail
-      if (c>=10 && c<=12 && r>=4 && r<=8) {
-        if (c===10 && (r>=5&&r<=7)) return 2;
-        if (c===11 && (r===5||r===7)) return 2;
-        if (c===11 && r===6) return 2;
-        if (c===12 && r===6) return 2;
+    return pattern(makeGrid(12,12,0), function(r,c){
+      var dr=Math.abs(r-5), dc=Math.abs(c-5);
+      if (dr*2+dc>6) return 0;
+      if (c>=9&&c<=11&&r>=3&&r<=7) {
+        if (c===9&&(r>=4&&r<=6)) return 2;
+        if (c===10&&(r===4||r===6)) return 2;
+        if (c===10&&r===5) return 2;
+        if (c===11&&r===5) return 2;
         return 0;
       }
-      // Fin
-      if (r<=3 && c>=4 && c<=6) return 6;
-      if (r<=2 && c===5) return 6;
-      // Eye
-      if (r===5 && c===3) return 7;
-      if (r===5 && c===2) return 7;
-      // Body color
-      if (r>=4 && r<=8 && c>=2 && c<=9) return 2;
+      if (r<=2&&c>=3&&c<=5) return 6;
+      if (r<=1&&c===4) return 6;
+      if (r===4&&c===2) return 7;
+      if (r===4&&c===1) return 7;
+      if (r>=3&&r<=7&&c>=1&&c<=8) return 2;
       return 0;
     });
   }
 
-  /* Level 8: Gem/Diamond */
+  /* Level 8: Crystal Gem (12x12, 5 colors) */
   function lvl8Grid() {
-    return pattern(makeGrid(15,15,0), function(r,c){
-      // Diamond shape
-      var hw = function(ro) {
-        if (ro<0||ro>14) return -1;
-        if (ro<=7) return ro-1;
-        return 14-ro-1;
+    return pattern(makeGrid(12,12,0), function(r,c){
+      var center=5;
+      var hw=function(ro){
+        if(ro<0||ro>11) return -1;
+        if(ro<=center) return ro;
+        return 11-ro;
       };
-      var hw2 = function(ro) {
-        if (ro<0||ro>14) return -1;
-        if (ro<=7) return ro;
-        return 14-ro;
-      };
-      var left = 7 - hw2(r);
-      var right = 7 + hw2(r);
-      if (c<left || c>right) return 0;
-      // Colors
-      if (r<=4) return 2;
-      if (r<=7) return 2;
-      if (r<=10) return 6;
+      var w=hw(r);
+      if(c<center-w||c>center+w) return 0;
+      if(r<=3) return 2;
+      if(r<=center) return 2;
+      if(r<=8) return 6;
       return 6;
     });
   }
 
-  /* ─── HARD (20×20, 8 colors) ─── */
-  /* Level 9: Butterfly */
+  /* Level 9: Butterfly (15x15, 6 colors) */
   function lvl9Grid() {
-    return pattern(makeGrid(20,20,0), function(r,c){
-      // Center line
-      if (c<7||c>12) return 0;
-      // Body
-      if (c>=9&&c<=10 && r>=5&&r<=14) return 8;
-      // Antennae
-      if ((c===9||c===10) && r>=2&&r<=4) return 8;
-      if (r===1 && (c===8||c===11)) return 8;
-      if (r===0 && (c===7||c===12)) return 8;
-      // Left wing (upper)
-      if (r>=3&&r<=8 && c>=3&&c<=8) return 7;
-      // Left wing (lower)
-      if (r>=8&&r<=13 && c>=3&&c<=8) return 5;
-      // Right wing (upper)
-      if (r>=3&&r<=8 && c>=11&&c<=16) return 7;
-      // Right wing (lower)
-      if (r>=8&&r<=13 && c>=11&&c<=16) return 5;
-      // Wing spots
-      if (r>=4&&r<=6 && c>=4&&c<=6) return 2;
-      if (r>=4&&r<=6 && c>=13&&c<=15) return 2;
+    return pattern(makeGrid(15,15,0), function(r,c){
+      if(c<5||c>9) return 0;
+      if(c>=7&&c<=7&&r>=4&&r<=10) return 8;
+      if((c===6||c===8)&&r>=4&&r<=10) return 8;
+      if(r>=2&&r<=3&&(c===6||c===8)) return 8;
+      if(r===1&&(c===5||c===9)) return 8;
+      if(r===0&&(c===4||c===10)) return 8;
+      if(r>=2&&r<=6&&c>=2&&c<=5) return 7;
+      if(r>=6&&r<=10&&c>=2&&c<=5) return 5;
+      if(r>=2&&r<=6&&c>=9&&c<=12) return 7;
+      if(r>=6&&r<=10&&c>=9&&c<=12) return 5;
+      if(r>=3&&r<=5&&c>=3&&c<=4) return 2;
+      if(r>=3&&r<=5&&c>=10&&c<=11) return 2;
       return 0;
     });
   }
 
-  /* Level 10: Castle */
+  /* Level 10: Old Castle (15x15, 6 colors) */
   function lvl10Grid() {
-    return pattern(makeGrid(20,20,0), function(r,c){
-      if (c<2||c>17) return 0;
-      if (r>17) return 0;
-      // Ground
-      if (r>=16) return 3;
-      // Towers
-      if (c>=2&&c<=4 || c>=15&&c<=17) {
-        if (r<=7) return 1;
-        if (r<=15) return 8;
-        return 8;
+    return pattern(makeGrid(15,15,0), function(r,c){
+      if(c<2||c>12) return 0;
+      if(r>12) return 0;
+      if(r>=11) return 3;
+      if((c>=2&&c<=3)||(c>=11&&c<=12)) {
+        if(r<=5) return 1;
+        if(r<=10) return 8;
       }
-      // Battlements on towers
-      if ((c===2||c===4||c===15||c===17) && r<=6) return 1;
-      if ((c===2||c===4||c===15||c===17) && r===7) return 1;
-      // Main wall
-      if (r>=6&&r<=15 && c>=5&&c<=14) return 8;
-      // Battlements main
-      if (r===5 && c>=5&&c<=14 && c%2===0) return 1;
-      // Door
-      if (r>=12&&r<=15 && c>=8&&c<=11) return 5;
-      if (r>=13&&r<=15 && c>=9&&c<=10) return 5;
-      // Windows
-      if (r>=7&&r<=9 && c>=7&&c<=8) return 4;
-      if (r>=7&&r<=9 && c>=11&&c<=12) return 4;
+      if((c===2||c===3||c===11||c===12)&&r<=5) return 1;
+      if(r>=4&&r<=10&&c>=4&&c<=10) return 8;
+      if(r===3&&c>=4&&c<=10&&c%2===0) return 1;
+      if(r>=9&&r<=10&&c>=6&&c<=8) return 5;
+      if(r>=5&&r<=7&&c>=5&&c<=6) return 4;
+      if(r>=5&&r<=7&&c>=8&&c<=9) return 4;
       return 0;
     });
   }
 
-  /* Level 11: Rocket */
+  /* Level 11: Space Rocket (15x15, 6 colors) */
   function lvl11Grid() {
-    return pattern(makeGrid(20,20,0), function(r,c){
-      if (c<6||c>13) return 0;
-      // Nose cone
-      if (r<=2 && (c<8||c>11)) return 0;
-      if (r===3 && (c<7||c>12)) return 0;
-      // Body
-      if (r>18) return 0;
-      // Nose cone (red)
-      if (r<=4) return 1;
-      // Body
-      if (r>=5&&r<=12) return 2;
-      if (r>=13&&r<=15) return 2;
-      // Fins
-      if (r>=14&&r<=17) {
-        if (c>=6&&c<=7) return 1;
-        if (c>=12&&c<=13) return 1;
-      }
-      // Window
-      if (r>=7&&r<=10 && c>=8&&c<=11) {
-        if (r===7 || r===10 || c===8 || c===11) return 8;
+    return pattern(makeGrid(15,15,0), function(r,c){
+      if(c<5||c>9) return 0;
+      if(r<=1&&(c<6||c>8)) return 0;
+      if(r===2&&(c<5||c>9)) return 0;
+      if(r>13) return 0;
+      if(r<=3) return 1;
+      if(r>=4&&r<=10) return 2;
+      if(r>=11&&r<=12&&(c===5||c===9)) return 1;
+      if(r>=7&&r<=9&&c>=6&&c<=8) {
+        if(r===7||r===9||c===6||c===8) return 8;
         return 2;
       }
-      if (r>=8&&r<=9 && c>=9&&c<=10) return 1;
-      // Flame
-      if (r>=17&&r<=19 && c>=8&&c<=11) return 4;
-      if (r>=18&&r<=19 && c>=9&&c<=10) return 5;
+      if(r>=8&&r<=8&&c>=7&&c<=7) return 1;
+      if(r>=12&&r<=13&&c>=6&&c<=8) return 4;
+      if(r>=13&&r<=13&&c>=7&&c<=7) return 5;
       return 0;
     });
   }
 
-  /* Level 12: Owl */
+  /* Level 12: Wise Owl (15x15, 6 colors) */
   function lvl12Grid() {
-    return pattern(makeGrid(20,20,0), function(r,c){
-      if (c<2||c>17) return 0;
-      if (r>18) return 0;
-      // Ear tufts
-      if (r===0 && (c<5||c>14)) return 0;
-      if (r===1 && (c<3||c>16)) return 0;
-      if (r===1 && c>=7&&c<=12) return 0;
-      if (r===0 && c>=8&&c<=11) return 0;
-      // Ear tufts (brown)
-      if (r===0 && (c===5||c===6||c===13||c===14)) return 5;
-      if (r===1 && (c===3||c===4||c===5||c===6||c===13||c===14||c===15||c===16)) return 5;
-      // Body
-      if (r>=2&&r<=16) {
-        // Head circle
-        if (r<=7) {
-          if (c<4||c>15) return 0;
-          // Eyes
-          if (r>=3&&r<=6 && c>=5&&c<=8) return 4;
-          if (r>=3&&r<=6 && c>=11&&c<=14) return 4;
-          // Eye pupils
-          if (r>=4&&r<=5 && c>=6&&c<=7) return 8;
-          if (r>=4&&r<=5 && c>=12&&c<=13) return 8;
-          // Beak
-          if (r===5&&r===6 && c>=9&&c<=10) return 5;
-          // Face fill
-          if (c>=4&&c<=15) return 7;
-          if (c>=7&&c<=12) return 5;
+    return pattern(makeGrid(15,15,0), function(r,c){
+      if(c<3||c>11) return 0;
+      if(r===0&&(c<5||c>9)) return 0;
+      if(r===1&&(c<4||c>10)) return 0;
+      if(r===0&&c>=6&&c<=8) return 0;
+      if(r===1&&c>=6&&c<=8) return 0;
+      if(r===0&&(c===5||c===9)) return 5;
+      if(r===1&&(c===4||c===5||c===9||c===10)) return 5;
+      if(r>=2&&r<=12) {
+        if(r<=5) {
+          if(c<5||c>9) return 0;
+          if((r>=2&&r<=4)&&(c>=5&&c<=6)) return 4;
+          if((r>=2&&r<=4)&&(c>=8&&c<=9)) return 4;
+          if((r>=3&&r<=3)&&(c>=6&&c<=6)) return 8;
+          if((r>=3&&r<=3)&&(c>=8&&c<=8)) return 8;
+          if(r>=4&&r<=5&&c>=6&&c<=8) return 5;
           return 7;
         }
-        // Body
-        if (r<=12) {
-          if (c<4||c>15) return 0;
+        if(r<=9) {
+          if(c<5||c>9) return 0;
           return 5;
         }
-        // Belly
-        if (r<=16) {
-          if (c<5||c>14) return 0;
-          return 4;
-        }
+        if(c<5||c>9) return 0;
+        return 4;
       }
-      // Feet
-      if (r>=17&&r<=18 && c>=6&&c<=13) return 5;
-      if (c===6||c===7||c===12||c===13) return 5;
+      if(r>=13&&r<=14&&c>=5&&c<=9) return 5;
       return 0;
     });
   }
 
   var LEVELS = [
-    { name:'Red Apple',   icon:'🍎', grid:lvl1Grid,  diff:'easy',   size:'10×10', colors:4 },
-    { name:'Warm Heart',  icon:'❤️', grid:lvl2Grid,  diff:'easy',   size:'10×10', colors:4 },
-    { name:'Shining Star',icon:'⭐', grid:lvl3Grid,  diff:'easy',   size:'10×10', colors:4 },
-    { name:'Pretty Flower',icon:'🌸',grid:lvl4Grid,  diff:'easy',   size:'10×10', colors:4 },
-    { name:'Cozy House',  icon:'🏠', grid:lvl5Grid,  diff:'medium', size:'15×15', colors:6 },
-    { name:'Tall Tree',   icon:'🌲', grid:lvl6Grid,  diff:'medium', size:'15×15', colors:6 },
-    { name:'Blue Fish',   icon:'🐟', grid:lvl7Grid,  diff:'medium', size:'15×15', colors:6 },
-    { name:'Crystal Gem', icon:'💎', grid:lvl8Grid,  diff:'medium', size:'15×15', colors:6 },
-    { name:'Butterfly',   icon:'🦋', grid:lvl9Grid,  diff:'hard',   size:'20×20', colors:8 },
-    { name:'Old Castle',  icon:'🏰', grid:lvl10Grid, diff:'hard',   size:'20×20', colors:8 },
-    { name:'Space Rocket',icon:'🚀', grid:lvl11Grid, diff:'hard',   size:'20×20', colors:8 },
-    { name:'Wise Owl',    icon:'🦉', grid:lvl12Grid, diff:'hard',   size:'20×20', colors:8 },
+    { name:'Twinkle Star',  icon:'⭐', grid:lvl1Grid,  diff:'easy',   size:'8×8' },
+    { name:'Heart Beat',    icon:'❤️', grid:lvl2Grid,  diff:'easy',   size:'8×8' },
+    { name:'Shining Star',  icon:'🌟', grid:lvl3Grid,  diff:'easy',   size:'8×8' },
+    { name:'Pink Flower',   icon:'🌸', grid:lvl4Grid,  diff:'easy',   size:'10×10' },
+    { name:'Cozy House',    icon:'🏠', grid:lvl5Grid,  diff:'easy',   size:'10×10' },
+    { name:'Tall Tree',     icon:'🌲', grid:lvl6Grid,  diff:'medium', size:'10×10' },
+    { name:'Blue Fish',     icon:'🐟', grid:lvl7Grid,  diff:'medium', size:'12×12' },
+    { name:'Crystal Gem',   icon:'💎', grid:lvl8Grid,  diff:'medium', size:'12×12' },
+    { name:'Butterfly',     icon:'🦋', grid:lvl9Grid,  diff:'medium', size:'15×15' },
+    { name:'Old Castle',    icon:'🏰', grid:lvl10Grid, diff:'hard',   size:'15×15' },
+    { name:'Space Rocket',  icon:'🚀', grid:lvl11Grid, diff:'hard',   size:'15×15' },
+    { name:'Wise Owl',      icon:'🦉', grid:lvl12Grid, diff:'hard',   size:'15×15' },
   ];
 
   /* ═══════════════════════════════════════════
@@ -924,8 +889,9 @@ body{
 
   var state = {
     currentLevel: 0,
+    selectedLevel: 0,
     unlockedLevel: 1,
-    gridState: [],     // 2D array: which cells are filled (palette index)
+    gridState: [],
     correctCount: 0,
     totalFillable: 0,
     selectedColor: 0,
@@ -937,8 +903,8 @@ body{
     cursorCol: -1,
     muted: false,
     highScore: 0,
-    levelScores: {},   // { levelIdx: bestScore }
-    levelCompleted: {}, // { levelIdx: true }
+    levelScores: {},
+    levelCompleted: {},
   };
 
   var timerLast = 0;
@@ -984,15 +950,16 @@ body{
     } catch(e) {}
   }
 
-  function sfxSelect() {
-    playTone(500, 'sine', 0.08, 0.08);
-  }
-
+  function sfxSelect() { playTone(500, 'sine', 0.08, 0.08); }
   function sfxPaint() {
     playTone(700, 'sweep', 0.06, 0.07);
     try { if (navigator.vibrate) navigator.vibrate(10); } catch(e) {}
   }
-
+  function sfxError() {
+    playTone(200, 'sawtooth', 0.15, 0.1);
+    playTone(150, 'square', 0.12, 0.06);
+    try { if (navigator.vibrate) navigator.vibrate([5,10,10]); } catch(e) {}
+  }
   function sfxComplete() {
     playTone(523, 'sine', 0.12, 0.08);
     setTimeout(function(){ playTone(659, 'sine', 0.12, 0.08); }, 100);
@@ -1041,15 +1008,16 @@ body{
   }
 
   /* ═══════════════════════════════════════════
-     MUTE TOGGLE (global)
+     MUTE TOGGLE
      ═══════════════════════════════════════════ */
 
-  window.toggleMute = function() {
+  function toggleMute() {
     state.muted = !state.muted;
     var icon = state.muted ? '🔇' : '🔊';
     var els = document.querySelectorAll('.mute-btn');
     for (var i = 0; i < els.length; i++) els[i].textContent = icon;
-  };
+  }
+  window.toggleMute = toggleMute;
 
   /* ═══════════════════════════════════════════
      LEVEL SELECTOR
@@ -1070,9 +1038,9 @@ body{
       // Thumbnail
       var thumbHtml = '<div class="thumb">';
       if (locked) {
-        thumbHtml += '🔒';
+        thumbHtml += '<svg viewBox="0 0 24 24" width="24" height="24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 118 0v4"/></svg>';
       } else {
-        thumbHtml += lvl.icon;
+        thumbHtml += '<span style="font-size:28px">' + lvl.icon + '</span>';
       }
       thumbHtml += '</div>';
 
@@ -1082,27 +1050,29 @@ body{
         var starCount = s >= 1200 ? 3 : s >= 800 ? 2 : 1;
         starsHtml = '<span class="stars">';
         for (var si = 0; si < 3; si++) {
-          starsHtml += '<svg width="10" height="10" viewBox="0 0 20 20"><path d="M10 1l2.4 7.2H20l-6.2 4.5 2.4 7.2L10 15.4l-6.2 4.5 2.4-7.2L0 8.2h7.6z" fill="' + (si < starCount ? 'var(--retro-gold)' : 'rgba(0,0,0,0.08)') + '"/></svg>';
+          starsHtml += '<svg width="10" height="10" viewBox="0 0 20 20"><path d="M10 1l2.4 7.2H20l-6.2 4.5 2.4 7.2L10 15.4l-6.2 4.5 2.4-7.2L0 8.2h7.6z" fill="' + (si < starCount ? '#F59E0B' : 'oklch(0.85 0 0)') + '"/></svg>';
         }
         starsHtml += '</span>';
       }
 
       card.innerHTML =
-        (locked ? '<div class="lock-overlay">🔒</div>' : '') +
+        (locked ? '<div class="lock-overlay"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 118 0v4"/></svg></div>' : '') +
         thumbHtml +
         '<div class="name">' + lvl.name + '</div>' +
         '<div class="meta">' +
           '<span class="difficulty ' + lvl.diff + '">' + lvl.diff + '</span>' +
-          '<span>' + lvl.size + '</span>' +
+          '<span class="grid-size">' + lvl.size + '</span>' +
           starsHtml +
         '</div>';
 
       if (!locked) {
         card.addEventListener('click', function(idx){
           return function(){
-            state.currentLevel = idx;
-            initAudio();
-            startLevel(idx);
+            state.selectedLevel = idx;
+            // Visual active state
+            document.querySelectorAll('.puzzle-card').forEach(function(c){ c.classList.remove('active'); });
+            card.classList.add('active');
+            $('play-cta').style.display = '';
           };
         }(i));
       }
@@ -1110,6 +1080,19 @@ body{
       grid.appendChild(card);
     });
   }
+
+  /* ═══════════════════════════════════════════
+     PLAY SELECTED
+     ═══════════════════════════════════════════ */
+
+  function playSelected() {
+    if (state.selectedLevel !== undefined) {
+      state.currentLevel = state.selectedLevel;
+      initAudio();
+      startLevel(state.currentLevel);
+    }
+  }
+  window.playSelected = playSelected;
 
   /* ═══════════════════════════════════════════
      GAME SETUP
@@ -1150,12 +1133,12 @@ body{
     renderGrid(lvl);
 
     // Update header
-    $('level-name').textContent = 'Level ' + (levelIdx + 1) + ': ' + lvlDef.name;
+    $('level-name').textContent = lvlDef.name;
     $('progress-text').textContent = '0 / ' + total;
     $('progress-fill').style.width = '0%';
     $('progress-pct').textContent = '0%';
 
-    $('hint-text').textContent = levelIdx === 0 ? '💡 Select a color, then tap cells to fill' : '🎨 Fill in the mosaic!';
+    $('hint-text').textContent = 'Select a color, then tap cells';
     showScreen('screen-game');
   }
 
@@ -1193,7 +1176,7 @@ body{
       swatch.innerHTML =
         '<span class="color-dot" style="background:' + PALETTE[ci] + '"></span>' +
         '<span class="num">' + ci + '</span>' +
-        '<span class="count">×' + remaining + '</span>';
+        '<span class="count">' + remaining + '</span>';
 
       swatch.addEventListener('pointerdown', function(e){
         e.preventDefault();
@@ -1211,13 +1194,9 @@ body{
       swatches[i].classList.toggle('active', parseInt(swatches[i].getAttribute('data-color')) === ci);
     }
     sfxSelect();
-    // Update hints
-    var lvl = LEVELS[state.currentLevel].grid();
-    $('hint-text').textContent = 'Tap cells with number ' + ci + ' to fill';
     // Highlight matching cells
+    var lvlGrid = LEVELS[state.currentLevel].grid();
     var cells = gridEl.children;
-    var lvlIdx = state.currentLevel;
-    var lvlGrid = LEVELS[lvlIdx].grid();
     for (var idx = 0; idx < cells.length; idx++) {
       var row = parseInt(cells[idx].getAttribute('data-row'));
       var col = parseInt(cells[idx].getAttribute('data-col'));
@@ -1225,12 +1204,13 @@ body{
         var target = lvlGrid[row][col];
         var filled = state.gridState[row] && state.gridState[row][col] > 0;
         if (target === ci && !filled) {
-          cells[idx].classList.add('highlight');
+          cells[idx].classList.add('highlighted');
         } else {
-          cells[idx].classList.remove('highlight');
+          cells[idx].classList.remove('highlighted');
         }
       }
     }
+    $('hint-text').textContent = 'Tap cells with number ' + ci + ' to fill';
   }
 
   function deselectColor() {
@@ -1239,7 +1219,7 @@ body{
     for (var i = 0; i < swatches.length; i++) swatches[i].classList.remove('active');
     var cells = gridEl.children;
     for (var idx = 0; idx < cells.length; idx++) {
-      cells[idx].classList.remove('highlight');
+      cells[idx].classList.remove('highlighted');
     }
     $('hint-text').textContent = 'Select a color, then tap cells';
   }
@@ -1263,7 +1243,7 @@ body{
 
         var val = lvl[r][c];
         if (val === 0) {
-          cell.style.background = 'rgba(0,0,0,0.02)';
+          cell.style.visibility = 'hidden';
           cell.style.cursor = 'default';
         } else {
           cell.classList.add('unfilled');
@@ -1282,8 +1262,8 @@ body{
 
   function paintCell(row, col) {
     if (state.selectedColor === 0) {
-      $('hint-text').style.opacity = '0.9';
-      setTimeout(function(){ $('hint-text').style.opacity = '0.5'; }, 800);
+      $('hint-text').style.opacity = '0.5';
+      setTimeout(function(){ $('hint-text').style.opacity = '1'; }, 800);
       return;
     }
 
@@ -1292,6 +1272,8 @@ body{
     if (target === 0) return;
 
     var currentVal = state.gridState[row][col];
+
+    // Toggle off if same color
     if (currentVal === state.selectedColor) {
       state.gridState[row][col] = 0;
       state.correctCount--;
@@ -1300,17 +1282,32 @@ body{
       return;
     }
 
+    // If previously filled with a different color, decrement correct count
     if (currentVal > 0) {
       state.correctCount--;
     }
 
     state.gridState[row][col] = state.selectedColor;
-    updateCellVisual(row, col, state.selectedColor, lvlGrid);
 
     if (state.selectedColor === target) {
       state.correctCount++;
       sfxPaint();
+    } else {
+      // Wrong color feedback
+      sfxError();
+      var cols = lvlGrid[0].length;
+      var cellIdx = row * cols + col;
+      var cellEl = gridEl.children[cellIdx];
+      if (cellEl) {
+        cellEl.classList.add('wrong-fill');
+        setTimeout(function(){ cellEl.classList.remove('wrong-fill'); }, 350);
+      }
+      $('hint-text').textContent = 'Wrong color! Try number ' + target;
+      $('hint-text').style.color = 'oklch(0.55 0.20 30)';
+      setTimeout(function(){ $('hint-text').style.color = ''; }, 1200);
     }
+
+    updateCellVisual(row, col, state.selectedColor, lvlGrid);
 
     // Start timer on first action
     if (!state.timerStarted) {
@@ -1336,8 +1333,7 @@ body{
     var cell = gridEl.children[idx];
     if (!cell) return;
 
-    // Force reflow
-    void cell.offsetWidth;
+    void cell.offsetWidth; // force reflow
 
     if (colorIdx === 0) {
       cell.className = 'gcell unfilled';
@@ -1370,8 +1366,17 @@ body{
     var sec = Math.round(state.timer);
     var m = Math.floor(sec / 60);
     var s = sec % 60;
-    $('timer').innerHTML = '<span class="label">⏱</span> ' +
-      (m < 10 ? '0' : '') + m + ':' + (s < 10 ? '0' : '') + s;
+    $('timer').textContent = (m < 10 ? '0' : '') + m + ':' + (s < 10 ? '0' : '') + s;
+  }
+
+  /* function lvlGrid for palette update - cache it */
+  var _currentLvlGrid = null;
+
+  function getCurrentLvlGrid() {
+    if (!_currentLvlGrid) {
+      _currentLvlGrid = LEVELS[state.currentLevel].grid();
+    }
+    return _currentLvlGrid;
   }
 
   /* ═══════════════════════════════════════════
@@ -1379,26 +1384,15 @@ body{
      ═══════════════════════════════════════════ */
 
   function updateProgress() {
-    var filled = 0;
-    var lvlGrid = LEVELS[state.currentLevel].grid();
-    var total = 0;
-    for (var r = 0; r < lvlGrid.length; r++) {
-      for (var c = 0; c < lvlGrid[r].length; c++) {
-        if (lvlGrid[r][c] > 0) {
-          total++;
-          if (state.gridState[r] && state.gridState[r][c] > 0) filled++;
-        }
-      }
-    }
-    var pct = total > 0 ? (filled / total) * 100 : 0;
+    var pct = state.totalFillable > 0 ? (state.correctCount / state.totalFillable) * 100 : 0;
     $('progress-fill').style.width = pct + '%';
     $('progress-text').textContent = state.correctCount + ' / ' + state.totalFillable;
     $('progress-pct').textContent = Math.round(pct) + '%';
-    // Update palette counts
-    updatePaletteCounts(lvlGrid);
+    updatePaletteCounts();
   }
 
-  function updatePaletteCounts(lvlGrid) {
+  function updatePaletteCounts() {
+    var lvlGrid = getCurrentLvlGrid();
     var swatches = document.querySelectorAll('.palette-swatch');
     for (var i = 0; i < swatches.length; i++) {
       var ci = parseInt(swatches[i].getAttribute('data-color'));
@@ -1411,7 +1405,7 @@ body{
         }
       }
       var countEl = swatches[i].querySelector('.count');
-      if (countEl) countEl.textContent = '×' + remaining;
+      if (countEl) countEl.textContent = remaining;
       if (remaining === 0 && ci > 0) {
         swatches[i].classList.add('completed');
       } else {
@@ -1427,9 +1421,7 @@ body{
   function calcScore() {
     var totalCells = state.totalFillable;
     var timerSec = state.timer;
-    // base: 10 pts per cell
     var base = totalCells * 10;
-    // time bonus: faster = more (max 1.5x, min 1.0x for 180s)
     var factor = 1 + Math.max(0, (180 - timerSec) / 180) * 0.5;
     return Math.round(base * factor);
   }
@@ -1444,12 +1436,13 @@ body{
     var score = calcScore();
     var timeSec = Math.round(state.timer);
     var factor = 1 + Math.max(0, (180 - timeSec) / 180) * 0.5;
+    var lvlName = LEVELS[state.currentLevel].name;
 
     $('result-score').textContent = score.toLocaleString();
     $('result-time').textContent = formatTime(timeSec);
     $('result-cells').textContent = state.totalFillable;
-    $('result-bonus').textContent = factor.toFixed(1) + '×';
-    $('result-icon').textContent = LEVELS[state.currentLevel].icon;
+    $('result-bonus').textContent = factor.toFixed(1) + 'x';
+    $('result-subtitle').textContent = lvlName + ' \u00b7 ' + formatTime(timeSec);
 
     // Check new record
     var isNewBest = score > (state.levelScores[state.currentLevel] || 0);
@@ -1474,8 +1467,6 @@ body{
     }
 
     saveProgress();
-
-    // Spawn confetti
     spawnConfetti();
 
     // Next level button
@@ -1490,14 +1481,14 @@ body{
   function spawnConfetti() {
     var container = $('confetti');
     container.innerHTML = '';
-    var colors = ['#3B82F6','#8B5CF6','#F59E0B','#16A34A','#E52521','#EC4899'];
-    for (var i = 0; i < 20; i++) {
+    var colors = ['oklch(0.55 0.18 250)','#7C3AED','#F59E0B','#059669','#E52521','#DC2626'];
+    for (var i = 0; i < 16; i++) {
       var p = document.createElement('div');
       p.className = 'particle';
       p.style.left = (5 + Math.random() * 90) + '%';
       p.style.background = colors[Math.floor(Math.random() * colors.length)];
-      p.style.animationDuration = (1.5 + Math.random() * 1.5) + 's';
-      p.style.animationDelay = (Math.random() * 1.0) + 's';
+      p.style.animationDuration = (1.8 + Math.random() * 1.5) + 's';
+      p.style.animationDelay = (Math.random() * 0.8) + 's';
       p.style.width = (4 + Math.random() * 4) + 'px';
       p.style.height = p.style.width;
       container.appendChild(p);
@@ -1514,25 +1505,34 @@ body{
      NAVIGATION
      ═══════════════════════════════════════════ */
 
-  window.goToMenu = function() {
+  function goToMenu() {
     state.timerRunning = false;
+    if (state.timerRAF) cancelAnimationFrame(state.timerRAF);
+    _currentLvlGrid = null;
     deselectColor();
     buildLevelSelector();
     showScreen('screen-title');
-  };
+    $('play-cta').style.display = 'none';
+  }
+  window.goToMenu = goToMenu;
 
-  window.playAgain = function() {
+  function playAgain() {
+    _currentLvlGrid = null;
     initAudio();
     startLevel(state.currentLevel);
-  };
+  }
+  window.playAgain = playAgain;
 
-  window.nextLevel = function() {
+  function nextLevel() {
     if (state.currentLevel + 1 < LEVELS.length) {
       state.currentLevel++;
+      state.selectedLevel = state.currentLevel;
+      _currentLvlGrid = null;
       initAudio();
       startLevel(state.currentLevel);
     }
-  };
+  }
+  window.nextLevel = nextLevel;
 
   /* ═══════════════════════════════════════════
      KEYBOARD SUPPORT
@@ -1586,6 +1586,7 @@ body{
       }
 
       if (e.key === 'r' || e.key === 'R') {
+        _currentLvlGrid = null;
         startLevel(state.currentLevel);
         e.preventDefault();
         return;
@@ -1594,11 +1595,11 @@ body{
   });
 
   function clearCursor() {
-    var cells = gridEl.children;
     var lvlDef = LEVELS[state.currentLevel];
     if (!lvlDef) return;
     var lvlGrid = lvlDef.grid();
     var cols = lvlGrid[0].length;
+    var cells = gridEl.children;
     if (state.cursorRow >= 0 && state.cursorCol >= 0) {
       var idx = state.cursorRow * cols + state.cursorCol;
       if (cells[idx]) cells[idx].classList.remove('cursor-highlight');
@@ -1618,16 +1619,29 @@ body{
   }
 
   /* ═══════════════════════════════════════════
+     STATUS BAR CLOCK
+     ═══════════════════════════════════════════ */
+
+  function updateClock() {
+    var now = new Date();
+    var h = now.getHours();
+    var m = now.getMinutes();
+    $('status-time').textContent = (h < 10 ? '0' : '') + h + ':' + (m < 10 ? '0' : '') + m;
+  }
+
+  /* ═══════════════════════════════════════════
      INIT
      ═══════════════════════════════════════════ */
 
   function init() {
     loadSave();
     buildLevelSelector();
+    updateClock();
+    setInterval(updateClock, 30000);
     if (window.recordPlayed) {
       window.recordPlayed('color-mosaic');
     }
-    console.log('Color Mosaic v1.0 loaded');
+    console.log('Color Mosaic v2.0 (modern-minimal) loaded');
   }
 
   if (document.readyState === 'loading') {
