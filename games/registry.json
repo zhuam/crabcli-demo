@@ -1,28 +1,6 @@
 {
   "games": [
     {
-      "id": "color-mosaic",
-      "name": "Color Mosaic",
-      "description": "按编号涂色完成马赛克作品 — 选编号 → 点格填色，完成像素画解锁新作品",
-      "category": "casual",
-      "tags": [
-        "singleplayer",
-        "casual",
-        "coloring",
-        "pixel",
-        "relax",
-        "touch",
-        "short-session"
-      ],
-      "thumbnail": "/games/077-color-mosaic/thumb.svg",
-      "path": "/games/077-color-mosaic/",
-      "hasServer": false,
-      "players": "1",
-      "version": "1.0.0",
-      "featured": true,
-      "rating": 4.0
-    },
-    {
       "id": "photo-puzzle-restore",
       "name": "Photo Puzzle Restore",
       "description": "被打乱的照片需重新还原 — 拖拽拼块，完成照片!",
