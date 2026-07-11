@@ -1367,6 +1367,7 @@ body {
   function getCanvasSize() {
     var rect = canvas.parentElement.getBoundingClientRect();
     var size = Math.min(rect.width - 16, rect.height - 16, 360);
+    size = Math.max(size, 100); // Guard: ensure minimum size even if parent is hidden (display:none → rect size 0)
     var dpr = window.devicePixelRatio || 1;
     canvas.style.width = size + 'px';
     canvas.style.height = size + 'px';

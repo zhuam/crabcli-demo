@@ -1,0 +1,656 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no">
+<title>Photo Puzzle Restore — 照片还原拼图</title>
+<link rel="stylesheet" href="/fonts/design-fonts.css">
+<style>
+  /* ===== Modern Minimal Design System ===== */
+  :root {
+    --color-bg: oklch(0.99 0 0);
+    --color-surface: oklch(0.97 0 0);
+    --color-border: oklch(0.92 0 0);
+    --color-text: oklch(0.20 0 0);
+    --color-muted: oklch(0.55 0 0);
+    --color-accent: oklch(0.55 0.18 250);
+    --color-accent-light: oklch(0.55 0.18 250 / 0.12);
+    --color-success: oklch(0.55 0.16 145);
+    --color-danger: oklch(0.55 0.20 30);
+    --color-warning: oklch(0.70 0.16 85);
+    --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Consolas, monospace;
+    --radius-sm: 4px;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --radius-xl: 16px;
+    --space-unit: 4px;
+    --content-max: 1200px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { font-size: 16px; -webkit-text-size-adjust: 100%; }
+  body {
+    font-family: var(--font-sans);
+    background: var(--color-bg);
+    color: var(--color-text);
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+    overflow: hidden;
+    height: 100vh;
+    width: 100vw;
+  }
+
+  /* ===== Screens ===== */
+  .screen {
+    position: fixed; inset: 0;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.40s ease;
+    padding: 24px;
+  }
+  .screen.active { opacity: 1; pointer-events: auto; }
+
+  /* ===== Title Screen ===== */
+  .title-screen { background: linear-gradient(180deg, var(--color-bg) 0%, var(--color-surface) 100%); }
+  .title-content {
+    max-width: 640px; width: 100%;
+    display: flex; flex-direction: column; align-items: center; gap: 32px;
+  }
+  .game-icon {
+    width: 80px; height: 80px; border-radius: var(--radius-xl);
+    background: var(--color-accent-light);
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 4px;
+  }
+  .game-icon svg { width: 40px; height: 40px; stroke: var(--color-accent); fill: none; stroke-width: 1.6; }
+  .game-title {
+    font-size: 39px; font-weight: 600; letter-spacing: -0.02em;
+    text-align: center; line-height: 1.2;
+  }
+  .game-subtitle {
+    font-size: 16px; color: var(--color-muted);
+    text-align: center; margin-top: -24px;
+  }
+  .best-score {
+    font-family: var(--font-mono); font-size: 14px;
+    color: var(--color-muted); background: var(--color-surface);
+    border-radius: var(--radius-lg); padding: 8px 20px;
+    border: 1px solid var(--color-border);
+  }
+
+  /* Difficulty toggle */
+  .diff-group {
+    display: flex; gap: 8px;
+    background: var(--color-surface); border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg); padding: 4px;
+  }
+  .diff-btn {
+    padding: 10px 24px; border: none; cursor: pointer;
+    border-radius: var(--radius-md); font-size: 14px; font-weight: 500;
+    background: transparent; color: var(--color-muted);
+    font-family: var(--font-sans); transition: all 0.20s ease;
+  }
+  .diff-btn.active {
+    background: var(--color-text); color: var(--color-bg);
+  }
+  .diff-btn:not(.active):hover { color: var(--color-text); }
+
+  /* Photo pack carousel */
+  .pack-section { width: 100%; }
+  .pack-header {
+    display: flex; justify-content: space-between; align-items: baseline;
+    margin-bottom: 12px;
+  }
+  .pack-header h3 { font-size: 16px; font-weight: 600; }
+  .pack-header span { font-size: 13px; color: var(--color-muted); font-family: var(--font-mono); }
+
+  .pack-scroll {
+    display: flex; gap: 12px; overflow-x: auto;
+    padding-bottom: 8px; scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+  }
+  .pack-scroll::-webkit-scrollbar { height: 4px; }
+  .pack-scroll::-webkit-scrollbar-track { background: var(--color-surface); border-radius: 4px; }
+  .pack-scroll::-webkit-scrollbar-thumb { background: var(--color-border); border-radius: 4px; }
+
+  .pack-card {
+    flex: 0 0 140px; scroll-snap-align: start;
+    background: var(--color-surface); border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg); overflow: hidden;
+    cursor: pointer; transition: all 0.20s ease;
+    position: relative;
+  }
+  .pack-card:hover { border-color: var(--color-text); }
+  .pack-card.selected { border-color: var(--color-text); box-shadow: 0 0 0 2px var(--color-accent-light); }
+  .pack-card.locked { opacity: 0.5; cursor: not-allowed; }
+  .pack-card.locked::after {
+    content: '🔒'; position: absolute; top: 8px; right: 8px;
+    font-size: 18px;
+  }
+
+  .pack-thumb {
+    width: 100%; aspect-ratio: 1;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 36px; background: var(--color-border);
+  }
+  .pack-thumb-0 { background: linear-gradient(135deg, #f6d365 0%, #fda085 100%); }
+  .pack-thumb-1 { background: linear-gradient(135deg, #a1c4fd 0%, #c2e9fb 100%); }
+  .pack-thumb-2 { background: linear-gradient(135deg, #89f7fe 0%, #66a6ff 100%); }
+  .pack-thumb-3 { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
+  .pack-thumb-4 { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
+
+  .pack-info { padding: 10px 12px; }
+  .pack-info .name { font-size: 13px; font-weight: 600; }
+  .pack-info .meta { font-size: 11px; color: var(--color-muted); font-family: var(--font-mono); margin-top: 2px; }
+
+  .btn-primary {
+    font-family: var(--font-sans); font-size: 16px; font-weight: 600;
+    background: var(--color-text); color: var(--color-bg);
+    border: none; border-radius: var(--radius-md);
+    padding: 14px 48px; cursor: pointer;
+    transition: all 0.15s ease; letter-spacing: 0.01em;
+  }
+  .btn-primary:hover { opacity: 0.85; }
+  .btn-primary:active { transform: scale(0.97); }
+
+  /* ===== Game Screen ===== */
+  .game-screen { justify-content: flex-start; padding-top: 0; background: var(--color-bg); }
+
+  /* HUD */
+  .hud {
+    width: 100%; max-width: 600px;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 0; gap: 16px;
+  }
+  .hud-left, .hud-right { display: flex; align-items: center; gap: 12px; }
+
+  .timer {
+    font-family: var(--font-mono); font-size: 25px; font-weight: 600;
+    letter-spacing: 0.02em; min-width: 80px; text-align: center;
+  }
+  .timer.warning { color: var(--color-danger); animation: pulse 1s ease-in-out infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+  .progress-bar-wrap {
+    width: 120px; height: 6px; background: var(--color-surface);
+    border-radius: 3px; overflow: hidden;
+  }
+  .progress-bar-fill {
+    height: 100%; background: var(--color-text);
+    border-radius: 3px; transition: width 0.35s ease;
+  }
+  .progress-label {
+    font-family: var(--font-mono); font-size: 12px; color: var(--color-muted);
+  }
+
+  .icon-btn {
+    width: 40px; height: 40px; border: 1px solid var(--color-border);
+    border-radius: var(--radius-md); background: transparent;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; color: var(--color-text); font-size: 18px;
+    transition: all 0.15s ease;
+  }
+  .icon-btn:hover { background: var(--color-surface); border-color: var(--color-muted); }
+  .icon-btn.muted { opacity: 0.35; }
+  .back-btn {
+    font-family: var(--font-sans); font-size: 14px; color: var(--color-muted);
+    text-decoration: none; display: flex; align-items: center; gap: 4px;
+    cursor: pointer; background: none; border: none; padding: 4px 0;
+  }
+  .back-btn:hover { color: var(--color-text); }
+
+  /* Puzzle board area */
+  .board-area {
+    flex: 1; display: flex; align-items: center; justify-content: center;
+    width: 100%; max-width: 600px;
+    position: relative;
+  }
+
+  .board-frame {
+    position: relative;
+    background: var(--color-surface);
+    border: 2px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    aspect-ratio: 1; width: min(520px, calc(100vw - 48px));
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  .board-placeholder {
+    width: 100%; height: 100%;
+    display: grid; gap: 2px; padding: 4px;
+    background: var(--color-border);
+  }
+  .board-placeholder[data-grid="3"] { grid-template-columns: repeat(3, 1fr); }
+  .board-placeholder[data-grid="4"] { grid-template-columns: repeat(4, 1fr); }
+
+  .piece-slot {
+    background: var(--color-surface);
+    border-radius: 2px; aspect-ratio: 1;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; font-weight: 500;
+    color: var(--color-muted); position: relative;
+    overflow: hidden;
+  }
+  .piece-slot .piece-content {
+    width: 100%; height: 100%;
+    background-size: cover; background-position: center;
+  }
+  .piece-slot.placed { border: 2px solid var(--color-text); opacity: 0.85; }
+  .piece-slot.dragging {
+    box-shadow: 0 8px 24px rgba(0,0,0,0.10);
+    transform: scale(1.05);
+    z-index: 10;
+    border: 2px solid var(--color-text);
+  }
+  .piece-slot.correct { border-color: var(--color-success); background: color-mix(in oklch, var(--color-success) 12%, transparent); }
+
+  /* Reference thumbnail overlay */
+  .ref-thumb {
+    position: absolute; bottom: 16px; right: 16px;
+    width: 72px; height: 72px; border-radius: var(--radius-md);
+    border: 2px solid var(--color-border);
+    overflow: hidden; cursor: pointer;
+    background: var(--color-surface);
+    transition: all 0.20s ease;
+  }
+  .ref-thumb:hover { width: 160px; height: 160px; border-color: var(--color-text); }
+  .ref-thumb .ref-vis {
+    width: 100%; height: 100%;
+    background: linear-gradient(135deg, #f6d365, #fda085);
+  }
+  .ref-label {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px; color: var(--color-muted); text-align: center;
+    background: var(--color-surface);
+  }
+
+  /* Bottom toolbar */
+  .toolbar {
+    width: 100%; max-width: 600px;
+    display: flex; align-items: center; justify-content: center;
+    gap: 12px; padding: 12px 0;
+  }
+  .tool-btn {
+    font-family: var(--font-sans); font-size: 13px; font-weight: 500;
+    padding: 8px 20px; border: 1px solid var(--color-border);
+    border-radius: var(--radius-md); background: var(--color-bg);
+    cursor: pointer; color: var(--color-text);
+    display: flex; align-items: center; gap: 6px;
+    transition: all 0.15s ease;
+  }
+  .tool-btn:hover { background: var(--color-surface); border-color: var(--color-muted); }
+  .tool-btn:active { transform: scale(0.97); }
+  .tool-btn svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2; }
+
+  /* ===== Result Screen ===== */
+  .result-overlay {
+    background: color-mix(in oklch, var(--color-text) 0.60, transparent);
+    backdrop-filter: blur(8px);
+  }
+  .result-card {
+    background: var(--color-bg); border-radius: var(--radius-xl);
+    padding: 40px 48px; max-width: 400px; width: 100%;
+    display: flex; flex-direction: column; align-items: center; gap: 20px;
+    text-align: center;
+    box-shadow: 0 16px 48px rgba(0,0,0,0.08);
+  }
+  .result-icon { font-size: 56px; line-height: 1; }
+  .result-title {
+    font-size: 31px; font-weight: 600; letter-spacing: -0.02em;
+  }
+  .result-title.win { color: var(--color-success); }
+  .result-title.lose { color: var(--color-danger); }
+  .stars { display: flex; gap: 8px; }
+  .star { font-size: 36px; opacity: 0.15; }
+  .star.filled { opacity: 1; }
+  .result-stats {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+    width: 100%;
+  }
+  .stat-item {
+    background: var(--color-surface); border-radius: var(--radius-md);
+    padding: 12px 16px;
+  }
+  .stat-label { font-size: 11px; color: var(--color-muted); text-transform: uppercase; letter-spacing: 0.05em; font-family: var(--font-mono); }
+  .stat-value { font-size: 20px; font-weight: 600; font-family: var(--font-mono); margin-top: 2px; }
+  .result-actions {
+    display: flex; gap: 12px; width: 100%;
+    margin-top: 8px;
+  }
+  .result-actions .btn-primary { flex: 1; text-align: center; font-size: 15px; padding: 12px 24px; }
+  .btn-secondary {
+    flex: 1; font-family: var(--font-sans); font-size: 15px; font-weight: 500;
+    padding: 12px 24px; border: 1px solid var(--color-border);
+    border-radius: var(--radius-md); background: transparent;
+    cursor: pointer; color: var(--color-text); text-align: center;
+    transition: all 0.15s ease;
+  }
+  .btn-secondary:hover { background: var(--color-surface); }
+  .new-record { font-size: 13px; color: var(--color-warning); font-weight: 600; }
+
+  /* Shared */
+  .keyboard-hint {
+    font-size: 12px; color: var(--color-muted);
+    font-family: var(--font-mono); letter-spacing: 0.02em;
+  }
+
+  /* Grid piece visual patterns */
+  .piece-vis-1 { background: linear-gradient(135deg, #f6d36540, #fda08540); }
+  .piece-vis-2 { background: linear-gradient(135deg, #a1c4fd40, #c2e9fb40); }
+  .piece-vis-3 { background: linear-gradient(135deg, #89f7fe40, #66a6ff40); }
+  .piece-vis-4 { background: linear-gradient(135deg, #f093fb40, #f5576c40); }
+  .piece-vis-5 { background: linear-gradient(135deg, #4facfe40, #00f2fe40); }
+  .piece-vis-6 { background: linear-gradient(135deg, #43e97b40, #38f9d740); }
+  .piece-vis-7 { background: linear-gradient(135deg, #fa709a40, #fee14040); }
+  .piece-vis-8 { background: linear-gradient(135deg, #30cfd040, #33086740); }
+  .piece-vis-9 { background: linear-gradient(135deg, #a8edea40, #fed6e340); }
+  .piece-vis-10 { background: linear-gradient(135deg, #5ee7df40, #b490ca40); }
+  .piece-vis-11 { background: linear-gradient(135deg, #d4fc7940, #96e6a140); }
+  .piece-vis-12 { background: linear-gradient(135deg, #fbc2eb40, #a6c1ee40); }
+
+  /* ===== Responsive ===== */
+  @media (max-width: 600px) {
+    .title-content { gap: 24px; }
+    .game-title { font-size: 31px; }
+    .pack-card { flex: 0 0 110px; }
+    .pack-card .pack-thumb { font-size: 28px; }
+    .result-card { padding: 28px 20px; }
+    .result-actions { flex-direction: column; }
+    .hud { padding: 8px 4px; }
+    .timer { font-size: 20px; min-width: 64px; }
+    .progress-bar-wrap { width: 80px; }
+    .ref-thumb { width: 48px; height: 48px; bottom: 8px; right: 8px; }
+    .board-frame { width: calc(100vw - 32px); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ===== TITLE SCREEN ===== -->
+<section data-comp-id="title-screen" class="screen title-screen active" id="screen-title">
+  <div class="title-content">
+    <div data-comp-id="game-icon" class="game-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="3" width="18" height="18" rx="2"/>
+        <circle cx="8.5" cy="8.5" r="1.5" fill="currentColor"/>
+        <path d="m21 15-5-5L5 21"/>
+      </svg>
+    </div>
+    <h1 data-comp-id="game-title" class="game-title">Photo Puzzle Restore</h1>
+    <p data-comp-id="game-subtitle" class="game-subtitle">拖拽拼块，还原被打散的照片</p>
+    <div data-comp-id="best-score" class="best-score">最高分: <span id="hs-value">—</span></div>
+    <div data-comp-id="diff-group" class="diff-group" role="radiogroup" aria-label="难度选择">
+      <button data-comp-id="diff-easy" class="diff-btn active" data-diff="3" role="radio" aria-checked="true">3×3 简单</button>
+      <button data-comp-id="diff-hard" class="diff-btn" data-diff="4" role="radio" aria-checked="false">4×4 困难</button>
+    </div>
+    <div data-comp-id="pack-section" class="pack-section">
+      <div class="pack-header">
+        <h3>照片包</h3>
+        <span>1 / 5</span>
+      </div>
+      <div data-comp-id="pack-scroll" class="pack-scroll">
+        <div data-comp-id="pack-card-0" class="pack-card selected" data-pack="0">
+          <div class="pack-thumb pack-thumb-0">🏔️</div>
+          <div class="pack-info">
+            <div class="name">自然风景</div>
+            <div class="meta">6 张 · 🏆 2400</div>
+          </div>
+        </div>
+        <div data-comp-id="pack-card-1" class="pack-card" data-pack="1">
+          <div class="pack-thumb pack-thumb-1">🌆</div>
+          <div class="pack-info">
+            <div class="name">城市地标</div>
+            <div class="meta">4 张 · 🏆 —</div>
+          </div>
+        </div>
+        <div data-comp-id="pack-card-2" class="pack-card locked" data-pack="2">
+          <div class="pack-thumb pack-thumb-2">🐾</div>
+          <div class="pack-info">
+            <div class="name">动物世界</div>
+            <div class="meta">需完成"城市地标"</div>
+          </div>
+        </div>
+        <div data-comp-id="pack-card-3" class="pack-card locked" data-pack="3">
+          <div class="pack-thumb pack-thumb-3">🍜</div>
+          <div class="pack-info">
+            <div class="name">美食之旅</div>
+            <div class="meta">需完成"动物世界"</div>
+          </div>
+        </div>
+        <div data-comp-id="pack-card-4" class="pack-card locked" data-pack="4">
+          <div class="pack-thumb pack-thumb-4">🚀</div>
+          <div class="pack-info">
+            <div class="name">太空漫游</div>
+            <div class="meta">需完成"美食之旅"</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <button data-comp-id="btn-start" class="btn-primary" id="btn-start">开始游戏</button>
+    <div class="keyboard-hint">键盘操作: ↑↓←→ 选择拼块 · Space 确认 · Esc 取消</div>
+  </div>
+</section>
+
+<!-- ===== GAME SCREEN ===== -->
+<section data-comp-id="game-screen" class="screen game-screen" id="screen-game">
+  <div data-comp-id="hud" class="hud">
+    <div class="hud-left">
+      <button data-comp-id="btn-back" class="back-btn" id="btn-back">← 返回</button>
+      <div data-comp-id="progress-bar" class="progress-bar-wrap">
+        <div data-comp-id="progress-fill" class="progress-bar-fill" style="width:44%"></div>
+      </div>
+      <span data-comp-id="progress-label" class="progress-label" id="progress-label">4/9</span>
+    </div>
+    <div class="hud-right">
+      <div data-comp-id="timer" class="timer" id="timer">2:17</div>
+      <button data-comp-id="btn-sound" class="icon-btn" id="btn-sound" aria-label="音效开关">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18">
+          <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+          <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
+          <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+  <div data-comp-id="board-area" class="board-area">
+    <div class="board-frame">
+      <div data-comp-id="puzzle-board" class="board-placeholder" id="puzzle-board" data-grid="3">
+        <div data-comp-id="piece-0-0" class="piece-slot" data-row="0" data-col="0"><div class="piece-content piece-vis-1"></div></div>
+        <div data-comp-id="piece-0-1" class="piece-slot" data-row="0" data-col="1"><div class="piece-content piece-vis-2"></div></div>
+        <div data-comp-id="piece-0-2" class="piece-slot" data-row="0" data-col="2"><div class="piece-content piece-vis-3"></div></div>
+        <div data-comp-id="piece-1-0" class="piece-slot" data-row="1" data-col="0"><div class="piece-content piece-vis-4"></div></div>
+        <div data-comp-id="piece-1-1" class="piece-slot placed correct" data-row="1" data-col="1"><div class="piece-content piece-vis-5"></div></div>
+        <div data-comp-id="piece-1-2" class="piece-slot" data-row="1" data-col="2"><div class="piece-content piece-vis-6"></div></div>
+        <div data-comp-id="piece-2-0" class="piece-slot" data-row="2" data-col="0"><div class="piece-content piece-vis-7"></div></div>
+        <div data-comp-id="piece-2-1" class="piece-slot" data-row="2" data-col="1"><div class="piece-content piece-vis-8"></div></div>
+        <div data-comp-id="piece-2-2" class="piece-slot dragging" data-row="2" data-col="2"><div class="piece-content piece-vis-9"></div></div>
+      </div>
+      <div data-comp-id="ref-thumb" class="ref-thumb" id="ref-thumb">
+        <div class="ref-label">参考图</div>
+        <div class="ref-vis"></div>
+      </div>
+    </div>
+  </div>
+  <div data-comp-id="toolbar" class="toolbar">
+    <button data-comp-id="btn-hint" class="tool-btn" id="btn-hint">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+      提示
+    </button>
+    <button data-comp-id="btn-shuffle" class="tool-btn" id="btn-shuffle">
+      <svg viewBox="0 0 24 24"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/><line x1="4" y1="4" x2="9" y2="9"/></svg>
+      重新打乱
+    </button>
+    <button data-comp-id="btn-upload" class="tool-btn" id="btn-upload">
+      <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      上传照片
+    </button>
+  </div>
+</section>
+
+<!-- ===== RESULT SCREEN ===== -->
+<section data-comp-id="result-screen" class="screen result-overlay" id="screen-result">
+  <!-- Win state -->
+  <div data-comp-id="result-card" class="result-card">
+    <div data-comp-id="result-icon" class="result-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" width="56" height="56">
+        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+      </svg>
+    </div>
+    <h2 data-comp-id="result-title" class="result-title win" id="result-title">完成!</h2>
+    <div data-comp-id="stars" class="stars">
+      <span data-comp-id="star-1" class="star filled">★</span>
+      <span data-comp-id="star-2" class="star filled">★</span>
+      <span data-comp-id="star-3" class="star">★</span>
+    </div>
+    <div data-comp-id="result-stats" class="result-stats">
+      <div class="stat-item"><div class="stat-label">用时</div><div data-comp-id="stat-time" class="stat-value">1:23</div></div>
+      <div class="stat-item"><div class="stat-label">得分</div><div data-comp-id="stat-score" class="stat-value">1825</div></div>
+      <div class="stat-item"><div class="stat-label">难度</div><div data-comp-id="stat-diff" class="stat-value">3×3</div></div>
+      <div class="stat-item"><div class="stat-label">照片包</div><div data-comp-id="stat-pack" class="stat-value">自然风景</div></div>
+    </div>
+    <div data-comp-id="new-record" class="new-record" id="new-record">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" width="14" height="14" style="vertical-align:middle;margin-right:2px">
+        <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5C7 4 7 5.5 7 8v1"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5C17 4 17 5.5 17 8v1"/><path d="M4 22h16"/><path d="M10 22V6h4v16"/><path d="M12 2v4"/>
+      </svg>
+      新纪录!
+    </div>
+    <div data-comp-id="result-actions" class="result-actions">
+      <button data-comp-id="btn-replay" class="btn-primary" id="btn-replay">再来一局</button>
+      <button data-comp-id="btn-menu" class="btn-secondary" id="btn-menu">换照片</button>
+    </div>
+  </div>
+  <!-- Lose state -->
+  <div data-comp-id="result-card-lose" class="result-card" style="display:none">
+    <div data-comp-id="result-icon-lose" class="result-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" width="56" height="56">
+        <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+      </svg>
+    </div>
+    <h2 data-comp-id="result-title-lose" class="result-title lose" id="result-title-lose">时间到!</h2>
+    <p data-comp-id="result-sub-lose" style="color:var(--color-muted);font-size:15px;">已还原 5 / 9 块 · 再快一点!</p>
+    <div data-comp-id="result-stats-lose" class="result-stats">
+      <div class="stat-item"><div class="stat-label">已还原</div><div data-comp-id="stat-progress" class="stat-value">5/9</div></div>
+      <div class="stat-item"><div class="stat-label">用时</div><div data-comp-id="stat-time-lose" class="stat-value">3:00</div></div>
+    </div>
+    <div data-comp-id="result-actions-lose" class="result-actions">
+      <button data-comp-id="btn-retry" class="btn-primary" id="btn-retry">再来一局</button>
+      <button data-comp-id="btn-menu-lose" class="btn-secondary" id="btn-menu-lose">换照片</button>
+    </div>
+  </div>
+</section>
+
+<script>
+  // ===== Screen Navigation (demo) =====
+  const screens = {
+    title: document.getElementById('screen-title'),
+    game: document.getElementById('screen-game'),
+    result: document.getElementById('screen-result'),
+  };
+  function showScreen(name) {
+    Object.values(screens).forEach(s => s.classList.remove('active'));
+    screens[name].classList.add('active');
+  }
+
+  document.getElementById('btn-start').addEventListener('click', () => showScreen('game'));
+  document.getElementById('btn-back').addEventListener('click', () => showScreen('title'));
+  document.getElementById('btn-replay').addEventListener('click', () => showScreen('game'));
+  document.getElementById('btn-retry').addEventListener('click', () => showScreen('game'));
+  document.getElementById('btn-menu').addEventListener('click', () => showScreen('title'));
+  document.getElementById('btn-menu-lose').addEventListener('click', () => showScreen('title'));
+
+  document.querySelectorAll('.diff-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.diff-btn').forEach(b => { b.classList.remove('active'); b.setAttribute('aria-checked','false'); });
+      btn.classList.add('active'); btn.setAttribute('aria-checked','true');
+    });
+  });
+
+  document.querySelectorAll('.pack-card:not(.locked)').forEach(card => {
+    card.addEventListener('click', () => {
+      document.querySelectorAll('.pack-card').forEach(c => c.classList.remove('selected'));
+      card.classList.add('selected');
+    });
+  });
+
+  document.getElementById('btn-sound').addEventListener('click', () => {
+    document.getElementById('btn-sound').classList.toggle('muted');
+  });
+
+  document.getElementById('btn-hint').addEventListener('click', () => {
+    const slots = document.querySelectorAll('.piece-slot:not(.correct)');
+    if (slots.length) {
+      const t = slots[Math.floor(Math.random() * slots.length)];
+      t.style.outline = '3px solid var(--color-accent)';
+      setTimeout(() => t.style.outline = '', 1200);
+    }
+  });
+
+  document.getElementById('btn-shuffle').addEventListener('click', () => {
+    const b = document.getElementById('puzzle-board');
+    b.style.transition = 'transform 0.30s ease';
+    b.style.transform = 'rotate(6deg) scale(0.95)';
+    setTimeout(() => b.style.transform = '', 300);
+  });
+
+  // Double-click board to see result (demo shortcut)
+  document.querySelector('.board-frame').addEventListener('dblclick', () => showScreen('result'));
+</script>
+<script type="application/x-design-tweaks+json" id="design-preview-tweaks">
+[
+	{
+		"unit":"px",
+		"current":40,
+		"min":24,
+		"compId":"result-card",
+		"param":"padding",
+		"max":64,
+		"cssProp":"padding",
+		"step":4,
+		"label":"Card padding",
+		"type":"range",
+		"target":"element"
+	},
+	{
+		"current":"oklch(0.55 0.18 250 / 0.12)",
+		"compId":"game-icon",
+		"param":"bg",
+		"cssProp":"background-color",
+		"label":"Icon color",
+		"type":"color",
+		"target":"element"
+	},
+	{
+		"current":"600",
+		"compId":"game-title",
+		"param":"weight",
+		"cssProp":"font-weight",
+		"options":[
+			{
+				"label":"Medium",
+				"value":"500"
+			},
+			{
+				"label":"Semibold",
+				"value":"600"
+			},
+			{
+				"label":"Bold",
+				"value":"700"
+			}
+		],
+		"label":"Title weight",
+		"type":"select",
+		"target":"element"
+	}
+]
+</script>
+</body>
+</html>
