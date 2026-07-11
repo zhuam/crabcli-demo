@@ -170,7 +170,7 @@ body{
 }
 
 .stars{display:inline-flex;gap:2px;}
-.stars svg{fill:var(--game-3);}
+.stars svg{fill:#F59E0B;}
 
 .puzzle-card.locked{
   opacity:0.5;cursor:default;
@@ -312,9 +312,10 @@ body{
 .gcell.filled .num{display:none;}
 @keyframes pop-fill{0%{transform:scale(0.8);opacity:0.5;}100%{transform:scale(1);opacity:1;}}
 .gcell.wrong-fill{animation:shake 0.3s ease-out;background:color-mix(in oklch, var(--color-error) 20%, transparent)!important;}
+.gcell .wrong-num{position:absolute;top:1px;right:2px;font-family:var(--font-mono);font-size:9px;font-weight:700;color:var(--color-error);opacity:0.9;pointer-events:none;line-height:1;}
 @keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-3px)}40%{transform:translateX(3px)}60%{transform:translateX(-2px)}80%{transform:translateX(2px)}}
 .gcell.cursor-highlight{
-  box-shadow:inset 0 0 0 2.5px var(--game-3), 0 0 8px rgba(245,158,11,0.3);
+  box-shadow:inset 0 0 0 2.5px #F59E0B, 0 0 8px rgba(245,158,11,0.3);
   z-index:2;
 }
 
@@ -385,12 +386,12 @@ body{
 .new-best{
   display:inline-flex;align-items:center;gap:var(--space-1);
   font-family:var(--font-mono);font-size:10px;font-weight:600;
-  color:var(--game-3);
-  background:color-mix(in oklch, var(--game-3) 10%, transparent);
+  color:#F59E0B;
+  background:color-mix(in oklch, #F59E0B 10%, transparent);
   padding:2px var(--space-3);border-radius:20px;
   margin-top:var(--space-1);position:relative;z-index:1;
 }
-.new-best svg{fill:var(--game-3);width:10px;height:10px;}
+.new-best svg{fill:#F59E0B;width:10px;height:10px;}
 
 .score-card{
   background:var(--color-surface);
@@ -474,12 +475,7 @@ body{
   .check-icon-big{animation:none;}
 }
 
-/* ═══ PALETTE COLORS ═══ */
-.game-1{--game-1:#E52521;} .game-2{--game-2:#0051A8;}
-.game-3{--game-3:#F59E0B;} .game-4{--game-4:#059669;}
-.game-5{--game-5:#7C3AED;} .game-6{--game-6:#0891B2;}
-.game-7{--game-7:#DC2626;} .game-8{--game-8:#0F766E;}
-.game-9{--game-9:#D97706;}
+
 </style>
 </head>
 <body>
@@ -1103,6 +1099,7 @@ body{
     var lvl = lvlDef.grid();
     state.currentLevel = levelIdx;
     state.selectedColor = 0;
+    _currentLvlGrid = null;
 
     // Build grid state
     state.gridState = [];
@@ -1267,7 +1264,7 @@ body{
       return;
     }
 
-    var lvlGrid = LEVELS[state.currentLevel].grid();
+    var lvlGrid = getCurrentLvlGrid();
     var target = lvlGrid[row][col];
     if (target === 0) return;
 
@@ -1301,6 +1298,14 @@ body{
       if (cellEl) {
         cellEl.classList.add('wrong-fill');
         setTimeout(function(){ cellEl.classList.remove('wrong-fill'); }, 350);
+        // Add persistent wrong-number badge so user knows what number belongs here
+        var existingBadge = cellEl.querySelector('.wrong-num');
+        if (!existingBadge) {
+          var badge = document.createElement('span');
+          badge.className = 'wrong-num';
+          badge.textContent = target;
+          cellEl.appendChild(badge);
+        }
       }
       $('hint-text').textContent = 'Wrong color! Try number ' + target;
       $('hint-text').style.color = 'oklch(0.55 0.20 30)';
@@ -1357,7 +1362,7 @@ body{
     var dt = (now - timerLast) / 1000;
     timerLast = now;
     state.timer += dt;
-    if (state.timer > 300) state.timer = 300;
+    if (state.timer > 180) state.timer = 180;
     updateTimerDisplay();
     state.timerRAF = requestAnimationFrame(timerTick);
   }
