@@ -1,0 +1,1642 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#0e0d0c">
+<title>Color Mosaic — 按编号涂色</title>
+<link rel="stylesheet" href="/games/shared/game-frame.css">
+<style>
+/* ═══════════════════════════════════════════════════════
+   Color Mosaic — Number-based pixel coloring game
+   Issue: #77
+   ═══════════════════════════════════════════════════════ */
+
+:root {
+  --retro-bg:#0e0d0c;
+  --retro-card:#1a1816;
+  --retro-border:#2e2a26;
+  --retro-glow:#3B82F6;
+  --retro-gold:#D97706;
+  --retro-soft:#f5f0e8;
+  --retro-text:#111827;
+  --retro-muted:rgba(17,24,39,0.5);
+  --retro-accent:#3B82F6;
+  --retro-accent-light:rgba(59,130,246,0.12);
+  --retro-success:#16A34A;
+  --retro-surface:#FFFFFF;
+
+  --font-display:'Macondo','Outfit',cursive;
+  --font-mono:'JetBrains Mono','Geist Mono',ui-monospace,monospace;
+  --font-body:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+
+  --radius-sm:8px;
+  --radius-md:12px;
+  --radius-lg:20px;
+  --radius-xl:28px;
+
+  /* Game palette colors */
+  --c1:#E52521; --c2:#0051A8; --c3:#049D10; --c4:#FBD000;
+  --c5:#F59E0B; --c6:#8B5CF6; --c7:#EC4899; --c8:#6B7280;
+}
+
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:16px;-webkit-text-size-adjust:100%}
+body{
+  font-family:var(--font-body);
+  background:var(--retro-bg);
+  color:var(--retro-soft);
+  min-height:100dvh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:20px 16px;
+  touch-action:manipulation;
+  -webkit-user-select:none;
+  user-select:none;
+  overflow-x:hidden;
+}
+
+/* ─── Phone frame ─── */
+.phone-frame{
+  width:100%;
+  max-width:420px;
+  min-height:740px;
+  background:var(--retro-soft);
+  border-radius:var(--radius-xl);
+  box-shadow:0 8px 48px rgba(0,0,0,0.5),0 0 0 1px rgba(255,255,255,0.06);
+  overflow:hidden;
+  position:relative;
+  color:var(--retro-text);
+}
+
+/* ─── Screen base ─── */
+.screen{display:none;flex-direction:column;}
+.screen.active{display:flex;}
+
+/* ═══ TITLE / LEVEL SELECT SCREEN ═══ */
+#screen-title{min-height:740px;}
+
+.header-bar{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:10px 16px;flex-shrink:0;
+}
+.header-bar .back-link{
+  font-family:var(--font-mono);font-size:13px;
+  color:var(--retro-muted);cursor:pointer;
+}
+.header-bar .mute-btn{
+  font-size:18px;cursor:pointer;opacity:0.5;
+  background:none;border:none;padding:4px;
+  transition:opacity 0.2s;
+}
+.header-bar .mute-btn:hover{opacity:1;}
+
+.title-section{
+  padding:12px 20px 4px;text-align:center;flex-shrink:0;
+}
+.title-section h1{
+  font-family:var(--font-display);
+  font-size:30px;font-weight:400;
+  color:var(--retro-text);line-height:1.15;
+}
+.title-section h1 span{color:var(--retro-accent);}
+.title-section .subtitle{
+  font-size:13px;color:var(--retro-muted);margin-top:2px;
+}
+
+/* Level cards */
+.puzzle-grid{
+  display:grid;grid-template-columns:1fr 1fr;
+  gap:10px;padding:10px 14px 16px;flex:1;
+  overflow-y:auto;max-height:580px;
+}
+.puzzle-grid::-webkit-scrollbar{width:3px;}
+.puzzle-grid::-webkit-scrollbar-thumb{background:rgba(0,0,0,0.15);border-radius:4px;}
+
+.puzzle-card{
+  background:var(--retro-surface);
+  border:1.5px solid rgba(0,0,0,0.08);
+  border-radius:16px;padding:12px 10px;text-align:center;
+  cursor:pointer;transition:transform 0.2s,box-shadow 0.2s;
+  position:relative;overflow:hidden;
+}
+.puzzle-card:hover{
+  transform:scale(1.02);
+  box-shadow:0 4px 20px rgba(59,130,246,0.12);
+}
+
+.puzzle-card .thumb{
+  width:100%;aspect-ratio:1;
+  border-radius:10px;background:var(--retro-soft);
+  margin-bottom:6px;display:flex;
+  align-items:center;justify-content:center;
+  font-size:32px;border:1px solid rgba(0,0,0,0.06);
+  position:relative;overflow:hidden;
+}
+
+.puzzle-card .name{
+  font-size:13px;font-weight:600;color:var(--retro-text);
+}
+.puzzle-card .meta{
+  display:flex;justify-content:center;gap:6px;margin-top:2px;
+  font-family:var(--font-mono);font-size:10px;
+  color:var(--retro-muted);text-transform:uppercase;
+}
+.puzzle-card .difficulty{
+  display:inline-block;padding:1px 8px;border-radius:20px;
+  font-size:9px;font-weight:600;text-transform:uppercase;
+}
+.puzzle-card .difficulty.easy{background:rgba(22,163,74,0.12);color:var(--retro-success);}
+.puzzle-card .difficulty.medium{background:rgba(217,119,6,0.12);color:#D97706;}
+.puzzle-card .difficulty.hard{background:rgba(220,38,38,0.12);color:#DC2626;}
+
+.puzzle-card.locked{
+  opacity:0.55;cursor:default;
+}
+.puzzle-card.locked:hover{transform:none;box-shadow:none;}
+.puzzle-card.locked .lock-overlay{
+  position:absolute;inset:0;
+  display:flex;align-items:center;justify-content:center;
+  font-size:26px;
+  background:rgba(255,255,255,0.35);
+  backdrop-filter:blur(2px);border-radius:16px;
+}
+.puzzle-card.locked .thumb{filter:grayscale(0.6) brightness(0.85);}
+
+.puzzle-card .stars{
+  display:inline-flex;gap:2px;margin-left:4px;
+}
+.puzzle-card .stars svg{fill:var(--retro-gold);}
+
+/* ═══ GAME SCREEN ═══ */
+#screen-game{min-height:740px;padding:0;}
+
+.game-header{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:6px 14px;flex-shrink:0;border-bottom:1px solid rgba(0,0,0,0.06);
+}
+.game-header .left{display:flex;align-items:center;gap:8px;}
+.game-header .back-btn{
+  background:none;border:none;cursor:pointer;
+  font-size:18px;color:var(--retro-muted);padding:2px;
+}
+.game-header .timer{
+  font-family:var(--font-mono);font-size:18px;font-weight:600;
+  color:var(--retro-text);font-variant-numeric:tabular-nums;
+}
+.game-header .timer .label{font-size:10px;font-weight:400;opacity:0.4;margin-right:2px;}
+.game-header .mute-btn{
+  font-size:16px;cursor:pointer;background:none;border:none;opacity:0.4;padding:4px;
+}
+
+/* Hint label */
+.hint-label{
+  font-size:12px;color:var(--retro-muted);
+  padding:4px 14px 2px;text-align:center;flex-shrink:0;
+  transition:opacity 0.3s;
+}
+
+/* Palette strip */
+.palette-strip{
+  display:flex;gap:6px;padding:6px 14px 8px;
+  overflow-x:auto;flex-shrink:0;
+  -webkit-overflow-scrolling:touch;
+}
+.palette-strip::-webkit-scrollbar{height:0;}
+
+.palette-swatch{
+  display:flex;align-items:center;gap:4px;
+  padding:4px 10px 4px 6px;border-radius:20px;
+  border:2px solid transparent;
+  cursor:pointer;flex-shrink:0;
+  transition:all 0.2s;position:relative;
+  -webkit-tap-highlight-color:transparent;
+}
+.palette-swatch .color-dot{
+  width:22px;height:22px;border-radius:50%;flex-shrink:0;
+  border:1px solid rgba(0,0,0,0.1);
+}
+.palette-swatch .num{
+  font-family:var(--font-mono);font-size:14px;font-weight:700;
+  color:var(--retro-text);
+}
+.palette-swatch .count{
+  font-family:var(--font-mono);font-size:10px;
+  color:var(--retro-muted);
+}
+.palette-swatch.active{
+  border-color:var(--retro-accent);
+  background:var(--retro-accent-light);
+  box-shadow:0 0 12px rgba(59,130,246,0.15);
+  transform:scale(1.05);
+}
+.palette-swatch.completed{opacity:0.35;pointer-events:none;}
+.palette-swatch.completed::after{
+  content:'✓';position:absolute;top:-4px;right:-4px;
+  font-size:10px;color:var(--retro-success);font-weight:700;
+}
+
+/* Game grid */
+.grid-area{
+  flex:1;display:flex;align-items:center;justify-content:center;
+  padding:4px 12px;min-height:280px;
+}
+.game-grid{
+  display:grid;gap:2px;
+  width:100%;
+  background:rgba(0,0,0,0.06);
+  padding:2px;border-radius:8px;
+  touch-action:manipulation;
+}
+@media(min-width:420px){
+  .game-grid{max-width:360px;}
+}
+.gcell{
+  aspect-ratio:1;border-radius:2px;
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--font-mono);font-size:11px;font-weight:600;
+  color:rgba(0,0,0,0.5);cursor:pointer;
+  position:relative;transition:all 0.12s ease;min-height:0;
+  -webkit-tap-highlight-color:transparent;
+}
+.gcell.unfilled{background:rgba(0,0,0,0.05);border:1px solid rgba(0,0,0,0.06);}
+.gcell.unfilled:hover{filter:brightness(0.95);}
+.gcell.highlight{
+  animation:pulse-glow 1s ease-in-out infinite;
+  box-shadow:inset 0 0 0 2px var(--retro-accent);
+}
+@keyframes pulse-glow{
+  0%,100%{opacity:1;}
+  50%{opacity:0.5;}
+}
+.gcell.filled{border:1px solid rgba(0,0,0,0.05);animation:pop-fill 0.15s ease-out;}
+.gcell.filled .num{display:none;}
+.gcell.filled:active{transform:scale(0.92);}
+.gcell.cursor-highlight{
+  box-shadow:inset 0 0 0 2.5px var(--retro-gold),0 0 8px rgba(217,119,6,0.3);
+  z-index:2;
+}
+@keyframes pop-fill{
+  0%{transform:scale(0.82);opacity:0.6;}
+  100%{transform:scale(1);opacity:1;}
+}
+
+/* Progress bar */
+.progress-section{
+  padding:4px 14px 10px;flex-shrink:0;
+  border-top:1px solid rgba(0,0,0,0.06);
+}
+.progress-track{
+  width:100%;height:6px;
+  background:rgba(0,0,0,0.08);
+  border-radius:8px;overflow:hidden;
+}
+.progress-fill{
+  height:100%;width:0%;
+  background:linear-gradient(90deg,var(--retro-accent),#8B5CF6);
+  border-radius:8px;transition:width 0.4s ease;
+}
+.progress-meta{
+  display:flex;justify-content:space-between;
+  margin-top:4px;font-family:var(--font-mono);
+  font-size:11px;color:var(--retro-muted);
+}
+
+/* ═══ RESULT SCREEN ═══ */
+#screen-result{min-height:740px;}
+.result-content{
+  flex:1;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  padding:20px;text-align:center;
+  position:relative;overflow:hidden;
+}
+
+/* Confetti */
+.confetti{
+  position:absolute;inset:0;pointer-events:none;overflow:hidden;
+}
+@keyframes confetti-fall{
+  0%{transform:translateY(-20px) rotate(0deg);opacity:1;}
+  100%{transform:translateY(420px) rotate(720deg);opacity:0;}
+}
+.confetti .particle{
+  position:absolute;width:6px;height:6px;border-radius:2px;
+  top:-10px;animation:confetti-fall 2.5s ease-in forwards;
+}
+
+.result-content .trophy{
+  font-size:48px;margin-bottom:6px;position:relative;z-index:1;
+  animation:bounce-in 0.5s ease-out;
+}
+@keyframes bounce-in{
+  0%{transform:scale(0);}
+  50%{transform:scale(1.2);}
+  70%{transform:scale(0.95);}
+  100%{transform:scale(1);}
+}
+
+.result-content .complete-title{
+  font-family:var(--font-display);font-size:26px;color:var(--retro-text);
+  position:relative;z-index:1;
+}
+.result-content .complete-title span{color:var(--retro-accent);}
+
+.new-best{
+  display:inline-flex;align-items:center;gap:4px;
+  font-family:var(--font-mono);font-size:11px;font-weight:600;
+  color:var(--retro-gold);
+  background:rgba(217,119,6,0.1);
+  padding:3px 10px;border-radius:20px;
+  margin:4px 0;position:relative;z-index:1;
+}
+
+.score-card{
+  background:var(--retro-surface);
+  border:1.5px solid rgba(0,0,0,0.06);
+  border-radius:16px;padding:14px 20px;
+  margin:8px 0 14px;width:100%;max-width:220px;
+  position:relative;z-index:1;
+}
+.score-card .score-big{
+  font-family:var(--font-display);font-size:36px;
+  color:var(--retro-text);line-height:1;
+}
+.score-card .score-label{
+  font-family:var(--font-mono);font-size:10px;
+  text-transform:uppercase;letter-spacing:0.1em;
+  color:var(--retro-muted);margin-top:2px;
+}
+.score-stats{
+  display:flex;justify-content:center;gap:14px;
+  margin-top:8px;padding-top:8px;
+  border-top:1px solid rgba(0,0,0,0.06);
+}
+.score-stats div{text-align:center;}
+.score-stats .stat-val{
+  font-family:var(--font-mono);font-size:14px;
+  font-weight:600;color:var(--retro-text);
+  font-variant-numeric:tabular-nums;
+}
+.score-stats .stat-label{
+  font-family:var(--font-mono);font-size:8px;
+  text-transform:uppercase;letter-spacing:0.06em;
+  color:var(--retro-muted);
+}
+
+.result-buttons{
+  display:flex;flex-direction:column;gap:8px;
+  width:100%;max-width:200px;position:relative;z-index:1;
+}
+.btn-primary{
+  display:flex;align-items:center;justify-content:center;
+  gap:6px;font-size:14px;font-weight:600;
+  padding:12px 20px;border-radius:28px;
+  background:var(--retro-accent);color:white;
+  border:none;cursor:pointer;transition:transform 0.2s;
+}
+.btn-primary:hover{transform:scale(1.03);}
+.btn-secondary{
+  display:flex;align-items:center;justify-content:center;
+  gap:6px;font-size:13px;font-weight:500;
+  padding:10px 16px;border-radius:24px;
+  background:transparent;color:var(--retro-text);
+  border:1.5px solid rgba(0,0,0,0.12);
+  cursor:pointer;transition:all 0.2s;
+}
+.btn-secondary:hover{background:rgba(0,0,0,0.04);}
+
+/* ═══ RESPONSIVE ═══ */
+@media(max-width:480px){
+  .phone-frame{max-width:100%;min-height:100dvh;border-radius:0;}
+  body{padding:0;}
+  #screen-title,.screen{min-height:100dvh;}
+}
+@media(prefers-reduced-motion:reduce){
+  *{transition:none!important;animation:none!important;}
+  .confetti{display:none;}
+  .gcell.highlight{animation:none;opacity:0.6;}
+}
+
+/* ─── Mini grid thumbnails ─── */
+.mini-grid-cell{opacity:0;border-radius:1px;}
+.mini-grid-cell.show{opacity:1;}
+</style>
+</head>
+<body>
+
+<div class="phone-frame" id="app">
+  <!-- ═══ TITLE / LEVEL SELECT ═══ -->
+  <section id="screen-title" class="screen active">
+    <div class="header-bar">
+      <span style="font-family:var(--font-mono);font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--retro-muted);">ASTROCADE</span>
+      <button class="mute-btn" id="title-mute-btn" onclick="toggleMute()">🔊</button>
+    </div>
+
+    <div class="title-section">
+      <h1>Color <span>Mosaic</span></h1>
+      <div class="subtitle">Choose your puzzle</div>
+    </div>
+
+    <div class="puzzle-grid" id="level-grid"></div>
+  </section>
+
+  <!-- ═══ GAMEPLAY ═══ -->
+  <section id="screen-game" class="screen">
+    <div class="game-header">
+      <div class="left">
+        <button class="back-btn" onclick="goToMenu()">←</button>
+        <span class="timer" id="timer"><span class="label">⏱</span> 0:00</span>
+      </div>
+      <div style="font-size:13px;font-weight:500;" id="level-name">Level 1</div>
+      <button class="mute-btn" id="game-mute-btn" onclick="toggleMute()">🔊</button>
+    </div>
+
+    <div class="hint-label" id="hint-text">Select a color, then tap cells</div>
+
+    <div class="palette-strip" id="palette"></div>
+
+    <div class="grid-area">
+      <div class="game-grid" id="game-grid"></div>
+    </div>
+
+    <div class="progress-section">
+      <div class="progress-track">
+        <div class="progress-fill" id="progress-fill"></div>
+      </div>
+      <div class="progress-meta">
+        <span id="progress-text">0 / 0</span>
+        <span id="progress-pct">0%</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ RESULT ═══ -->
+  <section id="screen-result" class="screen">
+    <div class="header-bar">
+      <span style="font-family:var(--font-mono);font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--retro-muted);">ASTROCADE</span>
+      <button class="mute-btn" onclick="toggleMute()">🔊</button>
+    </div>
+
+    <div class="result-content">
+      <div class="confetti" id="confetti"></div>
+      <div class="trophy" id="result-icon">🏆</div>
+      <div class="complete-title">Puzzle <span>Complete!</span></div>
+      <div class="new-best" id="new-best-badge" style="display:none;">
+        <svg width="12" height="12" viewBox="0 0 20 20"><path d="M10 1l2.4 7.2H20l-6.2 4.5 2.4 7.2L10 15.4l-6.2 4.5 2.4-7.2L0 8.2h7.6z" fill="currentColor"/></svg>
+        NEW BEST
+      </div>
+      <div class="score-card">
+        <div class="score-big" id="result-score">0</div>
+        <div class="score-label">Total Score</div>
+        <div class="score-stats">
+          <div><div class="stat-val" id="result-time">0:00</div><div class="stat-label">Time</div></div>
+          <div><div class="stat-val" id="result-cells">0</div><div class="stat-label">Cells</div></div>
+          <div><div class="stat-val" id="result-bonus">1.0×</div><div class="stat-label">Bonus</div></div>
+        </div>
+      </div>
+      <div class="result-buttons">
+        <button class="btn-primary" onclick="playAgain()">▶ Play Again</button>
+        <button class="btn-secondary" id="btn-next" onclick="nextLevel()" style="display:none;">Next Puzzle</button>
+        <button class="btn-secondary" onclick="goToMenu()">☰ Menu</button>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script>
+(function(){
+  'use strict';
+
+  /* ═══════════════════════════════════════════
+     PALETTE
+     ═══════════════════════════════════════════ */
+  var PALETTE = [
+    '',              // 0 = unused
+    '#E52521',       // 1 = Red
+    '#0051A8',       // 2 = Blue
+    '#049D10',       // 3 = Green
+    '#FBD000',       // 4 = Yellow
+    '#F59E0B',       // 5 = Orange
+    '#8B5CF6',       // 6 = Purple
+    '#EC4899',       // 7 = Pink
+    '#6B7280',       // 8 = Gray
+  ];
+
+  var COLOR_NAMES = ['','Red','Blue','Green','Yellow','Orange','Purple','Pink','Gray'];
+
+  /* ═══════════════════════════════════════════
+     LEVELS (12 total)
+     ═══════════════════════════════════════════ */
+
+  /* Helper: create a grid with all cells set to color index.
+     Uses the same value for ALL cells — caller fills in pattern cells. */
+  function makeGrid(rows, cols, fillVal) {
+    var g = [];
+    for (var r = 0; r < rows; r++) {
+      g[r] = [];
+      for (var c = 0; c < cols; c++) {
+        g[r][c] = fillVal;
+      }
+    }
+    return g;
+  }
+
+  /* Apply a pattern: call fn(r,c) to set cell value. */
+  function pattern(grid, fn) {
+    for (var r = 0; r < grid.length; r++) {
+      for (var c = 0; c < grid[r].length; c++) {
+        grid[r][c] = fn(r, c);
+      }
+    }
+    return grid;
+  }
+
+  /* Thumbnail preview data: small grid (8×8) for level select cards */
+  var THUMBS = {};
+
+  /* ─── EASY (10×10, 4 colors) ─── */
+  /* Level 1: Apple (red) */
+  function lvl1Grid() {
+    return pattern(makeGrid(10,10,0), function(r,c){
+      // Apple shape
+      if (r===0 && (c<2||c>7)) return 0;
+      if (r===1 && (c<1||c>8)) return 0;
+      if (r===2 && (c<0||c>9)) return 0;
+      if (r===3 && (c<0||c>9)) return 0;
+      if (r===4 && (c<0||c>9)) return 0;
+      if (r===5 && (c<0||c>9)) return 0;
+      if (r===6 && (c<0||c>9)) return 0;
+      if (r===7 && (c<1||c>8)) return 0;
+      if (r===8 && (c<2||c>7)) return 0;
+      if (r===9 && (c<4&&c>5)) return 0; // stem area
+      // Body
+      if (r===0 && c===4) return 3; // stem green
+      if (r===0 && c===5) return 3;
+      if (r===1 && c===4) return 3;
+      if (r===1 && c===5) return 3;
+      // Leaf
+      if (r===2 && c===8) return 3;
+      if (r===3 && c===8) return 3;
+      // Apple body red
+      if (r===2||r===3||r===4||r===5||r===6) return 1;
+      if (r===7 && (c>2&&c<7)) return 1;
+      if (r===8 && (c>3&&c<6)) return 1;
+      return 1;
+    });
+  }
+
+  /* Level 2: Heart (red/pink) */
+  function lvl2Grid() {
+    return pattern(makeGrid(10,10,0), function(r,c){
+      if (r===0 && (c<2||c>7)) return 0;
+      if (r===1 && (c<1||c>8)) return 0;
+      if (r===2 && (c<0||c>9)) return 0;
+      if (r===3 && (c<0||c>9)) return 0;
+      if (r===4 && (c<0||c>9)) return 0;
+      if (r===5 && (c<0||c>9)) return 0;
+      if (r===6 && (c<1||c>8)) return 0;
+      if (r===7 && (c<2||c>7)) return 0;
+      if (r===8 && (c<3||c>6)) return 0;
+      if (r===9 && (c<4||c>5)) return 0;
+      // Two lobes
+      if ((r===0||r===1) && c>=2 && c<=4) return 7;
+      if ((r===0||r===1) && c>=5 && c<=7) return 7;
+      if (r===2 && c>=1 && c<=4) return 7;
+      if (r===2 && c>=5 && c<=8) return 7;
+      if (r===3 && c>=1 && c<=8) return 1;
+      if (r===4 && c>=1 && c<=8) return 1;
+      if (r===5 && c>=2 && c<=7) return 1;
+      if (r===6 && c>=3 && c<=6) return 1;
+      if (r===7 && c>=4 && c<=5) return 1;
+      return 0;
+    });
+  }
+
+  /* Level 3: Star (yellow) */
+  function lvl3Grid() {
+    return pattern(makeGrid(10,10,0), function(r,c){
+      // 5-pointed star shape
+      if (r===0 && c!==4) return 0;
+      if (r===1 && c!==3&&c!==4&&c!==5) return 0;
+      if (r===2 && c!==1&&c!==2&&c!==3&&c!==4&&c!==5&&c!==6&&c!==7) return 0;
+      if (r===3 && c!==0&&c!==1&&c!==2&&c!==3&&c!==4&&c!==5&&c!==6&&c!==7&&c!==8) return 0;
+      if (r===4 && c!==0&&c!==1&&c!==2&&c!==3&&c!==4&&c!==5&&c!==6&&c!==7&&c!==8) return 0;
+      if (r===5 && c!==1&&c!==2&&c!==3&&c!==4&&c!==5&&c!==6&&c!==7) return 0;
+      if (r===6 && c!==2&&c!==3&&c!==4&&c!==5&&c!==6) return 0;
+      if (r===7 && c!==3&&c!==4&&c!==5) return 0;
+      if (r===8 && c!==4) return 0;
+      if (r===9) return 0;
+      // Star points have yellow; center has orange accent
+      if ((r===3||r===4) && c===4) return 5;
+      return 4;
+    });
+  }
+
+  /* Level 4: Flower (multicolor) */
+  function lvl4Grid() {
+    return pattern(makeGrid(10,10,0), function(r,c){
+      if (r===0 && (c<3||c>6)) return 0;
+      if (r===1 && (c<2||c>7)) return 0;
+      if (r===2 && (c<1||c>8)) return 0;
+      if (r===3 && (c<0||c>9)) return 0;
+      if (r===4 && (c<0||c>9)) return 0;
+      if (r===5 && (c<1||c>8)) return 0;
+      if (r===6 && (c<2||c>7)) return 0;
+      if (r===7 && (c<3||c>6)) return 0;
+      if (r===8 && (c<4||c>5)) return 0;
+      if (r===9) return 0;
+      // Petals
+      if (r===0||r===1) return 7; // top petals pink
+      if (r===2 && c>=2&&c<=4) return 7;
+      if (r===2 && c>=5&&c<=7) return 1;
+      if (r===3 && c>=1&&c<=3) return 7;
+      if (r===3 && c>=6&&c<=8) return 1;
+      if (r===4 && c>=1&&c<=2) return 7;
+      if (r===4 && c>=7&&c<=8) return 1;
+      if (r===5 && c>=2&&c<=3) return 3;
+      if (r===5 && c>=6&&c<=7) return 1;
+      if (r===6 && (c===3||c===4||c===5||c===6)) return 3;
+      if (r===7 && c===4||c===5) return 3;
+      // Center
+      if ((r===2||r===3||r===4||r===5) && c===4) return 4;
+      if ((r===2||r===3||r===4||r===5) && c===5) return 4;
+      return 0;
+    });
+  }
+
+  /* ─── MEDIUM (15×15, 6 colors) ─── */
+  /* Level 5: House */
+  function lvl5Grid() {
+    return pattern(makeGrid(15,15,0), function(r,c){
+      // Roof triangle
+      if (r<2 && (c<5||c>9)) return 0;
+      if (r===2 && (c<4||c>10)) return 0;
+      if (r===3 && (c<3||c>11)) return 0;
+      if (r===4 && (c<2||c>12)) return 0;
+      if (r===5 && (c<1||c>13)) return 0;
+      // Walls
+      if (r>=6 && r<=12 && (c<1||c>13)) return 0;
+      if (r>12) return 0;
+      // Roof fill (red)
+      if (r<=5) return 1;
+      // Walls (yellow/white)
+      if (r>=6 && r<=12) {
+        // Window
+        if (r>=7 && r<=9 && c>=3 && c<=6) return 4;
+        if (r>=7 && r<=9 && c>=8 && c<=11) return 4;
+        // Door
+        if (r>=10 && r<=12 && c>=6 && c<=8) return 5;
+        // Wall
+        if (r>=6 && r<=12) return 4;
+      }
+      return 4;
+    });
+  }
+
+  /* Level 6: Tree */
+  function lvl6Grid() {
+    return pattern(makeGrid(15,15,0), function(r,c){
+      // Trunk
+      if (r>=9 && r<=13 && c>=6 && c<=8) return 5;
+      // Canopy — circle-ish
+      var dr = Math.abs(r-5), dc = Math.abs(c-7);
+      var dist = Math.sqrt(dr*dr + dc*dc);
+      if (dist <= 5 && r<=8) return 3;
+      if (dist <= 5.5 && r<=9) return 3;
+      // Fruits (red dots)
+      if ((r===3||r===4) && (c===4||c===10)) return 1;
+      if ((r===6||r===7) && (c===9||c===4)) return 1;
+      if (r===2 && c===7) return 1;
+      return 0;
+    });
+  }
+
+  /* Level 7: Fish */
+  function lvl7Grid() {
+    return pattern(makeGrid(15,15,0), function(r,c){
+      // Body ellipse
+      var cr=6, cc=5; // center row/col for body
+      var dr = Math.abs(r-cr), dc = Math.abs(c-cc);
+      // Body
+      if (dr*2 + dc > 6) return 0;
+      // Tail
+      if (c>=10 && c<=12 && r>=4 && r<=8) {
+        if (c===10 && (r>=5&&r<=7)) return 2;
+        if (c===11 && (r===5||r===7)) return 2;
+        if (c===11 && r===6) return 2;
+        if (c===12 && r===6) return 2;
+        return 0;
+      }
+      // Fin
+      if (r<=3 && c>=4 && c<=6) return 6;
+      if (r<=2 && c===5) return 6;
+      // Eye
+      if (r===5 && c===3) return 7;
+      if (r===5 && c===2) return 7;
+      // Body color
+      if (r>=4 && r<=8 && c>=2 && c<=9) return 2;
+      return 0;
+    });
+  }
+
+  /* Level 8: Gem/Diamond */
+  function lvl8Grid() {
+    return pattern(makeGrid(15,15,0), function(r,c){
+      // Diamond shape
+      var hw = function(ro) {
+        if (ro<0||ro>14) return -1;
+        if (ro<=7) return ro-1;
+        return 14-ro-1;
+      };
+      var hw2 = function(ro) {
+        if (ro<0||ro>14) return -1;
+        if (ro<=7) return ro;
+        return 14-ro;
+      };
+      var left = 7 - hw2(r);
+      var right = 7 + hw2(r);
+      if (c<left || c>right) return 0;
+      // Colors
+      if (r<=4) return 2;
+      if (r<=7) return 2;
+      if (r<=10) return 6;
+      return 6;
+    });
+  }
+
+  /* ─── HARD (20×20, 8 colors) ─── */
+  /* Level 9: Butterfly */
+  function lvl9Grid() {
+    return pattern(makeGrid(20,20,0), function(r,c){
+      // Center line
+      if (c<7||c>12) return 0;
+      // Body
+      if (c>=9&&c<=10 && r>=5&&r<=14) return 8;
+      // Antennae
+      if ((c===9||c===10) && r>=2&&r<=4) return 8;
+      if (r===1 && (c===8||c===11)) return 8;
+      if (r===0 && (c===7||c===12)) return 8;
+      // Left wing (upper)
+      if (r>=3&&r<=8 && c>=3&&c<=8) return 7;
+      // Left wing (lower)
+      if (r>=8&&r<=13 && c>=3&&c<=8) return 5;
+      // Right wing (upper)
+      if (r>=3&&r<=8 && c>=11&&c<=16) return 7;
+      // Right wing (lower)
+      if (r>=8&&r<=13 && c>=11&&c<=16) return 5;
+      // Wing spots
+      if (r>=4&&r<=6 && c>=4&&c<=6) return 2;
+      if (r>=4&&r<=6 && c>=13&&c<=15) return 2;
+      return 0;
+    });
+  }
+
+  /* Level 10: Castle */
+  function lvl10Grid() {
+    return pattern(makeGrid(20,20,0), function(r,c){
+      if (c<2||c>17) return 0;
+      if (r>17) return 0;
+      // Ground
+      if (r>=16) return 3;
+      // Towers
+      if (c>=2&&c<=4 || c>=15&&c<=17) {
+        if (r<=7) return 1;
+        if (r<=15) return 8;
+        return 8;
+      }
+      // Battlements on towers
+      if ((c===2||c===4||c===15||c===17) && r<=6) return 1;
+      if ((c===2||c===4||c===15||c===17) && r===7) return 1;
+      // Main wall
+      if (r>=6&&r<=15 && c>=5&&c<=14) return 8;
+      // Battlements main
+      if (r===5 && c>=5&&c<=14 && c%2===0) return 1;
+      // Door
+      if (r>=12&&r<=15 && c>=8&&c<=11) return 5;
+      if (r>=13&&r<=15 && c>=9&&c<=10) return 5;
+      // Windows
+      if (r>=7&&r<=9 && c>=7&&c<=8) return 4;
+      if (r>=7&&r<=9 && c>=11&&c<=12) return 4;
+      return 0;
+    });
+  }
+
+  /* Level 11: Rocket */
+  function lvl11Grid() {
+    return pattern(makeGrid(20,20,0), function(r,c){
+      if (c<6||c>13) return 0;
+      // Nose cone
+      if (r<=2 && (c<8||c>11)) return 0;
+      if (r===3 && (c<7||c>12)) return 0;
+      // Body
+      if (r>18) return 0;
+      // Nose cone (red)
+      if (r<=4) return 1;
+      // Body
+      if (r>=5&&r<=12) return 2;
+      if (r>=13&&r<=15) return 2;
+      // Fins
+      if (r>=14&&r<=17) {
+        if (c>=6&&c<=7) return 1;
+        if (c>=12&&c<=13) return 1;
+      }
+      // Window
+      if (r>=7&&r<=10 && c>=8&&c<=11) {
+        if (r===7 || r===10 || c===8 || c===11) return 8;
+        return 2;
+      }
+      if (r>=8&&r<=9 && c>=9&&c<=10) return 1;
+      // Flame
+      if (r>=17&&r<=19 && c>=8&&c<=11) return 4;
+      if (r>=18&&r<=19 && c>=9&&c<=10) return 5;
+      return 0;
+    });
+  }
+
+  /* Level 12: Owl */
+  function lvl12Grid() {
+    return pattern(makeGrid(20,20,0), function(r,c){
+      if (c<2||c>17) return 0;
+      if (r>18) return 0;
+      // Ear tufts
+      if (r===0 && (c<5||c>14)) return 0;
+      if (r===1 && (c<3||c>16)) return 0;
+      if (r===1 && c>=7&&c<=12) return 0;
+      if (r===0 && c>=8&&c<=11) return 0;
+      // Ear tufts (brown)
+      if (r===0 && (c===5||c===6||c===13||c===14)) return 5;
+      if (r===1 && (c===3||c===4||c===5||c===6||c===13||c===14||c===15||c===16)) return 5;
+      // Body
+      if (r>=2&&r<=16) {
+        // Head circle
+        if (r<=7) {
+          if (c<4||c>15) return 0;
+          // Eyes
+          if (r>=3&&r<=6 && c>=5&&c<=8) return 4;
+          if (r>=3&&r<=6 && c>=11&&c<=14) return 4;
+          // Eye pupils
+          if (r>=4&&r<=5 && c>=6&&c<=7) return 8;
+          if (r>=4&&r<=5 && c>=12&&c<=13) return 8;
+          // Beak
+          if (r===5&&r===6 && c>=9&&c<=10) return 5;
+          // Face fill
+          if (c>=4&&c<=15) return 7;
+          if (c>=7&&c<=12) return 5;
+          return 7;
+        }
+        // Body
+        if (r<=12) {
+          if (c<4||c>15) return 0;
+          return 5;
+        }
+        // Belly
+        if (r<=16) {
+          if (c<5||c>14) return 0;
+          return 4;
+        }
+      }
+      // Feet
+      if (r>=17&&r<=18 && c>=6&&c<=13) return 5;
+      if (c===6||c===7||c===12||c===13) return 5;
+      return 0;
+    });
+  }
+
+  var LEVELS = [
+    { name:'Red Apple',   icon:'🍎', grid:lvl1Grid,  diff:'easy',   size:'10×10', colors:4 },
+    { name:'Warm Heart',  icon:'❤️', grid:lvl2Grid,  diff:'easy',   size:'10×10', colors:4 },
+    { name:'Shining Star',icon:'⭐', grid:lvl3Grid,  diff:'easy',   size:'10×10', colors:4 },
+    { name:'Pretty Flower',icon:'🌸',grid:lvl4Grid,  diff:'easy',   size:'10×10', colors:4 },
+    { name:'Cozy House',  icon:'🏠', grid:lvl5Grid,  diff:'medium', size:'15×15', colors:6 },
+    { name:'Tall Tree',   icon:'🌲', grid:lvl6Grid,  diff:'medium', size:'15×15', colors:6 },
+    { name:'Blue Fish',   icon:'🐟', grid:lvl7Grid,  diff:'medium', size:'15×15', colors:6 },
+    { name:'Crystal Gem', icon:'💎', grid:lvl8Grid,  diff:'medium', size:'15×15', colors:6 },
+    { name:'Butterfly',   icon:'🦋', grid:lvl9Grid,  diff:'hard',   size:'20×20', colors:8 },
+    { name:'Old Castle',  icon:'🏰', grid:lvl10Grid, diff:'hard',   size:'20×20', colors:8 },
+    { name:'Space Rocket',icon:'🚀', grid:lvl11Grid, diff:'hard',   size:'20×20', colors:8 },
+    { name:'Wise Owl',    icon:'🦉', grid:lvl12Grid, diff:'hard',   size:'20×20', colors:8 },
+  ];
+
+  /* ═══════════════════════════════════════════
+     STATE
+     ═══════════════════════════════════════════ */
+
+  var state = {
+    currentLevel: 0,
+    unlockedLevel: 1,
+    gridState: [],     // 2D array: which cells are filled (palette index)
+    correctCount: 0,
+    totalFillable: 0,
+    selectedColor: 0,
+    timer: 0,
+    timerStarted: false,
+    timerRunning: false,
+    timerRAF: null,
+    cursorRow: -1,
+    cursorCol: -1,
+    muted: false,
+    highScore: 0,
+    levelScores: {},   // { levelIdx: bestScore }
+    levelCompleted: {}, // { levelIdx: true }
+  };
+
+  var timerLast = 0;
+  var STORAGE_KEY = 'colorMosaic';
+
+  /* DOM refs */
+  var $ = function(id) { return document.getElementById(id); };
+  var gridEl = $('game-grid');
+  var paletteEl = $('palette');
+
+  /* ═══════════════════════════════════════════
+     AUDIO
+     ═══════════════════════════════════════════ */
+
+  var audioCtx = null;
+
+  function initAudio() {
+    if (!audioCtx) {
+      try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e) {}
+    }
+    if (audioCtx && audioCtx.state === 'suspended') {
+      audioCtx.resume();
+    }
+  }
+
+  function playTone(freq, type, dur, vol) {
+    if (!audioCtx || state.muted) return;
+    try {
+      var osc = audioCtx.createOscillator();
+      var gain = audioCtx.createGain();
+      osc.type = type || 'sine';
+      osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+      if (type === 'sweep') {
+        osc.frequency.exponentialRampToValueAtTime(freq * 1.3, audioCtx.currentTime + dur);
+        osc.type = 'sine';
+      }
+      gain.gain.setValueAtTime(vol || 0.1, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + dur);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start();
+      osc.stop(audioCtx.currentTime + dur);
+    } catch(e) {}
+  }
+
+  function sfxSelect() {
+    playTone(500, 'sine', 0.08, 0.08);
+  }
+
+  function sfxPaint() {
+    playTone(700, 'sweep', 0.06, 0.07);
+    try { if (navigator.vibrate) navigator.vibrate(10); } catch(e) {}
+  }
+
+  function sfxComplete() {
+    playTone(523, 'sine', 0.12, 0.08);
+    setTimeout(function(){ playTone(659, 'sine', 0.12, 0.08); }, 100);
+    setTimeout(function(){ playTone(784, 'sine', 0.12, 0.08); }, 200);
+    setTimeout(function(){ playTone(1047, 'sine', 0.25, 0.1); }, 300);
+    try { if (navigator.vibrate) navigator.vibrate([10,20,10,20,10]); } catch(e) {}
+  }
+
+  /* ═══════════════════════════════════════════
+     STORAGE
+     ═══════════════════════════════════════════ */
+
+  function loadSave() {
+    try {
+      var data = JSON.parse(localStorage.getItem(STORAGE_KEY));
+      if (data) {
+        state.highScore = data.highScore || 0;
+        state.unlockedLevel = data.unlockedLevel || 1;
+        state.levelScores = data.levelScores || {};
+        state.levelCompleted = data.levelCompleted || {};
+      }
+    } catch(e) {}
+  }
+
+  function saveProgress() {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({
+        highScore: state.highScore,
+        unlockedLevel: state.unlockedLevel,
+        levelScores: state.levelScores,
+        levelCompleted: state.levelCompleted
+      }));
+    } catch(e) {}
+  }
+
+  /* ═══════════════════════════════════════════
+     SCREEN MANAGEMENT
+     ═══════════════════════════════════════════ */
+
+  function showScreen(id) {
+    document.querySelectorAll('.screen').forEach(function(s){
+      s.classList.remove('active');
+    });
+    var target = $(id);
+    if (target) target.classList.add('active');
+  }
+
+  /* ═══════════════════════════════════════════
+     MUTE TOGGLE (global)
+     ═══════════════════════════════════════════ */
+
+  window.toggleMute = function() {
+    state.muted = !state.muted;
+    var icon = state.muted ? '🔇' : '🔊';
+    var els = document.querySelectorAll('.mute-btn');
+    for (var i = 0; i < els.length; i++) els[i].textContent = icon;
+  };
+
+  /* ═══════════════════════════════════════════
+     LEVEL SELECTOR
+     ═══════════════════════════════════════════ */
+
+  function buildLevelSelector() {
+    var grid = $('level-grid');
+    grid.innerHTML = '';
+    LEVELS.forEach(function(lvl, i){
+      var card = document.createElement('div');
+      card.className = 'puzzle-card';
+      var levelNum = i + 1;
+      var locked = levelNum > state.unlockedLevel;
+      var completed = state.levelCompleted[i];
+
+      if (locked) card.classList.add('locked');
+
+      // Thumbnail
+      var thumbHtml = '<div class="thumb">';
+      if (locked) {
+        thumbHtml += '🔒';
+      } else {
+        thumbHtml += lvl.icon;
+      }
+      thumbHtml += '</div>';
+
+      var starsHtml = '';
+      if (completed) {
+        var s = state.levelScores[i] || 0;
+        var starCount = s >= 1200 ? 3 : s >= 800 ? 2 : 1;
+        starsHtml = '<span class="stars">';
+        for (var si = 0; si < 3; si++) {
+          starsHtml += '<svg width="10" height="10" viewBox="0 0 20 20"><path d="M10 1l2.4 7.2H20l-6.2 4.5 2.4 7.2L10 15.4l-6.2 4.5 2.4-7.2L0 8.2h7.6z" fill="' + (si < starCount ? 'var(--retro-gold)' : 'rgba(0,0,0,0.08)') + '"/></svg>';
+        }
+        starsHtml += '</span>';
+      }
+
+      card.innerHTML =
+        (locked ? '<div class="lock-overlay">🔒</div>' : '') +
+        thumbHtml +
+        '<div class="name">' + lvl.name + '</div>' +
+        '<div class="meta">' +
+          '<span class="difficulty ' + lvl.diff + '">' + lvl.diff + '</span>' +
+          '<span>' + lvl.size + '</span>' +
+          starsHtml +
+        '</div>';
+
+      if (!locked) {
+        card.addEventListener('click', function(idx){
+          return function(){
+            state.currentLevel = idx;
+            initAudio();
+            startLevel(idx);
+          };
+        }(i));
+      }
+
+      grid.appendChild(card);
+    });
+  }
+
+  /* ═══════════════════════════════════════════
+     GAME SETUP
+     ═══════════════════════════════════════════ */
+
+  function startLevel(levelIdx) {
+    var lvlDef = LEVELS[levelIdx];
+    var lvl = lvlDef.grid();
+    state.currentLevel = levelIdx;
+    state.selectedColor = 0;
+
+    // Build grid state
+    state.gridState = [];
+    var total = 0;
+    for (var r = 0; r < lvl.length; r++) {
+      state.gridState[r] = [];
+      for (var c = 0; c < lvl[r].length; c++) {
+        if (lvl[r][c] > 0) {
+          state.gridState[r][c] = 0;
+          total++;
+        } else {
+          state.gridState[r][c] = -1;
+        }
+      }
+    }
+    state.totalFillable = total;
+    state.correctCount = 0;
+    state.timer = 0;
+    state.timerStarted = false;
+    state.timerRunning = false;
+    state.cursorRow = -1;
+    state.cursorCol = -1;
+
+    // Build palette
+    buildPalette(lvl);
+
+    // Render grid
+    renderGrid(lvl);
+
+    // Update header
+    $('level-name').textContent = 'Level ' + (levelIdx + 1) + ': ' + lvlDef.name;
+    $('progress-text').textContent = '0 / ' + total;
+    $('progress-fill').style.width = '0%';
+    $('progress-pct').textContent = '0%';
+
+    $('hint-text').textContent = levelIdx === 0 ? '💡 Select a color, then tap cells to fill' : '🎨 Fill in the mosaic!';
+    showScreen('screen-game');
+  }
+
+  /* ═══════════════════════════════════════════
+     PALETTE
+     ═══════════════════════════════════════════ */
+
+  function buildPalette(lvl) {
+    paletteEl.innerHTML = '';
+    // Find used colors
+    var usedColors = {};
+    for (var r = 0; r < lvl.length; r++) {
+      for (var c = 0; c < lvl[r].length; c++) {
+        var val = lvl[r][c];
+        if (val > 0) usedColors[val] = true;
+      }
+    }
+    var colorKeys = Object.keys(usedColors).map(Number).sort();
+
+    colorKeys.forEach(function(ci){
+      var swatch = document.createElement('div');
+      swatch.className = 'palette-swatch';
+      swatch.setAttribute('data-color', ci);
+
+      // Remaining count
+      var remaining = 0;
+      for (var r = 0; r < lvl.length; r++) {
+        for (var c = 0; c < lvl[r].length; c++) {
+          if (lvl[r][c] === ci && state.gridState[r] && state.gridState[r][c] === 0) {
+            remaining++;
+          }
+        }
+      }
+
+      swatch.innerHTML =
+        '<span class="color-dot" style="background:' + PALETTE[ci] + '"></span>' +
+        '<span class="num">' + ci + '</span>' +
+        '<span class="count">×' + remaining + '</span>';
+
+      swatch.addEventListener('pointerdown', function(e){
+        e.preventDefault();
+        selectColor(parseInt(this.getAttribute('data-color')));
+      });
+
+      paletteEl.appendChild(swatch);
+    });
+  }
+
+  function selectColor(ci) {
+    state.selectedColor = ci;
+    var swatches = document.querySelectorAll('.palette-swatch');
+    for (var i = 0; i < swatches.length; i++) {
+      swatches[i].classList.toggle('active', parseInt(swatches[i].getAttribute('data-color')) === ci);
+    }
+    sfxSelect();
+    // Update hints
+    var lvl = LEVELS[state.currentLevel].grid();
+    $('hint-text').textContent = 'Tap cells with number ' + ci + ' to fill';
+    // Highlight matching cells
+    var cells = gridEl.children;
+    var lvlIdx = state.currentLevel;
+    var lvlGrid = LEVELS[lvlIdx].grid();
+    for (var idx = 0; idx < cells.length; idx++) {
+      var row = parseInt(cells[idx].getAttribute('data-row'));
+      var col = parseInt(cells[idx].getAttribute('data-col'));
+      if (row >= 0 && col >= 0) {
+        var target = lvlGrid[row][col];
+        var filled = state.gridState[row] && state.gridState[row][col] > 0;
+        if (target === ci && !filled) {
+          cells[idx].classList.add('highlight');
+        } else {
+          cells[idx].classList.remove('highlight');
+        }
+      }
+    }
+  }
+
+  function deselectColor() {
+    state.selectedColor = 0;
+    var swatches = document.querySelectorAll('.palette-swatch');
+    for (var i = 0; i < swatches.length; i++) swatches[i].classList.remove('active');
+    var cells = gridEl.children;
+    for (var idx = 0; idx < cells.length; idx++) {
+      cells[idx].classList.remove('highlight');
+    }
+    $('hint-text').textContent = 'Select a color, then tap cells';
+  }
+
+  /* ═══════════════════════════════════════════
+     GRID RENDERING
+     ═══════════════════════════════════════════ */
+
+  function renderGrid(lvl) {
+    gridEl.innerHTML = '';
+    var rows = lvl.length;
+    var cols = lvl[0].length;
+    gridEl.style.gridTemplateColumns = 'repeat(' + cols + ', 1fr)';
+
+    for (var r = 0; r < rows; r++) {
+      for (var c = 0; c < cols; c++) {
+        var cell = document.createElement('div');
+        cell.className = 'gcell';
+        cell.setAttribute('data-row', r);
+        cell.setAttribute('data-col', c);
+
+        var val = lvl[r][c];
+        if (val === 0) {
+          cell.style.background = 'rgba(0,0,0,0.02)';
+          cell.style.cursor = 'default';
+        } else {
+          cell.classList.add('unfilled');
+          cell.innerHTML = '<span class="num">' + val + '</span>';
+          cell.addEventListener('pointerdown', (function(row, col){
+            return function(e) {
+              e.preventDefault();
+              paintCell(row, col);
+            };
+          })(r, c));
+        }
+        gridEl.appendChild(cell);
+      }
+    }
+  }
+
+  function paintCell(row, col) {
+    if (state.selectedColor === 0) {
+      $('hint-text').style.opacity = '0.9';
+      setTimeout(function(){ $('hint-text').style.opacity = '0.5'; }, 800);
+      return;
+    }
+
+    var lvlGrid = LEVELS[state.currentLevel].grid();
+    var target = lvlGrid[row][col];
+    if (target === 0) return;
+
+    var currentVal = state.gridState[row][col];
+    if (currentVal === state.selectedColor) {
+      state.gridState[row][col] = 0;
+      state.correctCount--;
+      updateCellVisual(row, col, 0, lvlGrid);
+      updateProgress();
+      return;
+    }
+
+    if (currentVal > 0) {
+      state.correctCount--;
+    }
+
+    state.gridState[row][col] = state.selectedColor;
+    updateCellVisual(row, col, state.selectedColor, lvlGrid);
+
+    if (state.selectedColor === target) {
+      state.correctCount++;
+      sfxPaint();
+    }
+
+    // Start timer on first action
+    if (!state.timerStarted) {
+      state.timerStarted = true;
+      state.timerRunning = true;
+      timerLast = performance.now();
+      timerTick();
+    }
+
+    updateProgress();
+
+    // Check win
+    if (state.correctCount >= state.totalFillable) {
+      state.timerRunning = false;
+      sfxComplete();
+      setTimeout(function(){ showResult(); }, 500);
+    }
+  }
+
+  function updateCellVisual(row, col, colorIdx, lvlGrid) {
+    var cols = lvlGrid[0].length;
+    var idx = row * cols + col;
+    var cell = gridEl.children[idx];
+    if (!cell) return;
+
+    // Force reflow
+    void cell.offsetWidth;
+
+    if (colorIdx === 0) {
+      cell.className = 'gcell unfilled';
+      cell.style.background = '';
+      var val = lvlGrid[row][col];
+      cell.innerHTML = '<span class="num">' + val + '</span>';
+    } else {
+      cell.className = 'gcell filled';
+      cell.style.background = PALETTE[colorIdx];
+      cell.innerHTML = '';
+    }
+  }
+
+  /* ═══════════════════════════════════════════
+     TIMER
+     ═══════════════════════════════════════════ */
+
+  function timerTick() {
+    if (!state.timerRunning) return;
+    var now = performance.now();
+    var dt = (now - timerLast) / 1000;
+    timerLast = now;
+    state.timer += dt;
+    if (state.timer > 300) state.timer = 300;
+    updateTimerDisplay();
+    state.timerRAF = requestAnimationFrame(timerTick);
+  }
+
+  function updateTimerDisplay() {
+    var sec = Math.round(state.timer);
+    var m = Math.floor(sec / 60);
+    var s = sec % 60;
+    $('timer').innerHTML = '<span class="label">⏱</span> ' +
+      (m < 10 ? '0' : '') + m + ':' + (s < 10 ? '0' : '') + s;
+  }
+
+  /* ═══════════════════════════════════════════
+     PROGRESS
+     ═══════════════════════════════════════════ */
+
+  function updateProgress() {
+    var filled = 0;
+    var lvlGrid = LEVELS[state.currentLevel].grid();
+    var total = 0;
+    for (var r = 0; r < lvlGrid.length; r++) {
+      for (var c = 0; c < lvlGrid[r].length; c++) {
+        if (lvlGrid[r][c] > 0) {
+          total++;
+          if (state.gridState[r] && state.gridState[r][c] > 0) filled++;
+        }
+      }
+    }
+    var pct = total > 0 ? (filled / total) * 100 : 0;
+    $('progress-fill').style.width = pct + '%';
+    $('progress-text').textContent = state.correctCount + ' / ' + state.totalFillable;
+    $('progress-pct').textContent = Math.round(pct) + '%';
+    // Update palette counts
+    updatePaletteCounts(lvlGrid);
+  }
+
+  function updatePaletteCounts(lvlGrid) {
+    var swatches = document.querySelectorAll('.palette-swatch');
+    for (var i = 0; i < swatches.length; i++) {
+      var ci = parseInt(swatches[i].getAttribute('data-color'));
+      var remaining = 0;
+      for (var r = 0; r < lvlGrid.length; r++) {
+        for (var c = 0; c < lvlGrid[r].length; c++) {
+          if (lvlGrid[r][c] === ci && state.gridState[r] && state.gridState[r][c] === 0) {
+            remaining++;
+          }
+        }
+      }
+      var countEl = swatches[i].querySelector('.count');
+      if (countEl) countEl.textContent = '×' + remaining;
+      if (remaining === 0 && ci > 0) {
+        swatches[i].classList.add('completed');
+      } else {
+        swatches[i].classList.remove('completed');
+      }
+    }
+  }
+
+  /* ═══════════════════════════════════════════
+     SCORING
+     ═══════════════════════════════════════════ */
+
+  function calcScore() {
+    var totalCells = state.totalFillable;
+    var timerSec = state.timer;
+    // base: 10 pts per cell
+    var base = totalCells * 10;
+    // time bonus: faster = more (max 1.5x, min 1.0x for 180s)
+    var factor = 1 + Math.max(0, (180 - timerSec) / 180) * 0.5;
+    return Math.round(base * factor);
+  }
+
+  /* ═══════════════════════════════════════════
+     RESULT SCREEN
+     ═══════════════════════════════════════════ */
+
+  function showResult() {
+    showScreen('screen-result');
+
+    var score = calcScore();
+    var timeSec = Math.round(state.timer);
+    var factor = 1 + Math.max(0, (180 - timeSec) / 180) * 0.5;
+
+    $('result-score').textContent = score.toLocaleString();
+    $('result-time').textContent = formatTime(timeSec);
+    $('result-cells').textContent = state.totalFillable;
+    $('result-bonus').textContent = factor.toFixed(1) + '×';
+    $('result-icon').textContent = LEVELS[state.currentLevel].icon;
+
+    // Check new record
+    var isNewBest = score > (state.levelScores[state.currentLevel] || 0);
+    if (isNewBest) {
+      state.levelScores[state.currentLevel] = score;
+      if (score > state.highScore) {
+        state.highScore = score;
+      }
+      $('new-best-badge').style.display = 'inline-flex';
+    } else {
+      $('new-best-badge').style.display = 'none';
+    }
+
+    // Mark completed, unlock next
+    if (!state.levelCompleted[state.currentLevel]) {
+      state.levelCompleted[state.currentLevel] = true;
+      if (state.currentLevel + 1 < LEVELS.length) {
+        if (state.unlockedLevel < state.currentLevel + 2) {
+          state.unlockedLevel = state.currentLevel + 2;
+        }
+      }
+    }
+
+    saveProgress();
+
+    // Spawn confetti
+    spawnConfetti();
+
+    // Next level button
+    var nextBtn = $('btn-next');
+    if (state.currentLevel + 1 < LEVELS.length) {
+      nextBtn.style.display = '';
+    } else {
+      nextBtn.style.display = 'none';
+    }
+  }
+
+  function spawnConfetti() {
+    var container = $('confetti');
+    container.innerHTML = '';
+    var colors = ['#3B82F6','#8B5CF6','#F59E0B','#16A34A','#E52521','#EC4899'];
+    for (var i = 0; i < 20; i++) {
+      var p = document.createElement('div');
+      p.className = 'particle';
+      p.style.left = (5 + Math.random() * 90) + '%';
+      p.style.background = colors[Math.floor(Math.random() * colors.length)];
+      p.style.animationDuration = (1.5 + Math.random() * 1.5) + 's';
+      p.style.animationDelay = (Math.random() * 1.0) + 's';
+      p.style.width = (4 + Math.random() * 4) + 'px';
+      p.style.height = p.style.width;
+      container.appendChild(p);
+    }
+  }
+
+  function formatTime(sec) {
+    var m = Math.floor(sec / 60);
+    var s = sec % 60;
+    return (m < 10 ? '0' : '') + m + ':' + (s < 10 ? '0' : '') + s;
+  }
+
+  /* ═══════════════════════════════════════════
+     NAVIGATION
+     ═══════════════════════════════════════════ */
+
+  window.goToMenu = function() {
+    state.timerRunning = false;
+    deselectColor();
+    buildLevelSelector();
+    showScreen('screen-title');
+  };
+
+  window.playAgain = function() {
+    initAudio();
+    startLevel(state.currentLevel);
+  };
+
+  window.nextLevel = function() {
+    if (state.currentLevel + 1 < LEVELS.length) {
+      state.currentLevel++;
+      initAudio();
+      startLevel(state.currentLevel);
+    }
+  };
+
+  /* ═══════════════════════════════════════════
+     KEYBOARD SUPPORT
+     ═══════════════════════════════════════════ */
+
+  document.addEventListener('keydown', function(e) {
+    if (document.querySelector('#screen-game.active')) {
+      var num = parseInt(e.key);
+      if (num >= 1 && num <= 8) {
+        var swatches = document.querySelectorAll('.palette-swatch[data-color="' + num + '"]');
+        if (swatches.length > 0 && !swatches[0].classList.contains('completed')) {
+          selectColor(num);
+          e.preventDefault();
+        }
+        return;
+      }
+
+      var lvlDef = LEVELS[state.currentLevel];
+      if (!lvlDef) return;
+      var lvlGrid = lvlDef.grid();
+      var rows = lvlGrid.length;
+      var cols = lvlGrid[0].length;
+
+      if (e.key === 'ArrowLeft' || e.key === 'ArrowRight' || e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+        e.preventDefault();
+        if (state.cursorRow < 0 || state.cursorCol < 0) {
+          state.cursorRow = 0;
+          state.cursorCol = 0;
+        }
+        clearCursor();
+        if (e.key === 'ArrowLeft') state.cursorCol = Math.max(0, state.cursorCol - 1);
+        else if (e.key === 'ArrowRight') state.cursorCol = Math.min(cols - 1, state.cursorCol + 1);
+        else if (e.key === 'ArrowUp') state.cursorRow = Math.max(0, state.cursorRow - 1);
+        else if (e.key === 'ArrowDown') state.cursorRow = Math.min(rows - 1, state.cursorRow + 1);
+        highlightCursor();
+        return;
+      }
+
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        if (state.cursorRow >= 0 && state.cursorCol >= 0) {
+          paintCell(state.cursorRow, state.cursorCol);
+        }
+        return;
+      }
+
+      if (e.key === 'Escape') {
+        deselectColor();
+        e.preventDefault();
+        return;
+      }
+
+      if (e.key === 'r' || e.key === 'R') {
+        startLevel(state.currentLevel);
+        e.preventDefault();
+        return;
+      }
+    }
+  });
+
+  function clearCursor() {
+    var cells = gridEl.children;
+    var lvlDef = LEVELS[state.currentLevel];
+    if (!lvlDef) return;
+    var lvlGrid = lvlDef.grid();
+    var cols = lvlGrid[0].length;
+    if (state.cursorRow >= 0 && state.cursorCol >= 0) {
+      var idx = state.cursorRow * cols + state.cursorCol;
+      if (cells[idx]) cells[idx].classList.remove('cursor-highlight');
+    }
+  }
+
+  function highlightCursor() {
+    var lvlDef = LEVELS[state.currentLevel];
+    if (!lvlDef) return;
+    var lvlGrid = lvlDef.grid();
+    var cols = lvlGrid[0].length;
+    var cells = gridEl.children;
+    var idx = state.cursorRow * cols + state.cursorCol;
+    if (cells[idx] && lvlGrid[state.cursorRow] && lvlGrid[state.cursorRow][state.cursorCol] > 0) {
+      cells[idx].classList.add('cursor-highlight');
+    }
+  }
+
+  /* ═══════════════════════════════════════════
+     INIT
+     ═══════════════════════════════════════════ */
+
+  function init() {
+    loadSave();
+    buildLevelSelector();
+    if (window.recordPlayed) {
+      window.recordPlayed('color-mosaic');
+    }
+    console.log('Color Mosaic v1.0 loaded');
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+
+})();
+</script>
+</body>
+</html>
