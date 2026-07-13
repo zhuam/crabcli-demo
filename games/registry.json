@@ -538,6 +538,28 @@
       "rating": 4.1
     },
     {
+      "id": "barbie-wedding-nails",
+      "name": "Barbie Wedding Nails",
+      "description": "芭比婚礼美甲沙龙 — 拖拽颜色与装饰品，为芭比打造梦幻新娘美甲",
+      "category": "casual",
+      "tags": [
+        "singleplayer",
+        "casual",
+        "creative",
+        "drag",
+        "touch",
+        "short-session",
+        "beauty"
+      ],
+      "thumbnail": "/games/076-barbie-wedding-nails/thumb.svg",
+      "path": "/games/076-barbie-wedding-nails/",
+      "hasServer": false,
+      "players": "1",
+      "version": "1.0.0",
+      "featured": true,
+      "rating": 4.0
+    },
+    {
       "id": "dice",
       "name": "Dice",
       "description": "Minimal dice roller — click for a fair 1–6 with a short animation",

@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" width="240" height="240">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1a0a1a"/>
+      <stop offset="50%" stop-color="#2a0f2a"/>
+      <stop offset="100%" stop-color="#1a0a1a"/>
+    </linearGradient>
+    <linearGradient id="handGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#fce4d6"/>
+      <stop offset="100%" stop-color="#ecc8b0"/>
+    </linearGradient>
+    <radialGradient id="ringGrad" cx="50%" cy="40%" r="60%">
+      <stop offset="0%" stop-color="#ffd700"/>
+      <stop offset="100%" stop-color="#b8860b"/>
+    </radialGradient>
+  </defs>
+  <rect width="240" height="240" fill="url(#bg)" rx="16"/>
+  <!-- Sparkle background -->
+  <circle cx="200" cy="35" r="6" fill="rgba(255,255,255,0.06)"/>
+  <circle cx="220" cy="60" r="4" fill="rgba(255,255,255,0.05)"/>
+  <circle cx="25" cy="190" r="5" fill="rgba(255,255,255,0.06)"/>
+  <circle cx="45" cy="210" r="3" fill="rgba(255,255,255,0.04)"/>
+  <circle cx="30" cy="50" r="4" fill="rgba(255,255,255,0.05)"/>
+  <circle cx="210" cy="200" r="5" fill="rgba(255,255,255,0.04)"/>
+  <!-- Small hearts -->
+  <text x="40" y="70" font-size="12" fill="rgba(255,105,180,0.3)">💗</text>
+  <text x="195" y="180" font-size="10" fill="rgba(255,215,0,0.25)">✨</text>
+  <!-- Hand shape -->
+  <path d="M60 230 L50 200 L55 170 L70 150 L85 145 L90 155 L85 175 Z" fill="url(#handGrad)"/>
+  <path d="M90 180 L100 140 L115 115 L130 100 L145 100 L145 115 L135 150 Z" fill="url(#handGrad)"/>
+  <path d="M145 170 L155 130 L165 100 L180 85 L195 90 L190 110 L180 140 Z" fill="url(#handGrad)"/>
+  <path d="M180 170 L195 150 L210 130 L225 120 L235 125 L230 140 L215 160 Z" fill="url(#handGrad)"/>
+  <path d="M215 185 L230 175 L245 160 L255 155 L260 160 L255 170 L240 185 Z" fill="url(#handGrad)"/>
+  <!-- Palm -->
+  <path d="M55 230 C50 210 55 190 65 180 L200 180 C210 190 215 210 210 230 Z" fill="url(#handGrad)"/>
+  <!-- Wedding ring -->
+  <circle cx="150" cy="220" r="5" fill="none" stroke="#ffd700" stroke-width="2"/>
+  <path d="M150 214 L148 218 L150 220 L152 218 Z" fill="#b0e0ff"/>
+  <!-- Painted nails -->
+  <ellipse cx="70" cy="155" rx="10" ry="9" fill="#ff69b4" stroke="rgba(255,255,255,0.2)" stroke-width="1.5"/>
+  <ellipse cx="130" cy="110" rx="10" ry="9" fill="#ffd700" stroke="rgba(255,255,255,0.2)" stroke-width="1.5"/>
+  <ellipse cx="180" cy="100" rx="10" ry="9" fill="#d8b4f8" stroke="rgba(255,255,255,0.2)" stroke-width="1.5"/>
+  <ellipse cx="225" cy="135" rx="9" ry="8" fill="#ffb6c1" stroke="rgba(255,255,255,0.2)" stroke-width="1.5"/>
+  <ellipse cx="252" cy="168" rx="8" ry="7" fill="#ff69b4" stroke="rgba(255,255,255,0.2)" stroke-width="1.5"/>
+  <!-- Nail decorations -->
+  <text x="70" y="159" text-anchor="middle" font-size="8" fill="rgba(255,255,255,0.7)">💍</text>
+  <text x="130" y="114" text-anchor="middle" font-size="8" fill="rgba(255,255,255,0.7)">🌸</text>
+  <text x="180" y="104" text-anchor="middle" font-size="8" fill="rgba(255,255,255,0.7)">💎</text>
+  <text x="225" y="139" text-anchor="middle" font-size="7" fill="rgba(255,255,255,0.7)">💗</text>
+  <text x="252" y="171" text-anchor="middle" font-size="7" fill="rgba(255,255,255,0.7)">✨</text>
+  <!-- Title text -->
+  <text x="120" y="100" text-anchor="middle" font-family="sans-serif" font-size="10" font-weight="bold" fill="#ff69b4">💍</text>
+  <text x="120" y="220" text-anchor="middle" font-family="sans-serif" font-size="14" font-weight="bold" fill="white">Barbie Wedding</text>
+  <text x="120" y="237" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#ffd700">Nails</text>
+</svg>
