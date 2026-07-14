@@ -1,6 +1,28 @@
 {
   "games": [
     {
+      "id": "minecraft-pixel-puzzle",
+      "name": "Minecraft Pixel Puzzle",
+      "description": "马赛克拼图重建经典 MC 画面 — 拖拽碎片，还原像素画",
+      "category": "puzzle",
+      "tags": [
+        "singleplayer",
+        "puzzle",
+        "drag",
+        "pixel",
+        "minecraft",
+        "touch",
+        "short-session"
+      ],
+      "thumbnail": "/games/069-minecraft-pixel-puzzle/thumb.svg",
+      "path": "/games/069-minecraft-pixel-puzzle/",
+      "hasServer": false,
+      "players": "1",
+      "version": "1.0.0",
+      "featured": true,
+      "rating": 4.0
+    },
+    {
       "id": "color-mosaic",
       "name": "Color Mosaic",
       "description": "按编号涂色完成马赛克作品 — 选择颜色，点击格子，完成像素画",
