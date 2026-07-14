@@ -830,7 +830,7 @@ body {
         <span class="arrow">▶</span> 开始拼图
       </button>
 
-      <p class="keyboard-hint anim-fade" data-comp-id="keyboard-hint">Enter / Space 开始 · 方向键操控</p>
+      <p class="keyboard-hint anim-fade" data-comp-id="keyboard-hint">Enter / Space 开始</p>
     </div>
   </div>
 
@@ -1173,7 +1173,7 @@ body {
 
   function sfxPickup() { if (g.soundOn) { sfxTone(800, 0.08, 0.1); sfxTone(1000, 0.06, 0.06); } }
   function sfxSnap()   { if (g.soundOn) { sfxTone(1200, 0.1, 0.12); } }
-  function sfxWin()    { if (g.soundOn) { [523,659,784].forEach(function(f,i){ sfxTone(f,0.3,0.1,i*0.12); }); } }
+  function sfxWin()    { if (g.soundOn) { [523,659,784].forEach(function(f,i){ setTimeout(function(){ sfxTone(f,0.3,0.1); }, i*120); }); } }
   function sfxFail()   { if (g.soundOn) { sfxTone(300, 0.25, 0.1); } }
 
   /* ============================================================
@@ -1211,7 +1211,7 @@ body {
   var diffBtns = document.querySelectorAll('.diff-btn');
   diffBtns.forEach(function(btn) {
     var grid = parseInt(btn.getAttribute('data-grid'), 10);
-    var required = grid <= 4 ? 0 : (grid === 5 ? 2 : 3);
+    var required = getRequiredUnlocks(grid);
     if (g.unlockedCount < required + 1) {
       btn.classList.add('locked');
     }
@@ -1279,10 +1279,12 @@ body {
   function startTimer() {
     stopTimer();
     g.timerRemaining = 180;
+    g.timerStartTime = Date.now();
     $('gameTimer').textContent = '03:00';
     $('gameTimer').classList.remove('warning');
     g.timerInterval = setInterval(function() {
-      g.timerRemaining--;
+      var elapsed = Math.floor((Date.now() - g.timerStartTime) / 1000);
+      g.timerRemaining = Math.max(180 - elapsed, 0);
       var m = String(Math.floor(g.timerRemaining / 60)).padStart(2, '0');
       var s = String(g.timerRemaining % 60).padStart(2, '0');
       $('gameTimer').textContent = m + ':' + s;
@@ -1333,15 +1335,17 @@ body {
         // Pool on the right for small grids
         var colsInPool = Math.min(poolCols, 3);
         var poolPX = CELL_SIZE - poolSize * colsInPool - 8 - Math.floor(Math.random() * 10);
-        var poolPY = 8 + Math.floor(pi / colsInPool) * (poolSize + 6);
+        var poolPY = Math.min(8 + Math.floor(pi / colsInPool) * (poolSize + 6), CELL_SIZE - poolSize - 4);
         px = poolPX;
         py = poolPY;
       } else {
-        // Scatter for larger grids
-        var maxX = CELL_SIZE - poolSize - 4;
-        var maxY = CELL_SIZE - poolSize - 4;
-        px = 4 + Math.floor(Math.random() * (maxX - 4));
-        py = 4 + Math.floor(Math.random() * (maxY - 4));
+        // Grid-based pool layout for larger grids (prevents overlap)
+        var poolColsLarge = Math.ceil(Math.sqrt(total));
+        var poolSpacing = poolSize + 4;
+        var poolPX2 = 8 + (pi % poolColsLarge) * poolSpacing;
+        var poolPY2 = 8 + Math.floor(pi / poolColsLarge) * poolSpacing;
+        px = Math.min(poolPX2, CELL_SIZE - poolSize - 4);
+        py = Math.min(poolPY2, CELL_SIZE - poolSize - 4);
       }
 
       g.pieces.push({
@@ -1512,21 +1516,18 @@ body {
   /* ============================================================
      POINTER EVENTS
      ============================================================ */
-  var canvasRect = null;
-
   function getCanvasPos(e) {
-    if (!canvasRect) canvasRect = gameCanvas.getBoundingClientRect();
-    var scaleX = gameCanvas.width / canvasRect.width;
-    var scaleY = gameCanvas.height / canvasRect.height;
+    var rect = gameCanvas.getBoundingClientRect();
+    var scaleX = gameCanvas.width / rect.width;
+    var scaleY = gameCanvas.height / rect.height;
     return {
-      x: (e.clientX - canvasRect.left) * scaleX,
-      y: (e.clientY - canvasRect.top) * scaleY
+      x: (e.clientX - rect.left) * scaleX,
+      y: (e.clientY - rect.top) * scaleY
     };
   }
 
   function onPointerDown(e) {
     if (!g.isGameActive) return;
-    canvasRect = gameCanvas.getBoundingClientRect();
     var pos = getCanvasPos(e);
 
     // Find piece under pointer (reverse order so top pieces are picked first)
@@ -1574,6 +1575,7 @@ body {
   gameCanvas.addEventListener('pointermove', onPointerMove);
   gameCanvas.addEventListener('pointerup', onPointerUp);
   gameCanvas.addEventListener('pointerleave', onPointerUp);
+  gameCanvas.addEventListener('pointercancel', onPointerUp);
 
   /* ============================================================
      START GAME
@@ -1585,8 +1587,7 @@ body {
     $('gameTimer').classList.remove('warning');
 
     // Update ref thumbnail
-    g.imgData = IMAGES[g.imageIndex];
-    if (refCanvas) renderPixelArt(refCanvas, g.imgData);
+    if (refCanvas) renderPixelArt(refCanvas, IMAGES[g.imageIndex]);
 
     initPieces(true);
     showScreen('screen-game');
@@ -1710,10 +1711,14 @@ body {
   /* ============================================================
      DIFFICULTY LOCK UPDATES
      ============================================================ */
+  function getRequiredUnlocks(grid) {
+    return grid <= 4 ? 0 : (grid === 5 ? 2 : 3);
+  }
+
   function updateDiffLocks() {
     diffBtns.forEach(function(btn) {
       var grid = parseInt(btn.getAttribute('data-grid'), 10);
-      var required = grid <= 4 ? 0 : (grid === 5 ? 2 : 3);
+      var required = getRequiredUnlocks(grid);
       if (g.unlockedCount < required + 1) {
         btn.classList.add('locked');
       } else {
@@ -1726,8 +1731,9 @@ body {
      INIT
      ============================================================ */
   // Title preview
-  if (previewCanvas) renderPixelArt(previewCanvas, IMAGES[1]);
-  if (refCanvas) renderPixelArt(refCanvas, IMAGES[1]);
+  // Title preview — match the default difficulty (3x3 = IMAGES[2])
+  if (previewCanvas) renderPixelArt(previewCanvas, IMAGES[Math.min(3 - 1, IMAGES.length - 1)]);
+  if (refCanvas) renderPixelArt(refCanvas, IMAGES[Math.min(3 - 1, IMAGES.length - 1)]);
 
   // Initialize diff locks
   updateDiffLocks();
