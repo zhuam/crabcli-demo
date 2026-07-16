@@ -1,6 +1,29 @@
 {
   "games": [
     {
+      "id": "memory-match-pairs",
+      "name": "Memory Match Pairs",
+      "description": "翻牌找对，时间挑战 — 翻牌匹配 emoji，90秒限时配对过关，解锁新主题",
+      "category": "puzzle",
+      "tags": [
+        "singleplayer",
+        "puzzle",
+        "memory",
+        "match",
+        "emoji",
+        "touch",
+        "short-session",
+        "timed"
+      ],
+      "thumbnail": "/games/068-memory-match-pairs/thumb.svg",
+      "path": "/games/068-memory-match-pairs/",
+      "hasServer": false,
+      "players": "1",
+      "version": "1.0.0",
+      "featured": true,
+      "rating": 4.0
+    },
+    {
       "id": "minecraft-pixel-puzzle",
       "name": "Minecraft Pixel Puzzle",
       "description": "马赛克拼图重建经典 MC 画面 — 拖拽碎片，还原像素画",

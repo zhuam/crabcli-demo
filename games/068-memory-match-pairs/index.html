@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Memory Match Pairs</title>
+<link rel="stylesheet" href="/fonts/design-fonts.css">
+<link rel="stylesheet" href="/games/shared/game-frame.css">
+<link rel="stylesheet" href="/games/068-memory-match-pairs/style.css">
+</head>
+<body>
+<a href="/hub/index.html" class="back-to-hub" aria-label="返回主页"><span>←</span><span>返回</span></a>
+
+<div class="game-container">
+  <!-- ============================================================
+       SCREEN 1 — MENU
+       ============================================================ -->
+  <div id="screen-menu" class="screen">
+    <div class="screen-menu-inner">
+      <div class="menu-eyebrow">翻牌找对 · 时间挑战</div>
+
+      <div class="menu-headline">
+        Memory<br><span class="accent1">Match</span><br><span class="accent2">Pairs</span>
+      </div>
+
+      <p class="menu-sub">翻牌记忆，限时配对。90秒内找到所有配对即可过关。逐步解锁新主题，挑战你的记忆力。</p>
+
+      <p class="menu-tip">点击翻牌 · 两张配对消除 · 全部配齐过关</p>
+
+      <!-- Theme Selector -->
+      <div class="theme-section">
+        <div class="theme-section-label">主题选择</div>
+        <div id="theme-list" class="theme-list"></div>
+      </div>
+
+      <!-- Stats -->
+      <div class="menu-stats">
+        <div class="stat-item">
+          <span class="stat-value" id="best-time">---</span>
+          <span class="stat-label">最佳用时</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-value" id="games-played">0</span>
+          <span class="stat-label">总局数</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-value" id="games-won">0</span>
+          <span class="stat-label">胜利</span>
+        </div>
+      </div>
+
+      <!-- CTA -->
+      <div class="menu-cta">
+        <button class="btn-primary" id="btn-play">开始游戏</button>
+        <button class="btn-glass" id="btn-settings" aria-label="设置">
+          <svg viewBox="0 0 24 24" width="18" height="18">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" stroke="currentColor" fill="none" stroke-width="1.5"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Settings Panel -->
+      <div id="settings-panel" class="settings-panel hidden">
+        <h3>设置</h3>
+        <label class="setting-row">
+          <input type="checkbox" id="sound-toggle" checked> 音效
+        </label>
+        <label class="setting-row">
+          <input type="checkbox" id="vibration-toggle" checked> 震动
+        </label>
+        <button class="btn-primary settings-close" id="btn-settings-close">关闭</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       SCREEN 2 — GAME BOARD
+       ============================================================ -->
+  <div id="screen-game" class="screen hidden">
+    <!-- HUD -->
+    <div class="game-hud">
+      <div class="hud-item">
+        <span class="hud-timer-icon">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        </span>
+        <span class="hud-timer" id="hud-timer">1:30</span>
+      </div>
+      <div class="hud-item">
+        <span class="hud-score" id="hud-progress">配对 <span class="score-num">0</span>/8</span>
+      </div>
+      <div class="hud-item">
+        <span class="hud-theme" id="hud-theme">🎯 经典</span>
+      </div>
+    </div>
+
+    <!-- Progress Bar -->
+    <div class="game-progress">
+      <div class="progress-track">
+        <div class="progress-fill" id="progress-fill" style="width:0%"></div>
+      </div>
+    </div>
+
+    <!-- Card Grid -->
+    <div id="card-grid" class="card-grid"></div>
+  </div>
+
+  <!-- ============================================================
+       SCREEN 3 — RESULT
+       ============================================================ -->
+  <div id="screen-result" class="screen hidden">
+    <div id="result-inner" class="result-inner"></div>
+  </div>
+</div>
+
+<script src="/games/068-memory-match-pairs/app.js"></script>
+</body>
+</html>
