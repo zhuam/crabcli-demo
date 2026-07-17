@@ -42,7 +42,7 @@
       "players": "1",
       "version": "1.0.0",
       "featured": true,
-      "rating": 4
+      "rating": 4.0
     },
     {
       "id": "minecraft-pixel-puzzle",
@@ -64,7 +64,7 @@
       "players": "1",
       "version": "1.0.0",
       "featured": true,
-      "rating": 4
+      "rating": 4.0
     },
     {
       "id": "color-mosaic",
@@ -85,7 +85,7 @@
       "players": "1",
       "version": "1.0.0",
       "featured": true,
-      "rating": 4
+      "rating": 4.0
     },
     {
       "id": "photo-puzzle-restore",
@@ -106,7 +106,7 @@
       "players": "1",
       "version": "1.0.0",
       "featured": true,
-      "rating": 4
+      "rating": 4.0
     },
     {
       "id": "mario-pixel-painter",
@@ -128,7 +128,7 @@
       "players": "1",
       "version": "1.0.0",
       "featured": true,
-      "rating": 4
+      "rating": 4.0
     },
     {
       "id": "guinea-pig-jigsaw",
@@ -149,7 +149,7 @@
       "players": "1",
       "version": "1.0.0",
       "featured": true,
-      "rating": 4
+      "rating": 4.0
     },
     {
       "id": "color-sort-balls",
@@ -169,7 +169,7 @@
       "players": "1",
       "version": "1.0.0",
       "featured": true,
-      "rating": 4
+      "rating": 4.0
     },
     {
       "id": "cooking-marathon",
@@ -206,7 +206,7 @@
       "players": "1",
       "version": "1.0.0",
       "featured": true,
-      "rating": 4
+      "rating": 4.0
     },
     {
       "id": "trivia-royale",
@@ -320,7 +320,7 @@
       "players": "1",
       "version": "1.0.0",
       "featured": true,
-      "rating": 4
+      "rating": 4.0
     },
     {
       "id": "cube-labyrinth-roll",
@@ -421,7 +421,7 @@
       "players": "1-2",
       "version": "1.0.0",
       "featured": true,
-      "rating": 4
+      "rating": 4.0
     },
     {
       "id": "punch-monkey-cafe",
@@ -441,7 +441,7 @@
       "players": "1",
       "version": "1.0.0",
       "featured": true,
-      "rating": 4
+      "rating": 4.0
     },
     {
       "id": "sort-till-you-cant",
@@ -461,7 +461,7 @@
       "players": "1",
       "version": "1.0.0",
       "featured": false,
-      "rating": 4
+      "rating": 4.0
     },
     {
       "id": "garden-keeper",
@@ -623,7 +623,7 @@
       "players": "1",
       "version": "1.0.0",
       "featured": true,
-      "rating": 4
+      "rating": 4.0
     },
     {
       "id": "dice",
@@ -639,7 +639,7 @@
       "hasServer": false,
       "players": "1",
       "version": "1.0.0",
-      "rating": 4
+      "rating": 4.0
     },
     {
       "id": "word-ladder-climb",
@@ -691,7 +691,7 @@
       "hasServer": false,
       "players": "1",
       "version": "1.0.0",
-      "rating": 4
+      "rating": 4.0
     },
     {
       "id": "word-guess",
@@ -708,7 +708,7 @@
       "hasServer": false,
       "players": "1",
       "version": "1.0.0",
-      "rating": 4
+      "rating": 4.0
     },
     {
       "id": "pet-run-io",
@@ -724,7 +724,7 @@
       "hasServer": false,
       "players": "1",
       "version": "1.0.0",
-      "rating": 4
+      "rating": 4.0
     },
     {
       "id": "solar-snake",
@@ -740,7 +740,7 @@
       "hasServer": false,
       "players": "1",
       "version": "1.0.0",
-      "rating": 4
+      "rating": 4.0
     },
     {
       "id": "idle-lemonade-stand",
@@ -756,7 +756,7 @@
       "hasServer": false,
       "players": "1",
       "version": "1.0.0",
-      "rating": 4
+      "rating": 4.0
     },
     {
       "id": "sushi-master",
@@ -775,7 +775,7 @@
       "hasServer": false,
       "players": "1",
       "version": "1.0.0",
-      "rating": 4
+      "rating": 4.0
     },
     {
       "id": "hyper-casual-hop",
@@ -815,7 +815,7 @@
       "players": "1",
       "version": "1.0.0",
       "featured": true,
-      "rating": 4
+      "rating": 4.0
     },
     {
       "id": "bubble-tea-maker",
@@ -835,7 +835,7 @@
       "players": "1",
       "version": "1.0.0",
       "featured": true,
-      "rating": 4
+      "rating": 4.0
     },
     {
       "id": "tank-battalion-2d",
@@ -855,7 +855,7 @@
       "players": "1",
       "version": "1.0.0",
       "featured": false,
-      "rating": 4
+      "rating": 4.0
     },
     {
       "id": "idle-coffee-tycoon",
@@ -873,7 +873,7 @@
       "hasServer": false,
       "players": "1",
       "version": "1.0.0",
-      "rating": 4
+      "rating": 4.0
     },
     {
       "id": "pizza-stack-frenzy",
@@ -908,4 +908,41 @@
       ],
       "thumbnail": "/games/081-speed-cube-solver/thumb.svg",
       "path": "/games/081-speed-cube-solver/",
-      "hasSe                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          
+      "hasServer": false,
+      "players": "1",
+      "version": "1.0.0"
+    }
+  ],
+  "categories": [
+    {
+      "id": "all",
+      "name": "All",
+      "icon": "🎮"
+    },
+    {
+      "id": "puzzle",
+      "name": "Puzzle",
+      "icon": "🧩"
+    },
+    {
+      "id": "idle",
+      "name": "Idle",
+      "icon": "🏪"
+    },
+    {
+      "id": "action",
+      "name": "Action",
+      "icon": "⚡"
+    },
+    {
+      "id": "strategy",
+      "name": "Strategy",
+      "icon": "♟️"
+    },
+    {
+      "id": "casual",
+      "name": "Casual",
+      "icon": "🎯"
+    }
+  ]
+}
