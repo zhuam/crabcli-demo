@@ -1,0 +1,1661 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no">
+  <meta name="theme-color" content="#0f0d0c">
+  <title>Stretch Arm Bank Job</title>
+  <link rel="stylesheet" href="../../games/shared/game-frame.css">
+  <style>
+    /* ════════════════════════════════════════════════
+       Stretch Arm Bank Job — Full Game
+       ════════════════════════════════════════════════ */
+    *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+    html, body {
+      background: #0f0d0c;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'JetBrains Mono', 'Courier New', monospace;
+      color: #e8e4df;
+      overflow: hidden;
+      width: 100vw; height: 100vh;
+      touch-action: none;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    /* ═══ Screens ═══ */
+    .screen {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      width: 100%; height: 100%;
+      position: fixed; inset: 0;
+    }
+    .screen.active { display: flex; }
+
+    /* ═══ Background ═══ */
+    .bg-glow {
+      position: fixed; top:-40%; left:50%; transform:translateX(-50%);
+      width:900px; height:700px;
+      background:radial-gradient(ellipse, rgba(59,130,246,0.10) 0%, rgba(139,92,246,0.05) 40%, transparent 70%);
+      pointer-events:none; z-index:0;
+    }
+
+    /* ════════════════════════════════════════════════
+       TITLE SCREEN
+       ════════════════════════════════════════════════ */
+    .title-screen {
+      justify-content: center;
+      text-align: center;
+      z-index: 1;
+      background: linear-gradient(180deg, #0f0d0c 0%, #1a1817 60%, #141211 100%);
+    }
+    .title-screen .vault-door-svg {
+      width: 80px; height: 80px; margin-bottom: 16px;
+    }
+    .title-screen .badge {
+      font-size: 0.6rem; letter-spacing: 0.15em;
+      color: rgba(217,119,6,0.7);
+      border: 1px solid rgba(217,119,6,0.2);
+      padding: 4px 16px; border-radius: 20px; margin-bottom: 14px;
+      text-transform: uppercase;
+    }
+    .title-screen h1 {
+      font-family: 'Macondo', 'Georgia', serif;
+      font-size: 2rem; line-height: 1.2;
+      color: #f0e8e0; margin-bottom: 4px; letter-spacing: 0.02em;
+    }
+    .title-screen h1 .accent { color: #D97706; }
+    .title-screen .sub-line {
+      font-size: 0.75rem; color: rgba(232,228,223,0.4);
+      letter-spacing: 0.06em; margin-bottom: 24px;
+    }
+    .title-screen .start-btn {
+      background: #3B82F6; color: #fff; border: none;
+      padding: 14px 52px; border-radius: 30px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85rem; font-weight: 600; letter-spacing: 0.06em;
+      cursor: pointer; transition: all 0.25s ease;
+      box-shadow: 0 0 20px rgba(59,130,246,0.25);
+      animation: pulse-btn 2s ease-in-out infinite;
+    }
+    .title-screen .start-btn:hover {
+      background: #2563EB;
+      box-shadow: 0 0 30px rgba(59,130,246,0.4);
+      transform: scale(1.04);
+    }
+    @keyframes pulse-btn {
+      0%,100% { box-shadow: 0 0 20px rgba(59,130,246,0.2); }
+      50% { box-shadow: 0 0 30px rgba(59,130,246,0.4); }
+    }
+    .title-screen .high-score {
+      margin-top: 28px;
+      font-size: 0.65rem; color: rgba(232,228,223,0.3); letter-spacing: 0.06em;
+    }
+    .title-screen .high-score span { color: rgba(217,119,6,0.6); font-weight: 700; }
+    .title-info {
+      display: flex; gap: 18px; font-size: 0.6rem; color: rgba(232,228,223,0.3);
+      margin-top: 20px; flex-wrap: wrap; justify-content: center;
+    }
+
+    /* ════════════════════════════════════════════════
+       GAME SCREEN
+       ════════════════════════════════════════════════ */
+    .game-screen { z-index: 1; }
+    .game-canvas-wrap {
+      flex: 1; width: 100%; position: relative;
+      background: #12100f;
+    }
+    #gameCanvas {
+      display: block;
+      width: 100%; height: 100%;
+      background: #12100f;
+      touch-action: none;
+    }
+
+    /* HUD overlay */
+    .hud-overlay {
+      position: absolute; top: 0; left: 0; right: 0;
+      padding: 10px 16px;
+      display: flex; justify-content: space-between;
+      pointer-events: none; z-index: 5;
+    }
+    .hud-item {
+      display: flex; flex-direction: column; align-items: center; gap: 2px;
+    }
+    .hud-label {
+      color: rgba(232,228,223,0.3); font-size: 0.5rem;
+      letter-spacing: 0.1em; text-transform: uppercase;
+    }
+    .hud-value { font-weight: 600; font-size: 0.8rem; font-family: 'JetBrains Mono', monospace; }
+    .hud-value.score { color: #16A34A; }
+    .hud-value.timer { color: #e8e4df; }
+    .hud-value.timer.urgent { color: #DC2626; }
+    .hud-value.alarm { color: #DC2626; }
+
+    /* Alarm bar */
+    .alarm-bar-track {
+      position: absolute; top: 44px; left: 16px; right: 16px;
+      height: 4px; background: rgba(220,38,38,0.1);
+      border-radius: 2px; overflow: hidden; z-index: 5;
+    }
+    .alarm-bar-fill {
+      height: 100%; width: 0%;
+      background: #DC2626; border-radius: 2px;
+      box-shadow: 0 0 8px rgba(220,38,38,0.3);
+      transition: width 0.3s ease;
+    }
+    .alarm-bar-fill.warning {
+      background: #F59E0B;
+      box-shadow: 0 0 8px rgba(245,158,11,0.3);
+    }
+    .alarm-bar-fill.danger {
+      background: #DC2626;
+      box-shadow: 0 0 12px rgba(220,38,38,0.5);
+      animation: alarm-pulse 0.5s ease-in-out infinite;
+    }
+    @keyframes alarm-pulse {
+      0%,100% { opacity: 1; }
+      50% { opacity: 0.6; }
+    }
+
+    /* Level badge */
+    .level-badge {
+      position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%);
+      font-size: 0.5rem; color: rgba(232,228,223,0.15);
+      letter-spacing: 0.1em; text-transform: uppercase;
+      pointer-events: none; z-index: 5;
+    }
+
+    /* ═══ Back button ═══ */
+    .game-back-btn {
+      position: fixed; top: 12px; left: 12px; z-index: 100;
+      width: 36px; height: 36px; border-radius: 50%;
+      background: rgba(15,13,12,0.8); border: 1px solid rgba(232,228,223,0.1);
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; font-size: 16px; color: rgba(232,228,223,0.5);
+      transition: all 0.15s ease;
+      backdrop-filter: blur(4px);
+    }
+    .game-back-btn:hover { background: rgba(15,13,12,0.95); color: #e8e4df; }
+
+    /* ════════════════════════════════════════════════
+       RESULT SCREEN
+       ════════════════════════════════════════════════ */
+    .result-screen {
+      justify-content: center; text-align: center; z-index: 1;
+      padding: 32px 24px;
+    }
+    .result-screen.win  { background: linear-gradient(180deg, rgba(22,163,74,0.08) 0%, #1a1817 40%); }
+    .result-screen.lose { background: linear-gradient(180deg, rgba(220,38,38,0.08) 0%, #1a1817 40%); }
+    .result-icon {
+      width: 60px; height: 60px; border-radius: 50%; margin-bottom: 14px;
+      display: flex; align-items: center; justify-content: center;
+      margin-left: auto; margin-right: auto;
+    }
+    .result-screen.win .result-icon  { background: rgba(22,163,74,0.15); box-shadow: 0 0 30px rgba(22,163,74,0.1); }
+    .result-screen.lose .result-icon { background: rgba(220,38,38,0.15); box-shadow: 0 0 30px rgba(220,38,38,0.1); }
+    .result-title {
+      font-family: 'Macondo', 'Georgia', serif;
+      font-size: 1.6rem; margin-bottom: 4px;
+    }
+    .result-screen.win .result-title  { color: #16A34A; }
+    .result-screen.lose .result-title { color: #DC2626; }
+    .result-sub {
+      font-size: 0.7rem; color: rgba(232,228,223,0.35);
+      letter-spacing: 0.06em; margin-bottom: 22px;
+    }
+    .result-stats { display: flex; gap: 28px; margin-bottom: 24px; justify-content: center; }
+    .result-stat { text-align: center; }
+    .result-stat .stat-value {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1.3rem; font-weight: 700; color: #f0e8e0;
+    }
+    .result-stat .stat-value.best { color: rgba(217,119,6,0.7); }
+    .result-stat .stat-label {
+      font-size: 0.5rem; letter-spacing: 0.08em; text-transform: uppercase;
+      color: rgba(232,228,223,0.25); margin-top: 2px;
+    }
+    .result-detail {
+      font-size: 0.6rem; color: rgba(232,228,223,0.25);
+      margin-bottom: 20px;
+    }
+    .result-buttons {
+      display: flex; flex-direction: column; gap: 10px;
+      width: 100%; max-width: 200px; margin: 0 auto;
+    }
+    .btn-play-again {
+      background: #3B82F6; color: #fff; border: none;
+      padding: 13px 28px; border-radius: 30px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8rem; font-weight: 600; letter-spacing: 0.06em;
+      cursor: pointer; transition: all 0.2s ease;
+      box-shadow: 0 0 16px rgba(59,130,246,0.2);
+    }
+    .btn-play-again:hover { background: #2563EB; transform: scale(1.03); }
+    .btn-back {
+      background: transparent; color: rgba(232,228,223,0.3);
+      border: 1px solid rgba(232,228,223,0.1);
+      padding: 11px 28px; border-radius: 30px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.7rem; cursor: pointer; transition: all 0.2s ease;
+    }
+    .btn-back:hover { color: rgba(232,228,223,0.6); border-color: rgba(232,228,223,0.2); }
+
+    /* ═══ Level progression bar ═══ */
+    .level-bar {
+      margin-top: 24px;
+      display: flex; align-items: center; gap: 8px;
+      padding: 10px 18px;
+      background: rgba(26,24,23,0.5);
+      border-radius: 30px;
+      border: 1px solid rgba(232,228,223,0.05);
+    }
+    .level-bar .level-label {
+      font-size: 0.5rem; letter-spacing: 0.08em; text-transform: uppercase;
+      color: rgba(232,228,223,0.25); margin-right: 4px;
+    }
+    .level-bar .level-dots { display: flex; gap: 5px; }
+    .level-dot { width: 8px; height: 8px; border-radius: 50%; }
+    .level-dot.active { background: #3B82F6; box-shadow: 0 0 8px rgba(59,130,246,0.3); }
+    .level-dot.done   { background: #16A34A; }
+    .level-dot.locked { background: rgba(232,228,223,0.06); }
+
+    /* ═══ Pause overlay ═══ */
+    .pause-overlay {
+      position: fixed; inset: 0; z-index: 50;
+      background: rgba(15,13,12,0.85);
+      backdrop-filter: blur(8px);
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+    }
+    .pause-overlay.active { display: flex; }
+    .pause-overlay h2 {
+      font-family: 'Macondo', 'Georgia', serif;
+      font-size: 1.8rem; color: #f0e8e0;
+    }
+
+    /* ═══ Responsive ═══ */
+    @media (max-width: 480px) {
+      .title-screen h1 { font-size: 1.5rem; }
+      .title-screen .start-btn { padding: 12px 40px; font-size: 0.8rem; }
+      .hud-item .hud-value { font-size: 0.7rem; }
+      .result-title { font-size: 1.3rem; }
+      .result-stats { gap: 20px; }
+      .result-stat .stat-value { font-size: 1.1rem; }
+    }
+    @media (max-height: 600px) {
+      .title-screen .vault-door-svg { width: 56px; height: 56px; margin-bottom: 10px; }
+      .title-screen h1 { font-size: 1.3rem; }
+      .title-screen .sub-line { margin-bottom: 14px; font-size: 0.65rem; }
+      .title-screen .badge { margin-bottom: 10px; padding: 3px 12px; font-size: 0.5rem; }
+      .title-screen .start-btn { padding: 10px 36px; font-size: 0.75rem; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="bg-glow"></div>
+
+<!-- ═══ TITLE SCREEN ═══ -->
+<section class="screen title-screen active" id="titleScreen">
+  <div class="badge">✦ Physical Comedy</div>
+  <svg class="vault-door-svg" viewBox="0 0 72 72" fill="none">
+    <circle cx="36" cy="36" r="28" stroke="#D97706" stroke-width="2" opacity="0.3"/>
+    <circle cx="36" cy="36" r="22" stroke="#D97706" stroke-width="1.5" opacity="0.2"/>
+    <circle cx="36" cy="36" r="6" stroke="#D97706" stroke-width="2" opacity="0.4"/>
+    <line x1="36" y1="30" x2="36" y2="42" stroke="#D97706" stroke-width="2" opacity="0.4"/>
+    <line x1="30" y1="36" x2="42" y2="36" stroke="#D97706" stroke-width="2" opacity="0.4"/>
+  </svg>
+  <h1>Stretch&thinsp;<span class="accent">Arm</span>&thinsp;Bank Job</h1>
+  <div class="sub-line">伸縮手臂 · 智取金庫</div>
+  <button class="start-btn" id="playBtn">▶&ensp;START</button>
+  <div class="high-score">BEST&ensp;<span id="titleBest">$0</span></div>
+  <div class="title-info">
+    <span>🫳 Drag to stretch</span>
+    <span>💵 Grab cash</span>
+    <span>🚨 Avoid alarms</span>
+  </div>
+</section>
+
+<!-- ═══ GAME SCREEN ═══ -->
+<section class="screen game-screen" id="gameScreen">
+  <button class="game-back-btn" id="pauseBtn" aria-label="Pause">⏸</button>
+  <div class="game-canvas-wrap">
+    <div class="hud-overlay">
+      <div class="hud-item">
+        <span class="hud-label">Score</span>
+        <span class="hud-value score" id="hudScore">$0</span>
+      </div>
+      <div class="hud-item">
+        <span class="hud-label">Time</span>
+        <span class="hud-value timer" id="hudTimer">3:00</span>
+      </div>
+      <div class="hud-item">
+        <span class="hud-label">Alarm</span>
+        <span class="hud-value alarm" id="hudAlarm">0%</span>
+      </div>
+    </div>
+    <div class="alarm-bar-track">
+      <div class="alarm-bar-fill" id="alarmFill"></div>
+    </div>
+    <canvas id="gameCanvas"></canvas>
+    <div class="level-badge" id="hudLevel">VAULT · LEVEL 1</div>
+  </div>
+</section>
+
+<!-- ═══ PAUSE OVERLAY ═══ -->
+<div class="pause-overlay" id="pauseOverlay">
+  <h2>⏸ PAUSED</h2>
+  <button class="btn btn-primary" id="resumeBtn" style="background:#3B82F6;color:#fff;border:none;padding:14px 44px;border-radius:30px;font-family:'JetBrains Mono',monospace;font-size:0.85rem;font-weight:600;cursor:pointer;box-shadow:0 0 20px rgba(59,130,246,0.25);">▶&ensp;RESUME</button>
+  <button class="btn btn-secondary" id="quitBtn" style="background:transparent;color:rgba(232,228,223,0.3);border:1px solid rgba(232,228,223,0.1);padding:12px 36px;border-radius:30px;font-family:'JetBrains Mono',monospace;font-size:0.75rem;cursor:pointer;">←&ensp;QUIT</button>
+</div>
+
+<!-- ═══ RESULT SCREEN ═══ -->
+<section class="screen result-screen" id="resultScreen">
+  <div class="result-icon" id="resultIcon">
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" id="resultSvg"><path d="M20 6L9 17l-5-5"/></svg>
+  </div>
+  <div class="result-title" id="resultTitle">Heist Complete!</div>
+  <div class="result-sub" id="resultSub">All cash secured · No alarms</div>
+  <div class="result-stats">
+    <div class="result-stat">
+      <div class="stat-value" id="statCash">$0</div>
+      <div class="stat-label">This Run</div>
+    </div>
+    <div class="result-stat">
+      <div class="stat-value best" id="statBest">$0</div>
+      <div class="stat-label">Best</div>
+    </div>
+  </div>
+  <div class="result-detail" id="resultDetail"></div>
+  <div class="result-buttons">
+    <button class="btn-play-again" id="retryBtn">▶&ensp;PLAY AGAIN</button>
+    <button class="btn-back" id="homeBtn">←&ensp;BACK</button>
+  </div>
+  <div class="level-bar">
+    <span class="level-label">Levels</span>
+    <div class="level-dots" id="levelDots">
+      <span class="level-dot done"></span>
+      <span class="level-dot active"></span>
+      <span class="level-dot"></span>
+      <span class="level-dot locked"></span>
+      <span class="level-dot locked"></span>
+    </div>
+  </div>
+</section>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ════════════════════════════════════════════════
+     CONSTANTS
+     ════════════════════════════════════════════════ */
+  const STORAGE_KEY = 'stretch_arm_bank_best';
+  const GAME_DURATION = 180; // seconds
+  const MAX_ALARM = 100;
+  const CASH_VALUES = [100, 150, 200, 120, 180];
+  const LEVEL_TARGETS = [0, 300, 700, 1200, 1800, 2500];
+  const RETRACT_SPEED = 4; // px per frame
+  const GRAB_BUFFER = 28; // px — extra margin on grab AABB
+
+  /* ════════════════════════════════════════════════
+     STATE
+     ════════════════════════════════════════════════ */
+  let state = {
+    phase: 'idle', // idle | aiming | extending | retracting | alarm
+    score: 0,
+    level: 1,
+    timeLeft: GAME_DURATION,
+    alarmPct: 0,
+    playing: false,
+    paused: false,
+    gameOver: false,
+    animating: false,
+
+    // Arm
+    armOrigin: { x: 0.12, y: 0.85 }, // relative to canvas
+    armTarget: { x: 0.5, y: 0.4 },
+    armSegments: 5,
+    grabPoint: { x: 0.5, y: 0.4 },
+    isGrabbing: false,
+    grabbedCash: null, // index or null
+    retractingCash: null, // { cashIndex, progress }
+    dragStart: null,
+    dragCurrent: null,
+    isDragging: false,
+
+    // Vault
+    cashStacks: [],
+    lasers: [],
+    sensors: [],
+
+    // Timer
+    timer: null,
+
+    // Alarm flash
+    alarmFlash: 0,
+
+    // Cash collected
+    cashCollected: 0,
+    cashCount: 5,
+    totalCash: 0,
+
+    // Animation frame
+    rafId: null,
+    lastFrame: 0,
+
+    // Canvas
+    canvas: null,
+    ctx: null,
+    w: 0,
+    h: 0,
+
+    // Current level config
+    levelConfig: null,
+  };
+
+  /* ════════════════════════════════════════════════
+     DOM REFS
+     ════════════════════════════════════════════════ */
+  const $ = s => document.querySelector(s);
+  const el = id => document.getElementById(id);
+  const titleScreen = el('titleScreen');
+  const gameScreen = el('gameScreen');
+  const resultScreen = el('resultScreen');
+  const pauseOverlay = el('pauseOverlay');
+  const canvas = el('gameCanvas');
+  const ctx = canvas.getContext('2d');
+  const playBtn = el('playBtn');
+  const pauseBtn = el('pauseBtn');
+  const resumeBtn = el('resumeBtn');
+  const quitBtn = el('quitBtn');
+  const retryBtn = el('retryBtn');
+  const homeBtn = el('homeBtn');
+  const hudScore = el('hudScore');
+  const hudTimer = el('hudTimer');
+  const hudAlarm = el('hudAlarm');
+  const hudLevel = el('hudLevel');
+  const alarmFill = el('alarmFill');
+  const titleBest = el('titleBest');
+  const resultIcon = el('resultIcon');
+  const resultSvg = el('resultSvg');
+  const resultTitle = el('resultTitle');
+  const resultSub = el('resultSub');
+  const statCash = el('statCash');
+  const statBest = el('statBest');
+  const resultDetail = el('resultDetail');
+  const levelDots = el('levelDots');
+
+  state.canvas = canvas;
+  state.ctx = ctx;
+
+  /* ════════════════════════════════════════════════
+     LEVEL CONFIGS
+     ════════════════════════════════════════════════ */
+  const LEVELS = [
+    // L1 — tutorial, no lasers, 3 cash
+    {
+      cashCount: 3,
+      cashValues: [100, 120, 150],
+      cashPositions: [
+        { x: 0.50, y: 0.45 },
+        { x: 0.70, y: 0.35 },
+        { x: 0.35, y: 0.55 },
+      ],
+      lasers: [],
+      sensors: [
+        { x: 0.60, y: 0.55, r: 18 },
+        { x: 0.30, y: 0.35, r: 16 },
+      ],
+      timeBonus: 30,
+      targetAmount: 200,
+    },
+    // L2 — first laser
+    {
+      cashCount: 4,
+      cashValues: [120, 150, 130, 180],
+      cashPositions: [
+        { x: 0.50, y: 0.40 },
+        { x: 0.70, y: 0.50 },
+        { x: 0.30, y: 0.55 },
+        { x: 0.55, y: 0.65 },
+      ],
+      lasers: [
+        { x1: 0.20, y1: 0.30, x2: 0.80, y2: 0.30 },
+      ],
+      sensors: [
+        { x: 0.50, y: 0.20, r: 15 },
+        { x: 0.70, y: 0.60, r: 15 },
+        { x: 0.25, y: 0.45, r: 14 },
+      ],
+      timeBonus: 30,
+      targetAmount: 350,
+    },
+    // L3 — more lasers + sensors
+    {
+      cashCount: 5,
+      cashValues: [150, 180, 200, 140, 170],
+      cashPositions: [
+        { x: 0.45, y: 0.38 },
+        { x: 0.72, y: 0.45 },
+        { x: 0.28, y: 0.52 },
+        { x: 0.55, y: 0.62 },
+        { x: 0.65, y: 0.30 },
+      ],
+      lasers: [
+        { x1: 0.15, y1: 0.28, x2: 0.85, y2: 0.28 },
+        { x1: 0.65, y1: 0.15, x2: 0.65, y2: 0.72 },
+      ],
+      sensors: [
+        { x: 0.50, y: 0.18, r: 16 },
+        { x: 0.35, y: 0.42, r: 14 },
+        { x: 0.75, y: 0.55, r: 15 },
+        { x: 0.20, y: 0.60, r: 13 },
+        { x: 0.60, y: 0.75, r: 14 },
+      ],
+      timeBonus: 25,
+      targetAmount: 500,
+    },
+    // L4+ — harder
+    {
+      cashCount: 5,
+      cashValues: [180, 200, 220, 180, 190],
+      cashPositions: [
+        { x: 0.40, y: 0.35 },
+        { x: 0.65, y: 0.42 },
+        { x: 0.30, y: 0.55 },
+        { x: 0.55, y: 0.60 },
+        { x: 0.75, y: 0.35 },
+      ],
+      lasers: [
+        { x1: 0.10, y1: 0.25, x2: 0.90, y2: 0.25 },
+        { x1: 0.30, y1: 0.10, x2: 0.30, y2: 0.75 },
+        { x1: 0.70, y1: 0.20, x2: 0.70, y2: 0.80 },
+      ],
+      sensors: [
+        { x: 0.50, y: 0.15, r: 16 },
+        { x: 0.20, y: 0.35, r: 14 },
+        { x: 0.80, y: 0.45, r: 15 },
+        { x: 0.42, y: 0.65, r: 14 },
+        { x: 0.65, y: 0.70, r: 13 },
+      ],
+      timeBonus: 20,
+      targetAmount: 650,
+    },
+  ];
+
+  /* ════════════════════════════════════════════════
+     AUDIO (Web Audio API)
+     ════════════════════════════════════════════════ */
+  let audioCtx = null;
+
+  function initAudio() {
+    if (!audioCtx) {
+      try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {}
+    }
+    if (audioCtx && audioCtx.state === 'suspended') {
+      audioCtx.resume().catch(function () {});
+    }
+  }
+
+  function playTone(freq, duration, type, volume, delay) {
+    if (!audioCtx) return;
+    delay = delay || 0;
+    try {
+      var osc = audioCtx.createOscillator();
+      var gain = audioCtx.createGain();
+      osc.type = type || 'square';
+      osc.frequency.setValueAtTime(freq, audioCtx.currentTime + delay);
+      gain.gain.setValueAtTime((volume || 0.12) * 0.3, audioCtx.currentTime + delay);
+      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + delay + (duration || 0.1));
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start(audioCtx.currentTime + delay);
+      osc.stop(audioCtx.currentTime + delay + (duration || 0.1));
+    } catch (e) {}
+  }
+
+  function playExtend() {
+    playTone(300, 0.05, 'sine', 0.06);
+  }
+
+  function playGrab() {
+    playTone(800, 0.08, 'square', 0.10);
+    setTimeout(function () { playTone(1000, 0.06, 'sine', 0.07); }, 50);
+  }
+
+  function playRetract() {
+    playTone(500, 0.1, 'triangle', 0.08);
+  }
+
+  function playCashCollect() {
+    playTone(700, 0.1, 'sine', 0.10);
+    setTimeout(function () { playTone(900, 0.08, 'sine', 0.08); }, 80);
+    setTimeout(function () { playTone(1100, 0.12, 'sine', 0.07); }, 160);
+  }
+
+  function playAlarm() {
+    playTone(200, 0.15, 'square', 0.12);
+    setTimeout(function () { playTone(180, 0.15, 'square', 0.10); }, 150);
+    setTimeout(function () { playTone(200, 0.15, 'square', 0.12); }, 300);
+  }
+
+  function playSensorWarning() {
+    playTone(600, 0.05, 'sine', 0.04);
+  }
+
+  function playWin() {
+    [0, 120, 240, 360].forEach(function (d, i) {
+      setTimeout(function () { playTone(400 + i * 200, 0.15, 'sine', 0.10); }, d);
+    });
+  }
+
+  function playLose() {
+    setTimeout(function () { playTone(400, 0.2, 'triangle', 0.10); }, 0);
+    setTimeout(function () { playTone(300, 0.2, 'triangle', 0.08); }, 200);
+    setTimeout(function () { playTone(200, 0.3, 'triangle', 0.07); }, 400);
+  }
+
+  function playClick() {
+    playTone(1000, 0.04, 'square', 0.03);
+  }
+
+  /* ════════════════════════════════════════════════
+     VIBRATION
+     ════════════════════════════════════════════════ */
+  function vibrate(ms) {
+    try { if (navigator.vibrate) navigator.vibrate(ms || 10); } catch (e) {}
+  }
+
+  /* ════════════════════════════════════════════════
+     STORAGE
+     ════════════════════════════════════════════════ */
+  function getBestScore() {
+    try {
+      var d = JSON.parse(localStorage.getItem(STORAGE_KEY));
+      return d && d.bestScore ? d.bestScore : 0;
+    } catch (e) { return 0; }
+  }
+
+  function saveBestScore(score) {
+    try {
+      var curr = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
+      curr.bestScore = Math.max(score, curr.bestScore || 0);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(curr));
+    } catch (e) {}
+  }
+
+  function updateTitleBest() {
+    var best = getBestScore();
+    titleBest.textContent = '$' + best;
+  }
+
+  /* ════════════════════════════════════════════════
+     CANVAS SIZING
+     ════════════════════════════════════════════════ */
+  function resizeCanvas() {
+    var wrap = canvas.parentElement;
+    var dpr = window.devicePixelRatio || 1;
+    var w = wrap.clientWidth;
+    var h = wrap.clientHeight;
+    canvas.width = w * dpr;
+    canvas.height = h * dpr;
+    canvas.style.width = w + 'px';
+    canvas.style.height = h + 'px';
+    ctx.scale(dpr, dpr);
+    state.w = w;
+    state.h = h;
+  }
+
+  /* ════════════════════════════════════════════════
+     LEVEL SETUP
+     ════════════════════════════════════════════════ */
+  function initLevel(levelNum) {
+    var idx = Math.min(levelNum - 1, LEVELS.length - 1);
+    var cfg = LEVELS[idx];
+
+    state.cashStacks = [];
+    state.lasers = [];
+    state.sensors = [];
+
+    for (var i = 0; i < cfg.cashCount; i++) {
+      state.cashStacks.push({
+        x: cfg.cashPositions[i].x,
+        y: cfg.cashPositions[i].y,
+        value: cfg.cashValues[i],
+        collected: false,
+        grabbed: false,
+        grabAnim: 0, // 0-1 for pull animation
+      });
+    }
+
+    for (var i = 0; i < cfg.lasers.length; i++) {
+      state.lasers.push({
+        x1: cfg.lasers[i].x1,
+        y1: cfg.lasers[i].y1,
+        x2: cfg.lasers[i].x2,
+        y2: cfg.lasers[i].y2,
+      });
+    }
+
+    for (var i = 0; i < cfg.sensors.length; i++) {
+      state.sensors.push({
+        x: cfg.sensors[i].x,
+        y: cfg.sensors[i].y,
+        r: cfg.sensors[i].r,
+        triggered: false,
+        pulse: Math.random() * Math.PI * 2,
+      });
+    }
+
+    state.cashCollected = 0;
+    state.totalCash = 0;
+    state.score = 0;
+    state.level = levelNum;
+    state.levelConfig = cfg;
+    state.armOrigin = { x: 0.12, y: 0.85 };
+    state.armTarget = { x: state.armOrigin.x, y: state.armOrigin.y };
+    state.grabPoint = { x: state.armOrigin.x, y: state.armOrigin.y };
+    state.isGrabbing = false;
+    state.grabbedCash = null;
+    state.retractingCash = null;
+    state.phase = 'idle';
+
+    hudLevel.textContent = 'VAULT · LEVEL ' + levelNum;
+  }
+
+  /* ════════════════════════════════════════════════
+     VECTOR MATH
+     ════════════════════════════════════════════════ */
+  function dist(a, b) {
+    return Math.sqrt((a.x - b.x) * (a.x - b.x) + (a.y - b.y) * (a.y - b.y));
+  }
+
+  function lerp(a, b, t) {
+    return { x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t };
+  }
+
+  function normalize(v) {
+    var len = Math.sqrt(v.x * v.x + v.y * v.y);
+    if (len === 0) return { x: 0, y: 0 };
+    return { x: v.x / len, y: v.y / len };
+  }
+
+  function clamp(v, min, max) {
+    return Math.max(min, Math.min(max, v));
+  }
+
+  /* ════════════════════════════════════════════════
+     COLLISION DETECTION (AABB)
+     ════════════════════════════════════════════════ */
+  // Check if a point is within a padded AABB of a line segment
+  function pointLineDist(px, py, x1, y1, x2, y2) {
+    var dx = x2 - x1;
+    var dy = y2 - y1;
+    var lenSq = dx * dx + dy * dy;
+    if (lenSq === 0) return dist({ x: px, y: py }, { x: x1, y: y1 });
+    var t = clamp(((px - x1) * dx + (py - y1) * dy) / lenSq, 0, 1);
+    var nearX = x1 + t * dx;
+    var nearY = y1 + t * dy;
+    return dist({ x: px, y: py }, { x: nearX, y: nearY });
+  }
+
+  function checkArmCollisions(armPoints) {
+    var alarmHit = false;
+    var warnHit = false;
+
+    // Check against sensors
+    for (var s = 0; s < state.sensors.length; s++) {
+      var sensor = state.sensors[s];
+      for (var p = 0; p < armPoints.length; p++) {
+        var d = dist(armPoints[p], { x: sensor.x, y: sensor.y });
+        var rPixels = sensor.r / Math.max(state.w, state.h);
+        if (d < rPixels + 0.02) {
+          alarmHit = true;
+          if (!sensor.triggered) {
+            sensor.triggered = true;
+            state.alarmPct = Math.min(MAX_ALARM, state.alarmPct + 15);
+            vibrate(50);
+            playAlarm();
+          }
+          break;
+        }
+        // Warning zone — 50% larger radius
+        if (d < rPixels * 1.5 + 0.01) {
+          warnHit = true;
+        }
+      }
+    }
+
+    // Check against laser lines
+    for (var l = 0; l < state.lasers.length; l++) {
+      var laser = state.lasers[l];
+      for (var p = 0; p < armPoints.length; p++) {
+        var d = pointLineDist(
+          armPoints[p].x, armPoints[p].y,
+          laser.x1, laser.y1,
+          laser.x2, laser.y2
+        );
+        if (d < 0.015) {
+          alarmHit = true;
+          state.alarmPct = Math.min(MAX_ALARM, state.alarmPct + 25);
+          vibrate(50);
+          playAlarm();
+          break;
+        }
+        if (d < 0.03) {
+          warnHit = true;
+        }
+      }
+    }
+
+    return { alarm: alarmHit, warn: warnHit };
+  }
+
+  /* ════════════════════════════════════════════════
+     ARM PHYSICS — generate arm segments
+     ════════════════════════════════════════════════ */
+  function getArmPoints(origin, target) {
+    var points = [];
+    var segCount = state.armSegments;
+    for (var i = 0; i <= 8; i++) {
+      var t = i / 8;
+      // Simple bezier-like curve: control point pulled sideways based on distance
+      var dx = target.x - origin.x;
+      var dy = target.y - origin.y;
+      var midX = (origin.x + target.x) / 2;
+      var midY = (origin.y + target.y) / 2;
+      // Perpendicular offset for curve
+      var perpX = -dy * 0.08;
+      var perpY = dx * 0.08;
+      var cp = { x: midX + perpX, y: midY + perpY };
+
+      // Quadratic bezier: B(t) = (1-t)² P0 + 2(1-t)t P1 + t² P2
+      var mt = 1 - t;
+      var px = mt * mt * origin.x + 2 * mt * t * cp.x + t * t * target.x;
+      var py = mt * mt * origin.y + 2 * mt * t * cp.y + t * t * target.y;
+      points.push({ x: px, y: py });
+    }
+    return points;
+  }
+
+  /* ════════════════════════════════════════════════
+     CHECK GRAB on cash stacks
+     ════════════════════════════════════════════════ */
+  function checkGrab(grabPos) {
+    var bestIdx = -1;
+    var bestDist = 0.15;
+    for (var i = 0; i < state.cashStacks.length; i++) {
+      var cash = state.cashStacks[i];
+      if (cash.collected) continue;
+      var d = dist(grabPos, { x: cash.x, y: cash.y });
+      if (d < bestDist) {
+        bestDist = d;
+        bestIdx = i;
+      }
+    }
+    return bestIdx;
+  }
+
+  /* ════════════════════════════════════════════════
+     RENDER
+     ════════════════════════════════════════════════ */
+  function render() {
+    var w = state.w;
+    var h = state.h;
+    ctx.clearRect(0, 0, w, h);
+
+    // ── Vault room background ──
+    var roomPad = 0.04;
+    var rx = w * roomPad;
+    var ry = h * 0.12;
+    var rw = w * (1 - 2 * roomPad);
+    var rh = h * 0.78;
+
+    // Vault gradient
+    var grad = ctx.createRadialGradient(w * 0.6, ry + rh * 0.4, 0, w * 0.6, ry + rh * 0.4, rh * 0.8);
+    grad.addColorStop(0, 'rgba(59, 130, 246, 0.04)');
+    grad.addColorStop(1, 'rgba(15, 13, 12, 0.2)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(rx, ry, rw, rh);
+
+    // Room border
+    ctx.strokeStyle = 'rgba(232, 228, 223, 0.06)';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(rx, ry, rw, rh);
+
+    // Room label
+    ctx.fillStyle = 'rgba(232, 228, 223, 0.10)';
+    ctx.font = '10px "JetBrains Mono", monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('VAULT · LV ' + state.level, w * 0.5, ry + rh - 6);
+
+    // Floor pattern
+    ctx.strokeStyle = 'rgba(232, 228, 223, 0.02)';
+    ctx.lineWidth = 1;
+    for (var i = 0; i < 12; i++) {
+      var fx = rx + (rw / 12) * i;
+      ctx.beginPath();
+      ctx.moveTo(fx, ry);
+      ctx.lineTo(fx, ry + rh);
+      ctx.stroke();
+    }
+    for (var i = 0; i < 8; i++) {
+      var fy = ry + (rh / 8) * i;
+      ctx.beginPath();
+      ctx.moveTo(rx, fy);
+      ctx.lineTo(rx + rw, fy);
+      ctx.stroke();
+    }
+
+    // ── Laser beams ──
+    for (var l = 0; l < state.lasers.length; l++) {
+      var laser = state.lasers[l];
+      var lx1 = laser.x1 * w;
+      var ly1 = laser.y1 * h;
+      var lx2 = laser.x2 * w;
+      var ly2 = laser.y2 * h;
+
+      // Glow
+      ctx.shadowColor = 'rgba(220, 38, 38, 0.3)';
+      ctx.shadowBlur = 10;
+      ctx.strokeStyle = 'rgba(220, 38, 38, 0.15)';
+      ctx.lineWidth = 6;
+      ctx.beginPath();
+      ctx.moveTo(lx1, ly1);
+      ctx.lineTo(lx2, ly2);
+      ctx.stroke();
+
+      ctx.shadowBlur = 0;
+      ctx.strokeStyle = 'rgba(220, 38, 38, 0.12)';
+      ctx.setLineDash([4, 6]);
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(lx1, ly1);
+      ctx.lineTo(lx2, ly2);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+
+    // ── Sensors ──
+    for (var s = 0; s < state.sensors.length; s++) {
+      var sensor = state.sensors[s];
+      var sx = sensor.x * w;
+      var sy = sensor.y * h;
+      var sr = (sensor.r / Math.max(w, h)) * Math.max(w, h);
+
+      // Glow
+      ctx.shadowColor = 'rgba(59, 130, 246, 0.3)';
+      ctx.shadowBlur = 12;
+      ctx.beginPath();
+      ctx.arc(sx, sy, sr, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(59, 130, 246, 0.15)';
+      ctx.fill();
+      ctx.shadowBlur = 0;
+
+      // Sensor node
+      ctx.beginPath();
+      ctx.arc(sx, sy, sr * 0.4, 0, Math.PI * 2);
+      ctx.fillStyle = '#3B82F6';
+      ctx.shadowColor = 'rgba(59, 130, 246, 0.5)';
+      ctx.shadowBlur = 8;
+      ctx.fill();
+      ctx.shadowBlur = 0;
+
+      // Triggered state
+      if (sensor.triggered) {
+        ctx.beginPath();
+        ctx.arc(sx, sy, sr * 0.7, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(220, 38, 38, 0.3)';
+        ctx.fill();
+      }
+    }
+
+    // ── Cash stacks (uncollected) ──
+    var cashW = 26;
+    var cashH = 36;
+    for (var i = 0; i < state.cashStacks.length; i++) {
+      var cash = state.cashStacks[i];
+      if (cash.collected && cash.grabAnim >= 1) continue;
+
+      var cx = cash.x * w;
+      var cy = cash.y * h;
+
+      if (cash.collected) {
+        // Being pulled — shrink it
+        var scale = 1 - cash.grabAnim;
+        var sw = cashW * scale;
+        var sh = cashH * scale;
+        cx -= (cashW - sw) / 2;
+        cy -= (cashH - sh) / 2;
+        cx = cash.x * w + (state.armOrigin.x * w - cash.x * w) * cash.grabAnim;
+        cy = cash.y * h + (state.armOrigin.y * h - cash.y * h) * cash.grabAnim;
+        ctx.globalAlpha = 1 - cash.grabAnim * 0.3;
+        drawCashStack(ctx, cx - sw/2, cy - sh/2, sw, sh, cash.value, true);
+        ctx.globalAlpha = 1;
+      } else {
+        drawCashStack(ctx, cx - cashW/2, cy - cashH/2, cashW, cashH, cash.value, false);
+      }
+    }
+
+    // ── Arm ──
+    var origin = state.armOrigin;
+    var target = state.phase === 'idle'
+      ? { x: origin.x + 0.06, y: origin.y }
+      : state.armTarget;
+
+    var armPts = getArmPoints(origin, target);
+
+    // Draw arm segments
+    for (var i = 0; i < armPts.length - 1; i++) {
+      var p1 = armPts[i];
+      var p2 = armPts[i + 1];
+
+      var alpha = 0.5 + (i / armPts.length) * 0.5;
+      ctx.strokeStyle = 'rgba(139, 92, 246, ' + alpha + ')';
+      ctx.lineWidth = 6 - (i / armPts.length) * 2.5;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(p1.x * w, p1.y * h);
+      ctx.lineTo(p2.x * w, p2.y * h);
+      ctx.stroke();
+    }
+
+    // Arm origin glow
+    var ox = origin.x * w;
+    var oy = origin.y * h;
+    ctx.shadowColor = 'rgba(139, 92, 246, 0.4)';
+    ctx.shadowBlur = 16;
+    ctx.beginPath();
+    ctx.arc(ox, oy, 10, 0, Math.PI * 2);
+    ctx.fillStyle = '#8B5CF6';
+    ctx.fill();
+    ctx.shadowBlur = 0;
+
+    // Grab point indicator (at arm tip)
+    if (state.phase === 'extending' || state.phase === 'aiming') {
+      var gp = armPts[armPts.length - 1];
+      var gpx = gp.x * w;
+      var gpy = gp.y * h;
+
+      ctx.beginPath();
+      ctx.arc(gpx, gpy, 12, 0, Math.PI * 2);
+      ctx.strokeStyle = state.isGrabbing
+        ? 'rgba(22, 163, 74, 0.7)'
+        : 'rgba(22, 163, 74, 0.4)';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([3, 3]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Inner dot
+      ctx.beginPath();
+      ctx.arc(gpx, gpy, 4, 0, Math.PI * 2);
+      ctx.fillStyle = state.isGrabbing
+        ? 'rgba(22, 163, 74, 0.8)'
+        : 'rgba(22, 163, 74, 0.3)';
+      ctx.fill();
+    }
+
+    // ── Alarm flash overlay ──
+    if (state.alarmFlash > 0) {
+      ctx.fillStyle = 'rgba(220, 38, 38, ' + (state.alarmFlash * 0.15) + ')';
+      ctx.fillRect(0, 0, w, h);
+      state.alarmFlash *= 0.92;
+      if (state.alarmFlash < 0.01) state.alarmFlash = 0;
+    }
+
+    // ── Warning when close to hazard ──
+    if (state.phase === 'extending') {
+      var hits = checkArmCollisions(armPts);
+      if (hits.warn && !hits.alarm) {
+        ctx.fillStyle = 'rgba(220, 38, 38, 0.03)';
+        ctx.fillRect(0, 0, w, h);
+        // Red edge pulse
+        var pulse = 0.3 + 0.3 * Math.sin(Date.now() * 0.005);
+        ctx.strokeStyle = 'rgba(220, 38, 38, ' + (pulse * 0.3) + ')';
+        ctx.lineWidth = 3;
+        ctx.strokeRect(2, 2, w - 4, h - 4);
+      }
+    }
+
+    // ── Hi-score indicator ──
+    ctx.fillStyle = 'rgba(232, 228, 223, 0.08)';
+    ctx.font = '10px "JetBrains Mono", monospace';
+    ctx.textAlign = 'left';
+    ctx.fillText('BEST $' + getBestScore(), 8, h - 8);
+  }
+
+  function drawCashStack(ctx, x, y, w, h, value, dimmed) {
+    // Stack body
+    var green1 = dimmed ? '#0D6B2D' : '#16A34A';
+    var green2 = dimmed ? '#0A5A24' : '#15803D';
+    var g = ctx.createLinearGradient(x, y, x, y + h);
+    g.addColorStop(0, green1);
+    g.addColorStop(1, green2);
+    ctx.fillStyle = g;
+    ctx.shadowColor = dimmed ? 'rgba(22,163,74,0)' : 'rgba(22,163,74,0.15)';
+    ctx.shadowBlur = dimmed ? 0 : 8;
+    ctx.fillRect(x, y, w, h);
+    ctx.shadowBlur = 0;
+
+    // Top highlight
+    ctx.fillStyle = 'rgba(255,255,255,0.08)';
+    ctx.fillRect(x, y, w, 2);
+
+    // $ symbol
+    ctx.fillStyle = dimmed ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.7)';
+    ctx.font = 'bold 14px "JetBrains Mono", monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('$', x + w/2, y + h/2);
+
+    // Value label (small)
+    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+    ctx.font = '8px "JetBrains Mono", monospace';
+    ctx.fillText(value, x + w/2, y + h - 4);
+  }
+
+  /* ════════════════════════════════════════════════
+     GAME LOOP
+     ════════════════════════════════════════════════ */
+  function gameLoop(timestamp) {
+    if (!state.playing || state.paused || state.gameOver) {
+      render();
+      state.rafId = requestAnimationFrame(gameLoop);
+      return;
+    }
+
+    update();
+    render();
+    updateHUD();
+
+    state.rafId = requestAnimationFrame(gameLoop);
+  }
+
+  function update() {
+    if (state.alarmPct >= MAX_ALARM) {
+      endGame(false);
+      return;
+    }
+
+    var w = state.w;
+    var h = state.h;
+
+    // ── Idle state: arm bounces at origin ──
+    if (state.phase === 'idle') {
+      var bob = 0.01 * Math.sin(Date.now() * 0.003);
+      state.armTarget = {
+        x: state.armOrigin.x + 0.02 + bob,
+        y: state.armOrigin.y,
+      };
+      return;
+    }
+
+    // ── Extending: arm follows drag ──
+    if (state.phase === 'extending' && state.isDragging && state.dragCurrent) {
+      var wx = state.dragCurrent.x / w;
+      var wy = state.dragCurrent.y / h;
+      // Clamp to vault area
+      wx = clamp(wx, 0.08, 0.92);
+      wy = clamp(wy, 0.14, 0.88);
+
+      state.armTarget = { x: wx, y: wy };
+
+      // Check grab
+      var armPts = getArmPoints(state.armOrigin, state.armTarget);
+      var tip = armPts[armPts.length - 1];
+      var cashIdx = checkGrab(tip);
+      if (cashIdx >= 0) {
+        if (!state.isGrabbing) {
+          state.isGrabbing = true;
+          state.grabbedCash = cashIdx;
+          playGrab();
+          vibrate(25);
+        }
+      } else {
+        state.isGrabbing = false;
+        state.grabbedCash = null;
+      }
+
+      // Check collisions
+      var hits = checkArmCollisions(armPts);
+      if (hits.alarm) {
+        state.alarmFlash = 1;
+      }
+      if (hits.warn) {
+        // gentle warning
+      }
+    }
+
+    // ── Retracting: arm returns to origin ──
+    if (state.phase === 'retracting') {
+      var targetPos = state.armTarget;
+      var d = dist(targetPos, state.armOrigin);
+
+      if (d > 0.02) {
+        // Move towards origin
+        var dir = normalize({
+          x: state.armOrigin.x - targetPos.x,
+          y: state.armOrigin.y - targetPos.y,
+        });
+        var speed = 0.03;
+        state.armTarget = {
+          x: targetPos.x + dir.x * speed,
+          y: targetPos.y + dir.y * speed,
+        };
+      } else {
+        // Reached origin — collect cash
+        state.armTarget = { x: state.armOrigin.x, y: state.armOrigin.y };
+        if (state.retractingCash !== null) {
+          // Add score
+          state.score += state.retractingCash.value;
+          state.totalCash += state.retractingCash.value;
+          state.cashCollected++;
+          playCashCollect();
+          vibrate([30, 20, 30]);
+
+          // Mark collected
+          for (var i = 0; i < state.cashStacks.length; i++) {
+            if (state.cashStacks[i] === state.retractingCash) {
+              state.cashStacks[i].collected = true;
+              state.cashStacks[i].grabAnim = 1;
+              break;
+            }
+          }
+          state.retractingCash = null;
+        }
+        state.isGrabbing = false;
+        state.grabbedCash = null;
+        state.phase = 'idle';
+
+        // Check win condition (collected all cash)
+        if (state.cashCollected >= state.cashStacks.length) {
+          // Clear this level — advance
+          var nextLevel = state.level + 1;
+          if (nextLevel <= 5) {
+            initLevel(nextLevel);
+            playWin();
+          } else {
+            endGame(true);
+          }
+        } else {
+          // Check if we have enough cash for target
+          if (state.score >= state.levelConfig.targetAmount && state.cashCollected >= state.cashStacks.length - 1) {
+            // Allow finishing early
+          }
+        }
+      }
+
+      // Check collisions during retraction
+      if (state.phase === 'retracting') {
+        var armPts = getArmPoints(state.armOrigin, state.armTarget);
+        var hits = checkArmCollisions(armPts);
+        if (hits.alarm) {
+          state.alarmFlash = 1;
+        }
+      }
+    }
+
+    // Sensor idle pulse animation
+    for (var i = 0; i < state.sensors.length; i++) {
+      state.sensors[i].pulse += 0.03;
+    }
+  }
+
+  /* ════════════════════════════════════════════════
+     UPDATE HUD
+     ════════════════════════════════════════════════ */
+  function updateHUD() {
+    hudScore.textContent = '$' + state.score;
+    var mins = Math.floor(state.timeLeft / 60);
+    var secs = Math.floor(state.timeLeft % 60);
+    var timeStr = mins + ':' + (secs < 10 ? '0' : '') + secs;
+    hudTimer.textContent = timeStr;
+    hudTimer.classList.toggle('urgent', state.timeLeft <= 30);
+    hudAlarm.textContent = Math.round(state.alarmPct) + '%';
+
+    var pct = state.alarmPct;
+    alarmFill.style.width = pct + '%';
+    alarmFill.classList.toggle('warning', pct >= 40 && pct < 70);
+    alarmFill.classList.toggle('danger', pct >= 70);
+  }
+
+  /* ════════════════════════════════════════════════
+     TIMER
+     ════════════════════════════════════════════════ */
+  function startTimer() {
+    if (state.timer) clearInterval(state.timer);
+    state.timer = setInterval(function () {
+      if (state.paused || state.gameOver) return;
+      state.timeLeft--;
+      updateHUD();
+      if (state.timeLeft <= 0) {
+        clearInterval(state.timer);
+        state.timer = null;
+        endGame(false);
+      }
+      if (state.timeLeft === 30) {
+        // Time warning
+        vibrate(100);
+      }
+    }, 1000);
+  }
+
+  /* ════════════════════════════════════════════════
+     END GAME
+     ════════════════════════════════════════════════ */
+  function endGame(win) {
+    state.playing = false;
+    state.gameOver = true;
+    if (state.timer) { clearInterval(state.timer); state.timer = null; }
+
+    // Save best
+    var best = getBestScore();
+    if (state.score > best) {
+      saveBestScore(state.score);
+      best = state.score;
+    }
+
+    // Show result
+    if (win) {
+      resultIcon.className = 'result-icon';
+      resultSvg.innerHTML = '<path d="M20 6L9 17l-5-5"/>';
+      resultSvg.setAttribute('stroke', '#16A34A');
+      resultTitle.textContent = 'Heist Complete!';
+      resultTitle.style.color = '#16A34A';
+      resultSub.textContent = 'All cash secured · No alarms';
+      resultScreen.className = 'screen result-screen win';
+      playWin();
+    } else {
+      resultIcon.className = 'result-icon';
+      resultSvg.innerHTML = '<path d="M18 6L6 18M6 6l12 12"/>';
+      resultSvg.setAttribute('stroke', '#DC2626');
+      resultTitle.textContent = state.alarmPct >= MAX_ALARM ? 'Alarm Triggered!' : 'Time Ran Out!';
+      resultTitle.style.color = '#DC2626';
+      resultSub.textContent = state.alarmPct >= MAX_ALARM ? 'Security caught you' : 'Better luck next time';
+      resultScreen.className = 'screen result-screen lose';
+      playLose();
+    }
+
+    statCash.textContent = '$' + state.score;
+    statBest.textContent = '$' + best;
+    resultDetail.textContent = 'Level ' + state.level + ' · ' + state.cashCollected + '/' + state.cashStacks.length + ' stacks';
+
+    // Level progression dots
+    var dotHtml = '';
+    for (var i = 0; i < 8; i++) {
+      var cls = 'level-dot';
+      if (i < state.level - 1) cls += ' done';
+      else if (i === state.level - 1) cls += ' active';
+      else cls += ' locked';
+      dotHtml += '<span class="' + cls + '"></span>';
+    }
+    levelDots.innerHTML = dotHtml;
+
+    showScreen('result');
+  }
+
+  /* ════════════════════════════════════════════════
+     SCREEN MANAGEMENT
+     ════════════════════════════════════════════════ */
+  function showScreen(id) {
+    [titleScreen, gameScreen, resultScreen].forEach(function (s) { s.classList.remove('active'); });
+    if (id === 'title') titleScreen.classList.add('active');
+    else if (id === 'game') gameScreen.classList.add('active');
+    else if (id === 'result') resultScreen.classList.add('active');
+    pauseOverlay.classList.remove('active');
+  }
+
+  /* ════════════════════════════════════════════════
+     START GAME
+     ════════════════════════════════════════════════ */
+  function startGame() {
+    initAudio();
+
+    state.playing = true;
+    state.paused = false;
+    state.gameOver = false;
+    state.timeLeft = GAME_DURATION;
+    state.alarmPct = 0;
+    state.alarmFlash = 0;
+    state.phase = 'idle';
+    state.isDragging = false;
+    state.dragStart = null;
+    state.dragCurrent = null;
+    state.isGrabbing = false;
+    state.grabbedCash = null;
+    state.retractingCash = null;
+
+    initLevel(1);
+    resizeCanvas();
+
+    showScreen('game');
+    updateHUD();
+
+    if (state.timer) clearInterval(state.timer);
+    startTimer();
+
+    if (state.rafId) cancelAnimationFrame(state.rafId);
+    state.rafId = requestAnimationFrame(gameLoop);
+  }
+
+  /* ════════════════════════════════════════════════
+     POINTER EVENTS — drag to extend arm
+     ════════════════════════════════════════════════ */
+  function getPointerPos(e) {
+    var rect = canvas.getBoundingClientRect();
+    return {
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top,
+    };
+  }
+
+  function onPointerDown(e) {
+    if (!state.playing || state.paused || state.gameOver) return;
+    if (state.phase !== 'idle') return;
+
+    initAudio();
+    var pos = getPointerPos(e);
+
+    // Check if near arm origin (within 60px)
+    var ox = state.armOrigin.x * state.w;
+    var oy = state.armOrigin.y * state.h;
+    var d = Math.sqrt((pos.x - ox) * (pos.x - ox) + (pos.y - oy) * (pos.y - oy));
+
+    // Allow drag start anywhere on canvas for easier touch use
+    state.isDragging = true;
+    state.dragStart = pos;
+    state.dragCurrent = pos;
+    state.phase = 'extending';
+    playExtend();
+
+    e.preventDefault();
+  }
+
+  function onPointerMove(e) {
+    if (!state.playing || state.paused || state.gameOver) return;
+    if (!state.isDragging) return;
+
+    var pos = getPointerPos(e);
+    state.dragCurrent = pos;
+
+    e.preventDefault();
+  }
+
+  function onPointerUp(e) {
+    if (!state.playing || state.paused || state.gameOver) return;
+    if (!state.isDragging) return;
+
+    state.isDragging = false;
+
+    if (state.isGrabbing && state.grabbedCash !== null) {
+      // Grab success — start retracting
+      var cash = state.cashStacks[state.grabbedCash];
+      cash.grabbed = true;
+      cash.grabAnim = 0;
+      state.retractingCash = cash;
+      state.phase = 'retracting';
+      playRetract();
+      vibrate(30);
+    } else {
+      // No grab — return to idle
+      state.phase = 'idle';
+      state.armTarget = { x: state.armOrigin.x, y: state.armOrigin.y };
+    }
+
+    e.preventDefault();
+  }
+
+  // ── Bind pointer events ──
+  canvas.addEventListener('pointerdown', onPointerDown);
+  canvas.addEventListener('pointermove', onPointerMove);
+  canvas.addEventListener('pointerup', onPointerUp);
+  canvas.addEventListener('pointercancel', onPointerUp);
+
+  /* ════════════════════════════════════════════════
+     KEYBOARD SUPPORT
+     ════════════════════════════════════════════════ */
+  var keys = {};
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') {
+      if (state.playing && !state.gameOver) togglePause();
+      return;
+    }
+    if (e.key === 'Enter' || e.key === ' ') {
+      if (titleScreen.classList.contains('active')) {
+        e.preventDefault();
+        initAudio();
+        startGame();
+      } else if (resultScreen.classList.contains('active')) {
+        e.preventDefault();
+        retryBtn.click();
+      }
+      return;
+    }
+    keys[e.key] = true;
+
+    // Keyboard aim control
+    if (state.playing && !state.paused && !state.gameOver && state.phase === 'extending') {
+      var speed = 0.015;
+      var dx = 0, dy = 0;
+      if (keys['ArrowUp']) dy -= speed;
+      if (keys['ArrowDown']) dy += speed;
+      if (keys['ArrowLeft']) dx -= speed;
+      if (keys['ArrowRight']) dx += speed;
+      if (dx !== 0 || dy !== 0) {
+        var cx = state.dragCurrent ? state.dragCurrent.x / state.w : state.armTarget.x;
+        var cy = state.dragCurrent ? state.dragCurrent.y / state.h : state.armTarget.y;
+        state.dragCurrent = {
+          x: (cx + dx) * state.w,
+          y: (cy + dy) * state.h,
+        };
+        state.armTarget = {
+          x: clamp(cx + dx, 0.08, 0.92),
+          y: clamp(cy + dy, 0.14, 0.88),
+        };
+        state.phase = 'extending';
+      }
+    }
+  });
+
+  document.addEventListener('keyup', function (e) {
+    keys[e.key] = false;
+  });
+
+  // ── Space to grab/release when keyboard-aiming ──
+  document.addEventListener('keydown', function (e) {
+    if (e.key === ' ' && state.playing && !state.paused && !state.gameOver) {
+      if (state.phase === 'extending' && state.isGrabbing) {
+        // Simulate grab
+        var cash = state.cashStacks[state.grabbedCash];
+        if (cash) {
+          cash.grabbed = true;
+          cash.grabAnim = 0;
+          state.retractingCash = cash;
+          state.phase = 'retracting';
+          state.isDragging = false;
+          playRetract();
+          vibrate(30);
+        }
+      } else if (state.phase === 'idle') {
+        state.phase = 'extending';
+        state.isDragging = true;
+        playExtend();
+      }
+    }
+  });
+
+  /* ════════════════════════════════════════════════
+     PAUSE / RESUME
+     ════════════════════════════════════════════════ */
+  function togglePause() {
+    if (state.gameOver) return;
+    state.paused = !state.paused;
+    pauseOverlay.classList.toggle('active', state.paused);
+  }
+
+  pauseBtn.addEventListener('click', togglePause);
+  resumeBtn.addEventListener('click', togglePause);
+  quitBtn.addEventListener('click', function () {
+    state.paused = false;
+    state.playing = false;
+    state.gameOver = true;
+    if (state.timer) { clearInterval(state.timer); state.timer = null; }
+    pauseOverlay.classList.remove('active');
+    showScreen('title');
+    updateTitleBest();
+  });
+
+  /* ════════════════════════════════════════════════
+     NAVIGATION
+     ════════════════════════════════════════════════ */
+  playBtn.addEventListener('click', function () { initAudio(); startGame(); });
+  retryBtn.addEventListener('click', function () { initAudio(); startGame(); });
+  homeBtn.addEventListener('click', function () {
+    showScreen('title');
+    updateTitleBest();
+  });
+
+  /* ════════════════════════════════════════════════
+     WINDOW RESIZE
+     ════════════════════════════════════════════════ */
+  var resizeTimer;
+  window.addEventListener('resize', function () {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(function () {
+      if (state.playing && !state.gameOver) {
+        resizeCanvas();
+      }
+    }, 200);
+  });
+
+  /* ════════════════════════════════════════════════
+     INIT
+     ════════════════════════════════════════════════ */
+  updateTitleBest();
+  resizeCanvas();
+
+  // Start render loop for idle title animation
+  state.playing = true;
+  state.phase = 'idle';
+  initLevel(1);
+  state.rafId = requestAnimationFrame(gameLoop);
+  state.playing = false;
+
+})();
+</script>
+</body>
+</html>
