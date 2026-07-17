@@ -1,1594 +1,545 @@
 <!DOCTYPE html>
-<html lang="en" data-framework="glass-arcade-v1">
+<html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CrabCLI Arcade — Game Hub</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
-<style>
-/* ===== GLASS ARCADE DESIGN SYSTEM ===== */
-:root {
-  /* Deep space background */
-  --bg-deep: #070B24;
-  --bg: #0A0E27;
-  --bg-gradient: radial-gradient(ellipse at 50% 0%, #0F1642 0%, #070B24 70%);
-
-  /* Glass surfaces */
-  --glass: rgba(255, 255, 255, 0.04);
-  --glass-hover: rgba(255, 255, 255, 0.08);
-  --glass-border: rgba(255, 255, 255, 0.06);
-  --glass-border-hover: rgba(255, 255, 255, 0.12);
-  --glass-strong: rgba(255, 255, 255, 0.08);
-  --glass-overlay: rgba(0, 0, 0, 0.6);
-
-  /* Brand colors */
-  --primary: #6C5CE7;
-  --primary-glow: rgba(108, 92, 231, 0.3);
-  --primary-gradient: linear-gradient(135deg, #6C5CE7, #A29BFE);
-  --accent: #FD79A8;
-  --accent-glow: rgba(253, 121, 168, 0.25);
-  --cyan: #00D2FF;
-  --cyan-glow: rgba(0, 210, 255, 0.2);
-
-  /* Category gradients */
-  --cat-puzzle: linear-gradient(135deg, #6C5CE7, #A29BFE);
-  --cat-idle: linear-gradient(135deg, #00B894, #55EFC4);
-  --cat-action: linear-gradient(135deg, #E17055, #FD79A8);
-  --cat-strategy: linear-gradient(135deg, #FDCB6E, #F39C12);
-  --cat-casual: linear-gradient(135deg, #00D2FF, #6C5CE7);
-  --gradient-brand: linear-gradient(135deg, #A29BFE, #FD79A8, #A29BFE);
-  --gradient-skeleton: linear-gradient(90deg, rgba(255,255,255,0.03) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.03) 75%);
-
-  /* Feedback */
-  --success: #00B894;
-  --warning: #FDCB6E;
-  --danger: #E17055;
-
-  /* Text */
-  --text: #F0F0F0;
-  --text-dim: #9A9FC5;
-  --text-muted: #5A5F85;
-
-  /* Shadows */
-  --shadow-sm: 0 2px 8px rgba(0,0,0,0.3);
-  --shadow-md: 0 4px 20px rgba(0,0,0,0.4);
-  --shadow-lg: 0 8px 40px rgba(0,0,0,0.5);
-  --shadow-glow: 0 0 20px var(--primary-glow);
-
-  /* Typography */
-  --font-display: 'Outfit', 'Segoe UI', system-ui, sans-serif;
-  --font-body: 'Inter', 'Segoe UI', system-ui, sans-serif;
-  --font-mono: 'JetBrains Mono', 'Cascadia Code', monospace;
-
-  /* Radius */
-  --radius-sm: 8px;
-  --radius-md: 16px;
-  --radius-lg: 24px;
-  --radius-xl: 32px;
-
-  /* Transitions */
-  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
-  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
-  --duration-fast: 150ms;
-  --duration-normal: 250ms;
-  --duration-slow: 400ms;
-}
-
-/* ===== RESET & BASE ===== */
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-html { scroll-behavior: smooth; }
-
-body {
-  background: var(--bg);
-  background-image: var(--bg-gradient);
-  color: var(--text);
-  font-family: var(--font-body);
-  font-size: 16px;
-  line-height: 1.55;
-  min-height: 100vh;
-  overflow-x: hidden;
-  -webkit-font-smoothing: antialiased;
-}
-
-/* Ambient starfield background */
-body::before {
-  content: '';
-  position: fixed; inset: 0;
-  background-image:
-    radial-gradient(2px 2px at 15% 25%, rgba(162,155,254,0.15), transparent),
-    radial-gradient(2px 2px at 35% 65%, rgba(108,92,231,0.1), transparent),
-    radial-gradient(1px 1px at 55% 15%, rgba(162,155,254,0.12), transparent),
-    radial-gradient(2px 2px at 75% 75%, rgba(108,92,231,0.08), transparent),
-    radial-gradient(1px 1px at 8% 85%, rgba(162,155,254,0.1), transparent),
-    radial-gradient(2px 2px at 88% 8%, rgba(108,92,231,0.12), transparent),
-    radial-gradient(1px 1px at 45% 50%, rgba(0,210,255,0.06), transparent),
-    radial-gradient(2px 2px at 92% 55%, rgba(253,121,168,0.08), transparent);
-  pointer-events: none;
-  z-index: -1;
-}
-
-a { color: inherit; text-decoration: none; }
-button { font-family: inherit; cursor: pointer; border: none; background: none; color: inherit; }
-
-/* ===== SCROLLBAR ===== */
-::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
-
-/* ===== HEADER ===== */
-.header {
-  position: sticky;
-  top: 0;
-  z-index: 100;
-  background: rgba(10, 14, 39, 0.8);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border-bottom: 1px solid var(--glass-border);
-  padding: 0 24px;
-  height: 64px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.header-brand {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  font-family: var(--font-display);
-  font-weight: 800;
-  font-size: 1.35rem;
-  background: var(--gradient-brand);
-  background-size: 200% auto;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  animation: gradientShift 4s ease infinite;
-}
-
-@keyframes gradientShift {
-  0%, 100% { background-position: 0% center; }
-  50% { background-position: 100% center; }
-}
-
-.header-brand .brand-icon {
-  font-size: 1.6rem;
-  -webkit-text-fill-color: initial;
-}
-
-.header-actions { display: flex; align-items: center; gap: 12px; }
-
-.header-btn {
-  width: 40px; height: 40px;
-  border-radius: var(--radius-sm);
-  display: flex; align-items: center; justify-content: center;
-  background: var(--glass);
-  border: 1px solid var(--glass-border);
-  transition: all var(--duration-fast) var(--ease-out);
-  font-size: 1.1rem;
-  color: var(--text-dim);
-}
-.header-btn:hover {
-  background: var(--glass-hover);
-  color: var(--text);
-  border-color: var(--glass-border-hover);
-}
-
-/* ===== SEARCH BAR ===== */
-.search-container {
-  position: relative;
-  flex: 1;
-  max-width: 420px;
-  margin: 0 24px;
-}
-
-.search-input-wrap {
-  display: flex;
-  align-items: center;
-  background: var(--glass);
-  border: 1px solid var(--glass-border);
-  border-radius: 100px;
-  padding: 0 16px;
-  height: 40px;
-  transition: all var(--duration-fast) var(--ease-out);
-}
-.search-input-wrap:focus-within {
-  border-color: var(--primary);
-  box-shadow: 0 0 0 3px var(--primary-glow);
-  background: var(--glass-hover);
-}
-.search-input-wrap .search-icon {
-  font-size: 0.9rem;
-  color: var(--text-muted);
-  margin-right: 10px;
-  flex-shrink: 0;
-}
-.search-input-wrap input {
-  flex: 1;
-  background: transparent;
-  border: none;
-  outline: none;
-  color: var(--text);
-  font-family: var(--font-body);
-  font-size: 0.9rem;
-  height: 100%;
-}
-.search-input-wrap input::placeholder { color: var(--text-muted); }
-.search-clear {
-  display: none;
-  font-size: 0.75rem;
-  color: var(--text-muted);
-  padding: 4px 8px;
-  cursor: pointer;
-  border-radius: 100px;
-  transition: color var(--duration-fast);
-}
-.search-clear.visible { display: block; }
-.search-clear:hover { color: var(--text); }
-
-/* Search overlay dropdown */
-.search-overlay {
-  position: absolute;
-  top: calc(100% + 8px);
-  left: 0;
-  right: 0;
-  background: rgba(10, 14, 39, 0.95);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-  border: 1px solid var(--glass-border);
-  border-radius: var(--radius-md);
-  padding: 12px;
-  box-shadow: var(--shadow-lg);
-  opacity: 0;
-  transform: translateY(-8px);
-  pointer-events: none;
-  transition: all var(--duration-normal) var(--ease-out);
-  max-height: 400px;
-  overflow-y: auto;
-  z-index: 200;
-}
-.search-overlay.active {
-  opacity: 1;
-  transform: translateY(0);
-  pointer-events: auto;
-}
-
-.search-overlay-section { margin-bottom: 8px; }
-.search-overlay-section:last-child { margin-bottom: 0; }
-.search-overlay-section-title {
-  font-size: 0.7rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--text-muted);
-  padding: 4px 8px;
-  margin-bottom: 4px;
-}
-.search-overlay-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 8px;
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  transition: background var(--duration-fast);
-}
-.search-overlay-item:hover, .search-overlay-item.highlighted {
-  background: var(--glass);
-}
-.search-overlay-item .item-cover {
-  width: 36px; height: 36px;
-  border-radius: 6px;
-  flex-shrink: 0;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 1.1rem;
-}
-.search-overlay-item .item-info { flex: 1; min-width: 0; }
-.search-overlay-item .item-name {
-  font-size: 0.85rem;
-  font-weight: 500;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.search-overlay-item .item-category {
-  font-size: 0.7rem;
-  color: var(--text-muted);
-}
-.search-overlay-empty {
-  text-align: center;
-  padding: 24px 16px;
-  color: var(--text-muted);
-  font-size: 0.85rem;
-}
-
-/* ===== HERO CAROUSEL ===== */
-.hero-section { padding: 24px 24px 16px; max-width: 1400px; margin: 0 auto; }
-
-.hero-carousel {
-  position: relative;
-  border-radius: var(--radius-lg);
-  overflow: hidden;
-  height: 380px;
-  background: var(--glass-strong);
-}
-
-.hero-slide {
-  position: absolute;
-  inset: 0;
-  opacity: 0;
-  transition: opacity 0.6s var(--ease-out);
-  display: flex;
-  align-items: flex-end;
-  padding: 40px;
-}
-.hero-slide.active { opacity: 1; z-index: 2; }
-
-.hero-slide .hero-bg {
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-}
-.hero-slide .hero-bg-gradient {
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  background: linear-gradient(to top, rgba(7, 11, 36, 0.85) 0%, transparent 60%);
-}
-
-.hero-slide .hero-content {
-  position: relative;
-  z-index: 2;
-  max-width: 500px;
-}
-
-.hero-slide .hero-category-tag {
-  display: inline-block;
-  padding: 4px 14px;
-  border-radius: 100px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  margin-bottom: 12px;
-  background: var(--glass);
-  border: 1px solid var(--glass-border);
-  backdrop-filter: blur(8px);
-}
-
-.hero-slide .hero-title {
-  font-family: var(--font-display);
-  font-weight: 800;
-  font-size: 2.2rem;
-  line-height: 1.15;
-  margin-bottom: 8px;
-}
-
-.hero-slide .hero-desc {
-  font-size: 0.95rem;
-  color: var(--text-dim);
-  line-height: 1.5;
-  margin-bottom: 20px;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-.hero-slide .hero-meta {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  margin-bottom: 20px;
-  font-size: 0.85rem;
-  color: var(--text-dim);
-}
-.hero-slide .hero-stars { color: var(--warning); }
-.hero-slide .hero-players { display: flex; align-items: center; gap: 4px; }
-
-.hero-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 12px 28px;
-  background: var(--primary-gradient);
-  color: #fff;
-  font-weight: 600;
-  font-size: 0.95rem;
-  border-radius: 100px;
-  transition: all var(--duration-normal) var(--ease-spring);
-  box-shadow: 0 4px 16px var(--primary-glow);
-  text-decoration: none;
-}
-.hero-btn:hover {
-  transform: scale(1.05);
-  box-shadow: 0 6px 24px var(--primary-glow);
-}
-
-/* Carousel controls */
-.hero-controls {
-  position: absolute;
-  bottom: 24px;
-  right: 40px;
-  z-index: 5;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.hero-dots {
-  display: flex;
-  gap: 6px;
-}
-.hero-dot {
-  width: 8px; height: 8px;
-  border-radius: 50%;
-  background: rgba(255,255,255,0.2);
-  cursor: pointer;
-  transition: all var(--duration-fast) var(--ease-out);
-  border: none;
-  padding: 0;
-}
-.hero-dot.active { background: var(--primary); width: 24px; border-radius: 4px; }
-
-.hero-nav-btn {
-  width: 36px; height: 36px;
-  border-radius: 50%;
-  background: var(--glass);
-  border: 1px solid var(--glass-border);
-  display: flex; align-items: center; justify-content: center;
-  color: var(--text-dim);
-  font-size: 0.85rem;
-  transition: all var(--duration-fast) var(--ease-out);
-  cursor: pointer;
-}
-.hero-nav-btn:hover {
-  background: var(--glass-hover);
-  color: var(--text);
-  border-color: var(--glass-border-hover);
-}
-
-/* ===== CATEGORY SHELF ===== */
-.category-shelf {
-  padding: 8px 24px;
-  max-width: 1400px;
-  margin: 0 auto;
-  position: relative;
-}
-
-.category-scroll {
-  display: flex;
-  gap: 10px;
-  overflow-x: auto;
-  scroll-snap-type: x mandatory;
-  -webkit-overflow-scrolling: touch;
-  padding: 4px 0 12px;
-  scrollbar-width: none;
-}
-.category-scroll::-webkit-scrollbar { display: none; }
-
-.category-tile {
-  flex-shrink: 0;
-  scroll-snap-align: start;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  width: 100px;
-  height: 88px;
-  border-radius: var(--radius-md);
-  background: var(--glass);
-  border: 1px solid var(--glass-border);
-  cursor: pointer;
-  transition: all var(--duration-normal) var(--ease-out);
-  font-family: var(--font-body);
-  color: var(--text-dim);
-  position: relative;
-  overflow: hidden;
-}
-.category-tile::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  opacity: 0;
-  transition: opacity var(--duration-fast) var(--ease-out);
-}
-.category-tile:hover {
-  background: var(--glass-hover);
-  border-color: var(--glass-border-hover);
-  color: var(--text);
-  transform: translateY(-2px);
-}
-.category-tile.active {
-  background: rgba(108, 92, 231, 0.15);
-  border-color: var(--primary);
-  color: var(--text);
-  box-shadow: 0 0 16px var(--primary-glow);
-}
-
-.category-tile .cat-icon { font-size: 1.4rem; line-height: 1; }
-.category-tile .cat-name {
-  font-size: 0.75rem;
-  font-weight: 600;
-}
-.category-tile .cat-count {
-  font-size: 0.6rem;
-  color: var(--text-muted);
-}
-
-/* Scroll hint */
-.shelf-scroll-hint {
-  position: absolute;
-  right: 24px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 32px; height: 32px;
-  border-radius: 50%;
-  background: var(--glass-strong);
-  border: 1px solid var(--glass-border);
-  display: flex; align-items: center; justify-content: center;
-  color: var(--text-dim);
-  font-size: 0.8rem;
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity var(--duration-fast);
-}
-.category-scroll:hover + .shelf-scroll-hint,
-.shelf-scroll-hint.visible { opacity: 1; }
-
-/* ===== TOGGLE SORT CHIPS ===== */
-.controls-bar {
-  max-width: 1400px;
-  margin: 8px auto 0;
-  padding: 8px 24px 4px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.results-count {
-  font-size: 0.8rem;
-  color: var(--text-muted);
-  white-space: nowrap;
-}
-
-.sort-chips {
-  display: flex;
-  gap: 6px;
-  overflow-x: auto;
-  scrollbar-width: none;
-  -webkit-overflow-scrolling: touch;
-}
-.sort-chips::-webkit-scrollbar { display: none; }
-
-.sort-chip {
-  padding: 6px 16px;
-  border-radius: 100px;
-  font-size: 0.8rem;
-  font-weight: 500;
-  background: var(--glass);
-  border: 1px solid var(--glass-border);
-  color: var(--text-dim);
-  cursor: pointer;
-  white-space: nowrap;
-  transition: all var(--duration-fast) var(--ease-out);
-  font-family: var(--font-body);
-}
-.sort-chip:hover {
-  background: var(--glass-hover);
-  color: var(--text);
-}
-.sort-chip.active {
-  background: var(--primary-gradient);
-  color: #fff;
-  border-color: transparent;
-  box-shadow: 0 2px 12px var(--primary-glow);
-}
-
-/* ===== GAME GRID ===== */
-.games-section {
-  max-width: 1400px;
-  margin: 0 auto;
-  padding: 12px 24px 100px;
-}
-
-.games-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 16px;
-}
-
-.game-card {
-  background: var(--glass);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid var(--glass-border);
-  border-radius: var(--radius-md);
-  overflow: hidden;
-  cursor: pointer;
-  transition: all var(--duration-normal) var(--ease-out);
-  position: relative;
-  animation: cardEnter 0.4s var(--ease-out) both;
-}
-
-.game-card:hover {
-  transform: translateY(-6px) scale(1.02);
-  box-shadow: var(--shadow-lg), var(--shadow-glow);
-  border-color: var(--glass-border-hover);
-}
-
-.game-card:active {
-  transform: translateY(-2px) scale(0.98);
-}
-
-/* Card cover art area */
-.game-card-cover {
-  width: 100%;
-  aspect-ratio: 16 / 9;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 3rem;
-  position: relative;
-  overflow: hidden;
-}
-
-/* Subtle pattern overlay on cover */
-.game-card-cover::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
-  opacity: 0.06;
-  mix-blend-mode: overlay;
-  pointer-events: none;
-}
-
-.game-card-cover .cover-icon {
-  position: relative;
-  z-index: 1;
-  filter: drop-shadow(0 2px 8px rgba(0,0,0,0.3));
-}
-
-/* Hover play overlay */
-.game-card-cover .play-overlay {
-  position: absolute;
-  inset: 0;
-  background: rgba(0,0,0,0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  opacity: 0;
-  transition: opacity var(--duration-normal) var(--ease-out);
-  z-index: 2;
-}
-.game-card:hover .play-overlay { opacity: 1; }
-
-.play-overlay .play-btn-circle {
-  width: 52px; height: 52px;
-  border-radius: 50%;
-  background: var(--primary-gradient);
-  display: flex; align-items: center; justify-content: center;
-  font-size: 1.3rem;
-  box-shadow: 0 4px 20px var(--primary-glow);
-  transition: transform var(--duration-normal) var(--ease-spring);
-}
-.game-card:hover .play-btn-circle { transform: scale(1.1); }
-
-/* Card body */
-.game-card-body {
-  padding: 14px 16px 16px;
-}
-
-.game-card-title-row {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 8px;
-  margin-bottom: 4px;
-}
-
-.game-card-title {
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: 0.95rem;
-  line-height: 1.25;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.game-card-fav {
-  flex-shrink: 0;
-  width: 28px; height: 28px;
-  border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 0.8rem;
-  transition: all var(--duration-fast) var(--ease-out);
-  cursor: pointer;
-  background: transparent;
-  border: none;
-  color: var(--text-muted);
-}
-.game-card-fav:hover { color: var(--accent); transform: scale(1.2); }
-.game-card-fav.active { color: var(--accent); animation: favPop 0.3s var(--ease-spring); }
-
-@keyframes favPop {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.4); }
-  100% { transform: scale(1); }
-}
-
-.game-card-desc {
-  font-size: 0.78rem;
-  color: var(--text-dim);
-  line-height: 1.4;
-  display: -webkit-box;
-  -webkit-line-clamp: 1;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  margin-bottom: 10px;
-}
-
-.game-card-meta {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 0.72rem;
-  color: var(--text-muted);
-  flex-wrap: wrap;
-}
-
-.game-card-meta .card-tag {
-  padding: 2px 10px;
-  border-radius: 100px;
-  background: var(--glass);
-  border: 1px solid var(--glass-border);
-  font-size: 0.65rem;
-  font-weight: 500;
-}
-
-.game-card-meta .card-stars { color: var(--warning); }
-.game-card-meta .card-players { display: flex; align-items: center; gap: 2px; }
-
-/* ===== GAME CARD ENTRANCE ANIMATION ===== */
-@keyframes cardEnter {
-  from {
-    opacity: 0;
-    transform: translateY(24px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-/* ===== SKELETON LOADING ===== */
-.skeleton-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; margin-bottom: 24px; }
-.skeleton-card {
-  background: var(--glass);
-  border: 1px solid var(--glass-border);
-  border-radius: var(--radius-md);
-  overflow: hidden;
-}
-.skeleton-cover {
-  width: 100%;
-  aspect-ratio: 16 / 9;
-  background: var(--gradient-skeleton);
-  background-size: 200% 100%;
-  animation: shimmer 1.5s infinite;
-}
-.skeleton-body { padding: 14px 16px; }
-.skeleton-line {
-  height: 12px;
-  border-radius: 4px;
-  background: var(--gradient-skeleton);
-  background-size: 200% 100%;
-  animation: shimmer 1.5s infinite;
-  margin-bottom: 8px;
-}
-.skeleton-line:last-child { width: 60%; margin-bottom: 0; }
-
-@keyframes shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
-}
-
-/* ===== LOAD MORE ===== */
-.load-more-wrap { text-align: center; margin-top: 24px; }
-.load-more-btn {
-  padding: 12px 36px;
-  border-radius: 100px;
-  background: var(--glass);
-  border: 1px solid var(--glass-border);
-  color: var(--text-dim);
-  font-size: 0.9rem;
-  font-weight: 500;
-  transition: all var(--duration-fast) var(--ease-out);
-  cursor: pointer;
-  font-family: var(--font-body);
-}
-.load-more-btn:hover {
-  background: var(--glass-hover);
-  color: var(--text);
-  border-color: var(--glass-border-hover);
-}
-
-/* ===== TOAST SYSTEM ===== */
-.toast-container {
-  position: fixed;
-  bottom: 80px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 1000;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  pointer-events: none;
-}
-
-.toast {
-  padding: 12px 24px;
-  border-radius: 100px;
-  background: rgba(10, 14, 39, 0.95);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid var(--glass-border);
-  box-shadow: var(--shadow-lg);
-  font-size: 0.85rem;
-  font-weight: 500;
-  color: var(--text);
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  pointer-events: auto;
-  animation: toastIn 0.3s var(--ease-out);
-  white-space: nowrap;
-}
-
-.toast.toast-success { border-color: rgba(0, 184, 148, 0.3); }
-.toast.toast-error { border-color: rgba(225, 112, 85, 0.3); }
-.toast.toast-info { border-color: rgba(0, 210, 255, 0.3); }
-
-.toast-exit { animation: toastOut 0.2s var(--ease-out) forwards; }
-
-@keyframes toastIn {
-  from { opacity: 0; transform: translateY(16px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-@keyframes toastOut {
-  from { opacity: 1; transform: translateY(0); }
-  to { opacity: 0; transform: translateY(-8px); }
-}
-
-/* ===== MOBILE BOTTOM NAV ===== */
-.mobile-bottom-nav {
-  display: none;
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  z-index: 100;
-  background: rgba(10, 14, 39, 0.9);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-  border-top: 1px solid var(--glass-border);
-  height: 64px;
-  padding: 0 8px;
-  justify-content: space-around;
-  align-items: center;
-}
-
-.nav-tab {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  padding: 6px 12px;
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  transition: all var(--duration-fast) var(--ease-out);
-  color: var(--text-muted);
-  border: none;
-  background: none;
-  font-family: var(--font-body);
-  position: relative;
-}
-.nav-tab .nav-icon { font-size: 1.2rem; line-height: 1; }
-.nav-tab .nav-label { font-size: 0.6rem; font-weight: 500; }
-.nav-tab.active { color: var(--text); }
-.nav-tab.active::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 20px; height: 3px;
-  border-radius: 0 0 3px 3px;
-  background: var(--primary-gradient);
-}
-
-/* ===== RESPONSIVE ===== */
-@media (max-width: 768px) {
-  .header { padding: 0 16px; }
-  .header-brand { font-size: 1.1rem; }
-  .search-container { margin: 0 8px; max-width: none; }
-  .search-input-wrap { height: 36px; }
-
-  .hero-section { padding: 16px 16px 8px; }
-  .hero-carousel { height: 280px; border-radius: var(--radius-md); }
-  .hero-slide { padding: 24px; }
-  .hero-slide .hero-title { font-size: 1.5rem; }
-  .hero-slide .hero-desc { font-size: 0.85rem; -webkit-line-clamp: 1; }
-  .hero-btn { padding: 10px 20px; font-size: 0.85rem; }
-  .hero-controls { bottom: 16px; right: 24px; }
-
-  .category-shelf { padding: 8px 16px; }
-  .category-tile { width: 80px; height: 72px; }
-  .category-tile .cat-icon { font-size: 1.1rem; }
-  .category-tile .cat-name { font-size: 0.65rem; }
-
-  .controls-bar { padding: 8px 16px 4px; flex-wrap: wrap; }
-  .sort-chips { gap: 4px; }
-  .sort-chip { padding: 5px 12px; font-size: 0.75rem; }
-
-  .games-section { padding: 8px 16px 80px; }
-  .games-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
-  .game-card-body { padding: 10px 12px 12px; }
-  .game-card-title { font-size: 0.85rem; }
-  .game-card-desc { font-size: 0.7rem; -webkit-line-clamp: 1; }
-
-  .mobile-bottom-nav { display: flex; }
-  .toast-container { bottom: 80px; }
-}
-
-@media (max-width: 480px) {
-  .header { height: 56px; }
-  .hero-carousel { height: 220px; }
-  .hero-slide { padding: 16px; }
-  .hero-slide .hero-title { font-size: 1.2rem; }
-  .hero-slide .hero-desc { display: none; }
-  .hero-slide .hero-meta { margin-bottom: 12px; font-size: 0.75rem; }
-  .hero-btn { padding: 8px 16px; font-size: 0.8rem; }
-  .hero-nav-btn { width: 28px; height: 28px; font-size: 0.7rem; }
-
-  .games-grid { grid-template-columns: 1fr; gap: 12px; }
-  .category-tile { width: 72px; height: 66px; }
-  .category-tile .cat-icon { font-size: 1rem; }
-}
-
-/* ===== REDUCED MOTION ===== */
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
-    animation-duration: 0.01ms !important;
-    transition-duration: 0.01ms !important;
-  }
-  .game-card:hover { transform: none; }
-}
-
-/* ===== EMPTY STATE ===== */
-.empty-state {
-  text-align: center;
-  padding: 64px 24px;
-  color: var(--text-muted);
-}
-.empty-state .empty-icon { font-size: 3rem; margin-bottom: 16px; }
-.empty-state .empty-title {
-  font-family: var(--font-display);
-  font-size: 1.2rem;
-  color: var(--text-dim);
-  margin-bottom: 8px;
-}
-.empty-state .empty-desc { font-size: 0.85rem; }
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Stretch Arm Bank Job — Game Design</title>
+  <link rel="stylesheet" href="/fonts/design-fonts.css">
+  <style>
+    /* ===== Reset & Base ===== */
+    *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+    html { font-size:16px; -webkit-font-smoothing:antialiased; }
+    body {
+      background: #0f0d0c;
+      min-height:100vh;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
+      font-family: 'JetBrains Mono', 'Courier New', monospace;
+      color:#e8e4df;
+      padding:40px 24px;
+      position:relative;
+      overflow-x:hidden;
+    }
+    body::before {
+      content:'';
+      position:fixed;
+      top:-40%;
+      left:50%;
+      transform:translateX(-50%);
+      width:900px;
+      height:700px;
+      background:radial-gradient(ellipse, rgba(59,130,246,0.10) 0%, rgba(139,92,246,0.05) 40%, transparent 70%);
+      pointer-events:none;
+      z-index:0;
+    }
+
+    /* ===== Stage ===== */
+    .stage { position:relative; z-index:1; max-width:1280px; width:100%; }
+
+    /* ===== Caption Row ===== */
+    .caption-row {
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      padding:0 8px 28px;
+      letter-spacing:0.08em;
+      font-size:0.7rem;
+      text-transform:uppercase;
+      color:rgba(232,228,223,0.45);
+    }
+    .caption-row .right {
+      font-family:'Macondo','Georgia',serif;
+      font-size:0.9rem;
+      text-transform:none;
+      letter-spacing:0.04em;
+      color:rgba(59,130,246,0.55);
+    }
+
+    /* ===== Panel Row ===== */
+    .panel-row {
+      display:flex;
+      gap:28px;
+      justify-content:center;
+      flex-wrap:wrap;
+    }
+
+    /* ===== Game Panel Base ===== */
+    .game-panel {
+      width:370px;
+      height:500px;
+      border-radius:16px;
+      background:#1a1817;
+      border:1px solid rgba(232,228,223,0.08);
+      position:relative;
+      overflow:hidden;
+      box-shadow:0 20px 60px rgba(0,0,0,0.6), inset 0 0 0 1px rgba(232,228,223,0.04);
+      transition:transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .game-panel:hover {
+      transform:translateY(-4px);
+      box-shadow:0 28px 80px rgba(0,0,0,0.7), inset 0 0 0 1px rgba(59,130,246,0.15);
+    }
+    .panel-label {
+      position:absolute; top:0; left:0; right:0;
+      padding:8px 14px;
+      background:rgba(15,13,12,0.85);
+      backdrop-filter:blur(6px);
+      font-size:0.6rem;
+      letter-spacing:0.1em;
+      text-transform:uppercase;
+      color:rgba(232,228,223,0.35);
+      z-index:10;
+      display:flex;
+      justify-content:space-between;
+      border-bottom:1px solid rgba(232,228,223,0.05);
+    }
+    .panel-label .dot { display:inline-block; width:6px; height:6px; border-radius:50%; vertical-align:middle; margin-right:6px; }
+    .panel-label .num { color:rgba(59,130,246,0.5); font-weight:500; }
+
+    /* ============================================ */
+    /*  PANEL 1 — TITLE / START SCREEN              */
+    /* ============================================ */
+    .panel-title {
+      height:100%;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
+      padding:48px 28px 36px;
+      text-align:center;
+      background:linear-gradient(180deg,#0f0d0c 0%,#1a1817 60%,#141211 100%);
+      position:relative;
+    }
+    .panel-title::before {
+      content:''; position:absolute; inset:0;
+      background:radial-gradient(ellipse at 50% 35%, rgba(217,119,6,0.06) 0%, transparent 70%);
+      pointer-events:none;
+    }
+    .panel-title .badge {
+      font-size:0.55rem; letter-spacing:0.15em;
+      color:rgba(217,119,6,0.7);
+      border:1px solid rgba(217,119,6,0.2);
+      padding:4px 12px; border-radius:20px; margin-bottom:18px;
+      text-transform:uppercase;
+    }
+    .panel-title h1 {
+      font-family:'Macondo','Georgia',serif;
+      font-size:1.85rem; line-height:1.2;
+      color:#f0e8e0; margin-bottom:6px; letter-spacing:0.02em;
+    }
+    .panel-title h1 .accent { color:#D97706; }
+    .panel-title .sub-line {
+      font-size:0.7rem; color:rgba(232,228,223,0.4);
+      letter-spacing:0.06em; margin-bottom:28px;
+    }
+    .vault-door-svg {
+      width:72px; height:72px; margin-bottom:20px; opacity:0.6;
+    }
+    .panel-title .start-btn {
+      background:#3B82F6; color:#fff; border:none;
+      padding:12px 44px; border-radius:30px;
+      font-family:'JetBrains Mono',monospace;
+      font-size:0.8rem; font-weight:600; letter-spacing:0.06em;
+      cursor:pointer;
+      transition:all 0.25s ease;
+      box-shadow:0 0 20px rgba(59,130,246,0.25);
+      animation:pulse-btn 2s ease-in-out infinite;
+    }
+    .panel-title .start-btn:hover {
+      background:#2563EB;
+      box-shadow:0 0 30px rgba(59,130,246,0.4);
+      transform:scale(1.04);
+    }
+    @keyframes pulse-btn {
+      0%,100% { box-shadow:0 0 20px rgba(59,130,246,0.2); }
+      50% { box-shadow:0 0 30px rgba(59,130,246,0.4); }
+    }
+    .panel-title .high-score {
+      position:absolute; bottom:32px;
+      font-size:0.6rem; color:rgba(232,228,223,0.25); letter-spacing:0.06em;
+    }
+    .panel-title .high-score span { color:rgba(217,119,6,0.5); }
+
+    /* ============================================ */
+    /*  PANEL 2 — GAMEPLAY SCREEN                   */
+    /* ============================================ */
+    .panel-game {
+      height:100%;
+      background:linear-gradient(180deg,#12100f 0%,#1b1918 50%,#12100f 100%);
+      position:relative;
+      overflow:hidden;
+    }
+    /* HUD */
+    .game-hud {
+      position:absolute; top:36px; left:0; right:0;
+      display:flex; justify-content:space-between;
+      padding:0 16px; z-index:5; font-size:0.6rem;
+    }
+    .game-hud .hud-item { display:flex; flex-direction:column; align-items:center; gap:2px; }
+    .game-hud .hud-label {
+      color:rgba(232,228,223,0.3); font-size:0.5rem;
+      letter-spacing:0.1em; text-transform:uppercase;
+    }
+    .game-hud .hud-value { font-weight:600; font-size:0.75rem; }
+    .game-hud .hud-value.score { color:#16A34A; }
+    .game-hud .hud-value.timer { color:#e8e4df; }
+    .game-hud .hud-value.alarm { color:#DC2626; }
+
+    /* Alarm bar */
+    .alarm-bar-track {
+      position:absolute; top:70px; left:16px; right:16px;
+      height:4px; background:rgba(220,38,38,0.1);
+      border-radius:2px; overflow:hidden; z-index:5;
+    }
+    .alarm-bar-fill {
+      height:100%; width:37%;
+      background:#DC2626; border-radius:2px;
+      box-shadow:0 0 8px rgba(220,38,38,0.3);
+    }
+
+    /* Vault room */
+    .vault-room {
+      position:absolute; top:86px; left:20px; right:20px; bottom:16px;
+      border:1px solid rgba(232,228,223,0.06);
+      border-radius:8px;
+      background:radial-gradient(ellipse at 60% 40%, rgba(59,130,246,0.03) 0%, transparent 60%);
+      overflow:hidden;
+    }
+    .vault-room .room-label {
+      position:absolute; bottom:6px; left:50%; transform:translateX(-50%);
+      font-size:0.45rem; letter-spacing:0.1em;
+      color:rgba(232,228,223,0.12); text-transform:uppercase;
+    }
+
+    /* Cash stacks */
+    .cash-stack {
+      position:absolute;
+      width:24px; height:32px; border-radius:2px;
+      background:linear-gradient(180deg,#16A34A 0%,#15803D 100%);
+      box-shadow:0 0 12px rgba(22,163,74,0.2), inset 0 1px 0 rgba(255,255,255,0.1);
+    }
+    .cash-stack::after {
+      content:'$';
+      position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
+      font-size:0.6rem; font-weight:700; color:rgba(255,255,255,0.8);
+    }
+    .cash-stack.s1 { top:30%; left:58%; }
+    .cash-stack.s2 { top:46%; left:72%; }
+    .cash-stack.s3 { top:22%; left:44%; }
+    .cash-stack.s4 { top:54%; left:34%; }
+    .cash-stack.s5 { top:36%; left:80%; }
+
+    /* Laser beams */
+    .laser-beam {
+      position:absolute;
+      background:rgba(220,38,38,0.13);
+      box-shadow:0 0 6px rgba(220,38,38,0.08);
+    }
+    .laser-beam::before {
+      content:''; position:absolute; inset:0;
+      background:repeating-linear-gradient(90deg,transparent,transparent 4px,rgba(220,38,38,0.12) 4px,rgba(220,38,38,0.12) 8px);
+    }
+    .laser-beam.h { height:2px; }
+    .laser-beam.v { width:2px; height:100%; }
+    .laser-beam.l1 { top:38%; left:10%; width:75%; }
+    .laser-beam.l2 { top:62%; left:25%; width:60%; }
+    .laser-beam.l3 { top:15%; left:68%; width:2px; height:50%; }
+
+    /* Sensors */
+    .sensor {
+      position:absolute;
+      width:10px; height:10px; border-radius:50%;
+      background:#3B82F6;
+      box-shadow:0 0 10px rgba(59,130,246,0.3);
+      animation:sensor-pulse 2s ease-in-out infinite;
+    }
+    .sensor.s1 { top:38%; left:10%; margin:-5px 0 0 -5px; }
+    .sensor.s2 { top:38%; left:84%; margin:-5px -5px 0 0; }
+    .sensor.s3 { top:62%; left:25%; margin:-5px 0 0 -5px; }
+    .sensor.s4 { top:62%; left:84%; margin:-5px -5px 0 0; }
+    .sensor.s5 { top:15%; left:68%; margin:-5px 0 0 -5px; }
+    .sensor.s6 { top:64%; left:68%; }
+    @keyframes sensor-pulse {
+      0%,100% { box-shadow:0 0 6px rgba(59,130,246,0.2); opacity:0.7; }
+      50% { box-shadow:0 0 14px rgba(59,130,246,0.4); opacity:1; }
+    }
+
+    /* Arm — stretched from bottom-left */
+    .arm-origin {
+      position:absolute; bottom:16px; left:16px;
+      width:18px; height:18px; border-radius:50%;
+      background:#8B5CF6;
+      box-shadow:0 0 16px rgba(139,92,246,0.4);
+      z-index:3;
+      animation:origin-pulse 1.5s ease-in-out infinite;
+    }
+    @keyframes origin-pulse {
+      0%,100% { box-shadow:0 0 12px rgba(139,92,246,0.3); }
+      50% { box-shadow:0 0 22px rgba(139,92,246,0.5); }
+    }
+    .arm-segment {
+      position:absolute; bottom:20px; left:28px;
+      width:60px; height:5px;
+      background:#3B82F6;
+      border-radius:3px; transform-origin:left center;
+      transform:rotate(-30deg); z-index:2;
+    }
+    .arm-segment:nth-child(2) { left:78px; width:52px; transform:rotate(-18deg) translateY(-2px); background:#3B82F6; opacity:0.8; }
+    .arm-segment:nth-child(3) { left:122px; width:44px; transform:rotate(-8deg) translateY(-4px); background:#3B82F6; opacity:0.65; }
+    .arm-segment:last-child { box-shadow:0 0 6px rgba(139,92,246,0.2); }
+
+    .grab-point {
+      position:absolute; bottom:24px; left:156px;
+      width:22px; height:22px; border-radius:50%;
+      border:2px solid rgba(22,163,74,0.5);
+      z-index:4;
+      animation:grab-ring 1.2s ease-in-out infinite;
+    }
+    .grab-point::after {
+      content:''; position:absolute; inset:4px;
+      border-radius:50%; background:rgba(22,163,74,0.15);
+    }
+    @keyframes grab-ring {
+      0%,100% { transform:scale(1); opacity:0.6; }
+      50% { transform:scale(1.15); opacity:1; }
+    }
+
+    .alarm-glow {
+      position:absolute; inset:0; pointer-events:none; z-index:1;
+      box-shadow:inset 0 0 40px rgba(220,38,38,0.08);
+      border-radius:7px;
+    }
+
+    /* ============================================ */
+    /*  PANEL 3 — RESULT SCREEN                     */
+    /* ============================================ */
+    .panel-result {
+      height:100%;
+      display:flex; flex-direction:column; align-items:center; justify-content:center;
+      padding:48px 28px 36px; text-align:center; position:relative;
+    }
+    .panel-result.win  { background:linear-gradient(180deg,rgba(22,163,74,0.05) 0%,#1a1817 40%); }
+    .panel-result.lose { background:linear-gradient(180deg,rgba(220,38,38,0.05) 0%,#1a1817 40%); }
+    .panel-result .result-icon {
+      width:56px; height:56px; border-radius:50%; margin-bottom:16px;
+      display:flex; align-items:center; justify-content:center;
+      font-size:1.4rem;
+    }
+    .panel-result.win .result-icon  { background:rgba(22,163,74,0.15); color:#16A34A; box-shadow:0 0 30px rgba(22,163,74,0.1); }
+    .panel-result.lose .result-icon { background:rgba(220,38,38,0.15); color:#DC2626; box-shadow:0 0 30px rgba(220,38,38,0.1); }
+    .panel-result .result-title {
+      font-family:'Macondo','Georgia',serif; font-size:1.5rem; margin-bottom:4px;
+    }
+    .panel-result.win .result-title  { color:#16A34A; }
+    .panel-result.lose .result-title { color:#DC2626; }
+    .panel-result .result-sub {
+      font-size:0.65rem; color:rgba(232,228,223,0.35);
+      letter-spacing:0.06em; margin-bottom:24px;
+    }
+
+    .result-stats { display:flex; gap:24px; margin-bottom:28px; }
+    .result-stat { text-align:center; }
+    .result-stat .stat-value { font-size:1.1rem; font-weight:700; color:#f0e8e0; }
+    .result-stat .stat-value.best { color:rgba(217,119,6,0.6); }
+    .result-stat .stat-label {
+      font-size:0.5rem; letter-spacing:0.08em; text-transform:uppercase;
+      color:rgba(232,228,223,0.25); margin-top:2px;
+    }
+
+    .result-buttons { display:flex; flex-direction:column; gap:10px; width:100%; max-width:200px; }
+    .result-buttons .btn-play-again {
+      background:#3B82F6; color:#fff; border:none;
+      padding:12px 24px; border-radius:30px;
+      font-family:'JetBrains Mono',monospace;
+      font-size:0.75rem; font-weight:600; letter-spacing:0.06em;
+      cursor:pointer; transition:all 0.2s ease;
+      box-shadow:0 0 16px rgba(59,130,246,0.2);
+    }
+    .result-buttons .btn-play-again:hover { background:#2563EB; transform:scale(1.03); }
+    .result-buttons .btn-back {
+      background:transparent; color:rgba(232,228,223,0.3);
+      border:1px solid rgba(232,228,223,0.1);
+      padding:10px 24px; border-radius:30px;
+      font-family:'JetBrains Mono',monospace;
+      font-size:0.65rem; cursor:pointer; transition:all 0.2s ease;
+    }
+    .result-buttons .btn-back:hover { color:rgba(232,228,223,0.6); border-color:rgba(232,228,223,0.2); }
+
+    /* ============================================ */
+    /*  LEVEL PROGRESSION BAR                       */
+    /* ============================================ */
+    .level-bar {
+      margin-top:28px;
+      display:flex; align-items:center; gap:8px;
+      padding:12px 20px;
+      background:rgba(26,24,23,0.5);
+      border-radius:30px;
+      border:1px solid rgba(232,228,223,0.05);
+    }
+    .level-bar .level-label {
+      font-size:0.55rem; letter-spacing:0.08em; text-transform:uppercase;
+      color:rgba(232,228,223,0.25); margin-right:4px;
+    }
+    .level-bar .level-dots { display:flex; gap:6px; }
+    .level-bar .level-dot { width:8px; height:8px; border-radius:50%; }
+    .level-bar .level-dot.active { background:#3B82F6; box-shadow:0 0 8px rgba(59,130,246,0.3); }
+    .level-bar .level-dot.done   { background:#16A34A; }
+    .level-bar .level-dot.locked { background:rgba(232,228,223,0.06); }
+    .level-bar .level-dot        { background:rgba(232,228,223,0.08); }
+
+    /* ===== Footer ===== */
+    .stage-footer {
+      margin-top:24px;
+      font-size:0.55rem; color:rgba(232,228,223,0.12);
+      letter-spacing:0.06em; text-align:center;
+    }
+
+    /* ===== Responsive ===== */
+    @media (max-width:860px) { .panel-row { gap:20px; } .game-panel { width:320px; height:440px; } }
+    @media (max-width:720px) {
+      body { padding:24px 16px; }
+      .panel-row { flex-direction:column; align-items:center; }
+      .game-panel { width:100%; max-width:380px; height:460px; }
+    }
+  </style>
 </head>
 <body>
-
-<!-- ===== HEADER ===== -->
-<header class="header" data-comp-id="header">
-  <div class="header-brand">
-    <svg class="brand-icon" width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg" style="-webkit-text-fill-color:initial"><circle cx="14" cy="14" r="12" stroke="url(#cg)" stroke-width="1.8" fill="rgba(108,92,231,0.15)"/><path d="M9 16c0-4 10-4 10 0M11 12l-2-3M17 12l2-3M14 8v4M14 16v4" stroke="url(#cg)" stroke-width="1.6" stroke-linecap="round"/><defs><linearGradient id="cg" x1="4" y1="4" x2="24" y2="24"><stop stop-color="#6C5CE7"/><stop offset="1" stop-color="#FD79A8"/></linearGradient></defs></svg>
-    <span>CrabCLI Arcade</span>
-  </div>
-  <div class="search-container" data-comp-id="search-container">
-    <div class="search-input-wrap">
-      <span class="search-icon">🔍</span>
-      <input type="text" id="searchInput" placeholder="Search games..." autocomplete="off" aria-label="Search games">
-      <button class="search-clear" id="searchClear">✕</button>
+  <div class="stage" data-comp-id="stage">
+    <!-- Caption -->
+    <div class="caption-row" data-comp-id="caption-row">
+      <span class="left">HI-FI PROTOTYPE · ARCADE</span>
+      <span class="right">Stretch Arm Bank Job</span>
     </div>
-    <div class="search-overlay" id="searchOverlay">
-      <div id="searchOverlayContent"></div>
-    </div>
-  </div>
-  <div class="header-actions">
-    <button class="header-btn" title="Favorites" data-comp-id="fav-btn">❤️</button>
-    <button class="header-btn" title="Profile" data-comp-id="profile-btn">👤</button>
-  </div>
-</header>
 
-<!-- ===== HERO CAROUSEL ===== -->
-<section class="hero-section" data-comp-id="hero-section">
-  <div class="hero-carousel" id="heroCarousel" data-comp-id="hero-carousel">
-    <div id="heroSlides"></div>
-    <div class="hero-controls" data-comp-id="hero-controls">
-      <div class="hero-dots" id="heroDots"></div>
-      <button class="hero-nav-btn" id="heroPrev" aria-label="Previous">‹</button>
-      <button class="hero-nav-btn" id="heroNext" aria-label="Next">›</button>
-    </div>
-  </div>
-</section>
+    <!-- Three Panels -->
+    <div class="panel-row" data-comp-id="panel-row">
 
-<!-- ===== CATEGORY SHELF ===== -->
-<section class="category-shelf" data-comp-id="category-shelf">
-  <div class="category-scroll" id="categoryScroll"></div>
-</section>
-
-<!-- ===== CONTROLS BAR ===== -->
-<div class="controls-bar" data-comp-id="controls-bar">
-  <span class="results-count" id="resultsCount">32 games</span>
-  <div class="sort-chips" id="sortChips" data-comp-id="sort-chips">
-    <button class="sort-chip active" data-sort="popular">🔥 Popular</button>
-    <button class="sort-chip" data-sort="newest">🕐 Newest</button>
-    <button class="sort-chip" data-sort="rating">⭐ Rating</button>
-    <button class="sort-chip" data-sort="name">🔤 A-Z</button>
-  </div>
-</div>
-
-<!-- ===== GAMES GRID ===== -->
-<section class="games-section" data-comp-id="games-section">
-  <div class="games-grid" id="gamesGrid" data-comp-id="games-grid"></div>
-  <div class="load-more-wrap" id="loadMoreWrap">
-    <button class="load-more-btn" id="loadMoreBtn">Show 8 more</button>
-  </div>
-</section>
-
-<!-- ===== TOAST ===== -->
-<div class="toast-container" id="toastContainer" data-comp-id="toast-container"></div>
-
-<!-- ===== MOBILE BOTTOM NAV ===== -->
-<nav class="mobile-bottom-nav" id="mobileNav" data-comp-id="mobile-nav">
-  <button class="nav-tab active" data-tab="home"><span class="nav-icon">🏠</span><span class="nav-label">Home</span></button>
-  <button class="nav-tab" data-tab="search"><span class="nav-icon">🔍</span><span class="nav-label">Search</span></button>
-  <button class="nav-tab" data-tab="favorites"><span class="nav-icon">❤️</span><span class="nav-label">Favorites</span></button>
-  <button class="nav-tab" data-tab="profile"><span class="nav-icon">👤</span><span class="nav-label">Profile</span></button>
-</nav>
-
-<script>
-// ===== GAME DATA =====
-const GAMES = [
-  {id:"trivia-royale",name:"Astrocade Trivia Royale",desc:"Real-time multiplayer trivia battle against 2-8 players",cat:"puzzle",icon:"🧠",players:"2-8",rating:4.5,featured:true},
-  {id:"idle-dungeon-heroes",name:"Idle Dungeon Heroes",desc:"英雄自动闯关挂机，派遣、装备、升级并在三分钟内通关副本",cat:"idle",icon:"⚔️",players:"1",rating:4.4,featured:true},
-  {id:"idle-lemonade",name:"Idle Lemonade Stand",desc:"Build your lemonade empire one cup at a time",cat:"idle",icon:"🍋",players:"1",rating:4.2,featured:true},
-  {id:"cosmic-shooter",name:"Cosmic Shooter",desc:"Defend the galaxy from waves of pixel aliens",cat:"action",icon:"🚀",players:"1",rating:4.7,featured:true},
-  {id:"word-wizard",name:"Word Wizard",desc:"Spell your way through enchanted dungeons",cat:"puzzle",icon:"📖",players:"1",rating:4.1},
-  {id:"tower-defense",name:"Tower Defense Classic",desc:"Strategic tower placement to stop the horde",cat:"strategy",icon:"🏰",players:"1",rating:4.3},
-  {id:"pixel-racer",name:"Pixel Racer",desc:"Retro-style racing with power-ups and drift",cat:"action",icon:"🏎️",players:"1-4",rating:4.0},
-  {id:"gem-match",name:"Gem Match",desc:"Classic match-3 with daily challenges",cat:"casual",icon:"💎",players:"1",rating:3.8},
-  {id:"chess-club",name:"Chess Club",desc:"Play chess online with rating and puzzles",cat:"strategy",icon:"♟️",players:"2",rating:4.6},
-  {id:"snake-reborn",name:"Snake Reborn",desc:"Modern take on the classic snake game",cat:"casual",icon:"🐍",players:"1",rating:3.5},
-  {id:"sudoku-master",name:"Sudoku Master",desc:"Thousands of puzzles across five difficulty levels",cat:"puzzle",icon:"🔢",players:"1",rating:4.4},
-  {id:"farm-tycoon",name:"Farm Tycoon",desc:"Plant, harvest, and grow your agricultural empire",cat:"idle",icon:"🌾",players:"1",rating:4.0},
-  {id:"space-invaders",name:"Space Invaders Neo",desc:"Updated classic with new power-ups and bosses",cat:"action",icon:"👾",players:"1",rating:4.2},
-  {id:"card-battle",name:"Card Battle Arena",desc:"Collect cards and duel players worldwide",cat:"strategy",icon:"🃏",players:"2",rating:4.5,featured:true},
-  {id:"bubble-pop",name:"Bubble Pop",desc:"Satisfying bubble popping with combo chains",cat:"casual",icon:"🫧",players:"1",rating:3.6},
-  {id:"minesweeper",name:"Minesweeper Pro",desc:"The logic puzzle that never gets old",cat:"puzzle",icon:"💣",players:"1",rating:4.1},
-  {id:"cookie-clicker",name:"Cookie Clicker",desc:"Bake billions of cookies and unlock upgrades",cat:"idle",icon:"🍪",players:"1",rating:3.9},
-  {id:"platformer",name:"Pixel Platformer",desc:"Jump, dash, and collect through 50 levels",cat:"action",icon:"🎮",players:"1",rating:4.3},
-  {id:"go-master",name:"Go Master",desc:"Ancient board game with AI opponents",cat:"strategy",icon:"⚫",players:"1-2",rating:4.7},
-  {id:"num2048",name:"2048",desc:"Slide tiles to reach the legendary 2048",cat:"casual",icon:"🎲",players:"1",rating:3.7},
-  {id:"nonogram",name:"Nonogram Quest",desc:"Solve picture logic puzzles of increasing complexity",cat:"puzzle",icon:"🎨",players:"1",rating:4.2},
-  {id:"idle-miner",name:"Idle Miner",desc:"Dig deep and automate your mining operation",cat:"idle",icon:"⛏️",players:"1",rating:3.8},
-  {id:"dungeon-crawl",name:"Dungeon Crawler",desc:"Procedurally generated dungeons with permadeath",cat:"action",icon:"🗡️",players:"1",rating:4.6,featured:true},
-  {id:"checkers",name:"Checkers Online",desc:"Classic checkers with matchmaking",cat:"strategy",icon:"🔴",players:"2",rating:3.9},
-  {id:"solitaire",name:"Solitaire",desc:"The timeless card game, beautifully done",cat:"casual",icon:"🃏",players:"1",rating:4.0},
-  {id:"pet-run-io",name:"Pet Run.io",desc:"萌宠多人跑酷 · 8 萌宠 · 跑赢前三 · 解锁皮肤",cat:"action",icon:"🐾",players:"1",rating:4.4,featured:true},
-  {id:"solar-snake",name:"Solar Snake",desc:"宇宙版贪吃蛇，吃星变长，碰撞结束",cat:"casual",icon:"🐉",players:"1",rating:4.0},
-  {id:"dice",name:"Dice",desc:"Minimal dice roller — click for a fair 1–6 with a short animation",cat:"casual",icon:"🎲",players:"1",rating:4.0},
-  {id:"word-ladder-climb",name:"Word Ladder Climb",desc:"改一个字母连成新词，沿词梯爬到顶层目标词",cat:"puzzle",icon:"🔤",players:"1",rating:4.2},
-  {id:"knight-vs-slime",name:"Knight vs Slime",desc:"骑士在洞穴击退史莱姆，攻击→闪避→拾取，击败 Boss 通关",cat:"action",icon:"⚔️",players:"1",rating:4.5,featured:true},
-  {id:"guess-number",name:"猜数字",desc:"猜 1-100 之间的数字，看看几次能猜对",cat:"casual",icon:"❓",players:"1",rating:4.0},
-  {id:"word-guess",name:"猜单词",desc:"猜出隐藏的英文单词，每次猜错减少一次机会，Hangman 风格",cat:"puzzle",icon:"🔤",players:"1",rating:4.0},
-  {id:"connect-four-online",name:"Connect Four Online",desc:"经典四子棋，在线匹配 · 连成四珠获胜",cat:"strategy",icon:"🔴",players:"1-2",rating:4.0},
-  {id:"neon-block-pop",name:"Neon Block Pop",desc:"霓虹色方块满屏，三连消除获取连击分数",cat:"casual",icon:"🧊",players:"1",rating:4.3},
-  {id:"stickman-archer-duel",name:"Stickman Archer Duel",desc:"火柴人对决！拖拽瞄准释放箭矢，计算重力弹道命中对手，三局两胜",cat:"action",icon:"🏹",players:"1",rating:4.3,featured:true},
-  {id:"case-crafters",name:"Case Crafters",desc:"定制手机壳贴纸印花！拖拽贴纸排版设计，完成订单获评分，解锁新模板",cat:"casual",icon:"📱",players:"1",rating:4.0},
-  {id:"cube-labyrinth-roll",name:"Cube Labyrinth Roll",desc:"Roll a 3D cube through a twisting maze -- reach the flag without falling off!",cat:"puzzle",icon:"🎲",players:"1",rating:4.2,featured:true},
-  {id:"pirate-gold-merge",name:"Pirate Gold Merge",desc:"拖动相同等级的金币合并升级，合成传说级宝藏！",cat:"casual",icon:"🏴‍☠️",players:"1",rating:4.0,featured:true},
-  {id:"sky-guardian-3d",name:"Sky Guardian 3D",desc:"Fly through canyons, shoot invaders, survive the onslaught! 3D flight shooter.",cat:"action",icon:"🚀",players:"1",rating:4.0,featured:true},
-  {id:"baby-shark-manicure",name:"Baby Shark Manicure",desc:"为鲨鱼宝宝美甲！选色涂指装饰，完成所有指甲过关",cat:"casual",icon:"🦈",players:"1",rating:4.0},
-  {id:"garden-keeper",name:"Garden Keeper",desc:"管理花园种植与浇水，离线产出",cat:"idle",icon:"🌻",players:"1",rating:4.0,featured:true},
-  {id:"detective-crime-board",name:"Detective Crime Board",desc:"线索拖拽拼接证据找出凶手 — 解开多重悬疑案件",cat:"puzzle",icon:"🕵️",players:"1",rating:4.0,featured:true},
-  {id:"drift-king-arena",name:"Drift King Arena",desc:"限定赛道漂移积分 — 方向键漂移，目标积分过关，解锁新车与赛道",cat:"action",icon:"🏎️",players:"1",rating:4.2,featured:true}
-];
-
-const CATEGORIES = [
-  {id:"all",name:"All",icon:"🎮"},
-  {id:"puzzle",name:"Puzzle",icon:"🧩"},
-  {id:"idle",name:"Idle",icon:"🏪"},
-  {id:"action",name:"Action",icon:"⚡"},
-  {id:"strategy",name:"Strategy",icon:"♟️"},
-  {id:"casual",name:"Casual",icon:"🎯"}
-];
-
-const CAT_GRADIENTS = {
-  puzzle: 'var(--cat-puzzle)',
-  idle: 'var(--cat-idle)',
-  action: 'var(--cat-action)',
-  strategy: 'var(--cat-strategy)',
-  casual: 'var(--cat-casual)'
-};
-
-// ===== STATE =====
-const state = {
-  category: 'all',
-  search: '',
-  sort: 'popular',
-  page: 1,
-  PAGE_SIZE: 24,
-  favorites: new Set(),
-  heroIndex: 0,
-  heroTimer: null,
-  renderedGames: []
-};
-
-// ===== DOM REFS =====
-const $ = s => document.querySelector(s);
-const $$ = s => document.querySelectorAll(s);
-const el = id => document.getElementById(id);
-
-const grid = el('gamesGrid');
-const catScroll = el('categoryScroll');
-const searchInput = el('searchInput');
-const searchClear = el('searchClear');
-const searchOverlay = el('searchOverlay');
-const searchOverlayContent = el('searchOverlayContent');
-const heroSlides = el('heroSlides');
-const heroDots = el('heroDots');
-const loadMoreBtn = el('loadMoreBtn');
-const loadMoreWrap = el('loadMoreWrap');
-const resultsCount = el('resultsCount');
-const toastContainer = el('toastContainer');
-
-// ===== HELPERS =====
-function getCatGradient(cat) {
-  return CAT_GRADIENTS[cat] || 'var(--cat-puzzle)';
-}
-
-function getGamesByCategory(cat) {
-  if (cat === 'all') return [...GAMES];
-  if (cat === 'favorites') return GAMES.filter(g => state.favorites.has(g.id));
-  return GAMES.filter(g => g.cat === cat);
-}
-
-function searchGames(games, query) {
-  if (!query.trim()) return games;
-  const q = query.toLowerCase();
-  return games.filter(g =>
-    g.name.toLowerCase().includes(q) ||
-    g.desc.toLowerCase().includes(q) ||
-    g.cat.includes(q)
-  );
-}
-
-function sortGames(games, sort) {
-  const sorted = [...games];
-  switch (sort) {
-    case 'popular': return sorted;
-    case 'newest': return sorted.reverse();
-    case 'rating': return sorted.sort((a,b) => b.rating - a.rating);
-    case 'name': return sorted.sort((a,b) => a.name.localeCompare(b.name));
-    default: return sorted;
-  }
-}
-
-function getFilteredGames() {
-  let games = getGamesByCategory(state.category);
-  games = searchGames(games, state.search);
-  games = sortGames(games, state.sort);
-  return games;
-}
-
-function starsHTML(rating) {
-  const full = Math.floor(rating);
-  const half = rating % 1 >= 0.5 ? 1 : 0;
-  const empty = 5 - full - half;
-  return '★'.repeat(full) + (half ? '½' : '') + '☆'.repeat(empty);
-}
-
-// ===== TOAST SYSTEM =====
-function showToast(message, type = 'info', duration = 3000) {
-  const toast = document.createElement('div');
-  toast.className = `toast toast-${type}`;
-  const icons = {success:'✓', error:'✕', info:'ℹ'};
-  toast.innerHTML = `<span style="font-weight:700">${icons[type]||'ℹ'}</span> ${message}`;
-  toastContainer.appendChild(toast);
-  setTimeout(() => {
-    toast.classList.add('toast-exit');
-    setTimeout(() => toast.remove(), 200);
-  }, duration);
-}
-
-// ===== HERO CAROUSEL =====
-function renderHero() {
-  const featured = GAMES.filter(g => g.featured);
-  if (!featured.length) return;
-
-  heroSlides.innerHTML = featured.map((g, i) => `
-    <div class="hero-slide ${i === 0 ? 'active' : ''}" data-index="${i}">
-      <div class="hero-bg" style="background:${getCatGradient(g.cat)}"></div>
-      <div class="hero-bg-gradient"></div>
-      <div class="hero-content">
-        <span class="hero-category-tag">${CATEGORIES.find(c => c.id === g.cat)?.name || g.cat}</span>
-        <h1 class="hero-title">${g.name}</h1>
-        <p class="hero-desc">${g.desc}</p>
-        <div class="hero-meta">
-          <span class="hero-stars">${starsHTML(g.rating)} ${g.rating}</span>
-          <span class="hero-players">👥 ${g.players} players</span>
+      <!-- ===== Panel 1: Title / Start ===== -->
+      <div class="game-panel" data-comp-id="panel-title">
+        <div class="panel-label"><span><span class="dot" style="color:#D97706"></span>Start Screen</span><span class="num">01</span></div>
+        <div class="panel-title" data-comp-id="title-content">
+          <div class="badge">✦ Physical Comedy</div>
+          <svg class="vault-door-svg" viewBox="0 0 72 72" fill="none" data-comp-id="title-icon">
+            <circle cx="36" cy="36" r="28" stroke="#D97706" stroke-width="2" opacity="0.3"/>
+            <circle cx="36" cy="36" r="22" stroke="#D97706" stroke-width="1.5" opacity="0.2"/>
+            <circle cx="36" cy="36" r="6" stroke="#D97706" stroke-width="2" opacity="0.4"/>
+            <line x1="36" y1="30" x2="36" y2="42" stroke="#D97706" stroke-width="2" opacity="0.4"/>
+            <line x1="30" y1="36" x2="42" y2="36" stroke="#D97706" stroke-width="2" opacity="0.4"/>
+            <text x="36" y="66" text-anchor="middle" fill="#D97706" font-size="7" opacity="0.2" font-family="monospace">VAULT</text>
+          </svg>
+          <h1 data-comp-id="title-headline">Stretch&thinsp;<span class="accent">Arm</span>&thinsp;Bank Job</h1>
+          <div class="sub-line" data-comp-id="title-sub">伸縮手臂 · 智取金庫</div>
+          <button class="start-btn" data-comp-id="title-start-btn">▶&ensp;START</button>
+          <div class="high-score" data-comp-id="title-hiscore">BEST&ensp;<span>$1,240</span></div>
         </div>
-        <a class="hero-btn" href="/games/${g.id}/" data-game-id="${g.id}">▶ Play Now</a>
       </div>
-    </div>
-  `).join('');
 
-  heroDots.innerHTML = featured.map((_, i) =>
-    `<button class="hero-dot ${i === 0 ? 'active' : ''}" data-index="${i}" aria-label="Slide ${i+1}"></button>`
-  ).join('');
-
-  // Hero controls
-  el('heroPrev').addEventListener('click', () => { clearInterval(state.heroTimer); goHero(-1); });
-  el('heroNext').addEventListener('click', () => { clearInterval(state.heroTimer); goHero(1); });
-  heroDots.addEventListener('click', e => {
-    const dot = e.target.closest('.hero-dot');
-    if (dot) { clearInterval(state.heroTimer); goToHero(parseInt(dot.dataset.index)); }
-  });
-
-  startHeroAuto();
-}
-
-function goHero(dir) {
-  const slides = heroSlides.querySelectorAll('.hero-slide');
-  const dots = heroDots.querySelectorAll('.hero-dot');
-  const total = slides.length;
-  let idx = state.heroIndex + dir;
-  if (idx < 0) idx = total - 1;
-  if (idx >= total) idx = 0;
-  goToHero(idx);
-}
-
-function goToHero(idx) {
-  const slides = heroSlides.querySelectorAll('.hero-slide');
-  const dots = heroDots.querySelectorAll('.hero-dot');
-  slides.forEach(s => s.classList.remove('active'));
-  dots.forEach(d => d.classList.remove('active'));
-  slides[idx]?.classList.add('active');
-  dots[idx]?.classList.add('active');
-  state.heroIndex = idx;
-}
-
-function startHeroAuto() {
-  clearInterval(state.heroTimer);
-  state.heroTimer = setInterval(() => goHero(1), 6000);
-  el('heroCarousel').addEventListener('mouseenter', () => clearInterval(state.heroTimer));
-  el('heroCarousel').addEventListener('mouseleave', startHeroAuto);
-}
-
-// ===== CATEGORY SHELF =====
-function renderCategories() {
-  catScroll.innerHTML = CATEGORIES.map(cat => {
-    const count = cat.id === 'all' ? GAMES.length : GAMES.filter(g => g.cat === cat.id).length;
-    return `
-      <button class="category-tile ${state.category === cat.id ? 'active' : ''}" data-cat="${cat.id}">
-        <span class="cat-icon">${cat.icon}</span>
-        <span class="cat-name">${cat.name}</span>
-        <span class="cat-count">${count} games</span>
-      </button>
-    `;
-  }).join('');
-
-  catScroll.addEventListener('click', e => {
-    const tile = e.target.closest('.category-tile');
-    if (tile) {
-      state.category = tile.dataset.cat;
-      state.page = 1;
-      renderGames();
-      renderCategories();
-    }
-  });
-}
-
-// ===== SORT CHIPS =====
-function setupSortChips() {
-  el('sortChips').addEventListener('click', e => {
-    const chip = e.target.closest('.sort-chip');
-    if (chip) {
-      el('sortChips').querySelectorAll('.sort-chip').forEach(c => c.classList.remove('active'));
-      chip.classList.add('active');
-      state.sort = chip.dataset.sort;
-      state.page = 1;
-      renderGames();
-    }
-  });
-}
-
-// ===== GAMES GRID =====
-function renderGames() {
-  const all = getFilteredGames();
-  const page = state.page;
-  const pageSize = state.PAGE_SIZE;
-  const visible = all.slice(0, page * pageSize);
-  state.renderedGames = visible;
-
-  if (!visible.length) {
-    grid.innerHTML = `
-      <div class="empty-state">
-        <div class="empty-icon">🔍</div>
-        <div class="empty-title">No games found</div>
-        <div class="empty-desc">Try a different search or category</div>
-      </div>
-    `;
-    loadMoreWrap.style.display = 'none';
-    resultsCount.textContent = '0 games';
-    return;
-  }
-
-  grid.innerHTML = visible.map((g, i) => {
-    const isFav = state.favorites.has(g.id);
-    const catInfo = CATEGORIES.find(c => c.id === g.cat);
-    return `
-      <div class="game-card" data-game-id="${g.id}" style="animation-delay:${(i % 24) * 30}ms" data-comp-id="game-card">
-        <div class="game-card-cover" style="background:${getCatGradient(g.cat)}">
-          <span class="cover-icon">${g.icon}</span>
-          <div class="play-overlay">
-            <div class="play-btn-circle">▶</div>
+      <!-- ===== Panel 2: Gameplay ===== -->
+      <div class="game-panel" data-comp-id="panel-gameplay">
+        <div class="panel-label"><span><span class="dot" style="color:#3B82F6"></span>Gameplay</span><span class="num">02</span></div>
+        <div class="panel-game" data-comp-id="gameplay-content">
+          <div class="game-hud" data-comp-id="game-hud">
+            <div class="hud-item"><span class="hud-label">Score</span><span class="hud-value score" data-comp-id="hud-score">$2,460</span></div>
+            <div class="hud-item"><span class="hud-label">Time</span><span class="hud-value timer" data-comp-id="hud-timer">1:42</span></div>
+            <div class="hud-item"><span class="hud-label">Alarm</span><span class="hud-value alarm" data-comp-id="hud-alarm-pct">37%</span></div>
           </div>
-        </div>
-        <div class="game-card-body">
-          <div class="game-card-title-row">
-            <span class="game-card-title">${g.name}</span>
-            <button class="game-card-fav ${isFav ? 'active' : ''}" data-game-id="${g.id}" aria-label="Toggle favorite">${isFav ? '❤️' : '🤍'}</button>
-          </div>
-          <div class="game-card-desc">${g.desc}</div>
-          <div class="game-card-meta">
-            <span class="card-tag">${catInfo?.name || g.cat}</span>
-            <span class="card-stars">${starsHTML(g.rating)}</span>
-            <span class="card-players">👥 ${g.players}</span>
+          <div class="alarm-bar-track"><div class="alarm-bar-fill" data-comp-id="alarm-fill"></div></div>
+          <div class="vault-room" data-comp-id="vault-room">
+            <div class="alarm-glow"></div>
+            <div class="cash-stack s1" data-comp-id="cash-1"></div>
+            <div class="cash-stack s2" data-comp-id="cash-2"></div>
+            <div class="cash-stack s3" data-comp-id="cash-3"></div>
+            <div class="cash-stack s4" data-comp-id="cash-4"></div>
+            <div class="cash-stack s5" data-comp-id="cash-5"></div>
+            <div class="laser-beam h l1" data-comp-id="laser-h1"></div>
+            <div class="laser-beam h l2" data-comp-id="laser-h2"></div>
+            <div class="laser-beam v l3" data-comp-id="laser-v1"></div>
+            <div class="sensor s1"></div><div class="sensor s2"></div>
+            <div class="sensor s3"></div><div class="sensor s4"></div>
+            <div class="sensor s5"></div><div class="sensor s6"></div>
+            <div class="arm-origin"></div>
+            <div class="arm-segment"></div><div class="arm-segment"></div><div class="arm-segment"></div>
+            <div class="grab-point"></div>
+            <div class="room-label">VAULT ROOM · LEVEL 3</div>
           </div>
         </div>
       </div>
-    `;
-  }).join('');
 
-  // Show/hide load more
-  if (all.length > visible.length) {
-    loadMoreWrap.style.display = 'block';
-    loadMoreBtn.textContent = `Show ${Math.min(pageSize, all.length - visible.length)} more`;
-  } else {
-    loadMoreWrap.style.display = 'none';
-  }
-
-  resultsCount.textContent = `${all.length} game${all.length !== 1 ? 's' : ''}`;
-
-  // Favorite toggle
-  grid.querySelectorAll('.game-card-fav').forEach(btn => {
-    btn.addEventListener('click', e => {
-      e.stopPropagation();
-      e.preventDefault();
-      const id = btn.dataset.gameId;
-      if (state.favorites.has(id)) {
-        state.favorites.delete(id);
-        btn.textContent = '🤍';
-        btn.classList.remove('active');
-        showToast('Removed from favorites', 'info');
-      } else {
-        state.favorites.add(id);
-        btn.textContent = '❤️';
-        btn.classList.add('active');
-        showToast('Added to favorites!', 'success');
-      }
-    });
-  });
-
-  // Card click
-  grid.querySelectorAll('.game-card').forEach(card => {
-    card.addEventListener('click', () => {
-      const id = card.dataset.gameId;
-      const game = GAMES.find(g => g.id === id);
-      if (game) showToast(`Launching ${game.name}...`, 'info', 2000);
-    });
-  });
-}
-
-// ===== SEARCH =====
-function setupSearch() {
-  let searchTimeout;
-
-  searchInput.addEventListener('input', () => {
-    clearTimeout(searchTimeout);
-    const q = searchInput.value;
-    searchClear.classList.toggle('visible', q.length > 0);
-
-    searchTimeout = setTimeout(() => {
-      state.search = q;
-      state.page = 1;
-      renderGames();
-      renderSearchOverlay(q);
-    }, 150);
-  });
-
-  searchClear.addEventListener('click', () => {
-    searchInput.value = '';
-    state.search = '';
-    state.page = 1;
-    searchClear.classList.remove('visible');
-    renderGames();
-    closeSearchOverlay();
-    searchInput.focus();
-  });
-
-  searchInput.addEventListener('focus', () => {
-    if (searchInput.value.trim()) renderSearchOverlay(searchInput.value);
-  });
-
-  searchInput.addEventListener('blur', () => {
-    setTimeout(closeSearchOverlay, 200);
-  });
-
-  document.addEventListener('keydown', e => {
-    if (e.key === 'Escape') { closeSearchOverlay(); searchInput.blur(); }
-    if (e.key === '/' && !['INPUT', 'TEXTAREA'].includes(document.activeElement?.tagName)) {
-      e.preventDefault();
-      searchInput.focus();
-    }
-  });
-}
-
-function renderSearchOverlay(query) {
-  if (!query.trim()) { closeSearchOverlay(); return; }
-
-  const q = query.toLowerCase();
-  const matchedGames = GAMES.filter(g =>
-    g.name.toLowerCase().includes(q) || g.desc.toLowerCase().includes(q)
-  ).slice(0, 5);
-
-  const matchedCats = CATEGORIES.filter(c =>
-    c.id !== 'all' && c.name.toLowerCase().includes(q)
-  );
-
-  if (!matchedGames.length && !matchedCats.length) {
-    searchOverlayContent.innerHTML = `<div class="search-overlay-empty">No results for "${query}"</div>`;
-    searchOverlay.classList.add('active');
-    return;
-  }
-
-  let html = '';
-  if (matchedGames.length) {
-    html += `<div class="search-overlay-section"><div class="search-overlay-section-title">Games</div>`;
-    html += matchedGames.map(g => `
-      <div class="search-overlay-item" data-game-id="${g.id}">
-        <div class="item-cover" style="background:${getCatGradient(g.cat)}">${g.icon}</div>
-        <div class="item-info">
-          <div class="item-name">${g.name.replace(new RegExp(q, 'gi'), m => `<strong style="color:var(--primary)">${m}</strong>`)}</div>
-          <div class="item-category">${CATEGORIES.find(c => c.id === g.cat)?.name || g.cat}</div>
+      <!-- ===== Panel 3: Result ===== -->
+      <div class="game-panel" data-comp-id="panel-result">
+        <div class="panel-label"><span><span class="dot" style="color:#16A34A"></span>Result</span><span class="num">03</span></div>
+        <div class="panel-result win" data-comp-id="result-content">
+          <div class="result-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+          </div>
+          <div class="result-title" data-comp-id="result-title">Heist Complete!</div>
+          <div class="result-sub" data-comp-id="result-sub">All cash secured · No alarms</div>
+          <div class="result-stats">
+            <div class="result-stat"><div class="stat-value" data-comp-id="stat-cash">$2,460</div><div class="stat-label">This Run</div></div>
+            <div class="result-stat"><div class="stat-value best" data-comp-id="stat-best">$2,460</div><div class="stat-label">Best</div></div>
+          </div>
+          <div class="result-buttons">
+            <button class="btn-play-again" data-comp-id="btn-replay">▶&ensp;PLAY AGAIN</button>
+            <button class="btn-back" data-comp-id="btn-back">←&ensp;BACK</button>
+          </div>
         </div>
       </div>
-    `).join('');
-    html += `</div>`;
-  }
-
-  if (matchedCats.length) {
-    html += `<div class="search-overlay-section"><div class="search-overlay-section-title">Categories</div>`;
-    html += matchedCats.map(c =>
-      `<div class="search-overlay-item" data-cat="${c.id}"><div class="item-info"><div class="item-name">${c.icon} ${c.name}</div></div></div>`
-    ).join('');
-    html += `</div>`;
-  }
-
-  html += `<div class="search-overlay-section" style="border-top:1px solid var(--glass-border);padding-top:8px;margin-top:4px">
-    <div class="search-overlay-item" style="color:var(--primary);font-weight:500;font-size:0.8rem" data-view-all>
-      <span>→ View all results</span>
     </div>
-  </div>`;
 
-  searchOverlayContent.innerHTML = html;
-  searchOverlay.classList.add('active');
-
-  // Click handlers
-  searchOverlayContent.querySelectorAll('[data-game-id]').forEach(item => {
-    item.addEventListener('click', () => {
-      const id = item.dataset.gameId;
-      const game = GAMES.find(g => g.id === id);
-      if (game) { showToast(`Launching ${game.name}...`, 'info'); closeSearchOverlay(); }
-    });
-  });
-  searchOverlayContent.querySelectorAll('[data-cat]').forEach(item => {
-    item.addEventListener('click', () => {
-      state.category = item.dataset.cat;
-      state.page = 1;
-      renderGames();
-      renderCategories();
-      closeSearchOverlay();
-    });
-  });
-  searchOverlayContent.querySelector('[data-view-all]')?.addEventListener('click', () => {
-    closeSearchOverlay();
-  });
-}
-
-function closeSearchOverlay() {
-  searchOverlay.classList.remove('active');
-}
-
-// ===== LOAD MORE =====
-loadMoreBtn.addEventListener('click', () => {
-  state.page++;
-  renderGames();
-  showToast('More games loaded!', 'success', 1500);
-});
-
-// ===== MOBILE BOTTOM NAV =====
-function setupMobileNav() {
-  el('mobileNav').addEventListener('click', e => {
-    const tab = e.target.closest('.nav-tab');
-    if (!tab) return;
-
-    el('mobileNav').querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
-    tab.classList.add('active');
-
-    switch (tab.dataset.tab) {
-      case 'home':
-        state.category = 'all';
-        state.search = '';
-        searchInput.value = '';
-        state.page = 1;
-        renderGames(); renderCategories();
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-        break;
-      case 'search':
-        searchInput.focus();
-        break;
-      case 'favorites':
-        state.category = 'favorites';
-        state.page = 1;
-        renderGames(); renderCategories();
-        break;
-      case 'profile':
-        showToast('👤 Sign in to access your profile', 'info');
-        break;
-    }
-  });
-}
-
-// ===== INIT =====
-function init() {
-  // Show skeleton first
-  grid.innerHTML = Array(8).fill('').map(() => `
-    <div class="skeleton-card">
-      <div class="skeleton-cover"></div>
-      <div class="skeleton-body">
-        <div class="skeleton-line"></div>
-        <div class="skeleton-line"></div>
+    <!-- Level Bar -->
+    <div class="level-bar" data-comp-id="level-bar">
+      <span class="level-label">Levels</span>
+      <div class="level-dots">
+        <span class="level-dot done"></span><span class="level-dot done"></span>
+        <span class="level-dot active" data-comp-id="dot-current"></span>
+        <span class="level-dot"></span><span class="level-dot"></span><span class="level-dot"></span>
+        <span class="level-dot locked"></span><span class="level-dot locked"></span>
       </div>
+      <span style="font-size:0.5rem;color:rgba(232,228,223,0.15);margin-left:auto;">Lv.3</span>
     </div>
-  `).join('');
 
-  // Render after short delay to show skeleton
-  setTimeout(() => {
-    renderHero();
-    renderCategories();
-    renderGames();
-    setupSortChips();
-    setupSearch();
-    setupMobileNav();
-  }, 600);
-}
-
-document.addEventListener('DOMContentLoaded', init);
+    <div class="stage-footer">Astrocade · Retro Design System · 2026</div>
+  </div>
+<script type="application/x-design-tweaks+json" id="design-preview-tweaks">
+[
+	{
+		"current":"#3B82F6",
+		"compId":"title-start-btn",
+		"param":"bg",
+		"cssProp":"background-color",
+		"label":"Start Button Color",
+		"type":"color",
+		"target":"element"
+	},
+	{
+		"unit":"rem",
+		"current":1.85,
+		"min":1.4,
+		"compId":"title-headline",
+		"param":"size",
+		"max":2.4,
+		"cssProp":"font-size",
+		"step":0.1,
+		"label":"Headline Size",
+		"type":"range",
+		"target":"element"
+	},
+	{
+		"unit":"px",
+		"current":48,
+		"min":24,
+		"compId":"panel-title",
+		"param":"paddingTop",
+		"max":80,
+		"cssProp":"padding-top",
+		"step":4,
+		"label":"Title Section Padding",
+		"type":"range",
+		"target":"element"
+	}
+]
 </script>
 </body>
 </html>
