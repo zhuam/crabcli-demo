@@ -585,6 +585,26 @@
       "version": "1.0.0",
       "featured": true,
       "rating": 4.0
+    },
+    {
+      "id": "slime-siege",
+      "name": "Slime Siege",
+      "description": "可爱史莱姆塔防主城 — 放置箭塔、抵御史莱姆浪潮、升级与符文",
+      "category": "strategy",
+      "tags": [
+        "singleplayer",
+        "tower-defense",
+        "strategy",
+        "short-session",
+        "touch"
+      ],
+      "thumbnail": "/games/065-slime-siege/thumb.svg",
+      "path": "/games/065-slime-siege/",
+      "hasServer": false,
+      "players": "1",
+      "version": "1.0.0",
+      "featured": true,
+      "rating": 4.3
     }
   ],
   "categories": [
