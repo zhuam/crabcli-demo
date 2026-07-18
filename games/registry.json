@@ -585,6 +585,27 @@
       "version": "1.0.0",
       "featured": true,
       "rating": 4.0
+    },
+    {
+      "id": "wheel-o-mon-showdown",
+      "name": "Wheel-o-Mon Showdown",
+      "description": "转轮盘决定技能进行回合制对战 — 宝可梦+轮盘融合",
+      "category": "casual",
+      "tags": [
+        "singleplayer",
+        "turn-based",
+        "strategy",
+        "wheel",
+        "pokemon-style",
+        "short-session"
+      ],
+      "thumbnail": "/games/062-wheel-o-mon-showdown/thumb.svg",
+      "path": "/games/062-wheel-o-mon-showdown/",
+      "hasServer": false,
+      "players": "1",
+      "version": "1.0.0",
+      "featured": true,
+      "rating": 4.0
     }
   ],
   "categories": [

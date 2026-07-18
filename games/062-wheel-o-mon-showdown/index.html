@@ -1,0 +1,682 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no" />
+<meta name="theme-color" content="#0a0a1a" />
+<title>Wheel-o-Mon Showdown</title>
+<link rel="stylesheet" href="/games/shared/game-frame.css" />
+<style>
+:root {
+  --bg-deep: #0a0a1a; --bg-surface: #12122a; --bg-card: #1a1a3a;
+  --accent: #00d4ff; --accent-glow: rgba(0,212,255,0.3);
+  --text-primary: #e8e8f0; --text-secondary: #9999bb; --text-dim: #666688;
+  --hp-green: #22c55e; --hp-yellow: #eab308; --hp-red: #ef4444;
+  --slot: #ef4444,#3b82f6,#22c55e,#a855f7,#f97316,#eab308;
+  --font: 'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg-deep);color:var(--text-primary);font-family:var(--font);overflow:hidden;height:100dvh;width:100vw;user-select:none;-webkit-user-select:none;touch-action:none;-webkit-touch-callout:none}
+.screen{display:none;flex-direction:column;align-items:center;justify-content:center;height:100dvh;width:100vw;padding:16px;position:absolute;top:0;left:0}
+.screen.active{display:flex}
+.btn{padding:14px 40px;border-radius:24px;border:2px solid var(--accent);background:transparent;color:var(--accent);font-size:1.1rem;font-weight:700;cursor:pointer;transition:all .15s}
+.btn:hover,.btn:active{background:var(--accent);color:var(--bg-deep);transform:scale(1.05)}
+.btn-secondary{border-color:var(--text-dim);color:var(--text-secondary)}
+.btn-secondary:hover,.btn-secondary:active{background:var(--text-dim);color:var(--bg-deep)}
+#screen-title h1{font-size:2.2rem;font-weight:900;background:linear-gradient(135deg,var(--accent),#a855f7);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:4px}
+#screen-title .sub{color:var(--text-secondary);font-size:.9rem;margin-bottom:24px}
+#screen-title .pet-preview{width:120px;height:120px;border-radius:50%;background:var(--bg-card);border:2px solid var(--accent-glow);display:flex;align-items:center;justify-content:center;font-size:3.5rem;margin-bottom:20px;box-shadow:0 0 40px var(--accent-glow)}
+#screen-title .high-score{color:var(--text-dim);font-size:.85rem;margin-bottom:20px}
+.btn-stack{display:flex;flex-direction:column;gap:12px;align-items:center}
+/* Pet select */
+.pet-grid{display:flex;gap:12px;overflow-x:auto;padding:8px 0;max-width:100%;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch}
+.pet-card{flex:0 0 140px;scroll-snap-align:start;background:var(--bg-card);border:2px solid var(--border-subtle);border-radius:16px;padding:16px;text-align:center;cursor:pointer;transition:all .15s}
+.pet-card.selected{border-color:var(--accent);box-shadow:0 0 20px var(--accent-glow)}
+.pet-card .emoji{font-size:2.5rem;margin-bottom:8px}
+.pet-card .pname{font-size:.9rem;font-weight:600}
+.pet-card .pdesc{font-size:.7rem;color:var(--text-dim);margin-top:4px}
+/* Battle */
+#screen-battle{justify-content:flex-start;padding-top:8px}
+.battle-header{width:100%;display:flex;justify-content:space-between;align-items:center;padding:4px 0 2px;height:32px}
+.battle-header .turn-indicator{font-size:.75rem;color:var(--text-secondary);font-weight:600}
+.battle-header .pet-name{font-size:.8rem;font-weight:600}
+.fighter{width:100%;padding:4px 0}
+.fighter-row{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.fighter-label{font-size:.75rem;font-weight:600;width:56px;flex-shrink:0}
+.fighter .hp-wrap{flex:1;height:14px;background:var(--bg-card);border-radius:7px;overflow:hidden;position:relative}
+.fighter .hp-fill{height:100%;border-radius:7px;transition:width .3s ease}
+.fighter .hp-text{font-size:.7rem;font-weight:700;width:32px;text-align:right;flex-shrink:0}
+.fighter .avatar{font-size:1.8rem;width:40px;text-align:center;flex-shrink:0}
+/* Wheel arena */
+.wheel-arena{position:relative;width:100%;display:flex;flex-direction:column;align-items:center;flex:1;justify-content:center;min-height:0}
+#wheelCanvas{width:min(280px,70vw);height:min(280px,70vw);touch-action:none;cursor:grab;border-radius:50%;box-shadow:0 0 30px rgba(0,212,255,.15)}
+.wheel-pointer{position:absolute;top:-8px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:12px solid transparent;border-right:12px solid transparent;border-top:18px solid var(--accent);filter:drop-shadow(0 0 4px var(--accent));z-index:5;pointer-events:none}
+.skill-name{font-size:.85rem;font-weight:600;margin-top:8px;min-height:24px;color:var(--accent);text-align:center}
+.skill-hint{font-size:.65rem;color:var(--text-dim);margin-top:2px;text-align:center}
+/* Result */
+#screen-result .result-icon{font-size:4rem;margin-bottom:12px}
+#screen-result .result-title{font-size:1.8rem;font-weight:800;margin-bottom:4px}
+#screen-result .result-sub{color:var(--text-secondary);font-size:.9rem;margin-bottom:20px}
+#screen-result .result-stats{color:var(--text-dim);font-size:.8rem;margin-bottom:24px;text-align:center;line-height:1.6}
+/* Animations */
+@keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-6px)}40%,80%{transform:translateX(6px)}}
+@keyframes flash{0%,100%{opacity:1}50%{opacity:0.3}}
+@keyframes slideUp{from{transform:translateY(30px);opacity:0}to{transform:translateY(0);opacity:1}}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.1)}}
+.shake{animation:shake .4s ease}
+.flash{animation:flash .3s ease 2}
+.dmg-num{position:absolute;font-size:1.8rem;font-weight:900;color:var(--hp-red);pointer-events:none;animation:slideUp .6s forwards;z-index:10}
+.heal-num{color:var(--hp-green)}
+/* Damage overlay */
+.dmg-overlay{position:absolute;inset:0;pointer-events:none;z-index:5}
+.dmg-overlay.hit{background:radial-gradient(circle at 50% 50%,rgba(239,68,68,0.4),transparent 70%)}
+.dmg-overlay.heal{background:radial-gradient(circle at 50% 50%,rgba(34,197,94,0.3),transparent 70%)}
+.dmg-overlay.fade{transition:opacity .3s;opacity:0}
+/* Media queries */
+@media(max-width:480px){
+  #screen-title h1{font-size:1.8rem}
+  .pet-card{flex:0 0 120px}
+  #wheelCanvas{width:min(220px,65vw);height:min(220px,65vw)}
+}
+/* Damage flash on fighters */
+.fighter-dmg{animation:flash .3s ease 2}
+.heal-flash{box-shadow:inset 0 0 20px rgba(34,197,94,0.5);border-radius:8px}
+</style>
+</head>
+<body>
+
+<!-- TITLE SCREEN -->
+<div id="screen-title" class="screen active">
+  <div class="pet-preview" id="titlePetEmoji">🔥</div>
+  <h1>Wheel-o-Mon</h1>
+  <div class="sub">Showdown · 转轮盘决定命运</div>
+  <div class="high-score" id="highScoreDisplay">🏆 最高分: 0</div>
+  <div class="btn-stack">
+    <button class="btn" onclick="startGame()">⚔️ START</button>
+    <button class="btn btn-secondary" onclick="showPetSelect()">🔄 换宠物</button>
+  </div>
+  <div style="margin-top:16px;font-size:.7rem;color:var(--text-dim)">拖动轮盘 · 点击旋转 · 空格键加速</div>
+</div>
+
+<!-- PET SELECT SCREEN -->
+<div id="screen-pet" class="screen">
+  <h2 style="font-size:1.3rem;margin-bottom:16px">选择你的宠物</h2>
+  <div class="pet-grid" id="petGrid"></div>
+  <div style="margin-top:16px;display:flex;gap:12px">
+    <button class="btn" onclick="confirmPet()">✅ 确认</button>
+    <button class="btn btn-secondary" onclick="showScreen('screen-title')">← 返回</button>
+  </div>
+</div>
+
+<!-- BATTLE SCREEN -->
+<div id="screen-battle" class="screen">
+  <div class="battle-header">
+    <span class="pet-name" id="battlePetName">🔥 火焰猫</span>
+    <span class="turn-indicator" id="turnIndicator">回合 1 · 你的回合</span>
+  </div>
+
+  <!-- Opponent -->
+  <div class="fighter" id="opponentArea">
+    <div class="fighter-row">
+      <span class="avatar" id="opponentAvatar">👾</span>
+      <div class="fighter-label" id="opponentName">野生轮盘兽</div>
+      <div class="hp-wrap"><div class="hp-fill" id="opponentHpFill" style="width:100%;background:var(--hp-green)"></div></div>
+      <span class="hp-text" id="opponentHpText">30</span>
+    </div>
+  </div>
+
+  <!-- Wheel arena -->
+  <div class="wheel-arena">
+    <div class="dmg-overlay" id="dmgOverlay"></div>
+    <div class="wheel-pointer" id="wheelPointer"></div>
+    <canvas id="wheelCanvas" width="400" height="400"></canvas>
+    <div class="skill-name" id="skillName">拖动轮盘开始</div>
+    <div class="skill-hint" id="skillHint">拖拽旋转 · 松手释放</div>
+  </div>
+
+  <!-- Player -->
+  <div class="fighter" id="playerArea">
+    <div class="fighter-row">
+      <span class="avatar" id="playerAvatar">🔥</span>
+      <div class="fighter-label" id="playerName">你</div>
+      <div class="hp-wrap"><div class="hp-fill" id="playerHpFill" style="width:100%;background:var(--hp-green)"></div></div>
+      <span class="hp-text" id="playerHpText">30</span>
+    </div>
+  </div>
+</div>
+
+<!-- RESULT SCREEN -->
+<div id="screen-result" class="screen">
+  <div class="result-icon" id="resultIcon">🏆</div>
+  <div class="result-title" id="resultTitle">胜利!</div>
+  <div class="result-sub" id="resultSub">你击败了野生轮盘兽!</div>
+  <div class="result-stats" id="resultStats"></div>
+  <div class="btn-stack">
+    <button class="btn" onclick="startGame()">🔄 再来一局</button>
+    <button class="btn btn-secondary" onclick="showScreen('screen-title')">🏠 主菜单</button>
+  </div>
+</div>
+
+<script>
+// ─── PET DATA ───
+const PETS = [
+  { id:'flame_cat', name:'火焰猫', emoji:'🔥', desc:'灼热的火焰之力', color:'#ef4444',
+    skills:[
+      {name:'火焰冲击',damage:8,emoji:'🔥',type:'fire'},
+      {name:'火花溅射',damage:5,emoji:'✨',type:'fire'},
+      {name:'烈焰护盾',damage:3,emoji:'🛡️',type:'fire',heal:4},
+      {name:'灰烬之风',damage:6,emoji:'💨',type:'fire'},
+      {name:'爆裂火焰',damage:10,emoji:'💥',type:'fire'},
+      {name:'余烬灼烧',damage:4,emoji:'🔥',type:'fire',dot:2}
+    ]},
+  { id:'aqua_turtle', name:'水灵龟', emoji:'🐢', desc:'深海的治愈之力', color:'#3b82f6',
+    skills:[
+      {name:'水炮冲击',damage:7,emoji:'💧',type:'water'},
+      {name:'治愈之雨',damage:2,emoji:'🌧️',type:'water',heal:6},
+      {name:'寒冰刺',damage:6,emoji:'❄️',type:'water'},
+      {name:'潮汐护盾',damage:1,emoji:'🌊',type:'water',heal:8},
+      {name:'漩涡拖拽',damage:5,emoji:'🌀',type:'water'},
+      {name:'深海压强',damage:9,emoji:'🐙',type:'water'}
+    ]},
+  { id:'thunder_fox', name:'雷电狐', emoji:'🦊', desc:'闪电般的极速', color:'#f97316',
+    skills:[
+      {name:'雷电击',damage:9,emoji:'⚡',type:'thunder'},
+      {name:'电光一闪',damage:4,emoji:'💫',type:'thunder'},
+      {name:'电磁波',damage:3,emoji:'〰️',type:'thunder',stun:true},
+      {name:'雷暴',damage:7,emoji:'🌩️',type:'thunder'},
+      {name:'蓄力雷霆',damage:12,emoji:'⚡',type:'thunder'},
+      {name:'静电屏障',damage:2,emoji:'🔵',type:'thunder',heal:5}
+    ]},
+  { id:'shadow_wisp', name:'暗影灵', emoji:'👻', desc:'诡秘的暗影魔法', color:'#a855f7',
+    skills:[
+      {name:'暗影球',damage:8,emoji:'🔮',type:'shadow'},
+      {name:'生命汲取',damage:5,emoji:'🩸',type:'shadow',heal:3},
+      {name:'诅咒之触',damage:6,emoji:'👆',type:'shadow'},
+      {name:'暗夜帷幕',damage:1,emoji:'🌑',type:'shadow',heal:7},
+      {name:'灵魂冲击',damage:11,emoji:'💀',type:'shadow'},
+      {name:'幻影斩',damage:7,emoji:'🗡️',type:'shadow'}
+    ]}
+];
+
+const OPPONENT_PETS = [
+  { name:'野生轮盘兽', emoji:'👾', hp:30,
+    skills:[
+      {name:'疯狂撞击',damage:6,emoji:'💥'},
+      {name:'尖刺防御',damage:4,emoji:'🌵'},
+      {name:'暗影突袭',damage:8,emoji:'👻'},
+      {name:'治愈之风',damage:2,emoji:'🍃',heal:5},
+      {name:'巨石碾压',damage:10,emoji:'🪨'},
+      {name:'剧毒吐息',damage:5,emoji:'☠️'}
+    ]}
+];
+
+// ─── STATE ───
+let state = {
+  player:{hp:30,maxHp:30,pet:null},
+  opponent:{hp:30,maxHp:30,pet:null},
+  turn:0, phase:'idle', // idle | spinning | resolving | opponent | gameover
+  selectedPetIndex:0,
+  highScore:0,
+  totalWins:0,totalGames:0,
+  wheelAngle:0,wheelSpeed:0,lastDragAngle:0,isDragging:false,
+  selectedSector:-1,
+  animFrame:null,skipAnim:false,
+  spinResolve:null
+};
+
+// ─── CANVAS WHEEL ───
+const canvas = document.getElementById('wheelCanvas');
+const ctx = canvas.getContext('2d');
+const dpr = window.devicePixelRatio||1;
+const SIZE = canvas.width;
+const cx = SIZE/2, cy = SIZE/2, R = SIZE/2 - 16;
+const SECTOR_COLORS = ['#ef4444','#3b82f6','#22c55e','#a855f7','#f97316','#eab308'];
+const SECTOR_EMOJIS = ['🔥','💧','🌿','👻','⚡','✨'];
+
+function drawWheel(angle) {
+  ctx.clearRect(0,0,SIZE,SIZE);
+  const n = 6, a = (2*Math.PI)/n;
+  ctx.save(); ctx.translate(cx,cy); ctx.rotate(angle);
+  for(let i=0;i<n;i++){
+    ctx.beginPath();
+    ctx.moveTo(0,0);
+    ctx.arc(0,0,R,i*a,(i+1)*a);
+    ctx.closePath();
+    ctx.fillStyle = SECTOR_COLORS[i];
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    // Emoji
+    const midA = (i+0.5)*a;
+    ctx.save(); ctx.rotate(midA);
+    ctx.font = '28px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillStyle='#fff'; ctx.shadowColor='rgba(0,0,0,0.5)'; ctx.shadowBlur=4;
+    ctx.fillText(SECTOR_EMOJIS[i],0,-R*0.4);
+    // Skill label
+    ctx.font='bold 11px sans-serif'; ctx.shadowBlur=0;
+    ctx.fillStyle='rgba(255,255,255,0.9)';
+    ctx.fillText(getSkillName(i),0,-R*0.2);
+    ctx.restore();
+  }
+  // Center circle
+  ctx.beginPath(); ctx.arc(0,0,22,0,2*Math.PI);
+  ctx.fillStyle='#0a0a1a';
+  ctx.fill(); ctx.strokeStyle='rgba(0,212,255,0.5)'; ctx.lineWidth=2; ctx.stroke();
+  // Center icon
+  ctx.font='22px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText('🎯',0,1);
+  ctx.restore();
+  // Outer ring
+  ctx.beginPath(); ctx.arc(cx,cy,R,0,2*Math.PI);
+  ctx.strokeStyle='rgba(0,212,255,0.2)'; ctx.lineWidth=3; ctx.stroke();
+}
+
+function getSkillName(i) {
+  const p = state.player.pet;
+  if(!p||!p.skills[i]) return '';
+  const s=p.skills[i]; return s.emoji+' '+s.name.slice(0,4);
+}
+
+function getSelectedSector(angle) {
+  // Pointer is at top, so we need to figure out which sector is at the top
+  const n=6, a=(2*Math.PI)/n;
+  // Normalize: top = -PI/2 in canvas; sector i occupies [i*a - angle, (i+1)*a - angle)
+  // Pointer at top means angle -PI/2 (pointing up)
+  // Find which sector contains the angle -PI/2 when rotated by `angle`
+  const pointerAngle = -Math.PI/2; // top
+  let rel = (pointerAngle - angle) % (2*Math.PI);
+  if(rel<0) rel+=2*Math.PI;
+  return Math.floor(rel/a);
+}
+
+// ─── AUDIO ───
+let audioCtx = null;
+function getAudio() { if(!audioCtx) audioCtx=new(window.AudioContext||window.webkitAudioContext)(); return audioCtx; }
+function playTick() {
+  try {
+    const a=getAudio(),o=a.createOscillator(),g=a.createGain();
+    o.type='sine'; o.frequency.value=800; g.gain.value=0.08;
+    o.connect(g); g.connect(a.destination);
+    o.start(); g.exponentialRampToValueAtTime(0.001,a.currentTime+0.05);
+    o.stop(a.currentTime+0.05);
+  }catch(e){}
+}
+function playHit() {
+  try {
+    const a=getAudio(),o=a.createOscillator(),g=a.createGain();
+    o.type='sawtooth'; o.frequency.value=200;
+    g.gain.value=0.2; g.exponentialRampToValueAtTime(0.001,a.currentTime+0.15);
+    o.connect(g); g.connect(a.destination);
+    o.start(); o.stop(a.currentTime+0.15);
+  }catch(e){}
+}
+function playHeal() {
+  try {
+    const a=getAudio(),o=a.createOscillator(),g=a.createGain();
+    o.type='sine'; o.frequency.setValueAtTime(400,a.currentTime);
+    o.frequency.linearRampToValueAtTime(600,a.currentTime+0.15);
+    g.gain.value=0.12; g.exponentialRampToValueAtTime(0.001,a.currentTime+0.2);
+    o.connect(g); g.connect(a.destination);
+    o.start(); o.stop(a.currentTime+0.2);
+  }catch(e){}
+}
+function playWin() {
+  try {
+    const a=getAudio();
+    [523,659,784,1047].forEach((f,i)=>{
+      const o=a.createOscillator(),g=a.createGain();
+      o.type='sine'; o.frequency.value=f;
+      g.gain.value=0.1; g.exponentialRampToValueAtTime(0.001,a.currentTime+i*0.12+0.3);
+      o.connect(g); g.connect(a.destination);
+      o.start(a.currentTime+i*0.12); o.stop(a.currentTime+i*0.12+0.3);
+    });
+  }catch(e){}
+}
+function playLose() {
+  try {
+    const a=getAudio();
+    [400,350,300,200].forEach((f,i)=>{
+      const o=a.createOscillator(),g=a.createGain();
+      o.type='sawtooth'; o.frequency.value=f;
+      g.gain.value=0.08; g.exponentialRampToValueAtTime(0.001,a.currentTime+i*0.15+0.3);
+      o.connect(g); g.connect(a.destination);
+      o.start(a.currentTime+i*0.15); o.stop(a.currentTime+i*0.15+0.3);
+    });
+  }catch(e){}
+}
+
+// ─── HAPTICS ───
+function haptic(ms=10){try{navigator.vibrate&&navigator.vibrate(ms)}catch(e){}}
+
+// ─── WHEEL PHYSICS ───
+function handleWheelStart(e) {
+  if(state.phase==='spinning'||state.phase==='resolving'||state.phase==='opponent'||state.phase==='gameover') return;
+  const rect=canvas.getBoundingClientRect();
+  const x=(e.clientX||e.touches[0].clientX)-rect.left;
+  const y=(e.clientY||e.touches[0].clientY)-rect.top;
+  const sc=rect.width/SIZE;
+  state.isDragging=true; state.wheelSpeed=0;
+  state.lastDragAngle=Math.atan2((y/sc)-cy,(x/sc)-cx);
+  canvas.style.cursor='grabbing';
+}
+function handleWheelMove(e) {
+  if(!state.isDragging) return;
+  e.preventDefault();
+  const rect=canvas.getBoundingClientRect();
+  const x=(e.clientX||(e.touches&&e.touches[0].clientX))-rect.left;
+  const y=(e.clientY||(e.touches&&e.touches[0].clientY))-rect.top;
+  if(x==null) return;
+  const sc=rect.width/SIZE;
+  const a=Math.atan2((y/sc)-cy,(x/sc)-cx);
+  let d=a-state.lastDragAngle;
+  if(d>Math.PI) d-=2*Math.PI; if(d<-Math.PI) d+=2*Math.PI;
+  state.wheelAngle+=d;
+  state.wheelSpeed=d*0.8;
+  state.lastDragAngle=a;
+  drawWheel(state.wheelAngle);
+  const s=getSelectedSector(state.wheelAngle);
+  if(s!==state.selectedSector){ state.selectedSector=s; playTick(); haptic(5); updateSkillDisplay(s); }
+}
+function handleWheelEnd() {
+  if(!state.isDragging) return;
+  state.isDragging=false;
+  canvas.style.cursor='grab';
+  if(Math.abs(state.wheelSpeed)>0.01) startSpin();
+  else snapWheel();
+}
+
+canvas.addEventListener('mousedown',handleWheelStart);
+canvas.addEventListener('mousemove',handleWheelMove);
+canvas.addEventListener('mouseup',handleWheelEnd);
+canvas.addEventListener('mouseleave',(e)=>{if(state.isDragging)handleWheelEnd()});
+canvas.addEventListener('touchstart',handleWheelStart,{passive:true});
+canvas.addEventListener('touchmove',handleWheelMove,{passive:false});
+canvas.addEventListener('touchend',handleWheelEnd);
+// Keyboard
+document.addEventListener('keydown',(e)=>{
+  if(state.phase==='idle'&&(e.code==='Space'||e.key==='Enter')){
+    e.preventDefault();
+    state.wheelSpeed=2+Math.random()*4;
+    startSpin();
+  }
+  if(state.phase==='idle'&&(e.code==='ArrowLeft'||e.code==='ArrowRight')){
+    e.preventDefault();
+    state.wheelAngle+=(e.code==='ArrowLeft'?-1:1)*0.15;
+    drawWheel(state.wheelAngle);
+    const s=getSelectedSector(state.wheelAngle);
+    if(s!==state.selectedSector){ state.selectedSector=s; playTick(); updateSkillDisplay(s); }
+    state.wheelSpeed=0;
+  }
+});
+
+function startSpin() {
+  state.phase='spinning';
+  document.getElementById('skillHint').textContent='旋转中... 点击跳过';
+  let lastSector=state.selectedSector;
+  function frame(){
+    state.wheelSpeed*=0.97; // friction
+    state.wheelAngle+=state.wheelSpeed;
+    drawWheel(state.wheelAngle);
+    const s=getSelectedSector(state.wheelAngle);
+    if(s!==lastSector){ lastSector=s; playTick(); haptic(5); }
+    if(Math.abs(state.wheelSpeed)>0.001&&!state.skipAnim) state.animFrame=requestAnimationFrame(frame);
+    else { state.wheelSpeed=0; snapWheel(); }
+  }
+  state.skipAnim=false;
+  state.animFrame=requestAnimationFrame(frame);
+  // Click/tap to skip
+  const skipOnce=()=>{state.skipAnim=true; state.wheelSpeed=0};
+  canvas.addEventListener('click',skipOnce,{once:true});
+}
+
+function snapWheel() {
+  state.phase='resolving';
+  const n=6,a=(2*Math.PI)/n;
+  const s=getSelectedSector(state.wheelAngle);
+  const targetAngle = state.wheelAngle - (getSectorOffset(state.wheelAngle));
+  // Smooth snap
+  let startA=state.wheelAngle, steps=0;
+  function snapFrame(){
+    state.wheelAngle+=(targetAngle-state.wheelAngle)*0.25;
+    steps++;
+    drawWheel(state.wheelAngle);
+    if(steps<8&&Math.abs(state.wheelAngle-targetAngle)>0.001) requestAnimationFrame(snapFrame);
+    else { state.wheelAngle=targetAngle; drawWheel(state.wheelAngle); resolveSector(); }
+  }
+  snapFrame();
+}
+
+function getSectorOffset(angle) {
+  const n=6,a=(2*Math.PI)/n;
+  const pointerAngle = -Math.PI/2;
+  let rel = (pointerAngle - angle) % (2*Math.PI);
+  if(rel<0) rel+=2*Math.PI;
+  const idx=Math.floor(rel/a);
+  const center=-(pointerAngle-(idx+0.5)*a-angle);
+  let d=center%a; if(d>a/2)d-=a; if(d<-a/2)d+=a;
+  return d;
+}
+
+function resolveSector() {
+  const s=getSelectedSector(state.wheelAngle);
+  state.selectedSector=s;
+  updateSkillDisplay(s);
+  const p=state.player, pet=state.player.pet;
+  if(!pet||!pet.skills[s]) return;
+  const skill=pet.skills[s];
+  document.getElementById('skillHint').textContent='⏳ 释放 '+skill.name+'...';
+  haptic(15);
+  setTimeout(()=>executePlayerSkill(skill),400);
+}
+
+function updateSkillDisplay(s) {
+  const pet=state.player.pet;
+  if(!pet||!pet.skills[s]) return;
+  const sk=pet.skills[s];
+  document.getElementById('skillName').textContent=sk.emoji+' '+sk.name;
+  let info='⚔️ 伤害 '+sk.damage;
+  if(sk.heal) info+=' · 💚 恢复 '+sk.heal;
+  if(sk.dot) info+=' · 🔥 灼烧 '+sk.dot;
+  if(sk.stun) info+=' · ⚡ 眩晕';
+  document.getElementById('skillHint').textContent=info;
+}
+
+function executePlayerSkill(skill) {
+  const sk=skill, opp=state.opponent;
+  let dmg=sk.damage;
+  // Slight randomness
+  dmg=Math.max(1,Math.round(dmg*(0.8+Math.random()*0.4)));
+  playHit(); haptic(20);
+  showDamage(opp.emoji||'👾',dmg,false);
+  opp.hp=Math.max(0,opp.hp-dmg);
+  // Heal self if applicable
+  if(sk.heal){
+    state.player.hp=Math.min(state.player.maxHp,state.player.hp+sk.heal);
+    playHeal();
+    showHeal(state.player.pet.emoji,sk.heal);
+  }
+  updateHpBars();
+  if(opp.hp<=0){ endBattle(true); return; }
+  document.getElementById('skillName').textContent='⚔️ '+(-dmg);
+  setTimeout(opponentTurn,600);
+}
+
+function showDamage(emoji,dmg,isPlayer) {
+  const area=isPlayer?document.getElementById('playerArea'):document.getElementById('opponentArea');
+  const overlay=document.getElementById('dmgOverlay');
+  overlay.className='dmg-overlay hit';
+  setTimeout(()=>overlay.classList.add('fade'),50);
+  setTimeout(()=>{overlay.className='dmg-overlay';overlay.classList.remove('fade')},400);
+  area.classList.add('fighter-dmg');
+  setTimeout(()=>area.classList.remove('fighter-dmg'),600);
+  const el=document.createElement('div'); el.className='dmg-num';
+  el.textContent='-'+dmg;
+  el.style.left=(30+Math.random()*60)+'%'; el.style.top=(30+Math.random()*40)+'%';
+  document.querySelector('.wheel-arena').appendChild(el);
+  setTimeout(()=>el.remove(),700);
+}
+function showHeal(emoji,amt) {
+  const overlay=document.getElementById('dmgOverlay');
+  overlay.className='dmg-overlay heal';
+  setTimeout(()=>overlay.classList.add('fade'),50);
+  setTimeout(()=>{overlay.className='dmg-overlay';overlay.classList.remove('fade')},400);
+  const el=document.createElement('div'); el.className='dmg-num heal-num';
+  el.textContent='+'+amt; el.style.left='45%'; el.style.top='50%';
+  document.querySelector('.wheel-arena').appendChild(el);
+  setTimeout(()=>el.remove(),700);
+}
+
+function opponentTurn() {
+  state.phase='opponent';
+  state.turn++;
+  document.getElementById('turnIndicator').textContent='回合 '+state.turn+' · 对手回合';
+  document.getElementById('skillName').textContent='🤖 对手思考中...';
+  document.getElementById('skillHint').textContent='';
+  setTimeout(()=>{
+    const opp=state.opponent.pet||OPPONENT_PETS[0];
+    const s=Math.floor(Math.random()*opp.skills.length);
+    const sk=opp.skills[s];
+    let dmg=Math.max(1,Math.round(sk.damage*(0.7+Math.random()*0.6)));
+    playHit(); haptic(25);
+    document.getElementById('skillName').textContent=opp.emoji+' 使用了 '+sk.name;
+    showDamage(state.player.pet.emoji,dmg,true);
+    state.player.hp=Math.max(0,state.player.hp-dmg);
+    // Opponent heal
+    if(sk.heal){
+      state.opponent.hp=Math.min(state.opponent.maxHp,state.opponent.hp+sk.heal);
+      playHeal();
+    }
+    updateHpBars();
+    if(state.player.hp<=0){ endBattle(false); return; }
+    setTimeout(startPlayerTurn,500);
+  },800);
+}
+
+function startPlayerTurn() {
+  state.phase='idle';
+  state.turn++;
+  state.wheelSpeed=0; state.skipAnim=false;
+  document.getElementById('turnIndicator').textContent='回合 '+state.turn+' · 你的回合';
+  document.getElementById('skillName').textContent='拖动轮盘选择技能';
+  document.getElementById('skillHint').textContent='拖拽旋转 · 松手释放 · 空格随机';
+}
+
+function updateHpBars() {
+  const php=state.player.hp/state.player.maxHp;
+  document.getElementById('playerHpFill').style.width=Math.round(php*100)+'%';
+  document.getElementById('playerHpFill').style.background=php>0.5?'var(--hp-green)':php>0.25?'var(--hp-yellow)':'var(--hp-red)';
+  document.getElementById('playerHpText').textContent=state.player.hp;
+  const ohp=state.opponent.hp/state.opponent.maxHp;
+  document.getElementById('opponentHpFill').style.width=Math.round(ohp*100)+'%';
+  document.getElementById('opponentHpFill').style.background=ohp>0.5?'var(--hp-green)':ohp>0.25?'var(--hp-yellow)':'var(--hp-red)';
+  document.getElementById('opponentHpText').textContent=state.opponent.hp;
+}
+
+function endBattle(won) {
+  state.phase='gameover';
+  state.totalGames++;
+  if(won) state.totalWins++;
+  if(won&&state.turn>state.highScore) state.highScore=state.turn;
+  saveProgress();
+  if(won) playWin(); else playLose();
+  setTimeout(()=>{
+    document.getElementById('resultIcon').textContent=won?'🏆':'💀';
+    document.getElementById('resultTitle').textContent=won?'胜利!':'失败...';
+    document.getElementById('resultSub').textContent=won?'你击败了对手!':'再接再厉!';
+    document.getElementById('resultStats').innerHTML=
+      '回合数: '+state.turn+'<br>剩余 HP: '+state.player.hp+'/'+state.player.maxHp+
+      '<br>🏆 最高回合: '+state.highScore+
+      '<br>📊 胜率: '+Math.round(state.totalWins/state.totalGames*100)+'% ('+state.totalWins+'/'+state.totalGames+')';
+    showScreen('screen-result');
+  },800);
+}
+
+// ─── LOCAL STORAGE ───
+const SAVE_KEY = 'wheelomon_save';
+function saveProgress() {
+  try {
+    const d={
+      highScore:state.highScore,totalWins:state.totalWins,totalGames:state.totalGames,
+      selectedPet:state.selectedPetIndex,unlockedPets:state.unlockedPets||[0]
+    };
+    localStorage.setItem(SAVE_KEY,JSON.stringify(d));
+  }catch(e){}
+}
+function loadProgress() {
+  try {
+    const d=JSON.parse(localStorage.getItem(SAVE_KEY));
+    if(d){
+      state.highScore=d.highScore||0;
+      state.totalWins=d.totalWins||0;
+      state.totalGames=d.totalGames||0;
+      if(d.selectedPet!=null) state.selectedPetIndex=d.selectedPet;
+      state.unlockedPets=d.unlockedPets||[0];
+    }
+  }catch(e){}
+  document.getElementById('highScoreDisplay').textContent='🏆 最高回合: '+state.highScore;
+}
+
+// ─── UI ───
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function showPetSelect() {
+  const grid=document.getElementById('petGrid'); grid.innerHTML='';
+  PETS.forEach((p,i)=>{
+    const card=document.createElement('div');
+    card.className='pet-card'+(i===state.selectedPetIndex?' selected':'');
+    card.innerHTML='<div class="emoji">'+p.emoji+'</div><div class="pname">'+p.name+'</div><div class="pdesc">'+p.desc+'</div>';
+    card.onclick=()=>{
+      grid.querySelectorAll('.pet-card').forEach(c=>c.classList.remove('selected'));
+      card.classList.add('selected');
+      state.selectedPetIndex=i;
+    };
+    grid.appendChild(card);
+  });
+  showScreen('screen-pet');
+}
+
+function confirmPet() {
+  showScreen('screen-title');
+  updateTitlePet();
+  saveProgress();
+}
+
+function updateTitlePet() {
+  const p=PETS[state.selectedPetIndex];
+  document.getElementById('titlePetEmoji').textContent=p.emoji;
+}
+
+function startGame() {
+  const pet=PETS[state.selectedPetIndex];
+  const opp=OPPONENT_PETS[0];
+  state.player={hp:30,maxHp:30,pet:pet};
+  state.opponent={hp:30,maxHp:30,pet:opp};
+  state.turn=1; state.phase='idle'; state.wheelSpeed=0; state.selectedSector=-1;
+  document.getElementById('battlePetName').textContent=pet.emoji+' '+pet.name;
+  document.getElementById('playerAvatar').textContent=pet.emoji;
+  document.getElementById('playerName').textContent=pet.name;
+  document.getElementById('opponentAvatar').textContent=opp.emoji;
+  document.getElementById('opponentName').textContent=opp.name;
+  document.getElementById('turnIndicator').textContent='回合 1 · 你的回合';
+  document.getElementById('skillName').textContent='拖动轮盘开始战斗!';
+  document.getElementById('skillHint').textContent='拖拽旋转 · 松手释放';
+  state.wheelAngle=Math.random()*2*Math.PI;
+  drawWheel(state.wheelAngle);
+  updateHpBars();
+  showScreen('screen-battle');
+  // Pre-fill skill display
+  const s=getSelectedSector(state.wheelAngle);
+  state.selectedSector=s; updateSkillDisplay(s);
+}
+
+// ─── INIT ───
+loadProgress();
+updateTitlePet();
+drawWheel(0);
+</script>
+</body>
+</html>
