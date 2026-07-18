@@ -1,63 +1,6 @@
 {
   "games": [
     {
-      "id": "we-bare-bears-blocks",
-      "name": "We Bare Bears Blocks",
-      "description": "熊熊三兄弟主题三消 — swap & match 3 bear blocks to complete each level!",
-      "category": "puzzle",
-      "tags": [
-        "singleplayer",
-        "puzzle",
-        "match3",
-        "bear",
-        "short-session"
-      ],
-      "thumbnail": "/games/066-we-bare-bears-blocks/thumb.svg",
-      "path": "/games/066-we-bare-bears-blocks/",
-      "hasServer": false,
-      "players": "1",
-      "version": "1.0.0",
-      "rating": 4.0
-    },
-    {
-      "id": "color-sort-balls",
-      "name": "Color Sort Balls",
-      "description": "不同颜色的球排序入管 · 拖拽解压，同色归管",
-      "category": "puzzle",
-      "tags": [
-        "singleplayer",
-        "puzzle",
-        "sorting",
-        "drag",
-        "short-session"
-      ],
-      "thumbnail": "/games/100-color-sort-balls/thumb.svg",
-      "path": "/games/100-color-sort-balls/",
-      "hasServer": false,
-      "players": "1",
-      "version": "1.0.0",
-      "featured": true,
-      "rating": 4.0
-    },
-    {
-      "id": "cooking-marathon",
-      "name": "Cooking Marathon",
-      "description": "马拉松式烹饪订单，多锅同时进行 — 拖食材、烹饪、上菜，限时完成订单",
-      "category": "casual",
-      "tags": [
-        "singleplayer",
-        "management",
-        "drag",
-        "simulation",
-        "timed",
-        "short-session"
-      ],
-      "path": "/games/087-cooking-marathon/",
-      "hasServer": false,
-      "players": "1",
-      "version": "1.0.0"
-    },
-    {
       "id": "spaceship-builder",
       "name": "Spaceship Builder",
       "description": "拼装飞船零件，发射探索太空",
@@ -624,26 +567,6 @@
       "rating": 4.0
     },
     {
-      "id": "hyper-casual-hop",
-      "name": "Hyper Casual Hop",
-      "description": "节奏跳跃方块 — 空格/点击命中节拍，连跳得分，解锁新主题",
-      "category": "casual",
-      "tags": [
-        "singleplayer",
-        "rhythm",
-        "jumping",
-        "music",
-        "short-session"
-      ],
-      "thumbnail": "/games/090-hyper-casual-hop/thumb.svg",
-      "path": "/games/090-hyper-casual-hop/",
-      "hasServer": false,
-      "players": "1",
-      "version": "1.0.0",
-      "featured": true,
-      "rating": 4.5
-    },
-    {
       "id": "detective-crime-board",
       "name": "Detective Crime Board",
       "description": "线索板上拼接证据找出凶手 — 拖拽线索匹配嫌疑人，解开多重案件",
@@ -664,43 +587,23 @@
       "rating": 4.0
     },
     {
-      "id": "bubble-tea-maker",
-      "name": "Bubble Tea Maker",
-      "description": "手工调制珍珠奶茶 — 选茶底→加配料→摇匀，3星过关解锁新口味",
-      "category": "casual",
+      "id": "we-bare-bears-blocks",
+      "name": "We Bare Bears Blocks",
+      "description": "熊熊三兄弟主题三消 — 滑动匹配熊熊方块，完成关卡目标通关！",
+      "category": "puzzle",
       "tags": [
         "singleplayer",
-        "management",
-        "drag",
-        "simulation",
+        "puzzle",
+        "match3",
+        "ip",
         "short-session"
       ],
-      "thumbnail": "/games/089-bubble-tea-maker/thumb.svg",
-      "path": "/games/089-bubble-tea-maker/",
+      "thumbnail": "/games/066-we-bare-bears-blocks/thumb.svg",
+      "path": "/games/066-we-bare-bears-blocks/",
       "hasServer": false,
       "players": "1",
       "version": "1.0.0",
       "featured": true,
-      "rating": 4.0
-    },
-    {
-      "id": "tank-battalion-2d",
-      "name": "Tank Battalion 2D",
-      "description": "2D 坦克守卫基地 — 方向键移动，空格射击，波次战斗，保护基地",
-      "category": "action",
-      "tags": [
-        "singleplayer",
-        "shooting",
-        "action",
-        "classic",
-        "short-session"
-      ],
-      "thumbnail": "/games/084-tank-battalion-2d/thumb.svg",
-      "path": "/games/084-tank-battalion-2d/",
-      "hasServer": false,
-      "players": "1",
-      "version": "1.0.0",
-      "featured": false,
       "rating": 4.0
     }
   ],
