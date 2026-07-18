@@ -585,6 +585,26 @@
       "version": "1.0.0",
       "featured": true,
       "rating": 4.0
+    },
+    {
+      "id": "battle-dogs-arena",
+      "name": "Battle Dogs Arena",
+      "description": "狗狗组队竞技场 — 元素克制、自动战斗，收集犬种赢取回合胜利",
+      "category": "strategy",
+      "tags": [
+        "singleplayer",
+        "strategy",
+        "pets",
+        "auto-battle",
+        "short-session"
+      ],
+      "thumbnail": "/games/064-battle-dogs-arena/thumb.svg",
+      "path": "/games/064-battle-dogs-arena/",
+      "hasServer": false,
+      "players": "1",
+      "version": "1.0.0",
+      "featured": true,
+      "rating": 4.5
     }
   ],
   "categories": [
