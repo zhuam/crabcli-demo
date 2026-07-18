@@ -1,6 +1,25 @@
 {
   "games": [
     {
+      "id": "we-bare-bears-blocks",
+      "name": "We Bare Bears Blocks",
+      "description": "熊熊三兄弟主题三消 — swap & match 3 bear blocks to complete each level!",
+      "category": "puzzle",
+      "tags": [
+        "singleplayer",
+        "puzzle",
+        "match3",
+        "bear",
+        "short-session"
+      ],
+      "thumbnail": "/games/066-we-bare-bears-blocks/thumb.svg",
+      "path": "/games/066-we-bare-bears-blocks/",
+      "hasServer": false,
+      "players": "1",
+      "version": "1.0.0",
+      "rating": 4.0
+    },
+    {
       "id": "color-sort-balls",
       "name": "Color Sort Balls",
       "description": "不同颜色的球排序入管 · 拖拽解压，同色归管",
