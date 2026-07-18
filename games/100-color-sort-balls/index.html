@@ -1,0 +1,1906 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#1a1a2e">
+<title>Color Sort Balls</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../games/shared/game-frame.css">
+<style>
+/* ═══════════════════════════════════════════════════════
+   Color Sort Balls — 把颜色相同的球排进一根管子
+   ═══════════════════════════════════════════════════════ */
+
+:root {
+  --color-bg: oklch(0.99 0 0);
+  --color-surface: oklch(0.97 0 0);
+  --color-border: oklch(0.92 0 0);
+  --color-text: oklch(0.20 0 0);
+  --color-muted: oklch(0.55 0 0);
+  --color-accent: oklch(0.55 0.18 250);
+  --color-accent-light: oklch(0.85 0.10 250);
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --tube-radius: 10px;
+  --ball-size: 46px;
+  --tube-w: 48px;
+  --tube-h: 220px;
+  --phone-w: 100%;
+  --phone-h: 100dvh;
+
+  /* Ball palette — pastel per UX analysis */
+  --ball-red: #FF6B6B;
+  --ball-blue: #74C0FC;
+  --ball-green: #69DB7C;
+  --ball-yellow: #FFE082;
+  --ball-purple: #C4A8FF;
+  --ball-orange: #FF9A8B;
+  --ball-pink: #FF8FB8;
+  --ball-mint: #7BE0C8;
+  --ball-coral: #FF6F61;
+  --ball-teal: #2EC4B6;
+  --ball-lime: #B5E48C;
+  --ball-brown: #C68C53;
+
+  /* Feedback colors */
+  --valid: #51cf66;
+  --invalid: #ff6b6b;
+  --frame-bg: #1a1a2e;
+  --frame-shadow-outer: #3a3a5c;
+  --frame-shadow-inner: #2a2a4c;
+  --accent-shadow: rgba(99, 102, 241, 0.25);
+  --accent-shadow-md: rgba(99, 102, 241, 0.3);
+  --accent-shadow-lg: rgba(99, 102, 241, 0.4);
+  --valid-shadow: rgba(81, 207, 102, 0.3);
+  --invalid-shadow: rgba(255, 107, 107, 0.3);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  height: 100%;
+  background: var(--frame-bg);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+  user-select: none; -webkit-user-select: none;
+  touch-action: none; -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+#app {
+  width: 100%;
+  height: 100dvh;
+  position: relative;
+  overflow: hidden;
+}
+
+/* ═══════════════════════════════
+   Screens
+   ═══════════════════════════════ */
+.screen {
+  display: none;
+  flex-direction: column;
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: var(--color-bg);
+}
+
+.screen.active {
+  display: flex;
+}
+
+/* ═══════════════════════════════
+   START SCREEN
+   ═══════════════════════════════ */
+#screen-start {
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 12px;
+  background: linear-gradient(180deg, oklch(0.99 0 0) 0%, oklch(0.97 0 0) 100%);
+  padding: 24px;
+}
+
+.game-icon {
+  width: 80px;
+  height: 80px;
+  border-radius: 20px;
+  background: var(--color-accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 36px;
+  box-shadow: 0 8px 24px var(--accent-shadow);
+}
+
+.game-title {
+  font-size: 31px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--color-text);
+  line-height: 1.2;
+}
+
+.game-subtitle {
+  font-size: 14px;
+  color: var(--color-muted);
+  margin-bottom: 4px;
+}
+
+/* Demo animation area */
+.demo-area {
+  width: 220px;
+  height: 110px;
+  position: relative;
+  margin: 4px 0 12px;
+}
+
+.demo-tube-group {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  align-items: flex-end;
+  height: 100%;
+}
+
+.demo-tube {
+  width: 34px;
+  height: 85px;
+  border: 2px solid var(--color-border);
+  border-top: none;
+  border-radius: 0 0 8px 8px;
+  position: relative;
+  display: flex;
+  flex-direction: column-reverse;
+  align-items: center;
+  padding: 0 2px;
+}
+
+.demo-tube::before {
+  content: '';
+  position: absolute;
+  top: -10px;
+  left: -4px;
+  right: -4px;
+  height: 10px;
+  border-bottom: 2px solid var(--color-border);
+  border-radius: 0 0 50% 50%;
+  background: var(--color-bg);
+}
+
+.demo-ball {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  margin-bottom: 2px;
+  transition: transform 0.4s ease;
+}
+
+.demo-ball::after {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  color: rgba(255,255,255,0.8);
+}
+
+.demo-ball.shape-dot::after { content: '●'; }
+.demo-ball.shape-diamond::after { content: '◆'; }
+.demo-ball.shape-triangle::after { content: '▲'; }
+.demo-ball.shape-star::after { content: '★'; }
+
+/* Ball colors */
+.ball-red { background: var(--ball-red); }
+.ball-blue { background: var(--ball-blue); }
+.ball-green { background: var(--ball-green); }
+.ball-yellow { background: var(--ball-yellow); }
+.ball-purple { background: var(--ball-purple); }
+.ball-orange { background: var(--ball-orange); }
+.ball-pink { background: var(--ball-pink); }
+.ball-mint { background: var(--ball-mint); }
+.ball-coral { background: var(--ball-coral); }
+.ball-teal { background: var(--ball-teal); }
+.ball-lime { background: var(--ball-lime); }
+.ball-brown { background: var(--ball-brown); }
+
+.btn-start {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 48px;
+  background: var(--color-accent);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: 16px;
+  font-weight: 600;
+  font-family: var(--font-sans);
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  box-shadow: 0 4px 14px var(--accent-shadow);
+}
+
+.btn-start:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px var(--accent-shadow-lg);
+}
+
+.btn-start:active {
+  transform: translateY(0);
+}
+
+.start-hint {
+  font-size: 12px;
+  color: var(--color-muted);
+}
+
+/* ═══════════════════════════════
+   GAMEPLAY SCREEN
+   ═══════════════════════════════ */
+#screen-game {
+  background: linear-gradient(180deg, oklch(0.99 0 0) 0%, oklch(0.96 0 0) 100%);
+  padding: 0 4px;
+}
+
+.game-hud {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px;
+  flex-shrink: 0;
+}
+
+.hud-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.hud-level {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.hud-moves {
+  font-size: 12px;
+  color: var(--color-muted);
+  background: var(--color-surface);
+  padding: 4px 10px;
+  border-radius: 20px;
+  border: 1px solid var(--color-border);
+}
+
+.hud-right {
+  display: flex;
+  gap: 6px;
+}
+
+.hud-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid var(--color-border);
+  background: var(--color-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 16px;
+  transition: background 0.15s ease, transform 0.1s ease;
+  color: var(--color-text);
+}
+
+.hud-btn:hover {
+  background: var(--color-surface);
+}
+
+.hud-btn:active {
+  transform: scale(0.92);
+}
+
+/* Board area */
+.board-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 0;
+  position: relative;
+  min-height: 0;
+}
+
+.board-area::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(0,0,0,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,0,0,0.03) 1px, transparent 1px);
+  background-size: 20px 20px;
+  pointer-events: none;
+}
+
+.tube-rack {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  align-items: flex-end;
+  padding: 8px;
+  flex-wrap: wrap;
+  max-width: 500px;
+  position: relative;
+  z-index: 1;
+}
+
+.tube {
+  width: var(--tube-w);
+  height: var(--tube-h);
+  border: 2px solid var(--color-border);
+  border-top: none;
+  border-radius: 0 0 var(--tube-radius) var(--tube-radius);
+  position: relative;
+  display: flex;
+  flex-direction: column-reverse;
+  align-items: center;
+  padding: 2px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  cursor: pointer;
+  background: rgba(255,255,255,0.5);
+}
+
+.tube::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 3px;
+  width: 6px;
+  height: 100%;
+  background: linear-gradient(180deg, rgba(255,255,255,0.6) 0%, rgba(255,255,255,0.05) 60%);
+  border-radius: 3px;
+  pointer-events: none;
+}
+
+.tube::after {
+  content: '';
+  position: absolute;
+  top: -10px;
+  left: -4px;
+  right: -4px;
+  height: 10px;
+  border-bottom: 2px solid var(--color-border);
+  border-radius: 0 0 50% 50%;
+  background: var(--color-bg);
+  transition: border-color 0.2s ease;
+}
+
+/* Tube states */
+.tube.valid-target {
+  border-color: var(--valid);
+  box-shadow: 0 0 12px var(--valid-shadow);
+}
+
+.tube.valid-target::after {
+  border-color: var(--valid);
+}
+
+.tube.invalid-target {
+  border-color: var(--invalid);
+  box-shadow: 0 0 12px var(--invalid-shadow);
+}
+
+.tube.invalid-target::after {
+  border-color: var(--invalid);
+}
+
+.tube.selected {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 16px var(--accent-shadow-md);
+}
+
+.tube.selected::after {
+  border-color: var(--color-accent);
+}
+
+.tube.hover-valid {
+  border-color: var(--valid) !important;
+  box-shadow: 0 0 20px var(--valid-shadow) !important;
+}
+
+.tube.hover-invalid {
+  border-color: var(--invalid) !important;
+  box-shadow: 0 0 20px var(--invalid-shadow) !important;
+}
+
+/* Ball inside tube */
+.tube-ball {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  position: relative;
+  flex-shrink: 0;
+  margin-bottom: 2px;
+  cursor: grab;
+  z-index: 2;
+  touch-action: none;
+}
+
+.tube-ball:active {
+  cursor: grabbing;
+}
+
+/* Shape markers for colorblind safety */
+.tube-ball::after {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  color: rgba(255,255,255,0.85);
+  pointer-events: none;
+}
+
+.tube-ball.shape-dot::after { content: '●'; font-size: 11px; }
+.tube-ball.shape-diamond::after { content: '◆'; font-size: 11px; }
+.tube-ball.shape-triangle::after { content: '▲'; font-size: 11px; }
+.tube-ball.shape-star::after { content: '★'; font-size: 12px; }
+.tube-ball.shape-square::after { content: '■'; font-size: 10px; }
+.tube-ball.shape-ring::after { content: '◉'; font-size: 12px; }
+.tube-ball.shape-hexagon::after { content: '⬢'; font-size: 11px; }
+.tube-ball.shape-cross::after { content: '✦'; font-size: 11px; }
+.tube-ball.shape-diamond-outline::after { content: '◇'; font-size: 12px; }
+.tube-ball.shape-half-circle::after { content: '◐'; font-size: 11px; }
+.tube-ball.shape-pentagon::after { content: '⬠'; font-size: 10px; }
+.tube-ball.shape-inverted-triangle::after { content: '▾'; font-size: 11px; }
+
+/* Dragged ghost ball */
+.drag-ghost {
+  position: fixed;
+  z-index: 9999;
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  pointer-events: none;
+  transform: scale(1.1);
+  filter: drop-shadow(0 8px 16px rgba(0,0,0,0.2));
+  transition: none;
+}
+
+.drag-ghost::after {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  color: rgba(255,255,255,0.85);
+  pointer-events: none;
+}
+
+/* Game hint */
+.game-hint {
+  text-align: center;
+  font-size: 11px;
+  color: var(--color-muted);
+  padding: 4px 0 8px;
+  letter-spacing: 0.02em;
+  flex-shrink: 0;
+}
+
+/* ═══════════════════════════════
+   VICTORY OVERLAY
+   ═══════════════════════════════ */
+.overlay {
+  display: none;
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.45);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 200;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.3s ease;
+}
+
+.overlay.active {
+  display: flex;
+}
+
+.overlay-card {
+  background: var(--color-bg);
+  border-radius: var(--radius-xl);
+  padding: 32px 28px 24px;
+  width: 300px;
+  max-width: 85vw;
+  text-align: center;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+  animation: slideUp 0.35s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.overlay-icon {
+  font-size: 48px;
+  margin-bottom: 8px;
+}
+
+.overlay-title {
+  font-size: 25px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--color-text);
+  margin-bottom: 4px;
+}
+
+.overlay-subtitle {
+  font-size: 14px;
+  color: var(--color-muted);
+  margin-bottom: 16px;
+}
+
+.overlay-stats {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+
+.stat-item {
+  text-align: center;
+}
+
+.stat-value {
+  font-size: 25px;
+  font-weight: 700;
+  color: var(--color-text);
+  line-height: 1.2;
+}
+
+.stat-label {
+  font-size: 11px;
+  color: var(--color-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.overlay-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 12px 24px;
+  background: var(--color-accent);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  font-weight: 600;
+  font-family: var(--font-sans);
+  cursor: pointer;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+  box-shadow: 0 4px 12px var(--accent-shadow-md);
+}
+
+.btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px var(--accent-shadow-lg);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+}
+
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 24px;
+  background: transparent;
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  font-weight: 500;
+  font-family: var(--font-sans);
+  cursor: pointer;
+  transition: background 0.12s ease;
+}
+
+.btn-secondary:hover {
+  background: var(--color-surface);
+}
+
+.btn-tertiary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 8px 16px;
+  background: transparent;
+  color: var(--color-muted);
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: 12px;
+  font-weight: 400;
+  font-family: var(--font-sans);
+  cursor: pointer;
+}
+
+/* ═══════════════════════════════
+   LEVEL SELECT SCREEN
+   ═══════════════════════════════ */
+#screen-levels {
+  background: var(--color-bg);
+  padding: 0 16px;
+}
+
+.level-select-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 0 8px;
+  flex-shrink: 0;
+}
+
+.level-select-header h2 {
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.back-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid var(--color-border);
+  background: var(--color-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 18px;
+  transition: background 0.15s ease;
+}
+
+.back-btn:hover {
+  background: var(--color-surface);
+}
+
+.level-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 10px;
+  padding: 8px 0;
+  flex: 1;
+  align-content: start;
+  overflow-y: auto;
+}
+
+.level-cell {
+  aspect-ratio: 1;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: border-color 0.15s ease, transform 0.12s ease;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.level-cell:hover {
+  border-color: var(--color-accent);
+  transform: translateY(-1px);
+}
+
+.level-cell.locked {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.level-cell.locked:hover {
+  border-color: var(--color-border);
+  transform: none;
+}
+
+.level-cell.completed {
+  border-color: var(--valid);
+  background: oklch(0.96 0.05 140);
+}
+
+.level-stars {
+  font-size: 8px;
+  letter-spacing: 1.5px;
+  margin-top: 2px;
+}
+
+/* ═══════════════════════════════
+   Ball pop animation (victory)
+   ═══════════════════════════════ */
+@keyframes ballPop {
+  0% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.5); opacity: 0.7; }
+  100% { transform: scale(0); opacity: 0; }
+}
+
+.ball-pop {
+  animation: ballPop 0.6s ease forwards;
+}
+
+/* ═══════════════════════════════
+   Responsive
+   ═══════════════════════════════ */
+@media (max-width: 420px) {
+  :root {
+    --tube-w: 40px;
+    --tube-h: 180px;
+  }
+  .tube-ball {
+    width: 32px;
+    height: 32px;
+  }
+  .tube-ball::after { font-size: 10px; }
+  .drag-ghost { width: 38px; height: 38px; }
+}
+
+@media (min-width: 768px) {
+  :root {
+    --tube-w: 58px;
+    --tube-h: 260px;
+  }
+  .tube-ball {
+    width: 46px;
+    height: 46px;
+  }
+}
+
+/* Accessibility */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@media (prefers-contrast: high) {
+  .tube-ball {
+    border: 2px solid rgba(0,0,0,0.4);
+  }
+  .tube {
+    border-width: 3px;
+  }
+}
+
+/* Keyboard focus indicator */
+.tube:focus-visible {
+  outline: 3px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+/* 🎵 Audio toggle */
+.audio-toggle {
+  position: fixed;
+  top: 12px;
+  right: 12px;
+  z-index: 10001;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(10, 14, 39, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: rgba(255, 255, 255, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 16px;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transition: all 0.15s ease;
+}
+
+.audio-toggle:hover {
+  color: #fff;
+  border-color: #6c5ce7;
+  background: rgba(108, 92, 231, 0.25);
+}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- Back to Hub -->
+  <a href="/" class="back-to-hub" onclick="window.recordPlayed && window.recordPlayed('color-sort-balls')">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="19" y1="12" x2="5" y2="12"/>
+      <polyline points="12 19 5 12 12 5"/>
+    </svg>
+    <span>Arcade</span>
+  </a>
+
+  <!-- Audio toggle -->
+  <button class="audio-toggle" id="audioToggle" aria-label="Toggle sound">🔊</button>
+
+  <!-- ====== START SCREEN ====== -->
+  <section class="screen active" id="screen-start">
+    <div class="game-icon">
+      <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="7.5" cy="6.5" r="2.5" fill="#FF6B6B"/>
+        <circle cx="16.5" cy="6.5" r="2.5" fill="#74C0FC"/>
+        <circle cx="12" cy="14" r="2.5" fill="#69DB7C"/>
+        <circle cx="7.5" cy="17.5" r="2.5" fill="#FFE082"/>
+        <circle cx="16.5" cy="17.5" r="2.5" fill="#C4A8FF"/>
+        <path d="M12 3a9 9 0 1 0 8.5 12" stroke-dasharray="2 2"/>
+      </svg>
+    </div>
+    <h1 class="game-title">Color Sort<br>Balls</h1>
+    <p class="game-subtitle">把颜色相同的球排进一根管子</p>
+
+    <!-- Animated demo -->
+    <div class="demo-area" id="demoArea" aria-label="Demo: drag balls between tubes">
+      <div class="demo-tube-group" id="demoTubes">
+        <div class="demo-tube">
+          <div class="demo-ball ball-red shape-dot" style="position:relative"></div>
+          <div class="demo-ball ball-blue shape-diamond" style="position:relative"></div>
+        </div>
+        <div class="demo-tube">
+          <div class="demo-ball ball-blue shape-diamond" style="position:relative"></div>
+          <div class="demo-ball ball-green shape-triangle" style="position:relative"></div>
+        </div>
+        <div class="demo-tube">
+          <div class="demo-ball ball-green shape-triangle" style="position:relative"></div>
+          <div class="demo-ball ball-red shape-dot" style="position:relative"></div>
+        </div>
+        <div class="demo-tube" id="demoTubeEmpty"></div>
+      </div>
+    </div>
+
+    <button class="btn-start" id="btnPlay">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+      PLAY
+    </button>
+    <p class="start-hint" id="startHint">或拖拽球到管子开始</p>
+  </section>
+
+  <!-- ====== LEVEL SELECT SCREEN ====== -->
+  <section class="screen" id="screen-levels">
+    <div class="level-select-header">
+      <button class="back-btn" id="btnBackLevels" aria-label="Back">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="19" y1="12" x2="5" y2="12"/>
+          <polyline points="12 19 5 12 12 5"/>
+        </svg>
+      </button>
+      <h2>选择关卡</h2>
+    </div>
+    <div class="level-grid" id="levelGrid"></div>
+  </section>
+
+  <!-- ====== GAMEPLAY SCREEN ====== -->
+  <section class="screen" id="screen-game">
+    <!-- HUD -->
+    <div class="game-hud">
+      <div class="hud-left">
+        <span class="hud-level" id="hudLevel">Level 1</span>
+        <span class="hud-moves" id="hudMoves">0 moves</span>
+      </div>
+      <div class="hud-right">
+        <button class="hud-btn" id="btnLevels" aria-label="Level select" title="关卡选择">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
+            <rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>
+          </svg>
+        </button>
+        <button class="hud-btn" id="btnUndo" aria-label="Undo" title="撤销">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="1 4 1 10 7 10"/>
+            <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/>
+          </svg>
+        </button>
+        <button class="hud-btn" id="btnRestart" aria-label="Restart" title="重来">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="23 4 23 10 17 10"/>
+            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Board -->
+    <div class="board-area" id="boardArea">
+      <div class="tube-rack" id="tubeRack"></div>
+      <p class="game-hint" id="gameHint">拖动球到目标管子 · 同色方可入管</p>
+    </div>
+
+    <!-- Victory Overlay -->
+    <div class="overlay" id="overlayVictory">
+      <div class="overlay-card">
+        <div class="overlay-icon">
+          <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+            <circle cx="24" cy="24" r="20" fill="var(--ball-yellow)" stroke="var(--ball-orange)" stroke-width="1.5"/>
+            <path d="M24 12l3.09 6.26L34 19.22l-5 4.87 1.18 6.88L24 27.66l-6.18 3.31L19 24.09l-5-4.87 6.91-1.01L24 12z" fill="#fff" opacity="0.9"/>
+          </svg>
+        </div>
+        <h2 class="overlay-title" id="victoryTitle">Level Complete!</h2>
+        <p class="overlay-subtitle" id="victorySubtitle">太棒了，排列完美！</p>
+        <div class="overlay-stats">
+          <div class="stat-item">
+            <div class="stat-value" id="statMoves">0</div>
+            <div class="stat-label">步数</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-value" id="statTime">0s</div>
+            <div class="stat-label">用时</div>
+          </div>
+        </div>
+        <div class="overlay-buttons">
+          <button class="btn-primary" id="btnNext">下一关 →</button>
+          <button class="btn-secondary" id="btnReplay">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="23 4 23 10 17 10"/>
+              <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+            </svg>
+            再来一局
+          </button>
+          <button class="btn-tertiary" id="btnHome">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="19" y1="12" x2="5" y2="12"/>
+              <polyline points="12 19 5 12 12 5"/>
+            </svg>
+            返回大厅
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════════════
+   Color Sort Balls — Game Logic
+   ═══════════════════════════════════════════════════════ */
+
+(function() {
+  'use strict';
+
+  // ══════════════════════════════════════
+  // Color & Shape definitions
+  // ══════════════════════════════════════
+  const COLORS = [
+    { id: 'red',    hex: '#FF6B6B', shape: 'dot' },
+    { id: 'blue',   hex: '#74C0FC', shape: 'diamond' },
+    { id: 'green',  hex: '#69DB7C', shape: 'triangle' },
+    { id: 'yellow', hex: '#FFE082', shape: 'star' },
+    { id: 'purple', hex: '#C4A8FF', shape: 'square' },
+    { id: 'orange', hex: '#FF9A8B', shape: 'ring' },
+    { id: 'pink',   hex: '#FF8FB8', shape: 'hexagon' },
+    { id: 'mint',   hex: '#7BE0C8', shape: 'cross' },
+    { id: 'coral',  hex: '#FF6F61', shape: 'diamond-outline' },
+    { id: 'teal',   hex: '#2EC4B6', shape: 'half-circle' },
+    { id: 'lime',   hex: '#B5E48C', shape: 'pentagon' },
+    { id: 'brown',  hex: '#C68C53', shape: 'inverted-triangle' },
+  ];
+
+  function getColorInfo(id) {
+    return COLORS.find(c => c.id === id);
+  }
+
+  // ══════════════════════════════════════
+  // Levels — 12 hand-crafted levels
+  // ══════════════════════════════════════
+  const LEVELS = [
+    // L1: 2 colors, 3 tubes + 1 empty
+    {
+      tubes: [
+        ['red','blue','red'],
+        ['blue','red','blue'],
+        [],
+        [],
+      ],
+      tubeHeight: 3,
+    },
+    // L2: 2 colors, 3 tubes + 1 empty
+    {
+      tubes: [
+        ['blue','red','blue','red'],
+        ['red','blue','red','blue'],
+        [],
+        [],
+      ],
+      tubeHeight: 4,
+    },
+    // L3: 3 colors, 4 tubes + 1 empty
+    {
+      tubes: [
+        ['red','green','yellow','red'],
+        ['green','yellow','red','green'],
+        ['yellow','red','green','yellow'],
+        [],
+        [],
+      ],
+      tubeHeight: 4,
+    },
+    // L4: 3 colors, 4 tubes + 1 empty
+    {
+      tubes: [
+        ['blue','green','red','blue'],
+        ['green','red','blue','green'],
+        ['red','blue','green','red'],
+        [],
+        [],
+      ],
+      tubeHeight: 4,
+    },
+    // L5: 3 colors, 4 tubes + 2 empty
+    {
+      tubes: [
+        ['purple','orange','purple','orange'],
+        ['orange','purple','orange','purple'],
+        ['blue','blue'],
+        [],
+        [],
+      ],
+      tubeHeight: 4,
+    },
+    // L6: 4 colors, 5 tubes + 1 empty
+    {
+      tubes: [
+        ['red','green','blue','yellow'],
+        ['green','blue','yellow','red'],
+        ['blue','yellow','red','green'],
+        ['yellow','red','green','blue'],
+        [],
+        [],
+      ],
+      tubeHeight: 4,
+    },
+    // L7: 4 colors, 5 tubes + 1 empty
+    {
+      tubes: [
+        ['mint','purple','red','orange'],
+        ['purple','red','orange','mint'],
+        ['red','orange','mint','purple'],
+        ['orange','mint','purple','red'],
+        [],
+        [],
+      ],
+      tubeHeight: 4,
+    },
+    // L8: 4 colors, 5 tubes + 2 empty
+    {
+      tubes: [
+        ['pink','blue','yellow','mint'],
+        ['blue','yellow','mint','pink'],
+        ['yellow','mint','pink','blue'],
+        ['mint','pink','blue','yellow'],
+        [],
+        [],
+        [],
+      ],
+      tubeHeight: 4,
+    },
+    // L9: 5 colors, 6 tubes + 1 empty
+    {
+      tubes: [
+        ['yellow','green','blue','purple'],
+        ['green','orange','orange','red'],
+        ['purple','red','yellow','orange'],
+        ['blue','purple','red','green'],
+        ['red','blue','green','yellow'],
+        [],
+        [],
+      ],
+      tubeHeight: 4,
+    },
+    // L10: 5 colors, 6 tubes + 2 empty
+    {
+      tubes: [
+        ['coral','teal','mint','coral'],
+        ['teal','mint','coral','teal'],
+        ['mint','coral','teal','mint'],
+        ['pink','lime','pink','lime'],
+        ['lime','pink','lime','pink'],
+        [],
+        [],
+      ],
+      tubeHeight: 4,
+    },
+    // L11: 6 colors, 7 tubes + 1 empty
+    {
+      tubes: [
+        ['orange','blue','mint','red'],
+        ['blue','mint','red','orange'],
+        ['mint','red','orange','blue'],
+        ['red','orange','blue','mint'],
+        ['yellow','green','yellow','green'],
+        ['green','yellow','green','yellow'],
+        [],
+        [],
+      ],
+      tubeHeight: 4,
+    },
+    // L12: 6 colors, 7 tubes + 2 empty
+    {
+      tubes: [
+        ['purple','coral','orange','blue'],
+        ['coral','orange','blue','purple'],
+        ['orange','blue','purple','coral'],
+        ['blue','purple','coral','orange'],
+        ['pink','brown','pink','brown'],
+        ['brown','pink','brown','pink'],
+        [],
+        [],
+        [],
+      ],
+      tubeHeight: 4,
+    },
+  ];
+
+  // ══════════════════════════════════════
+  // Audio — Web Audio API synthesized
+  // ══════════════════════════════════════
+  let audioCtx = null;
+  let sfxEnabled = true;
+
+  function initAudio() {
+    if (audioCtx) return;
+    try {
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    } catch (e) {
+      sfxEnabled = false;
+    }
+  }
+
+  function playTone(freq, duration, type, volume) {
+    if (!sfxEnabled || !audioCtx) return;
+    try {
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = type || 'sine';
+      osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+      const vol = volume || 0.25;
+      gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start();
+      osc.stop(audioCtx.currentTime + duration);
+    } catch (e) { /* ignore */ }
+  }
+
+  function sfxPickup() {
+    playTone(600, 0.08, 'sine', 0.15);
+    playTone(900, 0.05, 'sine', 0.1);
+  }
+
+  function sfxDrop() {
+    playTone(300, 0.1, 'sine', 0.2);
+    playTone(200, 0.15, 'sine', 0.15);
+  }
+
+  function sfxInvalid() {
+    playTone(200, 0.15, 'square', 0.1);
+  }
+
+  function sfxWin() {
+    playTone(523, 0.12, 'sine', 0.2);
+    setTimeout(() => playTone(659, 0.12, 'sine', 0.2), 120);
+    setTimeout(() => playTone(784, 0.25, 'sine', 0.25), 240);
+  }
+
+  function sfxUndo() {
+    playTone(400, 0.08, 'sine', 0.1);
+  }
+
+  function vibrate(ms) {
+    try { if (navigator.vibrate) navigator.vibrate(ms); } catch (e) {}
+  }
+
+  // ══════════════════════════════════════
+  // Local Storage
+  // ══════════════════════════════════════
+  const LS_KEY_PROGRESS = 'color_sort_balls_progress';
+  const LS_KEY_SETTINGS = 'color_sort_balls_settings';
+
+  function loadProgress() {
+    try {
+      const raw = localStorage.getItem(LS_KEY_PROGRESS);
+      return raw ? JSON.parse(raw) : {};
+    } catch (e) { return {}; }
+  }
+
+  function saveProgress(data) {
+    try { localStorage.setItem(LS_KEY_PROGRESS, JSON.stringify(data)); } catch (e) {}
+  }
+
+  function loadSettings() {
+    try {
+      const raw = localStorage.getItem(LS_KEY_SETTINGS);
+      return raw ? JSON.parse(raw) : {};
+    } catch (e) { return {}; }
+  }
+
+  function saveSettings(data) {
+    try { localStorage.setItem(LS_KEY_SETTINGS, JSON.stringify(data)); } catch (e) {}
+  }
+
+  function getMaxUnlockedLevel() {
+    const p = loadProgress();
+    let maxUnlocked = 0;
+    for (let i = 0; i < LEVELS.length; i++) {
+      if (p[i] && p[i].completed) {
+        maxUnlocked = i + 1;
+      }
+    }
+    // first level always unlocked
+    return Math.max(maxUnlocked, 0);
+  }
+
+  function isLevelUnlocked(idx) {
+    if (idx === 0) return true;
+    const p = loadProgress();
+    return !!(p[idx - 1] && p[idx - 1].completed);
+  }
+
+  function saveLevelResult(idx, moves, elapsed) {
+    const p = loadProgress();
+    const prev = p[idx] || {};
+    const bestMoves = prev.bestMoves ? Math.min(prev.bestMoves, moves) : moves;
+    p[idx] = {
+      completed: true,
+      moves: moves,
+      bestMoves: bestMoves,
+      time: elapsed,
+      bestTime: prev.bestTime ? Math.min(prev.bestTime, elapsed) : elapsed,
+    };
+    saveProgress(p);
+  }
+
+  // ══════════════════════════════════════
+  // Game State
+  // ══════════════════════════════════════
+  let state = null;
+  let currentLevel = 0;
+  let dragState = null; // { active, sourceIdx, ballColor, ghost, startX, startY, offsetX, offsetY }
+  let history = []; // undo stack
+  let timerStart = 0;
+  let timerInterval = null;
+  let keyboardMode = false;
+  let kbdSelection = -1;
+  let kbdHeld = false;
+
+  // ══════════════════════════════════════
+  // DOM refs
+  // ══════════════════════════════════════
+  const $ = id => document.getElementById(id);
+  const screens = {
+    start: $('screen-start'),
+    levels: $('screen-levels'),
+    game: $('screen-game'),
+  };
+
+  function showScreen(id) {
+    Object.values(screens).forEach(s => s.classList.remove('active'));
+    screens[id].classList.add('active');
+  }
+
+  // ══════════════════════════════════════
+  // Level rendering
+  // ══════════════════════════════════════
+  function initLevel(levelIdx) {
+    const lv = LEVELS[levelIdx];
+    if (!lv) return;
+    state = {
+      tubes: lv.tubes.map(t => [...t]),
+      tubeHeight: lv.tubeHeight,
+      moves: 0,
+      levelIdx: levelIdx,
+      won: false,
+    };
+    history = [];
+    timerStart = Date.now();
+    if (timerInterval) clearInterval(timerInterval);
+    timerInterval = setInterval(updateTimer, 1000);
+    updateHUD();
+  }
+
+  function updateHUD() {
+    if (!state) return;
+    $('hudLevel').textContent = `Level ${state.levelIdx + 1}`;
+    $('hudMoves').textContent = `${state.moves} moves`;
+  }
+
+  function updateTimer() {
+    if (!state || state.won) return;
+    // just keep the timer running for stats
+  }
+
+  function renderBoard() {
+    const rack = $('tubeRack');
+    rack.innerHTML = '';
+    kbdSelection = -1;
+    kbdHeld = false;
+
+    state.tubes.forEach((tube, i) => {
+      const tubeEl = document.createElement('div');
+      tubeEl.className = 'tube';
+      tubeEl.dataset.tubeIndex = i;
+      tubeEl.setAttribute('role', 'listitem');
+      tubeEl.setAttribute('tabindex', '0');
+      tubeEl.setAttribute('aria-label', `Tube ${i + 1}`);
+
+      tube.forEach(ballColor => {
+        const c = getColorInfo(ballColor);
+        const ball = document.createElement('div');
+        ball.className = `tube-ball ball-${ballColor} shape-${c.shape}`;
+        ball.dataset.color = ballColor;
+        ball.dataset.tubeIndex = i;
+        ball.setAttribute('role', 'img');
+        ball.setAttribute('aria-label', `${ballColor} ball`);
+        tubeEl.appendChild(ball);
+      });
+
+      rack.appendChild(tubeEl);
+    });
+
+    bindDragEvents();
+  }
+
+  function setupLevel(levelIdx) {
+    currentLevel = levelIdx;
+    initLevel(levelIdx);
+    renderBoard();
+    updateHUD();
+  }
+
+  // ══════════════════════════════════════
+  // Real Drag — Pointer Events
+  // ══════════════════════════════════════
+  function getTopBall(tubeIdx) {
+    const t = state.tubes[tubeIdx];
+    return t.length > 0 ? t[t.length - 1] : null;
+  }
+
+  function getTubeIndexFromPoint(x, y) {
+    const tubes = document.querySelectorAll('.tube');
+    for (let i = 0; i < tubes.length; i++) {
+      const rect = tubes[i].getBoundingClientRect();
+      const margin = 15;
+      if (x >= rect.left - margin && x <= rect.right + margin &&
+          y >= rect.top - 30 && y <= rect.bottom + 30) {
+        // Find the actual tube index
+        const idx = parseInt(tubes[i].dataset.tubeIndex);
+        return idx;
+      }
+    }
+    return -1;
+  }
+
+  function isValidMove(sourceIdx, targetIdx) {
+    if (sourceIdx === targetIdx) return false;
+    const sourceTube = state.tubes[sourceIdx];
+    if (sourceTube.length === 0) return false;
+    const color = sourceTube[sourceTube.length - 1];
+    const targetTube = state.tubes[targetIdx];
+    if (targetTube.length >= state.tubeHeight) return false;
+    if (targetTube.length === 0) return true;
+    return targetTube[targetTube.length - 1] === color;
+  }
+
+  function applyMove(sourceIdx, targetIdx) {
+    const color = state.tubes[sourceIdx].pop();
+    state.tubes[targetIdx].push(color);
+    state.moves++;
+    history.push({ source: sourceIdx, target: targetIdx, color: color });
+    updateHUD();
+  }
+
+  function undoMove() {
+    if (history.length === 0) return;
+    const last = history.pop();
+    const t = state.tubes[last.target];
+    t.pop();
+    state.tubes[last.source].push(last.color);
+    state.moves = Math.max(0, state.moves - 1);
+    updateHUD();
+    sfxUndo();
+    renderBoard();
+  }
+
+  function checkWin() {
+    if (!state || state.won) return false;
+    const allPure = state.tubes.every(tube => {
+      if (tube.length === 0) return true;
+      return tube.every(c => c === tube[0]);
+    });
+    const hasBalls = state.tubes.some(t => t.length > 0);
+    if (allPure && hasBalls) {
+      state.won = true;
+      return true;
+    }
+    return false;
+  }
+
+  function showVictory() {
+    if (timerInterval) clearInterval(timerInterval);
+    const elapsed = Math.floor((Date.now() - timerStart) / 1000);
+    const mins = Math.floor(elapsed / 60);
+    const secs = elapsed % 60;
+    $('statMoves').textContent = state.moves;
+    $('statTime').textContent = mins > 0 ? `${mins}m${secs}s` : `${secs}s`;
+
+    saveLevelResult(currentLevel, state.moves, elapsed);
+    sfxWin();
+    vibrate(100);
+    $('overlayVictory').classList.add('active');
+
+    // ball pop animation
+    const balls = document.querySelectorAll('.tube-ball');
+    balls.forEach((ball, i) => {
+      setTimeout(() => ball.classList.add('ball-pop'), i * 30);
+    });
+  }
+
+  function clearTubeHighlights() {
+    document.querySelectorAll('.tube').forEach(t => {
+      t.classList.remove('selected', 'valid-target', 'invalid-target', 'hover-valid', 'hover-invalid');
+    });
+  }
+
+  function highlightTargets(sourceIdx) {
+    document.querySelectorAll('.tube').forEach(t => {
+      const idx = parseInt(t.dataset.tubeIndex);
+      if (idx === sourceIdx) return;
+      if (isValidMove(sourceIdx, idx)) {
+        t.classList.add('valid-target');
+      } else {
+        t.classList.add('invalid-target');
+      }
+    });
+  }
+
+  function bindDragEvents() {
+    const board = $('boardArea');
+    const balls = document.querySelectorAll('.tube-ball');
+
+    // Pointer events for drag
+    balls.forEach(ball => {
+      ball.addEventListener('pointerdown', onPointerDown);
+    });
+
+    // Board-level move/up
+    board.addEventListener('pointermove', onPointerMove);
+    board.addEventListener('pointerup', onPointerUp);
+    board.addEventListener('pointercancel', onPointerUp);
+    board.addEventListener('pointerleave', onPointerUp);
+
+    // Prevent context menu on long press
+    board.addEventListener('contextmenu', e => e.preventDefault());
+
+    // Touch start to init audio context (autoplay policy)
+    board.addEventListener('pointerdown', () => initAudio(), { once: true });
+    document.addEventListener('pointerdown', () => initAudio(), { once: true });
+  }
+
+  function onPointerDown(e) {
+    const ball = e.target.closest('.tube-ball');
+    if (!ball || !state || state.won) return;
+    e.preventDefault();
+    e.stopPropagation();
+
+    const sourceIdx = parseInt(ball.dataset.tubeIndex);
+    const tube = state.tubes[sourceIdx];
+    if (tube.length === 0) return;
+
+    // Only top ball can be dragged
+    const topBall = ball.closest('.tube').querySelector('.tube-ball:last-child');
+    if (ball !== topBall) return;
+
+    initAudio();
+
+    const color = getTopBall(sourceIdx);
+    const cInfo = getColorInfo(color);
+    const rect = ball.getBoundingClientRect();
+
+    // Create drag ghost
+    const ghost = document.createElement('div');
+    ghost.className = `drag-ghost ball-${color} shape-${cInfo.shape}`;
+    ghost.style.left = (rect.left + rect.width / 2 - 23) + 'px';
+    ghost.style.top = (rect.top + rect.height / 2 - 23) + 'px';
+    ghost.dataset.color = color;
+    ghost.style.setProperty('--shape', `'${getShapeChar(cInfo.shape)}'`);
+    // Add ::after content via class
+    ghost.classList.add(`shape-${cInfo.shape}`);
+    document.body.appendChild(ghost);
+
+    dragState = {
+      active: true,
+      sourceIdx: sourceIdx,
+      color: color,
+      ghost: ghost,
+      offsetX: e.clientX - rect.left,
+      offsetY: e.clientY - rect.top,
+    };
+
+    // Highlight source tube
+    const tubeEls = document.querySelectorAll('.tube');
+    tubeEls.forEach(t => {
+      const idx = parseInt(t.dataset.tubeIndex);
+      if (idx === sourceIdx) t.classList.add('selected');
+    });
+
+    highlightTargets(sourceIdx);
+    sfxPickup();
+    vibrate(10);
+
+    // Set pointer capture
+    ball.setPointerCapture(e.pointerId);
+  }
+
+  function getShapeChar(shape) {
+    const map = {
+      'dot': '●', 'diamond': '◆', 'triangle': '▲', 'star': '★',
+      'square': '■', 'ring': '◉', 'hexagon': '⬢', 'cross': '✦',
+      'diamond-outline': '◇', 'half-circle': '◐', 'pentagon': '⬠',
+      'inverted-triangle': '▾',
+    };
+    return map[shape] || '●';
+  }
+
+  function onPointerMove(e) {
+    if (!dragState || !dragState.active) return;
+    e.preventDefault();
+
+    const ghost = dragState.ghost;
+    ghost.style.left = (e.clientX - dragState.offsetX) + 'px';
+    ghost.style.top = (e.clientY - dragState.offsetY) + 'px';
+
+    // Highlight tube under pointer
+    const targetIdx = getTubeIndexFromPoint(e.clientX, e.clientY);
+    document.querySelectorAll('.tube').forEach(t => {
+      t.classList.remove('hover-valid', 'hover-invalid');
+    });
+    if (targetIdx >= 0 && targetIdx !== dragState.sourceIdx) {
+      const el = document.querySelector(`.tube[data-tube-index="${targetIdx}"]`);
+      if (el) {
+        if (isValidMove(dragState.sourceIdx, targetIdx)) {
+          el.classList.add('hover-valid');
+        } else {
+          el.classList.add('hover-invalid');
+        }
+      }
+    }
+  }
+
+  function onPointerUp(e) {
+    if (!dragState || !dragState.active) return;
+
+    const targetIdx = getTubeIndexFromPoint(e.clientX, e.clientY);
+    const sourceIdx = dragState.sourceIdx;
+    const color = dragState.color;
+
+    // Remove ghost
+    if (dragState.ghost && dragState.ghost.parentNode) {
+      dragState.ghost.parentNode.removeChild(dragState.ghost);
+    }
+
+    // Try move
+    let moved = false;
+    if (targetIdx >= 0 && isValidMove(sourceIdx, targetIdx)) {
+      applyMove(sourceIdx, targetIdx);
+      moved = true;
+      sfxDrop();
+      vibrate(20);
+    } else if (targetIdx >= 0 && targetIdx !== sourceIdx) {
+      sfxInvalid();
+      vibrate(30);
+    }
+
+    // Clear
+    dragState = null;
+    clearTubeHighlights();
+
+    // Re-render
+    renderBoard();
+
+    if (moved && checkWin()) {
+      showVictory();
+    }
+  }
+
+  // ══════════════════════════════════════
+  // Keyboard Controls
+  // ══════════════════════════════════════
+  document.addEventListener('keydown', e => {
+    if (state && state.won) {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        $('btnNext').click();
+        return;
+      }
+      if (e.key === 'r' || e.key === 'R') {
+        $('btnReplay').click();
+        return;
+      }
+    }
+
+    if (!screens.game.classList.contains('active')) {
+      if (e.key === 'Enter' || e.key === ' ') {
+        if (screens.start.classList.contains('active')) {
+          e.preventDefault();
+          $('btnPlay').click();
+        }
+      }
+      return;
+    }
+
+    if (!state || state.won) return;
+
+    const tubeEls = document.querySelectorAll('.tube');
+
+    if (e.key === 'Tab') {
+      e.preventDefault();
+      keyboardMode = true;
+      if (kbdSelection < 0) kbdSelection = 0;
+      else kbdSelection = (kbdSelection + 1) % tubeEls.length;
+      tubeEls[kbdSelection]?.focus();
+    } else if (e.key === 'ArrowLeft') {
+      e.preventDefault();
+      keyboardMode = true;
+      if (kbdSelection < 0) kbdSelection = 0;
+      kbdSelection = Math.max(0, kbdSelection - 1);
+      tubeEls[kbdSelection]?.focus();
+    } else if (e.key === 'ArrowRight') {
+      e.preventDefault();
+      keyboardMode = true;
+      if (kbdSelection < 0) kbdSelection = 0;
+      kbdSelection = Math.min(tubeEls.length - 1, kbdSelection + 1);
+      tubeEls[kbdSelection]?.focus();
+    } else if (e.key === 'ArrowUp' || e.key === ' ' || e.key === 'Enter') {
+      e.preventDefault();
+      if (kbdSelection < 0) return;
+      if (!kbdHeld) {
+        // Pick up top ball
+        const idx = kbdSelection;
+        if (state.tubes[idx].length === 0) return;
+        kbdHeld = true;
+        tubeEls[idx].classList.add('selected');
+        highlightTargets(idx);
+        sfxPickup();
+      } else {
+        // Drop held ball
+        const sourceIdx = findHeldSource();
+        if (sourceIdx >= 0 && isValidMove(sourceIdx, kbdSelection)) {
+          applyMove(sourceIdx, kbdSelection);
+          sfxDrop();
+          vibrate(20);
+        } else if (sourceIdx >= 0 && sourceIdx !== kbdSelection) {
+          sfxInvalid();
+          vibrate(30);
+        }
+        kbdHeld = false;
+        clearTubeHighlights();
+        renderBoard();
+        if (checkWin()) showVictory();
+      }
+    } else if (e.key === 'Escape') {
+      if (kbdHeld) {
+        kbdHeld = false;
+        clearTubeHighlights();
+        sfxUndo();
+      }
+    } else if (e.key === 'z' && (e.ctrlKey || e.metaKey)) {
+      e.preventDefault();
+      undoMove();
+    }
+  });
+
+  function findHeldSource() {
+    const sel = document.querySelector('.tube.selected');
+    if (sel) return parseInt(sel.dataset.tubeIndex);
+    return -1;
+  }
+
+  // ══════════════════════════════════════
+  // Level Select
+  // ══════════════════════════════════════
+  function renderLevelSelect() {
+    const grid = $('levelGrid');
+    grid.innerHTML = '';
+    LEVELS.forEach((lv, i) => {
+      const cell = document.createElement('div');
+      cell.className = 'level-cell';
+      const unlocked = isLevelUnlocked(i);
+      if (!unlocked) cell.classList.add('locked');
+
+      const p = loadProgress();
+      if (p[i] && p[i].completed) cell.classList.add('completed');
+
+      const num = document.createElement('span');
+      num.textContent = i + 1;
+      cell.appendChild(num);
+
+      if (p[i] && p[i].completed) {
+        const stars = document.createElement('div');
+        stars.className = 'level-stars';
+        stars.textContent = '★';
+        cell.appendChild(stars);
+      }
+
+      if (unlocked) {
+        cell.addEventListener('click', () => {
+          currentLevel = i;
+          showScreen('game');
+          setupLevel(currentLevel);
+        });
+      }
+      grid.appendChild(cell);
+    });
+  }
+
+  // ══════════════════════════════════════
+  // Demo Animation
+  // ══════════════════════════════════════
+  let demoInterval = null;
+
+  function startDemo() {
+    const tubes = document.querySelectorAll('#demoTubes .demo-tube');
+    if (!tubes.length) return;
+    let step = 0;
+    const cycles = [
+      () => {
+        if (tubes[0].children.length > 0) {
+          const ball = tubes[0].removeChild(tubes[0].lastElementChild);
+          tubes[3].appendChild(ball);
+        }
+      },
+      () => {
+        if (tubes[1].children.length > 0) {
+          const ball = tubes[1].removeChild(tubes[1].lastElementChild);
+          tubes[3].appendChild(ball);
+        }
+      },
+      () => {
+        if (tubes[2].children.length > 0) {
+          const ball = tubes[2].removeChild(tubes[2].lastElementChild);
+          tubes[3].appendChild(ball);
+        }
+      },
+      () => {
+        while (tubes[3].children.length > 0) {
+          const ball = tubes[3].removeChild(tubes[3].lastElementChild);
+          tubes[0].appendChild(ball);
+        }
+      },
+    ];
+    if (demoInterval) clearInterval(demoInterval);
+    demoInterval = setInterval(() => {
+      cycles[step % cycles.length]();
+      step++;
+    }, 1400);
+  }
+
+  // ══════════════════════════════════════
+  // Navigation & Events
+  // ══════════════════════════════════════
+  $('btnPlay').addEventListener('click', () => {
+    // Start from first uncompleted level, or next level after last completed
+    const p = loadProgress();
+    let startLv = 0;
+    for (let i = 0; i < LEVELS.length; i++) {
+      if (!p[i] || !p[i].completed) {
+        startLv = i;
+        break;
+      }
+      startLv = i;
+    }
+    currentLevel = startLv;
+    showScreen('game');
+    setupLevel(currentLevel);
+  });
+
+  $('startHint').addEventListener('click', () => {
+    $('btnPlay').click();
+  });
+
+  $('btnLevels').addEventListener('click', () => {
+    showScreen('levels');
+    renderLevelSelect();
+  });
+
+  $('btnBackLevels').addEventListener('click', () => {
+    showScreen('start');
+  });
+
+  $('btnUndo').addEventListener('click', () => {
+    undoMove();
+  });
+
+  $('btnRestart').addEventListener('click', () => {
+    if (state) {
+      $('overlayVictory').classList.remove('active');
+      setupLevel(currentLevel);
+    }
+  });
+
+  $('btnNext').addEventListener('click', () => {
+    $('overlayVictory').classList.remove('active');
+    if (currentLevel < LEVELS.length - 1) {
+      currentLevel++;
+    }
+    setupLevel(currentLevel);
+  });
+
+  $('btnReplay').addEventListener('click', () => {
+    $('overlayVictory').classList.remove('active');
+    setupLevel(currentLevel);
+  });
+
+  $('btnHome').addEventListener('click', () => {
+    $('overlayVictory').classList.remove('active');
+    showScreen('start');
+  });
+
+  // Audio toggle
+  $('audioToggle').addEventListener('click', () => {
+    sfxEnabled = !sfxEnabled;
+    $('audioToggle').textContent = sfxEnabled ? '🔊' : '🔇';
+    initAudio();
+  });
+
+  // Load settings
+  const settings = loadSettings();
+  if (settings.sfxEnabled === false) {
+    sfxEnabled = false;
+    $('audioToggle').textContent = '🔇';
+  }
+
+  // Save settings on change
+  const origToggle = $('audioToggle').textContent;
+  setInterval(() => {
+    saveSettings({ sfxEnabled: sfxEnabled });
+  }, 5000);
+
+  // ══════════════════════════════════════
+  // Init
+  // ══════════════════════════════════════
+  initLevel(0);
+  startDemo();
+  showScreen('start');
+
+})();
+</script>
+</body>
+</html>

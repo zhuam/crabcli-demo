@@ -1,0 +1,405 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="24h" data-framework="nebula-clock-v1">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nebula Clock</title>
+  <style>
+    /* ===== Reset & Base ===== */
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      min-height: 100vh;
+      min-height: 100dvh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'JetBrains Mono', ui-monospace, 'Cascadia Code', 'SF Mono', Consolas, monospace;
+      background: oklch(0.07 0.008 260);
+      background-image:
+        radial-gradient(ellipse 80% 60% at 50% 20%, oklch(0.18 0.04 265 / 0.35) 0%, transparent 70%),
+        radial-gradient(ellipse 40% 30% at 20% 80%, oklch(0.10 0.02 280 / 0.25) 0%, transparent 60%),
+        radial-gradient(ellipse 40% 30% at 80% 80%, oklch(0.10 0.02 240 / 0.25) 0%, transparent 60%);
+      user-select: none;
+      overflow: hidden;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    /* ===== Ambient glow ring ===== */
+    .ambient-ring {
+      position: fixed;
+      top: 50%; left: 50%;
+      width: min(90vw, 700px);
+      height: min(90vw, 700px);
+      transform: translate(-50%, -50%);
+      border-radius: 50%;
+      background: radial-gradient(circle, oklch(0.50 0.18 255 / 0.07) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ===== Small orbital particles ===== */
+    .particle {
+      position: fixed;
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 0;
+      background: oklch(0.60 0.12 255 / 0.08);
+    }
+    .particle:nth-child(1) {
+      width: 3px; height: 3px;
+      top: 15%; left: 12%;
+      animation: float-particle 24s ease-in-out infinite;
+    }
+    .particle:nth-child(2) {
+      width: 2px; height: 2px;
+      top: 72%; left: 85%;
+      animation: float-particle 30s ease-in-out infinite reverse;
+    }
+    .particle:nth-child(3) {
+      width: 4px; height: 4px;
+      top: 25%; left: 78%;
+      animation: float-particle 20s ease-in-out infinite 5s;
+    }
+
+    @keyframes float-particle {
+      0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.3; }
+      25% { transform: translate(30px, -20px) scale(1.4); opacity: 0.7; }
+      50% { transform: translate(-10px, 30px) scale(0.8); opacity: 0.2; }
+      75% { transform: translate(20px, 10px) scale(1.2); opacity: 0.6; }
+    }
+
+    /* ===== Clock Card ===== */
+    .clock-card {
+      position: relative;
+      z-index: 1;
+      padding: clamp(40px, 8vw, 72px) clamp(48px, 10vw, 96px);
+      border-radius: 24px;
+      background: oklch(0.14 0.015 260 / 0.50);
+      backdrop-filter: blur(32px) saturate(1.2);
+      -webkit-backdrop-filter: blur(32px) saturate(1.2);
+      border: 1px solid oklch(0.25 0.03 260 / 0.25);
+      box-shadow:
+        0 0 80px oklch(0.35 0.12 255 / 0.04),
+        inset 0 1px 0 oklch(1 0 0 / 0.05);
+      text-align: center;
+      transition: padding 0.3s, border-color 0.4s;
+      min-width: 340px;
+    }
+
+    @media (max-width: 480px) {
+      .clock-card { min-width: unset; }
+    }
+
+    /* ===== Time Display ===== */
+    .time-display {
+      font-size: clamp(56px, 14vw, 120px);
+      font-weight: 300;
+      font-variant-numeric: tabular-nums;
+      line-height: 1;
+      color: oklch(0.92 0.008 260);
+      display: flex;
+      align-items: baseline;
+      justify-content: center;
+      gap: 0.02em;
+      letter-spacing: 0.02em;
+    }
+
+    .time-digits {
+      display: inline-block;
+      position: relative;
+    }
+
+    /* Separator colon */
+    .time-sep {
+      color: oklch(0.45 0.12 255 / 0.55);
+      animation: pulse-sep 1s step-start infinite;
+      font-weight: 200;
+    }
+
+    @keyframes pulse-sep {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.15; }
+    }
+
+    /* Seconds — smaller, sits inline */
+    .time-sec {
+      display: inline-block;
+      font-size: 0.30em;
+      font-weight: 250;
+      color: oklch(0.60 0.06 255 / 0.6);
+      margin-left: 0.35em;
+      vertical-align: super;
+      letter-spacing: 0;
+    }
+
+    /* AM/PM badge */
+    .period-badge {
+      font-size: 0.16em;
+      font-weight: 400;
+      letter-spacing: 0.12em;
+      color: oklch(0.50 0.10 255 / 0.65);
+      margin-left: 0.4em;
+      text-transform: uppercase;
+      vertical-align: super;
+      display: none;
+    }
+
+    [data-theme="12h"] .period-badge {
+      display: inline-block;
+    }
+
+    /* ===== Date Display ===== */
+    .date-display {
+      margin-top: clamp(12px, 2.5vw, 20px);
+      font-size: clamp(14px, 2.2vw, 19px);
+      font-weight: 380;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      letter-spacing: 0.06em;
+      color: oklch(0.60 0.03 255 / 0.65);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    .date-display .day-name {
+      color: oklch(0.68 0.06 255 / 0.55);
+      text-transform: uppercase;
+      font-size: 0.88em;
+    }
+
+    .date-display .date-sep {
+      color: oklch(0.35 0.02 260 / 0.4);
+    }
+
+    /* ===== Controls ===== */
+    .controls {
+      margin-top: clamp(28px, 4vw, 40px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+    }
+
+    .toggle-btn {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-size: clamp(11px, 1.4vw, 13px);
+      font-weight: 480;
+      letter-spacing: 0.03em;
+      padding: 8px 18px;
+      border-radius: 8px;
+      border: 1px solid oklch(0.30 0.02 260 / 0.35);
+      background: oklch(0.18 0.015 260 / 0.35);
+      color: oklch(0.68 0.04 255 / 0.65);
+      cursor: pointer;
+      transition: all 0.25s ease;
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+      outline: none;
+    }
+
+    .toggle-btn:hover {
+      background: oklch(0.25 0.025 260 / 0.45);
+      border-color: oklch(0.40 0.08 255 / 0.4);
+      color: oklch(0.82 0.04 255 / 0.85);
+    }
+
+    .toggle-btn:focus-visible {
+      box-shadow: 0 0 0 2px oklch(0.55 0.18 255 / 0.3);
+    }
+
+    .toggle-btn:active {
+      transform: scale(0.96);
+    }
+
+    .toggle-btn.active {
+      background: oklch(0.32 0.08 255 / 0.22);
+      border-color: oklch(0.55 0.15 255 / 0.4);
+      color: oklch(0.80 0.06 255 / 0.85);
+      box-shadow: 0 0 24px oklch(0.45 0.15 255 / 0.06);
+    }
+
+    /* ===== Footer ===== */
+    .footer {
+      margin-top: clamp(20px, 3vw, 32px);
+      font-size: 10px;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      letter-spacing: 0.12em;
+      color: oklch(0.35 0.02 260 / 0.45);
+      text-transform: uppercase;
+    }
+
+    /* ===== Responsive ===== */
+    @media (max-width: 480px) {
+      .clock-card {
+        padding: 32px 24px;
+        width: calc(100vw - 28px);
+        border-radius: 20px;
+      }
+      .time-display {
+        font-size: clamp(44px, 13vw, 64px);
+        gap: 0.01em;
+      }
+      .controls {
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+      .toggle-btn {
+        padding: 7px 14px;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .time-sep { animation: none; opacity: 0.5; }
+      .particle { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <!-- Ambient background -->
+  <div class="ambient-ring"></div>
+  <div class="particle"></div>
+  <div class="particle"></div>
+  <div class="particle"></div>
+
+  <!-- Clock Card -->
+  <div class="clock-card" data-comp-id="clock-card">
+    <!-- Time -->
+    <div class="time-display" data-comp-id="time-display">
+      <span class="time-digits" id="hours">00</span>
+      <span class="time-sep">:</span>
+      <span class="time-digits" id="minutes">00</span>
+      <span class="time-sep">:</span>
+      <span class="time-digits" id="seconds">00</span>
+      <span class="period-badge" id="period">AM</span>
+    </div>
+
+    <!-- Date -->
+    <div class="date-display" data-comp-id="date-display">
+      <span class="day-name" id="dayName">周一</span>
+      <span class="date-sep">·</span>
+      <span id="dateFull">2026 年 7 月 1 日</span>
+    </div>
+
+    <!-- Controls -->
+    <div class="controls" data-comp-id="clock-controls">
+      <button class="toggle-btn active" id="modeToggle" data-comp-id="mode-toggle">24H</button>
+      <button class="toggle-btn active" id="pulseToggle" data-comp-id="pulse-toggle" title="切换冒号闪烁">◉ 脉冲</button>
+    </div>
+
+    <div class="footer" data-comp-id="clock-footer">NEBULA CLOCK</div>
+  </div>
+
+  <script>
+    (function() {
+      'use strict';
+
+      const DAYS_CN   = ['周日','周一','周二','周三','周四','周五','周六'];
+
+      // DOM refs
+      const elHours   = document.getElementById('hours');
+      const elMinutes = document.getElementById('minutes');
+      const elSeconds = document.getElementById('seconds');
+      const elPeriod  = document.getElementById('period');
+      const elDayName = document.getElementById('dayName');
+      const elDateFull= document.getElementById('dateFull');
+      const modeBtn   = document.getElementById('modeToggle');
+      const pulseBtn  = document.getElementById('pulseToggle');
+      const seps      = document.querySelectorAll('.time-sep');
+      const root      = document.documentElement;
+
+      let is24h    = true;
+      let sepPulse = true;
+
+      // --- Toggle 12/24h format ---
+      modeBtn.addEventListener('click', function toggleFormat() {
+        is24h = !is24h;
+        root.setAttribute('data-theme', is24h ? '24h' : '12h');
+        this.classList.toggle('active');
+        this.textContent = is24h ? '24H' : '12H';
+        render();
+      });
+
+      // --- Toggle separator pulse animation ---
+      pulseBtn.addEventListener('click', function togglePulse() {
+        sepPulse = !sepPulse;
+        this.classList.toggle('active');
+        this.textContent = sepPulse ? '◉ 脉冲' : '◯ 常亮';
+        seps.forEach(function(el) {
+          if (sepPulse) {
+            el.style.animation = '';
+            el.style.opacity = '';
+          } else {
+            el.style.animation = 'none';
+            el.style.opacity = '0.4';
+          }
+        });
+      });
+
+      // --- Render clock & date ---
+      function render() {
+        var now = new Date();
+        var h = now.getHours();
+        var m = now.getMinutes();
+        var s = now.getSeconds();
+        var period = '';
+
+        if (!is24h) {
+          period = h >= 12 ? 'PM' : 'AM';
+          h = h % 12 || 12;
+        }
+
+        setText(elHours,   pad2(h));
+        setText(elMinutes, pad2(m));
+        setText(elSeconds, pad2(s));
+        elPeriod.textContent = period;
+
+        // Date
+        var dow = now.getDay();
+        var y = now.getFullYear();
+        var mon = now.getMonth() + 1;
+        var day = now.getDate();
+        elDayName.textContent = DAYS_CN[dow];
+        elDateFull.textContent = y + ' 年 ' + mon + ' 月 ' + day + ' 日';
+      }
+
+      function pad2(n) {
+        return n < 10 ? '0' + n : '' + n;
+      }
+
+      function setText(el, val) {
+        if (el.textContent !== val) {
+          // Brief fade-up on digit change (skip seconds to reduce flicker)
+          if (el !== elSeconds) {
+            el.style.transition = 'opacity 0.1s ease, transform 0.1s ease';
+            el.style.transform = 'translateY(-3px)';
+            el.style.opacity = '0.35';
+          }
+          el.textContent = val;
+          // Force reflow so the transition fires
+          void el.offsetHeight;
+          el.style.transform = '';
+          el.style.opacity = '';
+        }
+      }
+
+      // First render
+      render();
+
+      // Update every second
+      setInterval(render, 1000);
+
+      // Clean up transition style every few seconds to avoid style accumulation
+      setInterval(function() {
+        document.querySelectorAll('.time-digits').forEach(function(el) {
+          el.style.transition = '';
+        });
+      }, 3000);
+    })();
+  </script>
+</body>
+</html>

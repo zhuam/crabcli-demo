@@ -587,7 +587,60 @@
       "rating": 4.0
     },
     {
-      "id": "wheel-o-mon-showdown",
+"id": "battle-dogs-arena",
+      "name": "Battle Dogs Arena",
+      "description": "狗狗组队竞技场 — 元素克制、自动战斗，收集犬种赢取回合胜利",
+      "category": "strategy",
+      "tags": [
+        "singleplayer",
+        "strategy",
+        "pets",
+        "auto-battle",
+        "short-session"
+      ],
+      "thumbnail": "/games/064-battle-dogs-arena/thumb.svg",
+      "path": "/games/064-battle-dogs-arena/",
+      "hasServer": false,
+      "players": "1",
+      "version": "1.0.0",
+      "featured": true,
+      "rating": 4.5
+    },
+    {
+      "id": "slime-siege",
+      "name": "Slime Siege",
+      "description": "可爱史莱姆塔防主城 — 放置箭塔、抵御史莱姆浪潮、升级与符文",
+      "category": "strategy",
+      "tags": [
+        "singleplayer",
+        "tower-defense",
+        "strategy",
+        "short-session",
+        "touch"
+      ],
+      "thumbnail": "/games/065-slime-siege/thumb.svg",
+      "path": "/games/065-slime-siege/",
+      "hasServer": false,
+      "players": "1",
+      "version": "1.0.0",
+      "featured": true,
+      "rating": 4.3
+    },
+    {
+      "id": "we-bare-bears-blocks",
+      "name": "We Bare Bears Blocks",
+      "description": "熊熊三兄弟主题三消 — 滑动匹配熊熊方块，完成关卡目标通关！",
+      "category": "puzzle",
+      "tags": [
+        "singleplayer",
+        "puzzle",
+        "match3",
+        "ip",
+        "short-session"
+      ],
+      "thumbnail": "/games/066-we-bare-bears-blocks/thumb.svg",
+      "path": "/games/066-we-bare-bears-blocks/",
+    "id": "wheel-o-mon-showdown",
       "name": "Wheel-o-Mon Showdown",
       "description": "转轮盘决定技能进行回合制对战 — 宝可梦+轮盘融合",
       "category": "casual",
