@@ -1,0 +1,1573 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1">
+<meta name="theme-color" content="#E8D5C4">
+<title>Bubble Tea Maker · 珍珠奶茶</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700;800;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../games/shared/game-frame.css" />
+<style>
+/* ===== Bubble Tea Design System ===== */
+:root {
+  --brown-900: #3E2723;
+  --brown-800: #4E342E;
+  --brown-700: #5D4037;
+  --brown-600: #6D4C41;
+  --brown-400: #8D6E63;
+  --brown-200: #BCAAA4;
+  --brown-100: #D7CCC8;
+  --brown-50:  #EFEBE9;
+  --cream:     #FDF8F3;
+  --cream-dark:#F5EDE3;
+  --pink:      #F48FB1;
+  --pink-light:#FCE4EC;
+  --mint:      #80CBC4;
+  --mint-light:#E0F2F1;
+  --gold:      #F59E0B;
+  --star-gold: #FBBF24;
+  --green-tea: #A5D6A7;
+  --taro:      #CE93D8;
+  --boba-brown:#4E342E;
+  --text:      #3E2723;
+  --text-light:#6D4C41;
+  --text-muted:#A17F6E;
+  --white:     #ffffff;
+  --success:   #43A047;
+  --danger:    #E53935;
+  --warning:   #FB8C00;
+  --font:      'Inter', system-ui, sans-serif;
+  --font-display: 'Outfit', system-ui, sans-serif;
+  --radius:    12px;
+  --radius-lg: 20px;
+  --radius-xl: 28px;
+  --shadow-sm: 0 2px 8px rgba(62,39,35,0.08);
+  --shadow-md: 0 4px 16px rgba(62,39,35,0.12);
+  --shadow-lg: 0 8px 32px rgba(62,39,35,0.18);
+  --transition: 0.2s cubic-bezier(0.4,0,0.2,1);
+  --bounce: 0.3s cubic-bezier(0.34,1.56,0.64,1);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  width: 100%; height: 100%;
+  overflow: hidden;
+  font-family: var(--font);
+  background: var(--cream);
+  color: var(--text);
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ===== Screen Base ===== */
+.screen {
+  position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+  display: flex; flex-direction: column;
+  transition: transform 0.35s cubic-bezier(0.4,0,0.2,1), opacity 0.35s ease;
+  will-change: transform, opacity;
+}
+.screen.hidden {
+  transform: translateY(30px); opacity: 0;
+  pointer-events: none;
+}
+.screen.active {
+  transform: translateY(0); opacity: 1;
+}
+
+/* ===== SPLASH ===== */
+#splash {
+  background: linear-gradient(160deg, #6D4C41 0%, #3E2723 100%);
+  justify-content: center; align-items: center;
+  padding: 32px; text-align: center;
+  position: relative; overflow: hidden;
+}
+#splash::before {
+  content: ''; position: absolute; inset: 0;
+  background: radial-gradient(ellipse at 50% 30%, rgba(253,248,243,0.08) 0%, transparent 70%);
+}
+.splash-deco {
+  position: absolute; pointer-events: none; font-size: 5rem; opacity: 0.06;
+  animation: floatDeco 6s ease-in-out infinite;
+}
+@keyframes floatDeco {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-20px) rotate(5deg); }
+}
+.splash-cup {
+  position: relative; z-index: 1;
+  font-size: 5rem; line-height: 1; margin-bottom: 4px;
+  filter: drop-shadow(0 4px 20px rgba(0,0,0,0.25));
+  animation: cupBounce 2.5s ease-in-out infinite;
+}
+@keyframes cupBounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+.splash-title {
+  position: relative; z-index: 1;
+  font-size: 2.8rem; font-weight: 900; color: var(--white);
+  font-family: var(--font-display);
+  letter-spacing: 2px; text-shadow: 0 2px 12px rgba(0,0,0,0.3);
+  margin-bottom: 2px;
+}
+.splash-subtitle {
+  position: relative; z-index: 1;
+  font-size: 1rem; color: var(--brown-100); opacity: 0.85;
+  margin-bottom: 40px; font-weight: 400; letter-spacing: 3px;
+}
+.splash-btn {
+  position: relative; z-index: 1;
+  width: 200px; height: 56px;
+  background: var(--pink);
+  color: var(--white); border: none; border-radius: var(--radius-xl);
+  font-size: 1.25rem; font-weight: 700; font-family: var(--font-display);
+  cursor: pointer;
+  transition: transform var(--transition), box-shadow var(--transition);
+  box-shadow: 0 4px 20px rgba(244,143,177,0.4);
+  touch-action: manipulation;
+}
+.splash-btn:hover { transform: scale(1.05); }
+.splash-btn:active { transform: scale(0.97); }
+.splash-footer {
+  position: absolute; bottom: 24px; z-index: 1;
+  font-size: 0.7rem; color: var(--brown-100); opacity: 0.4;
+  letter-spacing: 1px;
+}
+
+/* ===== GAME SCREEN ===== */
+#game {
+  background: var(--cream);
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  gap: 0; padding: 0;
+}
+
+/* Top Bar */
+.game-topbar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 14px;
+  background: var(--brown-700);
+  color: var(--white); min-height: 50px;
+}
+.game-topbar .order-label { font-size: 0.75rem; font-weight: 600; opacity: 0.75; }
+.game-topbar .order-customer {
+  font-size: 1rem; font-weight: 700;
+  display: flex; align-items: center; gap: 6px;
+}
+.game-topbar .order-timer {
+  font-family: 'Courier New', monospace;
+  font-size: 1rem; font-weight: 700;
+  display: flex; align-items: center; gap: 6px;
+}
+.game-topbar .order-timer.warning { color: var(--danger); animation: pulseText 0.5s ease-in-out infinite; }
+
+/* Timer Bar */
+.timer-bar-wrap { height: 4px; background: rgba(255,255,255,0.15); }
+.timer-bar {
+  height: 100%; background: var(--success); width: 100%;
+  transition: width 0.3s linear, background 0.3s ease;
+  border-radius: 0 2px 2px 0;
+}
+.timer-bar.warning { background: var(--warning); }
+.timer-bar.danger { background: var(--danger); }
+
+/* Game Body */
+.game-body {
+  display: grid;
+  grid-template-columns: 1fr;
+  grid-template-rows: auto 1fr auto;
+  gap: 8px;
+  padding: 10px 12px 8px;
+  flex: 1; overflow: hidden;
+  min-height: 0;
+}
+
+/* ===== Order Card ===== */
+.order-card {
+  background: var(--white);
+  border-radius: var(--radius);
+  padding: 10px 14px;
+  box-shadow: var(--shadow-sm);
+  display: flex; align-items: center; gap: 12px;
+  flex-shrink: 0;
+}
+.order-card .order-emoji { font-size: 2rem; }
+.order-card .order-info { flex: 1; }
+.order-card .order-info .order-title {
+  font-weight: 700; font-size: 0.95rem;
+  color: var(--text); margin-bottom: 2px;
+}
+.order-card .order-info .order-desc {
+  font-size: 0.8rem; color: var(--text-muted);
+}
+.order-card .order-sweetness {
+  font-size: 0.75rem; background: var(--pink-light);
+  padding: 4px 10px; border-radius: 20px;
+  color: var(--brown-800); font-weight: 600;
+  white-space: nowrap;
+}
+
+/* ===== Cup Area ===== */
+.cup-area {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  position: relative; min-height: 180px;
+  background: var(--cream-dark); border-radius: var(--radius-lg);
+  border: 2px dashed var(--brown-200);
+  overflow: hidden;
+}
+.cup-area.has-all { border-color: var(--success); background: rgba(67,160,71,0.05); }
+
+.cup-visual {
+  position: relative;
+  width: 120px; height: 180px;
+  display: flex; flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+}
+.cup-body {
+  width: 110px; height: 140px;
+  background: linear-gradient(180deg, rgba(253,248,243,0.5) 0%, rgba(253,248,243,0.85) 100%);
+  border: 3px solid var(--brown-600);
+  border-top: none;
+  border-radius: 0 0 18px 18px;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+}
+.cup-body::before {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(90deg, rgba(255,255,255,0.15) 0%, transparent 30%, transparent 70%, rgba(255,255,255,0.08) 100%);
+  pointer-events: none;
+  z-index: 1;
+}
+.cup-lid {
+  width: 116px; height: 16px;
+  background: var(--brown-400);
+  border-radius: 8px 8px 0 0;
+  position: relative;
+  z-index: 2;
+}
+.cup-lid::after {
+  content: ''; position: absolute;
+  top: -6px; left: 50%; transform: translateX(-50%);
+  width: 24px; height: 8px; background: var(--brown-200);
+  border-radius: 4px 4px 0 0;
+}
+
+/* Liquid Layer */
+.cup-liquid {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  height: 0%;
+  background: linear-gradient(180deg, #D2B48C 0%, #A0785C 100%);
+  transition: height 0.4s cubic-bezier(0.34,1.56,0.64,1), background 0.4s ease;
+  border-radius: 0 0 16px 16px;
+  z-index: 0;
+}
+.cup-liquid.green-tea { background: linear-gradient(180deg, #A5D6A7 0%, #66BB6A 100%); }
+.cup-liquid.jasmine  { background: linear-gradient(180deg, #C8E6C9 0%, #81C784 100%); }
+.cup-liquid.oolong   { background: linear-gradient(180deg, #D7CCC8 0%, #BCAAA4 100%); }
+.cup-liquid.black    { background: linear-gradient(180deg, #8D6E63 0%, #5D4037 100%); }
+.cup-liquid.taro     { background: linear-gradient(180deg, #CE93D8 0%, #AB47BC 100%); }
+.cup-liquid.fruit    { background: linear-gradient(180deg, #F48FB1 0%, #EC407A 100%); }
+
+/* Toppings inside cup */
+.cup-toppings {
+  position: absolute; bottom: 4px; left: 50%; transform: translateX(-50%);
+  display: flex; gap: 2px; flex-wrap: wrap;
+  justify-content: center; z-index: 2;
+  max-width: 90px;
+  transition: all 0.3s ease;
+}
+.cup-topping-dot {
+  font-size: 1.1rem;
+  animation: dropIn 0.3s cubic-bezier(0.34,1.56,0.64,1);
+}
+@keyframes dropIn {
+  0% { transform: translateY(-30px) scale(0.3); opacity: 0; }
+  100% { transform: translateY(0) scale(1); opacity: 1; }
+}
+
+/* Cup Instructions */
+.cup-hint {
+  position: absolute; bottom: 10px;
+  font-size: 0.7rem; color: var(--text-muted);
+  font-weight: 500; letter-spacing: 1px;
+  opacity: 0.6;
+  transition: opacity 0.3s ease;
+}
+.cup-hint.done { opacity: 0; }
+
+/* ===== Shake Button ===== */
+.shake-btn-wrap {
+  display: flex; justify-content: center;
+  padding: 4px 0; flex-shrink: 0;
+}
+.shake-btn {
+  width: 160px; height: 48px;
+  border: none; border-radius: var(--radius-xl);
+  background: var(--brown-600);
+  color: var(--white);
+  font-size: 1rem; font-weight: 700; font-family: var(--font-display);
+  cursor: pointer;
+  transition: all var(--transition);
+  opacity: 0.4; pointer-events: none;
+  touch-action: manipulation;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+.shake-btn.ready {
+  opacity: 1; pointer-events: auto;
+  background: var(--success);
+  box-shadow: 0 4px 16px rgba(67,160,71,0.35);
+}
+.shake-btn.ready:hover { transform: scale(1.04); box-shadow: 0 6px 24px rgba(67,160,71,0.45); }
+.shake-btn.ready:active { transform: scale(0.97); }
+.shake-btn.shaking {
+  animation: shakeAnim 0.4s ease;
+  pointer-events: none;
+  background: var(--brown-400);
+}
+@keyframes shakeAnim {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-8px) rotate(-3deg); }
+  40% { transform: translateX(8px) rotate(3deg); }
+  60% { transform: translateX(-6px) rotate(-2deg); }
+  80% { transform: translateX(6px) rotate(2deg); }
+}
+
+/* ===== Ingredient Tray ===== */
+.tea-tray, .topping-tray {
+  flex-shrink: 0;
+  display: flex; gap: 6px;
+  padding: 2px 0;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.tea-tray::-webkit-scrollbar, .topping-tray::-webkit-scrollbar { display: none; }
+
+.tea-tray-label, .topping-tray-label {
+  font-size: 0.65rem; font-weight: 600; color: var(--text-muted);
+  text-transform: uppercase; letter-spacing: 1px;
+  padding-right: 4px;
+  display: flex; align-items: center; white-space: nowrap;
+}
+
+.tea-card, .topping-card {
+  background: var(--white);
+  border: 2px solid var(--brown-100);
+  border-radius: 10px;
+  padding: 6px 12px;
+  display: flex; align-items: center; gap: 6px;
+  cursor: grab;
+  transition: all var(--transition);
+  touch-action: none;
+  flex-shrink: 0;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+.tea-card:active, .topping-card:active { cursor: grabbing; }
+.tea-card:hover, .topping-card:hover {
+  border-color: var(--brown-400);
+  box-shadow: var(--shadow-sm);
+}
+.tea-card .item-emoji, .topping-card .item-emoji { font-size: 1.3rem; }
+.tea-card.selected, .topping-card.selected {
+  border-color: var(--success);
+  background: rgba(67,160,71,0.06);
+}
+.tea-card.done, .topping-card.done {
+  opacity: 0.35; cursor: default; filter: grayscale(0.5);
+  pointer-events: none;
+}
+
+/* Ingredient Selection Arrow */
+.tea-tray-wrap, .topping-tray-wrap {
+  display: flex; align-items: center; gap: 4px;
+}
+
+/* ===== Bottom Bar ===== */
+.game-bottombar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 14px;
+  background: var(--white);
+  border-top: 1px solid var(--brown-100);
+  min-height: 44px;
+}
+.progress-dots { display: flex; gap: 5px; }
+.progress-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--brown-100);
+  transition: all var(--transition);
+}
+.progress-dot.done { background: var(--success); }
+.progress-dot.current {
+  background: var(--brown-600);
+  box-shadow: 0 0 0 3px rgba(109,76,65,0.15);
+}
+.game-score {
+  font-family: 'Courier New', monospace;
+  font-size: 1rem; font-weight: 700;
+  color: var(--text);
+}
+.game-combo {
+  font-size: 0.75rem; font-weight: 600; color: var(--warning);
+  display: none;
+}
+.game-combo.active { display: block; animation: comboFlash 0.3s ease; }
+@keyframes comboFlash { 0% { transform: scale(1.3); } 100% { transform: scale(1); } }
+
+/* ===== Shake Result Overlay ===== */
+#shake-result {
+  position: absolute; inset: 0; z-index: 100;
+  background: rgba(62,39,35,0.5); backdrop-filter: blur(4px);
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+#shake-result.active { opacity: 1; pointer-events: auto; }
+.shake-result-card {
+  background: var(--white); border-radius: var(--radius-lg);
+  padding: 36px 32px 28px; text-align: center;
+  box-shadow: var(--shadow-lg); max-width: 300px; width: 90%;
+  transform: scale(0.85); transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
+}
+#shake-result.active .shake-result-card { transform: scale(1); }
+.shake-result-card .result-emoji { font-size: 3rem; margin-bottom: 6px; }
+.shake-result-card .result-label {
+  font-size: 1rem; font-weight: 700; color: var(--text); margin-bottom: 2px;
+}
+.shake-result-card .result-points {
+  font-family: 'Courier New', monospace;
+  font-size: 1.4rem; font-weight: 700;
+  color: var(--success); margin-bottom: 12px;
+}
+.shake-result-card .result-combo {
+  font-size: 0.8rem; font-weight: 600; color: var(--warning);
+  margin-bottom: 14px;
+}
+.shake-result-btn {
+  padding: 10px 32px; border: none; border-radius: var(--radius-xl);
+  background: var(--brown-600); color: var(--white);
+  font-size: 0.9rem; font-weight: 600; font-family: var(--font);
+  cursor: pointer; transition: transform var(--transition), box-shadow var(--transition);
+}
+.shake-result-btn:hover { transform: scale(1.03); }
+.shake-result-btn:active { transform: scale(0.97); }
+
+/* ===== RESULT SCREEN ===== */
+#result {
+  background: linear-gradient(160deg, var(--brown-700) 0%, var(--brown-900) 100%);
+  justify-content: center; align-items: center;
+  padding: 32px; text-align: center; position: relative; overflow: hidden;
+}
+#result::before {
+  content: ''; position: absolute; inset: 0;
+  background: radial-gradient(ellipse at 50% 40%, rgba(253,248,243,0.06) 0%, transparent 60%);
+}
+.result-card {
+  position: relative; z-index: 1;
+  background: rgba(255,255,255,0.08); backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: var(--radius-lg); padding: 36px 32px; max-width: 360px; width: 100%;
+}
+.result-title {
+  font-size: 1.6rem; font-weight: 800; color: var(--white);
+  font-family: var(--font-display); margin-bottom: 2px;
+}
+.result-subtitle {
+  font-size: 0.85rem; color: var(--brown-100); opacity: 0.8; margin-bottom: 20px;
+}
+.result-stars { display: flex; justify-content: center; gap: 8px; margin-bottom: 18px; }
+.result-star {
+  font-size: 2.2rem; transition: all 0.3s ease;
+  opacity: 0.2; filter: grayscale(1);
+}
+.result-star.filled {
+  opacity: 1; filter: grayscale(0);
+  animation: starPop 0.3s cubic-bezier(0.34,1.56,0.64,1) forwards;
+}
+.result-star.filled:nth-child(2) { animation-delay: 0.15s; }
+.result-star.filled:nth-child(3) { animation-delay: 0.3s; }
+@keyframes starPop {
+  0% { transform: scale(0); }
+  100% { transform: scale(1); }
+}
+.result-score-wrap { display: flex; justify-content: center; gap: 24px; margin-bottom: 24px; }
+.result-score-item { text-align: center; }
+.result-score-item .num {
+  font-family: 'Courier New', monospace;
+  font-size: 1.6rem; font-weight: 700; color: var(--white);
+}
+.result-score-item .label {
+  font-size: 0.65rem; color: var(--brown-100); opacity: 0.6;
+  text-transform: uppercase; letter-spacing: 1px;
+}
+.result-score-item.highlight .num { color: var(--star-gold); }
+.result-actions { display: flex; flex-direction: column; gap: 10px; align-items: center; }
+.result-btn {
+  width: 200px; height: 48px; border: none; border-radius: var(--radius-xl);
+  font-size: 1rem; font-weight: 700; font-family: var(--font-display);
+  cursor: pointer; transition: all var(--transition);
+  touch-action: manipulation;
+}
+.result-btn.primary {
+  background: var(--success); color: var(--white);
+  box-shadow: 0 4px 16px rgba(67,160,71,0.35);
+}
+.result-btn.primary:hover { transform: scale(1.04); }
+.result-btn.secondary {
+  background: transparent; color: var(--brown-100);
+  border: 2px solid rgba(255,255,255,0.2);
+}
+.result-btn.secondary:hover { border-color: rgba(255,255,255,0.4); transform: scale(1.02); }
+.result-btn:active { transform: scale(0.97); }
+
+/* ===== Toast ===== */
+.toast {
+  position: fixed; top: 60px; left: 50%; transform: translateX(-50%) translateY(-80px);
+  z-index: 2000;
+  background: var(--brown-700); color: var(--white);
+  padding: 10px 22px;
+  border-radius: var(--radius-xl); font-size: 0.85rem; font-weight: 600;
+  box-shadow: var(--shadow-lg);
+  transition: transform 0.35s cubic-bezier(0.34,1.56,0.64,1);
+  pointer-events: none;
+  white-space: nowrap;
+}
+.toast.show { transform: translateX(-50%) translateY(0); }
+.toast.success { background: var(--success); }
+.toast.warning { background: var(--warning); }
+.toast.danger { background: var(--danger); }
+
+/* ===== Unlock Toast ===== */
+.unlock-toast {
+  position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.8);
+  z-index: 3000;
+  background: var(--white); border-radius: var(--radius-lg);
+  padding: 32px 28px; text-align: center;
+  box-shadow: var(--shadow-lg);
+  opacity: 0; pointer-events: none;
+  transition: all 0.4s cubic-bezier(0.34,1.56,0.64,1);
+  max-width: 280px; width: 90%;
+}
+.unlock-toast.show {
+  opacity: 1; pointer-events: auto;
+  transform: translate(-50%, -50%) scale(1);
+}
+.unlock-toast .unlock-emoji { font-size: 3rem; margin-bottom: 6px; }
+.unlock-toast .unlock-title { font-size: 1.1rem; font-weight: 700; color: var(--text); margin-bottom: 4px; }
+.unlock-toast .unlock-desc { font-size: 0.85rem; color: var(--text-muted); margin-bottom: 16px; }
+.unlock-toast .unlock-btn {
+  padding: 8px 28px; border: none; border-radius: var(--radius-xl);
+  background: var(--pink); color: var(--white);
+  font-size: 0.9rem; font-weight: 600; font-family: var(--font);
+  cursor: pointer;
+}
+
+/* ===== Shared Animations ===== */
+@keyframes pulseText { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+/* ===== Responsive ===== */
+@media (max-width: 767px) {
+  .splash-title { font-size: 2rem; }
+  .splash-cup { font-size: 3.5rem; }
+  .cup-visual { width: 100px; height: 150px; }
+  .cup-body { width: 92px; height: 120px; }
+  .cup-lid { width: 98px; }
+  .game-body { padding: 6px 8px 4px; gap: 6px; }
+  .game-topbar { padding: 8px 10px; min-height: 44px; }
+  .game-topbar .order-customer { font-size: 0.85rem; }
+  .result-card { padding: 28px 18px; }
+  .result-title { font-size: 1.3rem; }
+  .result-score-item .num { font-size: 1.3rem; }
+  .tea-card, .topping-card { padding: 4px 10px; font-size: 0.8rem; }
+  .tea-card .item-emoji, .topping-card .item-emoji { font-size: 1.1rem; }
+  .shake-btn { width: 140px; height: 42px; font-size: 0.9rem; }
+}
+
+/* ===== Focus & Keyboard ===== */
+.tea-card:focus-visible, .topping-card:focus-visible,
+.splash-btn:focus-visible, .result-btn:focus-visible,
+.shake-btn:focus-visible, .shake-result-btn:focus-visible {
+  outline: 3px solid var(--brown-600);
+  outline-offset: 2px;
+}
+</style>
+</head>
+<body>
+
+<a href="/" class="back-to-hub" aria-label="Back to hub">&larr; Hub</a>
+
+<!-- ===== SPLASH ===== -->
+<div id="splash" class="screen active">
+  <div class="splash-deco" style="top:8%;left:5%;animation-delay:-1s;">🧋</div>
+  <div class="splash-deco" style="bottom:12%;right:6%;animation-delay:-3s;font-size:3.5rem;">🫘</div>
+  <div class="splash-deco" style="top:35%;right:12%;animation-delay:-5s;font-size:2.5rem;">🍵</div>
+  <div class="splash-cup">🧋</div>
+  <h1 class="splash-title">珍珠奶茶</h1>
+  <p class="splash-subtitle">手摇一杯 · 幸福满杯</p>
+  <button class="splash-btn" id="startBtn">开始调制</button>
+  <p class="splash-footer">Astrocade · 拖拽操作 · 3 星过关</p>
+</div>
+
+<!-- ===== GAME ===== -->
+<div id="game" class="screen hidden">
+  <!-- Top Bar -->
+  <div class="game-topbar">
+    <div>
+      <div class="order-label">ORDER</div>
+      <div class="order-customer" id="customerDisplay">👤 顾客</div>
+    </div>
+    <div class="order-timer" id="timerDisplay">
+      <span>⏱</span>
+      <span id="timerValue">60</span><span>s</span>
+    </div>
+  </div>
+  <div class="timer-bar-wrap">
+    <div class="timer-bar" id="timerBar"></div>
+  </div>
+
+  <!-- Game Body -->
+  <div class="game-body">
+    <!-- Order Card -->
+    <div class="order-card" id="orderCard">
+      <div class="order-emoji" id="orderEmoji">🧋</div>
+      <div class="order-info">
+        <div class="order-title" id="orderTitle">珍珠奶茶</div>
+        <div class="order-desc" id="orderDesc">茶底 + 配料</div>
+      </div>
+      <div class="order-sweetness" id="orderSweetness">🫘 全糖</div>
+    </div>
+
+    <!-- Cup Area -->
+    <div class="cup-area" id="cupArea">
+      <div class="cup-visual">
+        <div class="cup-lid"></div>
+        <div class="cup-body" id="cupBody">
+          <div class="cup-liquid" id="cupLiquid"></div>
+          <div class="cup-toppings" id="cupToppings"></div>
+        </div>
+      </div>
+      <div class="cup-hint" id="cupHint">👆 先选茶底，再加配料</div>
+    </div>
+
+    <!-- Shake Button -->
+    <div class="shake-btn-wrap">
+      <button class="shake-btn" id="shakeBtn"><span>🥤</span> 摇匀!</button>
+    </div>
+
+    <!-- Tea Base Tray -->
+    <div class="tea-tray-wrap">
+      <span class="tea-tray-label">🍵 茶底</span>
+      <div class="tea-tray" id="teaTray"></div>
+    </div>
+
+    <!-- Topping Tray -->
+    <div class="topping-tray-wrap">
+      <span class="topping-tray-label">🫘 配料</span>
+      <div class="topping-tray" id="toppingTray"></div>
+    </div>
+  </div>
+
+  <!-- Bottom Bar -->
+  <div class="game-bottombar">
+    <div class="progress-dots" id="progressDots"></div>
+    <div class="game-combo" id="comboDisplay">🔥 连击 x<span id="comboCount">0</span></div>
+    <div class="game-score" id="scoreDisplay">0</div>
+  </div>
+</div>
+
+<!-- ===== SHAKE RESULT OVERLAY ===== -->
+<div id="shake-result">
+  <div class="shake-result-card">
+    <div class="result-emoji" id="orderResultEmoji">✅</div>
+    <div class="result-label" id="orderResultLabel">完美调制!</div>
+    <div class="result-points" id="orderResultPoints">+100</div>
+    <div class="result-combo" id="orderResultCombo" style="display:none;"></div>
+    <button class="shake-result-btn" id="orderNextBtn">继续</button>
+  </div>
+</div>
+
+<!-- ===== RESULT ===== -->
+<div id="result" class="screen hidden">
+  <div class="result-card">
+    <div class="result-title" id="resultTitle">通关!</div>
+    <div class="result-subtitle" id="resultSubtitle">太棒了!</div>
+    <div class="result-stars" id="resultStars">
+      <span class="result-star" data-idx="0">⭐</span>
+      <span class="result-star" data-idx="1">⭐</span>
+      <span class="result-star" data-idx="2">⭐</span>
+    </div>
+    <div class="result-score-wrap">
+      <div class="result-score-item highlight">
+        <div class="num" id="finalScore">0</div>
+        <div class="label">得分</div>
+      </div>
+      <div class="result-score-item">
+        <div class="num" id="highScore">0</div>
+        <div class="label">最高分</div>
+      </div>
+    </div>
+    <div class="result-actions">
+      <button class="result-btn primary" id="replayBtn">再来一局</button>
+      <button class="result-btn secondary" id="nextLevelBtn" style="display:none;">下一关</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== UNLOCK TOAST ===== -->
+<div class="unlock-toast" id="unlockToast">
+  <div class="unlock-emoji" id="unlockEmoji">🎉</div>
+  <div class="unlock-title" id="unlockTitle">新口味解锁!</div>
+  <div class="unlock-desc" id="unlockDesc">已解锁新茶底或配料!</div>
+  <button class="unlock-btn" id="unlockBtn">太棒了!</button>
+</div>
+
+<!-- ===== TOAST ===== -->
+<div class="toast" id="toast"></div>
+
+<script>
+(function() {
+  'use strict';
+
+  // ===== CONSTANTS =====
+  const LS_PREFIX = 'bubble-tea:';
+  const STORAGE_KEY = LS_PREFIX + 'highScore';
+  const UNLOCK_KEY = LS_PREFIX + 'unlockedLevel';
+  const HAS_PLAYED_KEY = LS_PREFIX + 'hasPlayed';
+
+  // ===== TEA BASES =====
+  const TEA_BASES = [
+    { id: 'black',    name: '红茶',   emoji: '🫖', cssClass: 'black' },
+    { id: 'green',    name: '绿茶',   emoji: '🍵', cssClass: 'green-tea' },
+    { id: 'oolong',   name: '乌龙茶', emoji: '🫖', cssClass: 'oolong' },
+    { id: 'jasmine',  name: '茉莉茶', emoji: '🌸', cssClass: 'jasmine' },
+    { id: 'taro',     name: '芋头',   emoji: '🟣', cssClass: 'taro' },
+  ];
+
+  // ===== TOPPINGS =====
+  const TOPPINGS = [
+    { id: 'boba',     name: '珍珠',   emoji: '🟤' },
+    { id: 'grass-jelly', name: '仙草', emoji: '⬛' },
+    { id: 'coconut',  name: '椰果',   emoji: '🥥' },
+    { id: 'red-bean', name: '红豆',   emoji: '🫘' },
+    { id: 'taro-balls', name: '芋圆', emoji: '🟣' },
+    { id: 'aloe',     name: '芦荟',   emoji: '💚' },
+    { id: 'pudding',  name: '布丁',   emoji: '🍮' },
+  ];
+
+  const SWEETNESS = [
+    { id: 'none',  label: '🫘 无糖',   value: 0 },
+    { id: 'half',  label: '🫘 半糖',   value: 1 },
+    { id: 'full',  label: '🫘 全糖',   value: 2 },
+  ];
+
+  // ===== LEVELS =====
+  const LEVELS = [
+    { id: 1, orders: 3, teas: ['black','green'], toppings: ['boba','grass-jelly'], timing: 60, sweetness: true, unlock: null },
+    { id: 2, orders: 3, teas: ['black','green','oolong'], toppings: ['boba','grass-jelly','coconut'], timing: 55, sweetness: true, unlock: '椰果' },
+    { id: 3, orders: 4, teas: ['black','green','jasmine'], toppings: ['boba','grass-jelly','coconut','red-bean'], timing: 50, sweetness: true, unlock: '红豆' },
+    { id: 4, orders: 4, teas: ['black','green','oolong','jasmine'], toppings: ['boba','grass-jelly','coconut','taro-balls','pudding'], timing: 45, sweetness: true, unlock: '芋圆+布丁' },
+    { id: 5, orders: 5, teas: ['black','green','oolong','jasmine','taro'], toppings: ['boba','grass-jelly','coconut','red-bean','taro-balls','aloe','pudding'], timing: 40, sweetness: true, unlock: '芦荟' },
+  ];
+
+  // ===== STATE =====
+  let state = {
+    phase: 'title',
+    level: parseInt(localStorage.getItem(UNLOCK_KEY)) || 1,
+    score: 0,
+    combo: 0,
+    highScore: parseInt(localStorage.getItem(STORAGE_KEY)) || 0,
+    maxCombo: 0,
+    ordersCompleted: 0,
+    currentOrderIndex: 0,
+    orders: [],
+    currentOrder: null,
+    timeRemaining: 60,
+    totalTime: 60,
+    selectedTea: null,
+    selectedToppings: [],
+    timerInterval: null,
+    soundEnabled: true,
+    shakeInProgress: false,
+  };
+
+  // ===== DOM REFS =====
+  const $ = id => document.getElementById(id);
+  const splash = $('splash');
+  const game = $('game');
+  const result = $('result');
+  const customerDisplay = $('customerDisplay');
+  const timerValue = $('timerValue');
+  const timerBar = $('timerBar');
+  const orderCard = $('orderCard');
+  const orderEmoji = $('orderEmoji');
+  const orderTitle = $('orderTitle');
+  const orderDesc = $('orderDesc');
+  const orderSweetness = $('orderSweetness');
+  const cupArea = $('cupArea');
+  const cupBody = $('cupBody');
+  const cupLiquid = $('cupLiquid');
+  const cupToppings = $('cupToppings');
+  const cupHint = $('cupHint');
+  const shakeBtn = $('shakeBtn');
+  const teaTray = $('teaTray');
+  const toppingTray = $('toppingTray');
+  const progressDots = $('progressDots');
+  const scoreDisplay = $('scoreDisplay');
+  const comboDisplay = $('comboDisplay');
+  const comboCount = $('comboCount');
+  const shakeResult = $('shake-result');
+  const orderResultEmoji = $('orderResultEmoji');
+  const orderResultLabel = $('orderResultLabel');
+  const orderResultPoints = $('orderResultPoints');
+  const orderResultCombo = $('orderResultCombo');
+  const finalScore = $('finalScore');
+  const highScore = $('highScore');
+  const resultTitle = $('resultTitle');
+  const resultSubtitle = $('resultSubtitle');
+  const resultStars = Array.from(document.querySelectorAll('.result-star'));
+  const toast = $('toast');
+  const replayBtn = $('replayBtn');
+  const nextLevelBtn = $('nextLevelBtn');
+  const startBtn = $('startBtn');
+  const orderNextBtn = $('orderNextBtn');
+  const unlockToast = $('unlockToast');
+  const unlockEmoji = $('unlockEmoji');
+  const unlockTitle = $('unlockTitle');
+  const unlockDesc = $('unlockDesc');
+  const unlockBtn = $('unlockBtn');
+
+  // ===== AUDIO =====
+  let audioCtx = null;
+  function ensureAudio() {
+    if (!audioCtx) {
+      const Ctor = window.AudioContext || window.webkitAudioContext;
+      if (!Ctor) return null;
+      audioCtx = new Ctor();
+    }
+    return audioCtx;
+  }
+
+  function playTone(freq, duration, type, volume) {
+    type = type || 'sine'; volume = volume || 0.12;
+    try {
+      const ctx = ensureAudio(); if (!ctx) return;
+      const osc = ctx.createOscillator(); const gain = ctx.createGain();
+      osc.type = type; osc.frequency.setValueAtTime(freq, ctx.currentTime);
+      gain.gain.setValueAtTime(volume, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.start(ctx.currentTime); osc.stop(ctx.currentTime + duration);
+    } catch(e) {}
+  }
+
+  function playFreqSweep(sf, ef, dur, type) {
+    type = type || 'sine';
+    try {
+      const ctx = ensureAudio(); if (!ctx) return;
+      const osc = ctx.createOscillator(); const gain = ctx.createGain();
+      osc.type = type; osc.frequency.setValueAtTime(sf, ctx.currentTime);
+      osc.frequency.linearRampToValueAtTime(ef, ctx.currentTime + dur);
+      gain.gain.setValueAtTime(0.1, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + dur);
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.start(ctx.currentTime); osc.stop(ctx.currentTime + dur);
+    } catch(e) {}
+  }
+
+  function playPickup() { if (!state.soundEnabled) return; playFreqSweep(400, 600, 0.08); }
+  function playSelect() { if (!state.soundEnabled) return; playTone(700, 0.04, 'sine', 0.08); }
+  function playInvalid() { if (!state.soundEnabled) return; playTone(100, 0.1, 'sawtooth', 0.05); }
+  function playShake() {
+    if (!state.soundEnabled) return;
+    try {
+      const ctx = ensureAudio(); if (!ctx) return;
+      for (let i = 0; i < 6; i++) {
+        const osc = ctx.createOscillator(); const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(300 + Math.random()*400, ctx.currentTime + i*0.07);
+        gain.gain.setValueAtTime(0.08, ctx.currentTime + i*0.07);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i*0.07 + 0.05);
+        osc.connect(gain); gain.connect(ctx.destination);
+        osc.start(ctx.currentTime + i*0.07); osc.stop(ctx.currentTime + i*0.07 + 0.06);
+      }
+    } catch(e) {}
+  }
+  function playComplete() {
+    if (!state.soundEnabled) return;
+    try {
+      const ctx = ensureAudio(); if (!ctx) return;
+      [262, 330, 392].forEach((f,i) => {
+        const osc = ctx.createOscillator(); const gain = ctx.createGain();
+        osc.type = 'triangle'; osc.frequency.setValueAtTime(f, ctx.currentTime + i*0.1);
+        gain.gain.setValueAtTime(0.1, ctx.currentTime + i*0.1);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i*0.1 + 0.25);
+        osc.connect(gain); gain.connect(ctx.destination);
+        osc.start(ctx.currentTime + i*0.1); osc.stop(ctx.currentTime + i*0.1 + 0.3);
+      });
+    } catch(e) {}
+  }
+  function playFail() { if (!state.soundEnabled) return; playFreqSweep(300, 150, 0.3, 'sawtooth'); }
+  function playVictory() {
+    try {
+      const ctx = ensureAudio(); if (!ctx) return;
+      [523, 659, 784, 1047].forEach((f,i) => {
+        const osc = ctx.createOscillator(); const gain = ctx.createGain();
+        osc.type = 'triangle'; osc.frequency.setValueAtTime(f, ctx.currentTime + i*0.12);
+        gain.gain.setValueAtTime(0.1, ctx.currentTime + i*0.12);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i*0.12 + 0.35);
+        osc.connect(gain); gain.connect(ctx.destination);
+        osc.start(ctx.currentTime + i*0.12); osc.stop(ctx.currentTime + i*0.12 + 0.4);
+      });
+    } catch(e) {}
+  }
+  function playClick() { if (!state.soundEnabled) return; playTone(800, 0.03, 'sine', 0.05); }
+  function playUnlock() {
+    try {
+      const ctx = ensureAudio(); if (!ctx) return;
+      [392, 523, 659, 784].forEach((f,i) => {
+        const osc = ctx.createOscillator(); const gain = ctx.createGain();
+        osc.type = 'triangle'; osc.frequency.setValueAtTime(f, ctx.currentTime + i*0.1);
+        gain.gain.setValueAtTime(0.12, ctx.currentTime + i*0.1);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i*0.1 + 0.3);
+        osc.connect(gain); gain.connect(ctx.destination);
+        osc.start(ctx.currentTime + i*0.1); osc.stop(ctx.currentTime + i*0.1 + 0.35);
+      });
+    } catch(e) {}
+  }
+
+  // ===== HAPTICS =====
+  function vibrate(p) { if (navigator.vibrate) navigator.vibrate(p); }
+
+  // ===== TOAST =====
+  let toastTimer = null;
+  function showToast(msg, type) {
+    type = type || '';
+    toast.textContent = msg;
+    toast.className = 'toast ' + type;
+    clearTimeout(toastTimer);
+    requestAnimationFrame(() => {
+      toast.classList.add('show');
+      toastTimer = setTimeout(() => toast.classList.remove('show'), 1800);
+    });
+  }
+
+  // ===== ORDER GENERATION =====
+  function getLevelConfig(level) {
+    return LEVELS.find(l => l.id === level) || LEVELS[0];
+  }
+
+  function generateOrders(level) {
+    const cfg = getLevelConfig(level);
+    const teas = TEA_BASES.filter(t => cfg.teas.includes(t.id));
+    const toppings = TOPPINGS.filter(t => cfg.toppings.includes(t.id));
+    const orders = [];
+    const customers = [
+      { name: '小美', emoji: '👩' },
+      { name: '阿杰', emoji: '👨' },
+      { name: '莉莉', emoji: '👩‍🦰' },
+      { name: '大熊', emoji: '🧑' },
+      { name: '小星', emoji: '👦' },
+      { name: '小月', emoji: '👧' },
+    ];
+
+    for (let i = 0; i < cfg.orders; i++) {
+      const tea = teas[Math.floor(Math.random() * teas.length)];
+      const toppingCount = Math.min(1 + i % 3, toppings.length);
+      const shuffledToppings = [...toppings].sort(() => Math.random() - 0.5);
+      const orderToppings = shuffledToppings.slice(0, toppingCount);
+      const sweet = cfg.sweetness ? SWEETNESS[Math.floor(Math.random() * SWEETNESS.length)] : SWEETNESS[1];
+      const customer = customers[i % customers.length];
+
+      orders.push({
+        id: i + 1,
+        customer: customer,
+        tea: tea,
+        toppings: orderToppings,
+        sweetness: sweet,
+        timeLimit: cfg.timing,
+        reward: 100 + (level - 1) * 25,
+      });
+    }
+    return orders;
+  }
+
+  // ===== SCREEN MANAGEMENT =====
+  function showScreen(screenId) {
+    [splash, game, result].forEach(s => {
+      s.classList.remove('active');
+      s.classList.add('hidden');
+    });
+    const target = $(screenId);
+    target.classList.remove('hidden');
+    requestAnimationFrame(() => target.classList.add('active'));
+  }
+
+  // ===== GAME SETUP =====
+  function initGame() {
+    const cfg = getLevelConfig(state.level);
+    state.orders = generateOrders(state.level);
+    state.currentOrderIndex = 0;
+    state.combo = 0;
+    state.maxCombo = 0;
+    state.ordersCompleted = 0;
+    state.currentOrder = state.orders[0];
+    state.score = 0;
+
+    buildTeaTray();
+    buildToppingTray();
+    buildProgressDots();
+    showOrder(state.orders[0]);
+    updateScore();
+    updateCombo();
+    startTimer();
+  }
+
+  function getAvailableTeas() {
+    const cfg = getLevelConfig(state.level);
+    return TEA_BASES.filter(t => cfg.teas.includes(t.id));
+  }
+
+  function getAvailableToppings() {
+    const cfg = getLevelConfig(state.level);
+    return TOPPINGS.filter(t => cfg.toppings.includes(t.id));
+  }
+
+  function buildTeaTray() {
+    teaTray.innerHTML = '';
+    getAvailableTeas().forEach(tea => {
+      const card = document.createElement('div');
+      card.className = 'tea-card';
+      card.dataset.teaId = tea.id;
+      card.setAttribute('tabindex', '0');
+      card.setAttribute('role', 'button');
+      card.setAttribute('aria-label', tea.name);
+      card.innerHTML = `<span class="item-emoji">${tea.emoji}</span> ${tea.name}`;
+
+      card.addEventListener('click', () => onTeaSelect(tea, card));
+      card.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onTeaSelect(tea, card);
+        }
+      });
+      teaTray.appendChild(card);
+    });
+  }
+
+  function buildToppingTray() {
+    toppingTray.innerHTML = '';
+    getAvailableToppings().forEach(top => {
+      const card = document.createElement('div');
+      card.className = 'topping-card';
+      card.dataset.toppingId = top.id;
+      card.setAttribute('tabindex', '0');
+      card.setAttribute('role', 'button');
+      card.setAttribute('aria-label', top.name);
+      card.innerHTML = `<span class="item-emoji">${top.emoji}</span> ${top.name}`;
+
+      card.addEventListener('click', () => onToppingSelect(top, card));
+      card.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onToppingSelect(top, card);
+        }
+      });
+      toppingTray.appendChild(card);
+    });
+  }
+
+  function buildProgressDots() {
+    progressDots.innerHTML = '';
+    state.orders.forEach((_, i) => {
+      const dot = document.createElement('span');
+      dot.className = 'progress-dot' + (i === 0 ? ' current' : '');
+      progressDots.appendChild(dot);
+    });
+  }
+
+  function showOrder(order) {
+    state.currentOrder = order;
+    state.timeRemaining = order.timeLimit;
+    state.totalTime = order.timeLimit;
+    state.selectedTea = null;
+    state.selectedToppings = [];
+
+    customerDisplay.textContent = order.customer.emoji + ' ' + order.customer.name;
+    timerValue.textContent = order.timeLimit;
+    timerBar.style.width = '100%';
+    timerBar.className = 'timer-bar';
+
+    // Update order card
+    orderEmoji.textContent = order.tea.emoji;
+    orderTitle.textContent = order.tea.name + '奶茶';
+    const toppingNames = order.toppings.map(t => t.name).join('+') || '无配料';
+    orderDesc.textContent = toppingNames;
+    orderSweetness.textContent = order.sweetness.label;
+
+    // Reset cup
+    cupLiquid.className = 'cup-liquid';
+    cupLiquid.style.height = '0%';
+    cupToppings.innerHTML = '';
+    cupArea.classList.remove('has-all');
+    cupHint.textContent = '👆 点击选择茶底';
+    cupHint.className = 'cup-hint';
+
+    // Reset tray highlights
+    document.querySelectorAll('.tea-card').forEach(c => c.classList.remove('selected','done'));
+    document.querySelectorAll('.topping-card').forEach(c => c.classList.remove('selected','done'));
+
+    // Reset shake button
+    shakeBtn.className = 'shake-btn';
+    shakeBtn.innerHTML = '<span>🥤</span> 摇匀!';
+    state.shakeInProgress = false;
+
+    // Reset timer display warning
+    const timerDisplay = $('timerDisplay');
+    timerDisplay.classList.remove('warning');
+  }
+
+  // ===== TEA SELECTION =====
+  function onTeaSelect(tea, card) {
+    if (card.classList.contains('done')) return;
+    if (state.shakeInProgress) return;
+
+    playSelect();
+    vibrate(8);
+
+    // Deselect others, select this one
+    document.querySelectorAll('.tea-card').forEach(c => c.classList.remove('selected'));
+    card.classList.add('selected');
+    state.selectedTea = tea;
+
+    // Update cup liquid
+    cupLiquid.className = 'cup-liquid ' + tea.cssClass;
+    cupLiquid.style.height = '60%';
+
+    // Update hint
+    cupHint.textContent = '🫘 点击选择配料';
+    cupHint.className = 'cup-hint';
+
+    // Mark card done
+    card.classList.add('done');
+
+    // Check if shake should be ready
+    checkShakeReady();
+  }
+
+  // ===== TOPPING SELECTION =====
+  function onToppingSelect(top, card) {
+    if (card.classList.contains('done')) return;
+    if (state.shakeInProgress) return;
+    if (!state.selectedTea) {
+      showToast('请先选择茶底!', 'warning');
+      return;
+    }
+
+    playSelect();
+    vibrate(8);
+
+    card.classList.add('selected');
+    card.classList.add('done');
+    state.selectedToppings.push(top);
+
+    // Add to cup visual
+    const dot = document.createElement('span');
+    dot.className = 'cup-topping-dot';
+    dot.textContent = top.emoji;
+    cupToppings.appendChild(dot);
+
+    // Update hint
+    cupHint.textContent = '🥤 点击"摇匀!"完成';
+    cupHint.className = 'cup-hint';
+
+    checkShakeReady();
+  }
+
+  function checkShakeReady() {
+    const order = state.currentOrder;
+    if (!order) return;
+
+    const hasTea = state.selectedTea !== null;
+    const hasToppings = state.selectedToppings.length >= 1;
+
+    if (hasTea && hasToppings) {
+      shakeBtn.className = 'shake-btn ready';
+      cupArea.classList.add('has-all');
+    } else {
+      shakeBtn.className = 'shake-btn';
+      cupArea.classList.remove('has-all');
+    }
+  }
+
+  // ===== SHAKE =====
+  shakeBtn.addEventListener('click', () => {
+    if (!shakeBtn.classList.contains('ready')) {
+      showToast('先选茶底和配料!', 'warning');
+      return;
+    }
+    if (state.shakeInProgress) return;
+
+    state.shakeInProgress = true;
+    shakeBtn.className = 'shake-btn shaking';
+    shakeBtn.innerHTML = '<span>🥤</span> 摇摇摇...';
+    playShake();
+    vibrate([20, 30, 20, 10]);
+
+    // Shake cup
+    cupArea.style.animation = 'shakeAnim 0.4s ease';
+    setTimeout(() => { cupArea.style.animation = ''; }, 400);
+
+    // After shake animation, check order
+    setTimeout(() => {
+      checkOrderMatch();
+    }, 600);
+  });
+
+  function checkOrderMatch() {
+    const order = state.currentOrder;
+    if (!order) return;
+
+    let matched = true;
+    let details = [];
+
+    // Check tea
+    if (state.selectedTea.id !== order.tea.id) {
+      matched = false;
+      details.push('茶底不对');
+    }
+
+    // Check toppings - each ordered topping must be selected, and extra toppings are ok
+    const selectedIds = state.selectedToppings.map(t => t.id);
+    for (const top of order.toppings) {
+      if (!selectedIds.includes(top.id)) {
+        matched = false;
+        details.push('缺: ' + top.name);
+      }
+    }
+
+    if (matched && details.length === 0) {
+      // Perfect match!
+      completeOrder(true);
+    } else {
+      // Bonus: partial match gives some points
+      const correctToppings = order.toppings.filter(t => selectedIds.includes(t.id)).length;
+      const totalToppings = order.toppings.length;
+      const pct = totalToppings > 0 ? correctToppings / totalToppings : 0;
+
+      if (pct >= 0.5 && state.selectedTea.id === order.tea.id) {
+        // Partial match — still counts but fewer points
+        completeOrder(false);
+      } else {
+        // Mismatch — fail this order
+        shakeBtn.className = 'shake-btn';
+        shakeBtn.innerHTML = '<span>😅</span> 不对...';
+        playInvalid();
+        vibrate(50);
+        showToast('配方不对，再试一次!', 'danger');
+
+        // Reset toppings selection only (keep tea)
+        state.selectedToppings = [];
+        document.querySelectorAll('.topping-card').forEach(c => {
+          c.classList.remove('selected', 'done');
+        });
+        cupToppings.innerHTML = '';
+        cupHint.textContent = '🫘 重新加配料';
+        cupHint.className = 'cup-hint';
+        shakeBtn.className = 'shake-btn';
+        shakeBtn.innerHTML = '<span>🥤</span> 摇匀!';
+        state.shakeInProgress = false;
+        checkShakeReady();
+      }
+    }
+  }
+
+  function completeOrder(perfect) {
+    playComplete();
+    vibrate(30);
+
+    // Stop timer
+    stopTimer();
+
+    // Calculate score
+    const speedBonus = state.timeRemaining / state.totalTime;
+    let scoreMultiplier = 1.0;
+    if (speedBonus > 0.66) scoreMultiplier = 1.5;
+    else if (speedBonus > 0.33) scoreMultiplier = 1.0;
+    else scoreMultiplier = 0.75;
+
+    const baseScore = state.currentOrder.reward;
+    let finalScore = Math.round(baseScore * scoreMultiplier);
+
+    if (perfect) finalScore = Math.round(finalScore * 1.3);
+
+    // Combo
+    state.combo++;
+    state.maxCombo = Math.max(state.maxCombo, state.combo);
+    const comboMultiplier = state.combo >= 3 ? 1 + (state.combo - 2) * 0.2 : 1.0;
+    finalScore = Math.round(finalScore * Math.min(comboMultiplier, 2.0));
+
+    state.score += finalScore;
+    state.ordersCompleted++;
+
+    updateScore();
+    updateCombo();
+
+    // Show result popup
+    shakeBtn.className = 'shake-btn';
+    shakeBtn.innerHTML = '<span>✅</span> 完成!';
+
+    orderResultEmoji.textContent = perfect ? '🌟' : '✅';
+    orderResultLabel.textContent = perfect ? '完美调制!' : '调制完成!';
+    orderResultPoints.textContent = '+' + finalScore;
+
+    if (state.combo >= 2) {
+      orderResultCombo.textContent = '🔥 连击 x' + state.combo + '!';
+      orderResultCombo.style.display = 'block';
+    } else {
+      orderResultCombo.style.display = 'none';
+    }
+
+    shakeResult.classList.add('active');
+  }
+
+  function onOrderContinue() {
+    shakeResult.classList.remove('active');
+    playClick();
+
+    // Update progress dots
+    const dots = progressDots.querySelectorAll('.progress-dot');
+    dots.forEach((dot, i) => {
+      dot.classList.remove('current');
+      if (i < state.ordersCompleted) dot.classList.add('done');
+    });
+
+    state.currentOrderIndex++;
+    if (state.currentOrderIndex >= state.orders.length) {
+      // All orders complete — WIN
+      onWin();
+    } else {
+      const nextOrder = state.orders[state.currentOrderIndex];
+      showOrder(nextOrder);
+      // Update current dot
+      const newDots = progressDots.querySelectorAll('.progress-dot');
+      if (newDots[state.currentOrderIndex]) {
+        newDots[state.currentOrderIndex].classList.add('current');
+      }
+      startTimer();
+    }
+  }
+
+  // ===== TIMER =====
+  function startTimer() {
+    stopTimer();
+    state.timerInterval = setInterval(() => {
+      state.timeRemaining--;
+      timerValue.textContent = Math.max(0, state.timeRemaining);
+
+      const pct = Math.max(0, (state.timeRemaining / state.totalTime) * 100);
+      timerBar.style.width = pct + '%';
+      timerBar.className = 'timer-bar';
+      if (pct < 25) timerBar.classList.add('danger');
+      else if (pct < 50) timerBar.classList.add('warning');
+
+      const timerDisplay = $('timerDisplay');
+      if (state.timeRemaining <= 10) timerDisplay.classList.add('warning');
+      else timerDisplay.classList.remove('warning');
+
+      if (state.timeRemaining <= 0) {
+        stopTimer();
+        onTimeUp();
+      }
+    }, 1000);
+  }
+
+  function stopTimer() {
+    if (state.timerInterval) {
+      clearInterval(state.timerInterval);
+      state.timerInterval = null;
+    }
+    $('timerDisplay').classList.remove('warning');
+  }
+
+  function onTimeUp() {
+    playFail();
+    vibrate(100);
+    showToast('时间到!', 'danger');
+    setTimeout(() => showResultScreen(false), 500);
+  }
+
+  function onWin() {
+    playVictory();
+    vibrate(30);
+    showResultScreen(true);
+  }
+
+  // ===== RESULT SCREEN =====
+  function showResultScreen(won) {
+    stopTimer();
+    showScreen('result');
+
+    const isNewHigh = state.score > state.highScore;
+    if (isNewHigh) {
+      state.highScore = state.score;
+      localStorage.setItem(STORAGE_KEY, state.highScore);
+    }
+
+    if (won) {
+      resultTitle.textContent = '🧋 通关!';
+      resultSubtitle.textContent = '奶茶大师，完美调制!';
+
+      // Level progression
+      if (state.level >= LEVELS.length) {
+        nextLevelBtn.textContent = '🎉 已通关全部!';
+        nextLevelBtn.style.display = 'block';
+        nextLevelBtn.onclick = () => { playClick(); showToast('所有关卡已通关!', 'success'); };
+        nextLevelBtn.disabled = true;
+      } else {
+        localStorage.setItem(UNLOCK_KEY, Math.max(state.level + 1, parseInt(localStorage.getItem(UNLOCK_KEY)) || 1));
+        nextLevelBtn.style.display = 'block';
+        nextLevelBtn.textContent = '下一关 →';
+        nextLevelBtn.disabled = false;
+        nextLevelBtn.onclick = () => {
+          playClick();
+          state.level++;
+          // Show unlock toast
+          playUnlock();
+          const nextCfg = getLevelConfig(state.level);
+          unlockEmoji.textContent = '🎉';
+          unlockTitle.textContent = '新配料解锁!';
+          unlockDesc.textContent = nextCfg.unlock ? '已解锁: ' + nextCfg.unlock : '新关卡已解锁!';
+          unlockToast.classList.add('show');
+        };
+      }
+    } else {
+      resultTitle.textContent = '😅 未完成';
+      resultSubtitle.textContent = '再接再厉，调制更棒的奶茶!';
+      nextLevelBtn.style.display = 'none';
+    }
+
+    finalScore.textContent = state.score;
+    highScore.textContent = state.highScore;
+
+    // Stars
+    const accuracy = state.ordersCompleted / Math.max(state.orders.length, 1);
+    const hasCombo = state.maxCombo >= 3;
+    let stars = 0;
+    if (won) {
+      if (accuracy >= 1 && hasCombo) stars = 3;
+      else if (accuracy >= 0.8) stars = 2;
+      else stars = 1;
+    } else {
+      stars = state.ordersCompleted > 0 ? 1 : 0;
+    }
+
+    resultStars.forEach((star, i) => {
+      star.classList.remove('filled');
+      if (i < stars) {
+        // Delay via requestAnimationFrame
+        setTimeout(() => star.classList.add('filled'), i * 150);
+      }
+    });
+
+    replayBtn.textContent = '再来一局';
+    replayBtn.onclick = () => { playClick(); startGame(); };
+  }
+
+  // ===== UNLOCK TOAST =====
+  unlockBtn.addEventListener('click', () => {
+    unlockToast.classList.remove('show');
+    playClick();
+    startGame();
+  });
+
+  // ===== DISPLAY UPDATES =====
+  function updateScore() {
+    scoreDisplay.textContent = state.score;
+  }
+
+  function updateCombo() {
+    if (state.combo >= 2) {
+      comboDisplay.classList.add('active');
+      comboCount.textContent = state.combo;
+    } else {
+      comboDisplay.classList.remove('active');
+    }
+  }
+
+  // ===== KEYBOARD SUPPORT =====
+  document.addEventListener('keydown', (e) => {
+    if (state.phase === 'title') {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        startBtn.click();
+      }
+    } else if (state.phase === 'playing' || state.phase === 'orderResult') {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        if (shakeResult.classList.contains('active')) {
+          orderNextBtn.click();
+        }
+      }
+      // Number keys for quick ingredient selection
+      if (state.phase === 'playing' && e.key >= '1' && e.key <= '9') {
+        e.preventDefault();
+        const idx = parseInt(e.key) - 1;
+        // Try tea tray first
+        const teaCards = teaTray.querySelectorAll('.tea-card:not(.done)');
+        if (idx < teaCards.length) {
+          teaCards[idx].click();
+        } else {
+          const topCards = toppingTray.querySelectorAll('.topping-card:not(.done)');
+          const topIdx = idx - teaCards.length;
+          if (topIdx < topCards.length) {
+            topCards[topIdx].click();
+          }
+        }
+      }
+    } else if (state.phase === 'win' || state.phase === 'lose') {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        replayBtn.focus();
+        replayBtn.click();
+      }
+    }
+  });
+
+  // ===== GAME START =====
+  function startGame() {
+    state.phase = 'playing';
+    showScreen('game');
+    initGame();
+  }
+
+  startBtn.addEventListener('click', () => {
+    ensureAudio();
+    playClick();
+    startGame();
+  });
+
+  orderNextBtn.addEventListener('click', () => {
+    playClick();
+    onOrderContinue();
+  });
+
+  // Ensure audio context on first user interaction
+  document.addEventListener('click', () => { ensureAudio(); }, { once: true });
+
+  // ===== INIT =====
+  showScreen('splash');
+})();
+</script>
+</body>
+</html>
