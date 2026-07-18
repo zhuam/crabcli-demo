@@ -587,7 +587,7 @@
       "rating": 4.0
     },
     {
-      "id": "battle-dogs-arena",
+"id": "battle-dogs-arena",
       "name": "Battle Dogs Arena",
       "description": "狗狗组队竞技场 — 元素克制、自动战斗，收集犬种赢取回合胜利",
       "category": "strategy",
@@ -640,6 +640,20 @@
       ],
       "thumbnail": "/games/066-we-bare-bears-blocks/thumb.svg",
       "path": "/games/066-we-bare-bears-blocks/",
+    "id": "wheel-o-mon-showdown",
+      "name": "Wheel-o-Mon Showdown",
+      "description": "转轮盘决定技能进行回合制对战 — 宝可梦+轮盘融合",
+      "category": "casual",
+      "tags": [
+        "singleplayer",
+        "turn-based",
+        "strategy",
+        "wheel",
+        "pokemon-style",
+        "short-session"
+      ],
+      "thumbnail": "/games/062-wheel-o-mon-showdown/thumb.svg",
+      "path": "/games/062-wheel-o-mon-showdown/",
       "hasServer": false,
       "players": "1",
       "version": "1.0.0",
