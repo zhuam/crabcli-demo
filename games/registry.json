@@ -605,6 +605,26 @@
       "version": "1.0.0",
       "featured": true,
       "rating": 4.3
+    },
+    {
+      "id": "we-bare-bears-blocks",
+      "name": "We Bare Bears Blocks",
+      "description": "熊熊三兄弟主题三消 — 滑动匹配熊熊方块，完成关卡目标通关！",
+      "category": "puzzle",
+      "tags": [
+        "singleplayer",
+        "puzzle",
+        "match3",
+        "ip",
+        "short-session"
+      ],
+      "thumbnail": "/games/066-we-bare-bears-blocks/thumb.svg",
+      "path": "/games/066-we-bare-bears-blocks/",
+      "hasServer": false,
+      "players": "1",
+      "version": "1.0.0",
+      "featured": true,
+      "rating": 4.0
     }
   ],
   "categories": [
