@@ -1,0 +1,1639 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Wheel-o-Mon Showdown</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Source+Serif+Pro:wght@600;700&display=swap" rel="stylesheet">
+<style>
+  /* =====================================================================
+     Wheel-o-Mon Showdown — Full Game
+     ===================================================================== */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --gradient-start: #ff7e5f;
+    --gradient-end:   #feb47b;
+    --gradient-bg: linear-gradient(135deg, var(--gradient-start), var(--gradient-end));
+    --glass-light:  rgba(255, 255, 255, 0.08);
+    --glass-medium: rgba(255, 255, 255, 0.12);
+    --glass-heavy:  rgba(255, 255, 255, 0.18);
+    --glass-border: rgba(255, 255, 255, 0.10);
+    --ink-primary:   #f0f0f2;
+    --ink-secondary: #a8a8b0;
+    --ink-muted:     #6e6e78;
+    --ink-inverse:   #1a1a1f;
+    --success: #48bb78;
+    --warning: #f6ad55;
+    --error:   #f56565;
+    --seg-attack:  #FF4757;
+    --seg-heal:    #2ED573;
+    --seg-buff:    #FFC312;
+    --seg-special: #6C5CE7;
+    --seg-ult:     #FF6B6B;
+    --surface-dark:  #0a0a0c;
+    --surface-frame: #0d0d10;
+    --radius-sm: 8px;
+    --radius-md: 14px;
+    --radius-lg: 20px;
+    --radius-xl: 28px;
+  }
+
+  html, body {
+    height: 100%;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    background: var(--surface-dark);
+    color: var(--ink-primary);
+    overflow: hidden;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: none;
+  }
+
+  .bg-stage {
+    position: fixed; inset: 0;
+    background: radial-gradient(ellipse 140% 80% at 50% -10%, rgba(255,126,95,0.15) 0%, transparent 70%),
+                radial-gradient(ellipse 80% 60% at 80% 100%, rgba(254,180,123,0.08) 0%, transparent 60%),
+                #0a0a0c;
+    z-index: 0;
+  }
+  .bg-orbs {
+    position: fixed; inset: 0;
+    overflow: hidden;
+    z-index: 0;
+    pointer-events: none;
+  }
+  .bg-orbs span {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(80px);
+    opacity: 0.3;
+  }
+  .bg-orbs .orb1 {
+    width: 400px; height: 400px;
+    background: rgba(255,126,95,0.20);
+    top: -120px; left: -80px;
+    animation: orbFloat 20s ease-in-out infinite;
+  }
+  .bg-orbs .orb2 {
+    width: 300px; height: 300px;
+    background: rgba(108,92,231,0.15);
+    bottom: -80px; right: -60px;
+    animation: orbFloat 25s ease-in-out infinite reverse;
+  }
+  .bg-orbs .orb3 {
+    width: 200px; height: 200px;
+    background: rgba(46,213,115,0.10);
+    top: 50%; left: 50%;
+    animation: orbFloat 18s ease-in-out infinite 5s;
+  }
+  @keyframes orbFloat {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    33% { transform: translate(40px, -30px) scale(1.1); }
+    66% { transform: translate(-20px, 40px) scale(0.95); }
+  }
+
+  .game-container {
+    position: fixed; inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1;
+  }
+
+  .phone-frame {
+    position: relative;
+    width: 100%;
+    max-width: 390px;
+    height: 100vh;
+    max-height: 844px;
+    background: #0d0d10;
+    overflow: hidden;
+    margin: 0 auto;
+  }
+
+  .screen-area {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    overflow: hidden;
+  }
+
+  /* ════ Screen System ════ */
+  .screen {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    transition: opacity 0.4s ease, transform 0.4s cubic-bezier(0.32, 0.72, 0, 1);
+    will-change: transform, opacity;
+  }
+  .screen.active {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+  }
+  .screen.hidden {
+    opacity: 0;
+    transform: translateY(12px);
+    pointer-events: none;
+  }
+  .screen.exit-up {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  .screen.exit-down {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  .glass-panel {
+    background: var(--glass-light);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-md);
+  }
+
+  .btn-primary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 14px 32px;
+    background: var(--gradient-bg);
+    color: #fff;
+    font-family: 'Inter', sans-serif;
+    font-size: 16px;
+    font-weight: 600;
+    border: none;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    box-shadow: 0 4px 20px rgba(255,126,95,0.3);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    letter-spacing: 0.02em;
+  }
+  .btn-primary:hover, .btn-primary:active {
+    transform: scale(1.03);
+    box-shadow: 0 8px 28px rgba(255,126,95,0.45);
+  }
+
+  .btn-glass {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px 24px;
+    background: var(--glass-medium);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-md);
+    color: var(--ink-primary);
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.2s ease, transform 0.15s ease;
+  }
+  .btn-glass:hover, .btn-glass:active {
+    background: var(--glass-heavy);
+    transform: scale(1.02);
+  }
+
+  .btn-icon {
+    width: 40px; height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--glass-light);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--glass-border);
+    border-radius: 50%;
+    color: var(--ink-secondary);
+    font-size: 18px;
+    cursor: pointer;
+    transition: background 0.2s ease, color 0.2s ease;
+  }
+  .btn-icon:hover, .btn-icon:active {
+    background: var(--glass-medium);
+    color: var(--ink-primary);
+  }
+  .btn-icon.muted { opacity: 0.4; }
+
+  /* ════ TITLE SCREEN ════ */
+  #screen-title {
+    background: radial-gradient(ellipse 120% 70% at 50% 30%, rgba(255,126,95,0.12) 0%, transparent 70%), #0d0d10;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 28px;
+    text-align: center;
+  }
+  .title-monster {
+    font-size: 80px;
+    margin-bottom: 8px;
+    filter: drop-shadow(0 8px 32px rgba(255,126,95,0.25));
+    animation: monBreathe 3s ease-in-out infinite;
+  }
+  @keyframes monBreathe {
+    0%, 100% { transform: translateY(0) scale(1); }
+    50% { transform: translateY(-6px) scale(1.03); }
+  }
+  .title-brand { margin-bottom: 24px; }
+  .title-brand h1 {
+    font-family: 'Source Serif Pro', Georgia, serif;
+    font-size: 32px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    background: linear-gradient(135deg, #ff7e5f 0%, #feb47b 50%, #ffd6a5 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    line-height: 1.15;
+    margin-bottom: 6px;
+  }
+  .title-brand .subtitle {
+    font-size: 13px;
+    color: var(--ink-muted);
+    letter-spacing: 0.06em;
+    font-weight: 500;
+    text-transform: uppercase;
+  }
+  .title-spin-btn {
+    margin-top: 12px;
+    margin-bottom: 24px;
+  }
+  .title-spin-btn .btn-primary {
+    padding: 16px 48px;
+    font-size: 20px;
+    font-weight: 700;
+    border-radius: var(--radius-lg);
+    animation: pulseGlow 2.5s ease-in-out infinite;
+    position: relative;
+  }
+  .title-spin-btn .btn-primary::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: inherit;
+    filter: blur(20px);
+    opacity: 0.4;
+    z-index: -1;
+    animation: pulseGlow 2.5s ease-in-out infinite;
+  }
+  @keyframes pulseGlow {
+    0%, 100% { box-shadow: 0 4px 24px rgba(255,126,95,0.3); }
+    50% { box-shadow: 0 8px 40px rgba(255,126,95,0.5); }
+  }
+  .title-stats {
+    display: flex;
+    gap: 24px;
+    justify-content: center;
+    margin-top: 8px;
+  }
+  .title-stats .stat { text-align: center; }
+  .title-stats .stat .value {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--ink-primary);
+  }
+  .title-stats .stat .label {
+    font-size: 10px;
+    color: var(--ink-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-top: 2px;
+  }
+  .title-controls {
+    position: absolute;
+    top: 16px; right: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    z-index: 10;
+  }
+
+  /* ════ BATTLE SCREEN ════ */
+  #screen-battle {
+    background: radial-gradient(ellipse 120% 60% at 50% 50%, rgba(108,92,231,0.06) 0%, transparent 70%), #0d0d10;
+    padding: 12px 16px 16px;
+  }
+  .battle-topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 4px 4px;
+    font-size: 11px;
+    color: var(--ink-muted);
+    font-weight: 500;
+    letter-spacing: 0.03em;
+  }
+  .battle-topbar .round { color: var(--ink-primary); font-weight: 600; }
+  .battle-topbar .timer { font-variant-numeric: tabular-nums; }
+
+  .opponent-zone, .player-zone {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    border-radius: var(--radius-md);
+    background: var(--glass-light);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--glass-border);
+  }
+  .opponent-zone .mon-avatar {
+    font-size: 32px;
+    flex-shrink: 0;
+    width: 44px; height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-sm);
+    background: rgba(69,170,242,0.15);
+  }
+  .player-zone .mon-avatar {
+    font-size: 32px;
+    flex-shrink: 0;
+    width: 44px; height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-sm);
+    background: rgba(255,107,53,0.15);
+  }
+  .mon-info { flex: 1; min-width: 0; }
+  .mon-info .mon-name {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--ink-primary);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .mon-info .mon-name .lvl, .mon-info .mon-name .wave {
+    font-size: 10px;
+    font-weight: 500;
+    color: var(--ink-muted);
+    background: var(--glass-light);
+    padding: 1px 6px;
+    border-radius: 99px;
+  }
+  .mon-hp-bar {
+    margin-top: 3px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .mon-hp-bar .hp-track {
+    flex: 1;
+    height: 8px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 99px;
+    overflow: hidden;
+    position: relative;
+  }
+  .mon-hp-bar .hp-track .hp-fill {
+    height: 100%;
+    border-radius: 99px;
+    transition: width 0.5s cubic-bezier(0.32, 0.72, 0, 1);
+    background: linear-gradient(90deg, var(--success), #6ddb9e);
+  }
+  .mon-hp-bar .hp-track .hp-fill.warning { background: linear-gradient(90deg, var(--warning), #f7c67a); }
+  .mon-hp-bar .hp-track .hp-fill.danger  { background: linear-gradient(90deg, var(--error), #f78a8a); }
+  .mon-hp-bar .hp-text {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--ink-secondary);
+    font-variant-numeric: tabular-nums;
+    min-width: 48px;
+    text-align: right;
+  }
+
+  .turn-indicator {
+    text-align: center;
+    padding: 4px 0;
+  }
+  .turn-indicator .turn-text {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    background: var(--gradient-bg);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .turn-indicator .turn-text.neutral {
+    background: none;
+    -webkit-text-fill-color: var(--ink-muted);
+    color: var(--ink-muted);
+  }
+
+  /* ════ Wheel ════ */
+  .wheel-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px 0;
+    position: relative;
+    flex: 1;
+    min-height: 0;
+  }
+  .wheel-ring {
+    position: relative;
+    width: 220px;
+    height: 220px;
+  }
+  .wheel-svg {
+    width: 100%;
+    height: 100%;
+    transform: rotate(-90deg);
+    filter: drop-shadow(0 0 20px rgba(255,126,95,0.1));
+  }
+  .wheel-hub {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 40% 35%, rgba(40,40,48,0.95), #16161a);
+    border: 2px solid rgba(255,255,255,0.15);
+    box-shadow: 0 0 0 4px rgba(0,0,0,0.3), inset 0 2px 4px rgba(255,255,255,0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 5;
+  }
+  .wheel-hub .hub-icon { color: rgba(255,255,255,0.6); }
+  .wheel-pointer {
+    position: absolute;
+    top: -4px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 10px solid transparent;
+    border-right: 10px solid transparent;
+    border-top: 18px solid #ff7e5f;
+    filter: drop-shadow(0 2px 6px rgba(255,126,95,0.5));
+    z-index: 6;
+  }
+  .wheel-hint {
+    text-align: center;
+    font-size: 9px;
+    color: var(--ink-muted);
+    letter-spacing: 0.04em;
+    min-height: 14px;
+  }
+
+  .player-zone { margin-top: 4px; }
+
+  .skill-log {
+    display: flex;
+    gap: 4px;
+    margin-top: 4px;
+    padding: 5px 10px;
+    border-radius: var(--radius-sm);
+    background: var(--glass-light);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    min-height: 26px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .skill-log .log-label {
+    font-size: 9px;
+    color: var(--ink-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-right: 4px;
+  }
+  .skill-log .log-entry {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 99px;
+    background: var(--glass-medium);
+    color: var(--ink-primary);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    white-space: nowrap;
+  }
+  .skill-log .log-entry .dmg { color: var(--seg-attack); }
+  .skill-log .log-entry .heal { color: var(--seg-heal); }
+
+  /* Floating damage text */
+  .float-text {
+    position: absolute;
+    font-size: 28px;
+    font-weight: 800;
+    pointer-events: none;
+    z-index: 20;
+    animation: floatUp 1s ease-out forwards;
+  }
+  @keyframes floatUp {
+    0% { opacity: 1; transform: translateY(0) scale(1); }
+    100% { opacity: 0; transform: translateY(-60px) scale(1.3); }
+  }
+
+  /* Shake */
+  .shake {
+    animation: shake 0.4s ease-in-out;
+  }
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    20% { transform: translateX(-6px); }
+    40% { transform: translateX(6px); }
+    60% { transform: translateX(-4px); }
+    80% { transform: translateX(4px); }
+  }
+
+  /* ════ RESULT SCREENS ════ */
+  #screen-win, #screen-lose {
+    align-items: center;
+    justify-content: center;
+    padding: 40px 28px;
+    text-align: center;
+  }
+  #screen-win {
+    background: radial-gradient(ellipse 120% 70% at 50% 30%, rgba(255,126,95,0.10) 0%, rgba(46,213,115,0.06) 60%, transparent 80%), #0d0d10;
+  }
+  #screen-lose {
+    background: radial-gradient(ellipse 120% 70% at 50% 30%, rgba(44,62,80,0.12) 0%, transparent 70%), #0d0d10;
+  }
+  .result-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 72px;
+    height: 72px;
+    margin: 0 auto 8px;
+    animation: resultBounce 1.2s cubic-bezier(0.32, 0.72, 0, 1);
+  }
+  @keyframes resultBounce {
+    0% { transform: scale(0.3); opacity: 0; }
+    50% { transform: scale(1.15); }
+    100% { transform: scale(1); opacity: 1; }
+  }
+  .result-title {
+    font-family: 'Source Serif Pro', Georgia, serif;
+    font-size: 36px;
+    font-weight: 700;
+    margin-bottom: 4px;
+    background: linear-gradient(135deg, #f7d86a 0%, #ff9a56 50%, #ff6b6b 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    letter-spacing: -0.02em;
+  }
+  .result-title.lose {
+    background: linear-gradient(135deg, #888 0%, #666 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .result-sub {
+    font-size: 13px;
+    color: var(--ink-muted);
+    margin-bottom: 20px;
+  }
+  .result-monster {
+    font-size: 64px;
+    margin-bottom: 16px;
+    filter: drop-shadow(0 8px 32px rgba(255,126,95,0.2));
+  }
+  .result-score {
+    display: flex;
+    gap: 24px;
+    justify-content: center;
+    margin-bottom: 28px;
+  }
+  .result-score .score-item { text-align: center; }
+  .result-score .score-item .score-val {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--ink-primary);
+  }
+  .result-score .score-item .score-val.new-record {
+    background: linear-gradient(135deg, #f7d86a, #ff9a56);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .result-score .score-item .score-lbl {
+    font-size: 10px;
+    color: var(--ink-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-top: 2px;
+  }
+  .result-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    align-items: center;
+    width: 100%;
+    max-width: 260px;
+  }
+  .result-actions .btn-primary { width: 100%; }
+  .result-actions .btn-glass { width: 100%; padding: 12px; }
+
+  /* Confetti */
+  .confetti-container {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    overflow: hidden;
+    z-index: 10;
+  }
+  .confetti {
+    position: absolute;
+    width: 6px; height: 6px;
+    border-radius: 2px;
+    top: -10px;
+    animation: confettiFall linear infinite;
+  }
+  @keyframes confettiFall {
+    0% { transform: translateY(-10px) rotate(0deg); opacity: 0; }
+    10% { opacity: 1; }
+    100% { transform: translateY(860px) rotate(720deg); opacity: 0; }
+  }
+
+  /* Damage flash overlay */
+  .damage-flash {
+    position: fixed; inset: 0;
+    pointer-events: none;
+    z-index: 50;
+    opacity: 0;
+    transition: opacity 0.15s;
+  }
+  .damage-flash.active {
+    opacity: 0.3;
+  }
+  .damage-flash.hit { background: #ff4757; }
+  .damage-flash.heal { background: #2ed573; }
+
+  /* Responsive */
+  @media (max-width: 480px) {
+    .phone-frame { max-width: 100%; max-height: 100%; border-radius: 0; border: none; }
+  }
+  @media (min-width: 481px) and (max-width: 768px) {
+    .phone-frame { max-width: 380px; }
+  }
+  @media (min-width: 769px) {
+    .phone-frame { border-radius: 44px; border: 1px solid rgba(255,255,255,0.08); box-shadow: 0 0 0 1px rgba(255,255,255,0.04), 0 40px 80px rgba(0,0,0,0.6), 0 8px 32px rgba(0,0,0,0.4); }
+  }
+</style>
+</head>
+<body>
+<div class="bg-stage"></div>
+<div class="bg-orbs">
+  <span class="orb1"></span>
+  <span class="orb2"></span>
+  <span class="orb3"></span>
+</div>
+
+<div class="game-container">
+  <div class="phone-frame">
+    <div class="screen-area">
+
+      <!-- ═══ TITLE ═══ -->
+      <div class="screen active" id="screen-title">
+        <div class="title-controls">
+          <button class="btn-icon" id="btn-sound" aria-label="Toggle sound">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+              <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
+              <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
+            </svg>
+          </button>
+        </div>
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+          <div class="title-monster" id="title-monster-emoji">🔥</div>
+          <div class="title-brand">
+            <h1>Wheel-o-Mon<br>Showdown</h1>
+            <div class="subtitle">Spin &bull; Battle &bull; Win</div>
+          </div>
+          <div class="title-spin-btn">
+            <button class="btn-primary" id="btn-start-game">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>
+                <line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/>
+                <line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/>
+              </svg>
+              SPIN!
+            </button>
+          </div>
+          <div class="title-stats">
+            <div class="stat">
+              <div class="value" id="stat-best-value">0</div>
+              <div class="label">Best Score</div>
+            </div>
+            <div class="stat">
+              <div class="value" id="stat-wins-value">0</div>
+              <div class="label">Wins</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ BATTLE ═══ -->
+      <div class="screen hidden" id="screen-battle">
+        <div class="battle-topbar">
+          <span class="round" id="round-label">ROUND 1</span>
+          <span class="timer" id="timer-label">⏱ 2:45</span>
+        </div>
+
+        <div class="opponent-zone" id="opponent-zone">
+          <div class="mon-avatar" id="opponent-avatar">🌊</div>
+          <div class="mon-info">
+            <div class="mon-name" id="opponent-name">Aquafin<span class="lvl">LV 3</span></div>
+            <div class="mon-hp-bar">
+              <div class="hp-track"><div class="hp-fill" id="opponent-hp-fill" style="width:100%"></div></div>
+              <span class="hp-text" id="opponent-hp-text">100/100</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="turn-indicator">
+          <span class="turn-text" id="turn-text">▼ Your Turn — Drag the wheel!</span>
+        </div>
+
+        <div class="wheel-container">
+          <div class="wheel-ring" id="wheel-ring">
+            <svg class="wheel-svg" id="wheel-svg" viewBox="0 0 240 240">
+              <g id="wheel-segments">
+                <path id="seg-0" d="M120,120 L120,10 A110,110 0 0,1 211.6,68.2 Z" fill="#FF4757" stroke="rgba(255,255,255,0.12)" stroke-width="1"/>
+                <path id="seg-1" d="M120,120 L211.6,68.2 A110,110 0 0,1 184.6,175.8 Z" fill="#2ED573" stroke="rgba(255,255,255,0.12)" stroke-width="1"/>
+                <path id="seg-2" d="M120,120 L184.6,175.8 A110,110 0 0,1 63.6,196.2 Z" fill="#FFC312" stroke="rgba(255,255,255,0.12)" stroke-width="1"/>
+                <path id="seg-3" d="M120,120 L63.6,196.2 A110,110 0 0,1 37.4,120 Z" fill="#6C5CE7" stroke="rgba(255,255,255,0.12)" stroke-width="1"/>
+                <path id="seg-4" d="M120,120 L37.4,120 A110,110 0 0,1 120,10 Z" fill="#FF6B6B" stroke="rgba(255,255,255,0.12)" stroke-width="1"/>
+              </g>
+              <g id="wheel-icons" font-size="18" text-anchor="middle" fill="#fff">
+                <text x="168" y="52">⚔️</text>
+                <text x="176" y="132">💚</text>
+                <text x="130" y="172" fill="#1a1a1f">⚡</text>
+                <text x="68" y="162">💫</text>
+                <text x="72" y="56">🔥</text>
+              </g>
+              <g id="wheel-labels" font-size="8" text-anchor="middle" fill="rgba(255,255,255,0.8)" font-weight="500">
+                <text x="164" y="74">FIREBALL</text>
+                <text x="182" y="120">HEAL</text>
+                <text x="135" y="188" fill="rgba(0,0,0,0.7)" font-weight="600">RAGE</text>
+                <text x="56" y="178">NOVA</text>
+                <text x="56" y="48">INFERNO</text>
+              </g>
+            </svg>
+            <div class="wheel-pointer"></div>
+            <div class="wheel-hub"><span class="hub-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></span></div>
+          </div>
+        </div>
+        <div class="wheel-hint" id="wheel-hint">↻ Drag the wheel to spin</div>
+
+        <div class="player-zone" id="player-zone">
+          <div class="mon-avatar" id="player-avatar">🔥</div>
+          <div class="mon-info">
+            <div class="mon-name" id="player-name">Flamepaw<span class="wave">Wave 1</span></div>
+            <div class="mon-hp-bar">
+              <div class="hp-track"><div class="hp-fill" id="player-hp-fill" style="width:100%"></div></div>
+              <span class="hp-text" id="player-hp-text">100/100</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="skill-log">
+          <span class="log-label">LAST</span>
+          <span id="log-entries"></span>
+        </div>
+      </div>
+
+      <!-- ═══ WIN ═══ -->
+      <div class="screen hidden" id="screen-win">
+        <div class="confetti-container" id="confetti-container"></div>
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;z-index:11;">
+          <div class="result-icon">
+            <svg width="72" height="72" viewBox="0 0 24 24" fill="none" stroke="#f7d86a" stroke-width="1.5">
+              <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5C7 4 6 9 6 9z"/>
+              <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5C17 4 18 9 18 9z"/>
+              <path d="M4 22h16"/><path d="M10 22l1-6-3-2 3-4-2-5h6l-2 5 3 4-3 2 1 6"/>
+            </svg>
+          </div>
+          <div class="result-title" id="win-title">VICTORY!</div>
+          <div class="result-sub" id="win-sub">You crushed the opponent!</div>
+          <div class="result-monster" id="win-monster">🔥</div>
+          <div class="result-score">
+            <div class="score-item"><div class="score-val" id="win-score-val">1,250</div><div class="score-lbl">Score</div></div>
+            <div class="score-item"><div class="score-val" id="win-best-val">1,250</div><div class="score-lbl" id="win-best-lbl">★ New Best!</div></div>
+          </div>
+          <div class="result-actions">
+            <button class="btn-primary" id="btn-play-again-win">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+              Play Again
+            </button>
+            <button class="btn-glass" id="btn-back-title-win">← Back to Hub</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ LOSE ═══ -->
+      <div class="screen hidden" id="screen-lose">
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+          <div class="result-icon">
+            <svg width="72" height="72" viewBox="0 0 24 24" fill="none" stroke="#f56565" stroke-width="1.5">
+              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+              <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>
+          </div>
+          <div class="result-title lose">DEFEATED</div>
+          <div class="result-sub" id="lose-sub">Shadow Fang was too strong…</div>
+          <div class="result-monster" id="lose-monster">🌊</div>
+          <div class="result-score">
+            <div class="score-item"><div class="score-val" id="lose-score-val">580</div><div class="score-lbl">Score</div></div>
+            <div class="score-item"><div class="score-val" id="lose-best-val">1,250</div><div class="score-lbl">Best Score</div></div>
+          </div>
+          <div class="result-actions">
+            <button class="btn-primary" id="btn-try-again">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+              Try Again
+            </button>
+            <button class="btn-glass" id="btn-back-title-lose">← Back to Hub</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Damage flash overlay -->
+<div class="damage-flash" id="damage-flash"></div>
+
+<script>
+(function() {
+  'use strict';
+
+  /* ═══════════════════════════════════════════════════
+     GAME DATA
+     ═══════════════════════════════════════════════════ */
+
+  const SEGMENT_COUNT = 5;
+  const SEGMENT_ANGLE = (2 * Math.PI) / SEGMENT_COUNT;
+
+  const SEGMENTS = [
+    { id: 'attack',  name: 'FIREBALL', icon: '⚔️', color: '#FF4757', type: 'attack',  baseMin: 12, baseMax: 22 },
+    { id: 'heal',    name: 'HEAL',     icon: '💚', color: '#2ED573', type: 'heal',    baseMin: 10, baseMax: 16 },
+    { id: 'buff',    name: 'RAGE',     icon: '⚡', color: '#FFC312', type: 'buff',    baseMin: 0,  baseMax: 0  },
+    { id: 'special', name: 'NOVA',     icon: '💫', color: '#6C5CE7', type: 'special', baseMin: 18, baseMax: 30 },
+    { id: 'ult',     name: 'INFERNO',  icon: '🔥', color: '#FF6B6B', type: 'attack',  baseMin: 22, baseMax: 35 }
+  ];
+
+  const PLAYER_MONSTERS = [
+    { id: 'flamepaw', name: 'Flamepaw', emoji: '🔥', maxHp: 100, defense: 3 },
+    { id: 'aquafin',  name: 'Aquafin',  emoji: '🌊', maxHp: 110, defense: 4 },
+    { id: 'shadowfang', name: 'Shadow Fang', emoji: '🌑', maxHp: 80, defense: 2 }
+  ];
+
+  const ENEMY_POOL = [
+    { name: 'Slimepuff',   emoji: '💚', maxHp: 60,  defense: 1, waveMin: 1, waveMax: 3 },
+    { name: 'Aquafin',     emoji: '🌊', maxHp: 80,  defense: 2, waveMin: 2, waveMax: 4 },
+    { name: 'Shadow Fang', emoji: '🌑', maxHp: 100, defense: 3, waveMin: 3, waveMax: 6 },
+    { name: 'Crystal Drake', emoji: '💎', maxHp: 130, defense: 5, waveMin: 5, waveMax: 99 }
+  ];
+
+  const FRICTION = 0.018;
+  const SPIN_THRESHOLD = 0.08;
+  const MIN_SPIN_VELOCITY = 6;
+
+  /* ═══════════════════════════════════════════════════
+     STATE
+     ═══════════════════════════════════════════════════ */
+
+  let state = {
+    screen: 'title',
+    turn: 'player',   // 'player' | 'enemy'
+    round: 1,
+    wave: 1,
+    score: 0,
+    player: null,
+    enemy: null,
+    playerBuff: 0,
+    wheelAngle: 0,
+    wheelVelocity: 0,
+    isSpinning: false,
+    isAnimating: false,
+    soundEnabled: true,
+    highScore: 0,
+    totalWins: 0,
+    logs: [],
+    dragging: false,
+    lastDragAngle: 0,
+    lastDragTime: 0,
+    dragVelocities: []
+  };
+
+  let audioCtx = null;
+
+  /* ═══════════════════════════════════════════════════
+     DOM REFS
+     ═══════════════════════════════════════════════════ */
+
+  const $ = id => document.getElementById(id);
+  const segmentsG = $('wheel-segments');
+  const wheelSvg = $('wheel-svg');
+  const wheelRing = $('wheel-ring');
+
+  /* ═══════════════════════════════════════════════════
+     AUDIO (Web Audio API)
+     ═══════════════════════════════════════════════════ */
+
+  function initAudio() {
+    if (!audioCtx) {
+      try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e) {}
+    }
+    if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+  }
+
+  function playTone(freq, duration, type, volume) {
+    if (!state.soundEnabled || !audioCtx) return;
+    try {
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = type || 'sine';
+      osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+      gain.gain.setValueAtTime(volume || 0.15, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start();
+      osc.stop(audioCtx.currentTime + duration);
+    } catch(e) {}
+  }
+
+  function playTick() { playTone(800, 0.06, 'square', 0.08); }
+  function playSpinEnd() { playTone(400, 0.15, 'triangle', 0.12); playTone(600, 0.1, 'sine', 0.08); }
+  function playHit() { playTone(200, 0.2, 'sawtooth', 0.12); playTone(120, 0.1, 'square', 0.06); }
+  function playHeal() { playTone(520, 0.2, 'sine', 0.1); playTone(660, 0.15, 'sine', 0.08); }
+  function playBuff() { playTone(440, 0.15, 'sine', 0.08); setTimeout(() => playTone(660, 0.15, 'sine', 0.08), 100); }
+  function playVictory() {
+    [523, 659, 784, 1047].forEach((f, i) => setTimeout(() => playTone(f, 0.2, 'sine', 0.1), i * 120));
+  }
+  function playDefeat() {
+    [400, 350, 300, 250].forEach((f, i) => setTimeout(() => playTone(f, 0.25, 'triangle', 0.08), i * 150));
+  }
+  function playUIClick() { playTone(1000, 0.04, 'sine', 0.05); }
+
+  /* ═══════════════════════════════════════════════════
+     VIBRATION
+     ═══════════════════════════════════════════════════ */
+
+  function vibrate(ms) {
+    try { navigator.vibrate(ms); } catch(e) {}
+  }
+
+  /* ═══════════════════════════════════════════════════
+     SCREEN MANAGER
+     ═══════════════════════════════════════════════════ */
+
+  let screenTransitioning = false;
+
+  function showScreen(id) {
+    if (screenTransitioning) return;
+    screenTransitioning = true;
+
+    const screens = document.querySelectorAll('.screen');
+    const activeScreen = document.querySelector('.screen.active');
+    const target = document.getElementById(id);
+    if (!target || target === activeScreen) { screenTransitioning = false; return; }
+
+    const ids = ['screen-title','screen-battle','screen-win','screen-lose'];
+    const fromIdx = ids.indexOf(activeScreen ? activeScreen.id : 'screen-title');
+    const toIdx = ids.indexOf(id);
+
+    if (activeScreen) {
+      activeScreen.classList.remove('active', 'hidden');
+      activeScreen.classList.add(toIdx > fromIdx ? 'exit-up' : 'exit-down');
+      setTimeout(() => {
+        activeScreen.classList.remove('exit-up', 'exit-down');
+        activeScreen.classList.add('hidden');
+      }, 380);
+    }
+
+    target.classList.remove('hidden', 'exit-up', 'exit-down');
+    target.style.transform = toIdx > fromIdx ? 'translateY(20px)' : 'translateY(-20px)';
+    target.style.opacity = '0';
+    void target.offsetWidth;
+    target.classList.add('active');
+    target.style.transform = '';
+    target.style.opacity = '';
+
+    state.screen = id;
+
+    if (id === 'screen-win') {
+      setTimeout(spawnConfetti, 200);
+      playVictory();
+    }
+    if (id === 'screen-lose') {
+      setTimeout(playDefeat, 300);
+    }
+
+    setTimeout(() => { screenTransitioning = false; }, 400);
+  }
+
+  function spawnConfetti() {
+    const container = $('confetti-container');
+    if (!container) return;
+    container.innerHTML = '';
+    const colors = ['#ff7e5f','#feb47b','#48bb78','#6C5CE7','#FFC312','#FF4757','#45AAF2','#ff6b6b'];
+    for (let i = 0; i < 60; i++) {
+      const el = document.createElement('div');
+      el.className = 'confetti';
+      el.style.left = Math.random() * 100 + '%';
+      el.style.background = colors[Math.floor(Math.random() * colors.length)];
+      el.style.width = (4 + Math.random() * 6) + 'px';
+      el.style.height = (4 + Math.random() * 6) + 'px';
+      el.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+      el.style.animationDuration = (2 + Math.random() * 3) + 's';
+      el.style.animationDelay = Math.random() * 2 + 's';
+      container.appendChild(el);
+    }
+  }
+
+  /* ═══════════════════════════════════════════════════
+     MONSTER FACTORY
+     ═══════════════════════════════════════════════════ */
+
+  function createPlayerMonster(monsterDef) {
+    return { ...monsterDef, hp: monsterDef.maxHp, buffCount: 0 };
+  }
+
+  function createEnemyMonster(wave) {
+    const candidates = ENEMY_POOL.filter(e => wave >= e.waveMin && wave <= e.waveMax);
+    const pool = candidates.length ? candidates : [ENEMY_POOL[ENEMY_POOL.length - 1]];
+    const base = pool[Math.floor(Math.random() * pool.length)];
+    const hpScale = 1 + (wave - 1) * 0.12;
+    return {
+      name: base.name,
+      emoji: base.emoji,
+      maxHp: Math.floor(base.maxHp * hpScale),
+      hp: Math.floor(base.maxHp * hpScale),
+      defense: base.defense + Math.floor((wave - 1) / 2),
+      buffCount: 0
+    };
+  }
+
+  /* ═══════════════════════════════════════════════════
+     WHEEL PHYSICS
+     ═══════════════════════════════════════════════════ */
+
+  function getSegmentIndex(angle) {
+    let a = ((angle % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
+    return Math.floor(a / SEGMENT_ANGLE) % SEGMENT_COUNT;
+  }
+
+  function drawWheel(angle) {
+    wheelSvg.style.transform = `rotate(${angle - Math.PI / 2}rad)`;
+  }
+
+  function applySpinVelocity(velocity) {
+    state.wheelVelocity = velocity;
+    state.isSpinning = true;
+    state.dragging = false;
+  }
+
+  /* ═══════════════════════════════════════════════════
+     BATTLE LOGIC
+     ═══════════════════════════════════════════════════ */
+
+  function startBattle() {
+    // Select random player monster (prefer first for first-timers)
+    const monIdx = state.totalWins > 0 ? Math.floor(Math.random() * PLAYER_MONSTERS.length) : 0;
+    state.player = createPlayerMonster(PLAYER_MONSTERS[monIdx]);
+    state.enemy = createEnemyMonster(state.wave);
+    state.round = 1;
+    state.playerBuff = 0;
+    state.logs = [];
+    state.isSpinning = false;
+    state.isAnimating = false;
+    state.wheelAngle = 0;
+    state.wheelVelocity = 0;
+
+    updateBattleUI();
+    setTurnText('▼ Your Turn — Drag the wheel!', false);
+    drawWheel(0);
+    $('wheel-hint').textContent = '↻ Drag the wheel to spin';
+    state.turn = 'player';
+  }
+
+  function updateBattleUI() {
+    const p = state.player;
+    const e = state.enemy;
+
+    $('round-label').textContent = `ROUND ${state.round}`;
+    $('player-avatar').textContent = p.emoji;
+    $('player-name').innerHTML = `${p.name} <span class="wave">Wave ${state.wave}</span>`;
+    updateHpBar('player', p.hp, p.maxHp);
+
+    $('opponent-avatar').textContent = e.emoji;
+    $('opponent-name').innerHTML = `${e.name} <span class="lvl">LV ${state.wave}</span>`;
+    updateHpBar('opponent', e.hp, e.maxHp);
+
+    updateLogs();
+    updateTimer();
+  }
+
+  function updateHpBar(prefix, hp, maxHp) {
+    const pct = Math.max(0, hp / maxHp * 100);
+    const fill = $(`${prefix}-hp-fill`);
+    const text = $(`${prefix}-hp-text`);
+    fill.style.width = pct + '%';
+    fill.className = 'hp-fill' + (pct <= 25 ? ' danger' : pct <= 50 ? ' warning' : '');
+    text.textContent = `${Math.max(0, hp)}/${maxHp}`;
+  }
+
+  function setTurnText(text, isNeutral) {
+    const el = $('turn-text');
+    el.textContent = text;
+    el.className = 'turn-text' + (isNeutral ? ' neutral' : '');
+  }
+
+  function updateLogs() {
+    const container = $('log-entries');
+    const entries = state.logs.slice(-3).map(log => {
+      const colorClass = log.dmg ? 'dmg' : log.heal ? 'heal' : '';
+      return `<span class="log-entry">${log.icon} <span class="${colorClass}">${log.text}</span></span>`;
+    }).join('');
+    container.innerHTML = entries;
+    if (!entries) container.innerHTML = '<span class="log-entry" style="opacity:0.4">—</span>';
+  }
+
+  function addLog(icon, text, dmg, heal) {
+    state.logs.push({ icon, text, dmg, heal });
+    if (state.logs.length > 6) state.logs.shift();
+    updateLogs();
+  }
+
+  function updateTimer() {
+    const totalSecs = 180;
+    const elapsed = (state.round - 1) * 18 + (state.isSpinning ? 0 : state.isAnimating ? 0 : 0);
+    const remaining = Math.max(0, totalSecs - elapsed);
+    const mins = Math.floor(remaining / 60);
+    const secs = remaining % 60;
+    $('timer-label').textContent = `⏱ ${mins}:${String(secs).padStart(2, '0')}`;
+  }
+
+  /* ═══════════════════════════════════════════════════
+     SKILL EXECUTION
+     ═══════════════════════════════════════════════════ */
+
+  function executeSkill(segmentIdx, isPlayer) {
+    const seg = SEGMENTS[segmentIdx];
+    const attacker = isPlayer ? state.player : state.enemy;
+    const defender = isPlayer ? state.enemy : state.player;
+    const sourceName = isPlayer ? attacker.name : attacker.name;
+
+    state.isAnimating = true;
+    let effectDuration = 800;
+
+    if (seg.type === 'attack' || seg.type === 'special') {
+      const baseDmg = seg.baseMin + Math.floor(Math.random() * (seg.baseMax - seg.baseMin + 1));
+      let mult = 1;
+      if (isPlayer && state.playerBuff > 0) {
+        mult = 1.5;
+        state.playerBuff--;
+      }
+      const rawDmg = Math.floor(baseDmg * mult);
+      const actualDmg = Math.max(1, rawDmg - defender.defense);
+
+      defender.hp = Math.max(0, defender.hp - actualDmg);
+
+      showFloatingDamage(isPlayer ? 'opponent-zone' : 'player-zone', '-' + actualDmg, '#ff4757');
+      flashOverlay('hit');
+      playHit();
+      vibrate([30, 50, 30]);
+
+      if (isPlayer) {
+        addLog(seg.icon, `-${actualDmg}`, true, false);
+        state.score += actualDmg;
+      } else {
+        addLog(seg.icon, `-${actualDmg}`, true, false);
+      }
+
+      // Shake affected zone
+      const zone = $(isPlayer ? 'opponent-zone' : 'player-zone');
+      zone.classList.remove('shake');
+      void zone.offsetWidth;
+      zone.classList.add('shake');
+
+      effectDuration = seg.type === 'special' ? 1000 : 700;
+    } else if (seg.type === 'heal') {
+      const healAmt = seg.baseMin + Math.floor(Math.random() * (seg.baseMax - seg.baseMin + 1));
+      attacker.hp = Math.min(attacker.maxHp, attacker.hp + healAmt);
+
+      showFloatingDamage(isPlayer ? 'player-zone' : 'opponent-zone', '+' + healAmt, '#2ed573');
+      flashOverlay('heal');
+      playHeal();
+      vibrate(20);
+
+      addLog(seg.icon, `+${healAmt}`, false, true);
+      effectDuration = 600;
+    } else if (seg.type === 'buff') {
+      attacker.buffCount = (attacker.buffCount || 0) + 1;
+      if (isPlayer) state.playerBuff++;
+      playBuff();
+      addLog(seg.icon, 'BUFF!', false, false);
+      showFloatingDamage(isPlayer ? 'player-zone' : 'opponent-zone', '⚡BUFF!', '#ffc312');
+      vibrate(15);
+      effectDuration = 500;
+    }
+
+    updateHpBar('player', state.player.hp, state.player.maxHp);
+    updateHpBar('opponent', state.enemy.hp, state.enemy.maxHp);
+
+    setTimeout(() => {
+      state.isAnimating = false;
+      checkDeath(isPlayer);
+    }, effectDuration);
+  }
+
+  function showFloatingDamage(zoneId, text, color) {
+    const zone = document.getElementById(zoneId);
+    if (!zone) return;
+    const el = document.createElement('div');
+    el.className = 'float-text';
+    el.textContent = text;
+    el.style.color = color;
+    el.style.left = (40 + Math.random() * 60) + '%';
+    el.style.top = (20 + Math.random() * 30) + '%';
+    zone.appendChild(el);
+    setTimeout(() => el.remove(), 1000);
+  }
+
+  function flashOverlay(type) {
+    const flash = $('damage-flash');
+    flash.className = 'damage-flash ' + type;
+    flash.classList.add('active');
+    setTimeout(() => flash.classList.remove('active'), 200);
+  }
+
+  /* ═══════════════════════════════════════════════════
+     DEATH CHECK & TURN MANAGEMENT
+     ═══════════════════════════════════════════════════ */
+
+  function checkDeath(lastAttackerIsPlayer) {
+    // Check for deaths
+    if (state.player.hp <= 0) {
+      endBattle(false);
+      return;
+    }
+    if (state.enemy.hp <= 0) {
+      // Player won this wave!
+      state.wave++;
+      state.round++;
+      state.score += 50; // wave bonus
+      state.player.hp = Math.min(state.player.maxHp, state.player.hp + 20); // heal some
+      state.enemy = createEnemyMonster(state.wave);
+      state.playerBuff = 0;
+      state.isSpinning = false;
+      state.isAnimating = false;
+      updateBattleUI();
+      setTurnText('▼ New Wave! Drag to spin!', false);
+      $('wheel-hint').textContent = '↻ Drag to spin';
+      state.turn = 'player';
+      drawWheel(state.wheelAngle);
+      return;
+    }
+
+    // No death — next turn
+    if (lastAttackerIsPlayer) {
+      // Enemy turn
+      state.turn = 'enemy';
+      setTurnText('◉ Enemy\'s Turn...', true);
+      $('wheel-hint').textContent = '';
+
+      setTimeout(() => {
+        enemySpinAndAttack();
+      }, 800);
+    } else {
+      // Player turn
+      state.turn = 'player';
+      state.round++;
+      state.isSpinning = false;
+      setTurnText('▼ Your Turn — Drag the wheel!', false);
+      $('wheel-hint').textContent = '↻ Drag the wheel to spin';
+      updateBattleUI();
+    }
+  }
+
+  function endBattle(won) {
+    if (won) {
+      state.totalWins++;
+      state.score += 200;
+      saveData();
+
+      $('win-score-val').textContent = state.score.toLocaleString();
+      $('win-monster').textContent = state.player.emoji;
+
+      const isNewBest = state.score > state.highScore;
+      if (isNewBest) state.highScore = state.score;
+      $('win-best-val').textContent = state.highScore.toLocaleString();
+      $('win-best-lbl').textContent = isNewBest ? '★ New Best!' : 'Best';
+      if (isNewBest) $('win-best-val').classList.add('new-record');
+      else $('win-best-val').classList.remove('new-record');
+
+      showScreen('screen-win');
+    } else {
+      state.totalWins = state.totalWins || 0;
+      saveData();
+
+      $('lose-score-val').textContent = state.score.toLocaleString();
+      $('lose-best-val').textContent = state.highScore.toLocaleString();
+      $('lose-monster').textContent = state.enemy.emoji;
+      $('lose-sub').textContent = `${state.enemy.name} was too strong…`;
+
+      showScreen('screen-lose');
+    }
+  }
+
+  /* ═══════════════════════════════════════════════════
+     ENEMY AI
+     ═══════════════════════════════════════════════════ */
+
+  function enemySpinAndAttack() {
+    // Enemy picks a random segment to "spin" to
+    const targetSeg = Math.floor(Math.random() * SEGMENT_COUNT);
+    const targetAngle = (targetSeg + 0.5) * SEGMENT_ANGLE + 4 * Math.PI; // extra rolls for show
+
+    const startAngle = state.wheelAngle;
+    const startTime = performance.now();
+    const duration = 1200;
+
+    function animateEnemySpin(now) {
+      const elapsed = now - startTime;
+      const progress = Math.min(1, elapsed / duration);
+      // Ease-out cubic
+      const eased = 1 - Math.pow(1 - progress, 3);
+      state.wheelAngle = startAngle + (targetAngle - startAngle) * eased;
+      drawWheel(state.wheelAngle);
+
+      if (progress < 1) {
+        requestAnimationFrame(animateEnemySpin);
+      } else {
+        state.wheelAngle = targetAngle;
+        drawWheel(state.wheelAngle);
+        playSpinEnd();
+        const seg = getSegmentIndex(state.wheelAngle);
+        addLog(SEGMENTS[seg].icon, `${state.enemy.name} used ${SEGMENTS[seg].name}!`, false, false);
+        executeSkill(seg, false);
+      }
+    }
+    requestAnimationFrame(animateEnemySpin);
+  }
+
+  /* ═══════════════════════════════════════════════════
+     WHEEL INTERACTION
+     ═══════════════════════════════════════════════════ */
+
+  function getAngleFromCenter(clientX, clientY) {
+    const rect = wheelRing.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    return Math.atan2(clientY - cy, clientX - cx);
+  }
+
+  function onPointerDown(e) {
+    if (state.screen !== 'battle' || state.turn !== 'player' || state.isSpinning || state.isAnimating) return;
+    initAudio();
+    playUIClick();
+    state.dragging = true;
+    state.dragVelocities = [];
+    state.lastDragAngle = getAngleFromCenter(e.clientX, e.clientY);
+    state.lastDragTime = performance.now();
+  }
+
+  function onPointerMove(e) {
+    if (!state.dragging) return;
+    e.preventDefault();
+
+    const angle = getAngleFromCenter(e.clientX, e.clientY);
+    const now = performance.now();
+
+    let delta = angle - state.lastDragAngle;
+    if (delta > Math.PI) delta -= 2 * Math.PI;
+    else if (delta < -Math.PI) delta += 2 * Math.PI;
+
+    state.wheelAngle += delta;
+    drawWheel(state.wheelAngle);
+
+    // Track velocity
+    state.dragVelocities.push({ delta, time: now });
+    if (state.dragVelocities.length > 10) state.dragVelocities.shift();
+
+    state.lastDragAngle = angle;
+    state.lastDragTime = now;
+  }
+
+  function onPointerUp(e) {
+    if (!state.dragging) return;
+    state.dragging = false;
+
+    if (state.turn !== 'player' || state.isSpinning || state.isAnimating) return;
+
+    // Compute velocity from recent drag samples
+    const velSamples = state.dragVelocities;
+    if (velSamples.length < 2) {
+      // Tap: auto-spin with medium random velocity
+      applySpinVelocity(MIN_SPIN_VELOCITY + Math.random() * 8);
+    } else {
+      const recent = velSamples.slice(-5);
+      const totalDelta = recent.reduce((sum, v) => sum + v.delta, 0);
+      const timeSpan = (recent[recent.length - 1].time - recent[0].time) / 1000;
+      let velocity = timeSpan > 0 ? totalDelta / timeSpan : 0;
+      velocity = Math.max(MIN_SPIN_VELOCITY, Math.min(velocity * 60, 40));
+      applySpinVelocity(velocity);
+    }
+
+    $('wheel-hint').textContent = 'Spinning…';
+    setTurnText('◉ Spinning…', true);
+  }
+
+  // Keyboard support
+  function onKeyDown(e) {
+    if (e.key === ' ' || e.key === 'Enter') {
+      if (state.screen === 'title') {
+        startGame();
+        return;
+      }
+      if (state.screen === 'battle' && state.turn === 'player' && !state.isSpinning && !state.isAnimating && !state.dragging) {
+        initAudio();
+        applySpinVelocity(MIN_SPIN_VELOCITY + Math.random() * 12);
+        $('wheel-hint').textContent = 'Spinning…';
+        setTurnText('◉ Spinning…', true);
+      }
+    }
+  }
+
+  /* ═══════════════════════════════════════════════════
+     PHYSICS UPDATE LOOP
+     ═══════════════════════════════════════════════════ */
+
+  function updateWheelPhysics() {
+    if (!state.isSpinning) return;
+
+    state.wheelAngle += state.wheelVelocity * (1 / 60);
+    state.wheelVelocity *= (1 - FRICTION);
+
+    drawWheel(state.wheelAngle);
+
+    if (state.wheelVelocity < SPIN_THRESHOLD) {
+      state.wheelVelocity = 0;
+      state.isSpinning = false;
+
+      playSpinEnd();
+      vibrate([20, 30, 20]);
+
+      const seg = getSegmentIndex(state.wheelAngle);
+      const segInfo = SEGMENTS[seg];
+      $('wheel-hint').textContent = `${segInfo.icon} ${segInfo.name}!`;
+
+      // Highlight the landed segment
+      addLog(segInfo.icon, `${segInfo.name}!`, false, false);
+
+      setTimeout(() => {
+        if (state.turn === 'player') {
+          executeSkill(seg, true);
+        }
+      }, 300);
+    }
+  }
+
+  /* ═══════════════════════════════════════════════════
+     SAVE / LOAD
+     ═══════════════════════════════════════════════════ */
+
+  function saveData() {
+    try {
+      localStorage.setItem('wheelomon_save', JSON.stringify({
+        highScore: state.highScore,
+        totalWins: state.totalWins
+      }));
+    } catch(e) {}
+  }
+
+  function loadData() {
+    try {
+      const raw = localStorage.getItem('wheelomon_save');
+      if (raw) {
+        const data = JSON.parse(raw);
+        state.highScore = data.highScore || 0;
+        state.totalWins = data.totalWins || 0;
+      }
+    } catch(e) {}
+    $('stat-best-value').textContent = state.highScore.toLocaleString();
+    $('stat-wins-value').textContent = state.totalWins;
+  }
+
+  /* ═══════════════════════════════════════════════════
+     GAME START / RESET
+     ═══════════════════════════════════════════════════ */
+
+  function startGame() {
+    initAudio();
+    state.wave = 1;
+    state.score = 0;
+    state.round = 1;
+    state.logs = [];
+    state.playerBuff = 0;
+    state.wheelAngle = 0;
+    state.wheelVelocity = 0;
+    state.isSpinning = false;
+    state.isAnimating = false;
+    startBattle();
+    showScreen('screen-battle');
+  }
+
+  function resetGame() {
+    showScreen('screen-title');
+    loadData();
+    $('title-monster-emoji').textContent = state.totalWins > 0 ? ['🔥','🌊','🌑'][Math.floor(Math.random() * 3)] : '🔥';
+  }
+
+  /* ═══════════════════════════════════════════════════
+     EVENT BINDING
+     ═══════════════════════════════════════════════════ */
+
+  function init() {
+    loadData();
+
+    // Sound toggle
+    $('btn-sound').addEventListener('click', () => {
+      state.soundEnabled = !state.soundEnabled;
+      $('btn-sound').classList.toggle('muted');
+      playUIClick();
+      saveData();
+    });
+
+    // Start game buttons
+    $('btn-start-game').addEventListener('click', () => {
+      playUIClick();
+      startGame();
+    });
+
+    // Result buttons
+    $('btn-play-again-win').addEventListener('click', () => {
+      playUIClick();
+      startGame();
+    });
+    $('btn-try-again').addEventListener('click', () => {
+      playUIClick();
+      startGame();
+    });
+    $('btn-back-title-win').addEventListener('click', () => {
+      playUIClick();
+      resetGame();
+    });
+    $('btn-back-title-lose').addEventListener('click', () => {
+      playUIClick();
+      resetGame();
+    });
+
+    // Wheel input
+    const wheelEl = $('wheel-ring');
+    wheelEl.addEventListener('pointerdown', onPointerDown);
+    document.addEventListener('pointermove', onPointerMove);
+    document.addEventListener('pointerup', onPointerUp);
+
+    // Keyboard
+    document.addEventListener('keydown', onKeyDown);
+
+    // Title screen — show monster and stats
+    $('title-monster-emoji').textContent = state.totalWins > 0 ? PLAYER_MONSTERS[Math.floor(Math.random() * PLAYER_MONSTERS.length)].emoji : '🔥';
+
+    // Physics loop
+    function gameLoop() {
+      updateWheelPhysics();
+      updateTimer();
+      requestAnimationFrame(gameLoop);
+    }
+    requestAnimationFrame(gameLoop);
+
+    console.log('Wheel-o-Mon Showdown v1.0 loaded');
+  }
+
+  // Start when DOM ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+
+})();
+</script>
+</body>
+</html>
