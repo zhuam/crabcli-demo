@@ -627,7 +627,7 @@ var CARDS_DB = [
       if (g.removedCards && g.removedCards.length > 0) {
         var removed = g.removedCards.pop();
         var emptySlots = [];
-        for (var i=0; i<SLOT_COUNT; i++) { if (!g.board[i] && PYRAMID_LAYER[i] <= g.layerUnlocked) emptySlots.push(i); }
+        for (var i=0; i<SLOT_COUNT; i++) { if (!g.board[i] && PYRAMID_LAYER[i] >= g.layerUnlocked) emptySlots.push(i); }
         if (emptySlots.length > 0) {
           var target = emptySlots[Math.floor(Math.random() * emptySlots.length)];
           g.board[target] = { id:removed.id, name:removed.name, icon:removed.icon, tier:removed.tier, hp:2, cost:removed.cost||0, desc:removed.desc };
@@ -641,7 +641,12 @@ var CARDS_DB = [
   },
   { id:'roof',      name:'屋顶卡', icon:'🏠', tier:4, cost:5, hp:1, desc:'若置于顶层：立即通关！',
     skill: function(g, idx) {
-      if (PYRAMID_LAYER[idx] === 0) { setTimeout(function() { endGame(true, '屋顶卡！你抵达了天空城之巅！'); }, 400); }
+      if (PYRAMID_LAYER[idx] === 0) {
+        // Victory is handled by placeCard's win check (id === 'roof' + slot 0)
+        // This skill is kept for potential bonus effects
+        showFloatingText('🏆 通关!', idx);
+        playSound('win');
+      }
     }
   }
 ];
@@ -692,7 +697,7 @@ function initGame() {
     score: 0,
     bestScore: parseInt(localStorage.getItem('skyport-cardhouse-best')) || 0,
     gamesPlayed: parseInt(localStorage.getItem('skyport-cardhouse-played')) || 0,
-    layerUnlocked: 1, // start at layer 1 (bottom)
+    layerUnlocked: 4, // start at bottom layer (layer 4 = 5 slots), unlock upward
     timeLeft: 180,
     timer: null,
     soundOn: true,
@@ -763,7 +768,7 @@ function renderBoard() {
   var idx = 0;
   for (var layer = 4; layer >= 0; layer--) {
     var row = document.createElement('div');
-    row.className = 'pyramid-row' + (layer > game.layerUnlocked ? ' locked' : '');
+    row.className = 'pyramid-row' + (layer < game.layerUnlocked ? ' locked' : '');
     row.setAttribute('data-layer', layer);
 
     var cardsInRow = LAYER_CARDS[layer];
@@ -776,7 +781,7 @@ function renderBoard() {
       var cardData = game.board[idx];
       if (cardData) {
         slot.innerHTML = renderPlacedCard(cardData);
-      } else if (layer > game.layerUnlocked) {
+      } else if (layer < game.layerUnlocked) {
         slot.innerHTML = '<span class="lock-icon">🔒</span>';
       } else {
         slot.innerHTML = '<div class="placeholder"></div>';
@@ -872,7 +877,7 @@ function onDrag(e) {
   var targetIdx = findSlotAt(pos.x, pos.y);
   if (targetIdx >= 0) {
     var slot = document.querySelector('.slot[data-slot-idx="' + targetIdx + '"]');
-    if (slot && game.board[targetIdx] === null && PYRAMID_LAYER[targetIdx] <= game.layerUnlocked) {
+    if (slot && game.board[targetIdx] === null && PYRAMID_LAYER[targetIdx] >= game.layerUnlocked) {
       slot.classList.add('highlight');
       // Vibrate
       try { navigator.vibrate(10); } catch(_) {}
@@ -893,7 +898,7 @@ function endDrag(e) {
   if (!dragState) return;
 
   var targetIdx = findSlotAt(pos.x, pos.y);
-  if (targetIdx >= 0 && game.board[targetIdx] === null && PYRAMID_LAYER[targetIdx] <= game.layerUnlocked) {
+  if (targetIdx >= 0 && game.board[targetIdx] === null && PYRAMID_LAYER[targetIdx] >= game.layerUnlocked) {
     placeCard(targetIdx, dragState.card, dragState.idx);
   }
 
@@ -949,15 +954,7 @@ function placeCard(slotIdx, card, handIdx) {
   // Show floating score
   showFloatingText('+' + scoredPoints + (multiplier > 1 ? ' x' + multiplier : ''), slotIdx);
 
-  // Execute card skill
-  if (typeof card.skill === 'function' && !game.pendingDialog) {
-    card.skill(game, slotIdx);
-  }
-
-  // Unlock next layer check
-  checkLayerUnlock();
-
-  // Draw new card
+  // Execute card skill, then unlock/lose checks after rendering
   setTimeout(function() {
     drawCard();
     renderBoard();
@@ -965,13 +962,22 @@ function placeCard(slotIdx, card, handIdx) {
     updateHUD();
     game.animating = false;
 
-    // Win check - top slot filled (index 0) and not already triggered by roof card
-    if (game.board[0] !== null && game.board[0].id) {
-      endGame(true, '你抵达了天空城之巅！');
+    // Execute card skill AFTER re-render so visual effects land on fresh state
+    if (typeof card.skill === 'function' && !game.pendingDialog) {
+      card.skill(game, slotIdx);
     }
-    // Lose check - deck empty + hand empty
+
+    // Bottom-up layer unlock check (after skill effects, e.g. Scaffold fill)
+    checkLayerUnlock();
+
+    // Win check: only Roof card (id:'roof') on the top slot triggers victory
+    if (game.board[0] !== null && game.board[0].id === 'roof') {
+      endGame(true, '屋顶卡！你抵达了天空城之巅！');
+    }
+
+    // Lose check - deck empty + hand empty + unfilled slots remain
     if (game.deck.length === 0 && game.hand.length === 0) {
-      var hasEmpty = game.board.some(function(c, i) { return c === null && PYRAMID_LAYER[i] <= game.layerUnlocked; });
+      var hasEmpty = game.board.some(function(c, i) { return c === null && PYRAMID_LAYER[i] >= game.layerUnlocked; });
       if (hasEmpty) endGame(false, '牌库耗尽，未能筑成卡屋…');
     }
   }, 300);
@@ -979,8 +985,7 @@ function placeCard(slotIdx, card, handIdx) {
 
 /* ─── Layer Unlock ─── */
 function checkLayerUnlock() {
-  // Layer 5 (idx 0) top = auto unlock, but for progression:
-  // Check if all slots in current layer+1 are filled to unlock next layer up
+  // Bottom-up: start from the lowest unlocked layer, if fully filled → unlock the layer above
   var filledCount = {};
   for (var i=0; i<SLOT_COUNT; i++) {
     var layer = PYRAMID_LAYER[i];
@@ -988,12 +993,14 @@ function checkLayerUnlock() {
       filledCount[layer] = (filledCount[layer]||0) + 1;
     }
   }
-  for (var l=game.layerUnlocked; l<4; l++) {
-    var nextLayer = l + 1;
-    var needed = LAYER_CARDS[nextLayer];
-    if (filledCount[l] >= LAYER_CARDS[l]) {
+  var current = game.layerUnlocked;
+  if (filledCount[current] >= LAYER_CARDS[current]) {
+    var nextLayer = current - 1;
+    if (nextLayer >= 0) {
       game.layerUnlocked = nextLayer;
-      // Flash effect
+      showFloatingText('新层解锁!', 0);
+      playSound('skill');
+      renderBoard();
     }
   }
 }
@@ -1254,7 +1261,7 @@ function triggerChainCollapse(removedIdx) {
 function onSlotHover(e, el) {
   if (!game.isDragging) return;
   var idx = parseInt(el.getAttribute('data-slot-idx'));
-  if (game.board[idx] === null && PYRAMID_LAYER[idx] <= game.layerUnlocked) {
+  if (game.board[idx] === null && PYRAMID_LAYER[idx] >= game.layerUnlocked) {
     el.classList.add('highlight');
   }
 }
