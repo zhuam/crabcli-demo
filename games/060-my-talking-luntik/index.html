@@ -10,6 +10,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@600;700;800&family=Source+Serif+4:opsz,wght@8..60,600;8..60,700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/games/shared/game-frame.css">
 <style>
+.back-to-hub { /* Styles in shared game-frame.css */ }
 /* My Talking Luntik — feed, bathe, tell stories! */
 :root {
   --bg: #f8f5f0;
@@ -437,6 +438,7 @@ html, body {
 </style>
 </head>
 <body>
+<a href="/" class="back-to-hub" onclick="window.recordPlayed && window.recordPlayed('060-my-talking-luntik')">← Arcade</a>
 <div id="app">
 
   <!-- TITLE SCREEN -->
@@ -551,7 +553,8 @@ html, body {
 
   let friendliness = 0;
   let timeLeft = GAME_DURATION;
-  let timerInterval = null;
+  let timerStart = null;
+  let timerRAF = null;
   let isPlaying = false;
   let isResult = false;
   let bestRecord = 0;
@@ -787,16 +790,24 @@ html, body {
 
   function startTimer() {
     timeLeft = GAME_DURATION;
+    timerStart = Date.now();
     updateTimerDisplay();
-    timerInterval = setInterval(function() {
-      timeLeft--;
-      updateTimerDisplay();
-      if (timeLeft <= 0) endGame(false);
-    }, 1000);
+    function tick() {
+      if (!isPlaying) return;
+      var elapsed = Math.floor((Date.now() - timerStart) / 1000);
+      var remaining = GAME_DURATION - elapsed;
+      if (remaining !== timeLeft) {
+        timeLeft = Math.max(0, remaining);
+        updateTimerDisplay();
+        if (timeLeft <= 0) { endGame(false); return; }
+      }
+      timerRAF = requestAnimationFrame(tick);
+    }
+    timerRAF = requestAnimationFrame(tick);
   }
 
   function stopTimer() {
-    if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+    if (timerRAF) { cancelAnimationFrame(timerRAF); timerRAF = null; }
   }
 
   function endGame(won) {
@@ -843,6 +854,15 @@ html, body {
     showScreen('result');
   }
 
+  window.recordPlayed = function recordPlayed(gameId) {
+    try {
+      var recent = JSON.parse(localStorage.getItem('recentlyPlayed') || '[]');
+      var filtered = recent.filter(function(p) { return p.id !== gameId; });
+      filtered.unshift({ id: gameId, playedAt: Date.now() });
+      localStorage.setItem('recentlyPlayed', JSON.stringify(filtered.slice(0, 10)));
+    } catch (e) { /* ignore */ }
+  }
+
   function startGame() {
     isResult = false;
     isPlaying = true;
@@ -854,6 +874,7 @@ html, body {
     getAudioCtx();
     showScreen('game');
     startTimer();
+    recordPlayed('060-my-talking-luntik');
     playClick();
     vibrate(10);
   }
