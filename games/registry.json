@@ -587,7 +587,7 @@
       "rating": 4.0
     },
     {
-"id": "battle-dogs-arena",
+      "id": "battle-dogs-arena",
       "name": "Battle Dogs Arena",
       "description": "狗狗组队竞技场 — 元素克制、自动战斗，收集犬种赢取回合胜利",
       "category": "strategy",
@@ -627,20 +627,7 @@
       "rating": 4.3
     },
     {
-      "id": "we-bare-bears-blocks",
-      "name": "We Bare Bears Blocks",
-      "description": "熊熊三兄弟主题三消 — 滑动匹配熊熊方块，完成关卡目标通关！",
-      "category": "puzzle",
-      "tags": [
-        "singleplayer",
-        "puzzle",
-        "match3",
-        "ip",
-        "short-session"
-      ],
-      "thumbnail": "/games/066-we-bare-bears-blocks/thumb.svg",
-      "path": "/games/066-we-bare-bears-blocks/",
-    "id": "wheel-o-mon-showdown",
+      "id": "wheel-o-mon-showdown",
       "name": "Wheel-o-Mon Showdown",
       "description": "转轮盘决定技能进行回合制对战 — 宝可梦+轮盘融合",
       "category": "casual",
@@ -654,6 +641,26 @@
       ],
       "thumbnail": "/games/062-wheel-o-mon-showdown/thumb.svg",
       "path": "/games/062-wheel-o-mon-showdown/",
+      "hasServer": false,
+      "players": "1",
+      "version": "1.0.0",
+      "featured": true,
+      "rating": 4.0
+    },
+    {
+      "id": "my-talking-luntik",
+      "name": "My Talking Luntik",
+      "description": "养小宠物，喂食洗澡讲故事 — 提升友好度满级通关",
+      "category": "casual",
+      "tags": [
+        "singleplayer",
+        "casual",
+        "pets",
+        "simulation",
+        "short-session"
+      ],
+      "thumbnail": "/games/060-my-talking-luntik/thumb.svg",
+      "path": "/games/060-my-talking-luntik/",
       "hasServer": false,
       "players": "1",
       "version": "1.0.0",
