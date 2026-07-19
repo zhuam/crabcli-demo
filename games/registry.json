@@ -692,6 +692,26 @@
       "rating": 4.0
     },
     {
+      "id": "skyport-cardhouse",
+      "name": "Skyport Cardhouse",
+      "description": "搭叠卡牌筑屋，每张卡都有技能 — 抽卡·放置·触发，抵达屋顶通关",
+      "category": "strategy",
+      "tags": [
+        "singleplayer",
+        "card",
+        "roguelike",
+        "strategy",
+        "short-session"
+      ],
+      "thumbnail": "/games/061-skyport-cardhouse/thumb.svg",
+      "path": "/games/061-skyport-cardhouse/",
+      "hasServer": false,
+      "players": "1",
+      "version": "1.0.0",
+      "featured": true,
+      "rating": 4.0
+    },
+    {
       "id": "idle",
       "name": "Idle",
       "icon": "🏪"

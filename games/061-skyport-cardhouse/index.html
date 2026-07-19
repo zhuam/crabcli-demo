@@ -1,0 +1,1275 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>Skyport Cardhouse — 天空卡屋</title>
+<link rel="stylesheet" href="/fonts/design-fonts.css">
+<style>
+/* ─── Reset & Base ─── */
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+html, body {
+  width:100%; height:100%; overflow:hidden;
+  font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+  background:#0b0f1c; color:#e8edf5;
+  -webkit-font-smoothing:antialiased;
+  touch-action:none; user-select:none;
+}
+
+/* ─── CSS Variables (Modern Minimal adapted for dark game) ─── */
+:root {
+  --color-bg: oklch(0.10 0.04 270);
+  --color-surface: oklch(0.15 0.05 265);
+  --color-card: oklch(0.20 0.06 260);
+  --color-border: oklch(0.28 0.04 260);
+  --color-text: oklch(0.95 0.01 260);
+  --color-muted: oklch(0.55 0.05 260);
+  --color-accent: oklch(0.70 0.18 85);
+  --color-accent2: oklch(0.55 0.18 250);
+  --color-success: oklch(0.55 0.18 160);
+  --color-danger: oklch(0.55 0.18 25);
+  --color-tier1: oklch(0.65 0.14 200);
+  --color-tier2: oklch(0.65 0.16 150);
+  --color-tier3: oklch(0.70 0.18 85);
+  --color-tier4: oklch(0.65 0.18 310);
+  --radius-sm:4px; --radius-md:8px; --radius-lg:12px; --radius-xl:16px;
+  --font-mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Consolas,monospace;
+  --shadow-glow:0 0 30px rgba(255,200,60,0.15);
+  --shadow-card:0 4px 24px rgba(0,0,0,0.4);
+}
+
+/* ─── Screen System ─── */
+.screen {
+  position:fixed; inset:0;
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  transition:opacity 0.6s ease, transform 0.6s ease;
+  z-index:1;
+}
+.screen.hidden {
+  opacity:0; pointer-events:none; transform:scale(0.96);
+  transition-delay:0s;
+}
+.screen.active {
+  opacity:1; pointer-events:auto; transform:scale(1);
+  z-index:2;
+}
+
+/* ─── Stars Background ─── */
+.stars {
+  position:fixed; inset:0; pointer-events:none; z-index:0;
+  overflow:hidden;
+}
+.stars::before, .stars::after {
+  content:''; position:absolute; inset:0;
+  background-image:
+    radial-gradient(1px 1px at 10% 20%, rgba(255,255,255,0.6), transparent),
+    radial-gradient(1px 1px at 30% 50%, rgba(255,255,255,0.4), transparent),
+    radial-gradient(1.5px 1.5px at 50% 10%, rgba(255,255,255,0.7), transparent),
+    radial-gradient(1px 1px at 70% 30%, rgba(255,255,255,0.3), transparent),
+    radial-gradient(1px 1px at 85% 60%, rgba(255,255,255,0.5), transparent),
+    radial-gradient(1.5px 1.5px at 15% 80%, rgba(255,255,255,0.4), transparent),
+    radial-gradient(1px 1px at 90% 15%, rgba(255,255,255,0.6), transparent),
+    radial-gradient(1px 1px at 55% 70%, rgba(255,255,255,0.3), transparent),
+    radial-gradient(1px 1px at 40% 90%, rgba(255,255,255,0.5), transparent),
+    radial-gradient(1.5px 1.5px at 25% 35%, rgba(255,255,255,0.6), transparent);
+  animation:twinkle 4s ease-in-out infinite alternate;
+}
+.stars::after {
+  animation-duration:5s; animation-delay:-2s;
+  background-image:
+    radial-gradient(1px 1px at 5% 40%, rgba(255,255,255,0.5), transparent),
+    radial-gradient(1.5px 1.5px at 45% 55%, rgba(255,255,255,0.7), transparent),
+    radial-gradient(1px 1px at 65% 85%, rgba(255,255,255,0.4), transparent),
+    radial-gradient(1px 1px at 80% 5%, rgba(255,255,255,0.6), transparent),
+    radial-gradient(1.5px 1.5px at 35% 15%, rgba(255,255,255,0.3), transparent),
+    radial-gradient(1px 1px at 75% 45%, rgba(255,255,255,0.5), transparent),
+    radial-gradient(1px 1px at 60% 25%, rgba(255,255,255,0.4), transparent),
+    radial-gradient(1px 1px at 20% 65%, rgba(255,255,255,0.6), transparent),
+    radial-gradient(1px 1px at 95% 75%, rgba(255,255,255,0.5), transparent),
+    radial-gradient(1.5px 1.5px at 50% 45%, rgba(255,255,255,0.4), transparent);
+}
+@keyframes twinkle { 0%{opacity:0.5} 100%{opacity:1} }
+
+/* ─── Title Screen ─── */
+#screen-title {
+  background:linear-gradient(180deg, #0b0f1c 0%, #111827 40%, #1a2744 100%);
+}
+.title-content {
+  text-align:center; z-index:1; padding:24px;
+}
+.title-content h1 {
+  font-size:clamp(2rem,6vw,3.5rem);
+  font-weight:700; letter-spacing:-0.02em;
+  background:linear-gradient(135deg, #f0d060 0%, #ffb347 50%, #f59e0b 100%);
+  -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+  background-clip:text;
+  margin-bottom:8px;
+  animation:titleFloat 3s ease-in-out infinite;
+}
+@keyframes titleFloat { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
+.title-content .subtitle {
+  font-size:clamp(0.9rem,2vw,1.1rem);
+  color:var(--color-muted); margin-bottom:6px;
+  font-family:var(--font-mono); letter-spacing:0.1em;
+}
+.title-content .tagline {
+  font-size:clamp(0.85rem,1.5vw,1rem);
+  color:rgba(255,255,255,0.45);
+  margin-bottom:32px; max-width:320px; line-height:1.5;
+}
+.title-pyramid {
+  display:flex; flex-direction:column; align-items:center; gap:2px;
+  margin:24px auto 32px; transform:scale(0.9);
+}
+.title-pyramid .tp-row {
+  display:flex; justify-content:center; gap:4px;
+}
+.title-pyramid .tp-cell {
+  width:clamp(28px,3.5vw,36px); height:clamp(36px,4vw,44px);
+  border-radius:4px;
+  background:linear-gradient(135deg, rgba(255,200,60,0.2), rgba(255,200,60,0.08));
+  border:1px solid rgba(255,200,60,0.25);
+  transition:all 0.3s ease;
+}
+.title-pyramid .tp-cell.gold {
+  background:linear-gradient(135deg, rgba(255,200,60,0.6), rgba(255,200,60,0.3));
+  border-color:rgba(255,200,60,0.6);
+  box-shadow:0 0 12px rgba(255,200,60,0.15);
+}
+.title-pyramid .tp-cell.filled {
+  background:var(--color-card);
+  border-color:var(--color-border);
+}
+.btn-primary {
+  display:inline-flex; align-items:center; gap:8px;
+  padding:14px 40px; border-radius:var(--radius-lg);
+  border:none; cursor:pointer;
+  font-family:'Inter',sans-serif; font-size:1rem; font-weight:600;
+  background:linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  color:#1a1a2e; box-shadow:0 4px 20px rgba(245,158,11,0.3);
+  transition:all 0.2s ease; letter-spacing:0.02em;
+}
+.btn-primary:hover { transform:translateY(-2px); box-shadow:0 6px 28px rgba(245,158,11,0.4); }
+.btn-primary:active { transform:translateY(0); }
+.title-stats {
+  display:flex; gap:24px; margin-top:20px;
+  font-family:var(--font-mono); font-size:0.85rem;
+  color:var(--color-muted);
+}
+.title-stats span { display:flex; align-items:center; gap:6px; }
+.title-stats strong { color:var(--color-accent); font-weight:600; }
+
+/* ─── Game Screen ─── */
+#screen-game {
+  background:linear-gradient(180deg, #0b0f1c 0%, #111827 50%, #0f1729 100%);
+  justify-content:flex-start; padding-top:0;
+}
+
+/* HUD */
+.hud {
+  width:100%; padding:12px 20px; display:flex; align-items:center; justify-content:space-between;
+  background:rgba(11,15,28,0.85); backdrop-filter:blur(12px);
+  border-bottom:1px solid rgba(255,255,255,0.06);
+  z-index:10; flex-shrink:0; min-height:52px;
+}
+.hud-left, .hud-right { display:flex; align-items:center; gap:16px; }
+.hud-score { font-family:var(--font-mono); font-size:0.85rem; }
+.hud-score .label { color:var(--color-muted); margin-right:4px; }
+.hud-score .value { color:var(--color-accent); font-weight:700; font-size:1.1rem; }
+.hud-timer { font-family:var(--font-mono); font-size:0.9rem; }
+.hud-timer .value { font-weight:700; }
+.hud-timer.urgent .value { color:var(--color-danger); animation:pulse 0.5s ease-in-out infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+.hud-deck { font-family:var(--font-mono); font-size:0.8rem; color:var(--color-muted); }
+.hud-btn {
+  background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.12);
+  color:var(--color-text); border-radius:var(--radius-md); padding:6px 12px;
+  cursor:pointer; font-size:0.75rem; font-family:'Inter',sans-serif;
+  transition:all 0.15s ease;
+}
+.hud-btn:hover { background:rgba(255,255,255,0.15); }
+.hud-btn.sound-on { background:rgba(100,200,100,0.15); border-color:rgba(100,200,100,0.3); }
+
+/* Board Area */
+.game-board-wrapper {
+  flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center;
+  width:100%; padding:16px; position:relative;
+  overflow:hidden;
+}
+
+/* Cloud decoration */
+.clouds {
+  position:absolute; inset:0; pointer-events:none; overflow:hidden;
+}
+.cloud {
+  position:absolute; width:200px; height:60px;
+  background:radial-gradient(ellipse at center, rgba(255,255,255,0.04) 0%, transparent 70%);
+  border-radius:50%; animation:cloudDrift 20s linear infinite;
+}
+.cloud:nth-child(1) { top:15%; left:-200px; animation-duration:25s; }
+.cloud:nth-child(2) { top:30%; left:-300px; animation-duration:30s; animation-delay:-8s; }
+.cloud:nth-child(3) { top:50%; left:-250px; animation-duration:22s; animation-delay:-15s; }
+@keyframes cloudDrift { 0%{transform:translateX(0)} 100%{transform:translateX(120vw)} }
+
+/* Pyramid Board */
+.pyramid-board {
+  position:relative; display:flex; flex-direction:column; align-items:center;
+  gap:0; z-index:2;
+}
+.pyramid-row {
+  display:flex; justify-content:center; gap:clamp(4px,1vw,10px);
+}
+.pyramid-row.locked .slot {
+  opacity:0.25; filter:grayscale(0.8); pointer-events:none;
+}
+
+/* Slot */
+.slot {
+  position:relative;
+  width:clamp(52px,8vw,80px); height:clamp(68px,10vw,100px);
+  border-radius:var(--radius-md);
+  background:rgba(255,255,255,0.04);
+  border:2px dashed rgba(255,255,255,0.12);
+  transition:all 0.25s ease;
+  display:flex; align-items:center; justify-content:center;
+  cursor:pointer; margin-bottom:-8px;
+}
+.slot::before {
+  content:''; position:absolute; inset:-4px; border-radius:12px;
+  transition:all 0.25s ease; opacity:0;
+}
+.slot:hover { border-color:rgba(255,200,60,0.3); background:rgba(255,200,60,0.05); }
+.slot.highlight {
+  border-color:var(--color-accent); background:rgba(255,200,60,0.1);
+  box-shadow:0 0 20px rgba(255,200,60,0.15), inset 0 0 20px rgba(255,200,60,0.05);
+  transform:scale(1.08);
+}
+.slot.highlight::before { opacity:1; box-shadow:0 0 24px rgba(255,200,60,0.2); }
+.slot .lock-icon {
+  font-size:clamp(14px,1.5vw,20px); opacity:0.3;
+}
+.slot .placeholder {
+  width:60%; height:60%; border-radius:4px;
+  border:1px dashed rgba(255,255,255,0.08);
+}
+
+/* Card placed in slot */
+.slot .placed-card {
+  position:absolute; inset:0;
+  border-radius:var(--radius-md); display:flex; flex-direction:column;
+  align-items:center; justify-content:center;
+  overflow:hidden; animation:cardPlace 0.35s cubic-bezier(0.34,1.56,0.64,1);
+}
+@keyframes cardPlace {
+  0%{transform:scale(0.5) translateY(-20px); opacity:0}
+  100%{transform:scale(1) translateY(0); opacity:1}
+}
+.placed-card .card-icon { font-size:clamp(20px,3vw,32px); line-height:1; margin-bottom:2px; }
+.placed-card .card-name { font-size:clamp(8px,1vw,11px); font-weight:600; color:rgba(255,255,255,0.9); }
+.placed-card .card-hp {
+  position:absolute; top:3px; left:3px;
+  width:18px; height:18px; border-radius:50%;
+  background:rgba(100,200,100,0.8); color:#0b0f1c;
+  font-family:var(--font-mono); font-size:10px; font-weight:700;
+  display:flex; align-items:center; justify-content:center;
+}
+.placed-card.tier1 { background:linear-gradient(180deg, rgba(60,180,220,0.3), rgba(60,180,220,0.12)); border:1px solid rgba(60,180,220,0.3); }
+.placed-card.tier2 { background:linear-gradient(180deg, rgba(80,200,120,0.3), rgba(80,200,120,0.12)); border:1px solid rgba(80,200,120,0.3); }
+.placed-card.tier3 { background:linear-gradient(180deg, rgba(255,200,60,0.3), rgba(255,200,60,0.12)); border:1px solid rgba(255,200,60,0.3); }
+.placed-card.tier4 { background:linear-gradient(180deg, rgba(200,120,255,0.3), rgba(200,120,255,0.12)); border:1px solid rgba(200,120,255,0.3); }
+
+/* Row Labels */
+.row-label {
+  position:absolute; left:-48px; top:50%; transform:translateY(-50%);
+  font-family:var(--font-mono); font-size:0.7rem; color:rgba(255,255,255,0.15);
+  white-space:nowrap;
+}
+
+/* Hand Area */
+.hand-area {
+  width:100%; padding:12px 16px 20px;
+  display:flex; justify-content:center; gap:clamp(8px,1.5vw,16px);
+  flex-shrink:0; z-index:5;
+  background:linear-gradient(0deg, rgba(0,0,0,0.3) 0%, transparent 100%);
+}
+.hand-card {
+  width:clamp(72px,10vw,100px); height:clamp(100px,13vw,132px);
+  border-radius:var(--radius-lg);
+  background:linear-gradient(180deg, var(--color-card) 0%, rgba(30,40,70,0.95) 100%);
+  border:2px solid var(--color-border);
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  cursor:grab; transition:all 0.2s ease;
+  box-shadow:var(--shadow-card); position:relative;
+  padding:6px 4px; gap:2px;
+}
+.hand-card:hover {
+  transform:translateY(-12px) scale(1.04);
+  border-color:var(--color-accent);
+  box-shadow:0 8px 32px rgba(0,0,0,0.5), 0 0 20px rgba(255,200,60,0.1);
+}
+.hand-card:active { cursor:grabbing; transform:scale(0.95); }
+.hand-card .card-cost {
+  position:absolute; top:-8px; right:-8px;
+  width:28px; height:28px; border-radius:50%;
+  background:var(--color-accent); color:#0b0f1c;
+  font-family:var(--font-mono); font-size:12px; font-weight:700;
+  display:flex; align-items:center; justify-content:center;
+  box-shadow:0 2px 8px rgba(0,0,0,0.3);
+}
+.hand-card .card-icon { font-size:clamp(24px,3.5vw,36px); line-height:1; margin-bottom:4px; }
+.hand-card .card-name { font-size:clamp(10px,1.2vw,13px); font-weight:600; text-align:center; }
+.hand-card .card-desc { font-size:clamp(7px,0.9vw,10px); color:var(--color-muted); text-align:center; line-height:1.3; padding:0 4px; }
+.hand-card .card-tag {
+  position:absolute; bottom:-8px; left:50%; transform:translateX(-50%);
+  padding:2px 10px; border-radius:10px;
+  font-family:var(--font-mono); font-size:9px; font-weight:600;
+  letter-spacing:0.05em; text-transform:uppercase;
+}
+.hand-card.tier1 .card-tag { background:var(--color-tier1); color:#0b0f1c; }
+.hand-card.tier2 .card-tag { background:var(--color-tier2); color:#0b0f1c; }
+.hand-card.tier3 .card-tag { background:var(--color-tier3); color:#0b0f1c; }
+.hand-card.tier4 .card-tag { background:var(--color-tier4); color:#0b0f1c; }
+.hand-card.tier1 { border-color:rgba(60,180,220,0.3); }
+.hand-card.tier2 { border-color:rgba(80,200,120,0.3); }
+.hand-card.tier3 { border-color:rgba(255,200,60,0.3); }
+.hand-card.tier4 { border-color:rgba(200,120,255,0.3); }
+
+/* Drag Ghost */
+.drag-ghost {
+  position:fixed; pointer-events:none; z-index:1000;
+  width:clamp(72px,10vw,100px); height:clamp(100px,13vw,132px);
+  border-radius:var(--radius-lg);
+  background:linear-gradient(180deg, var(--color-card) 0%, rgba(30,40,70,0.95) 100%);
+  border:2px solid var(--color-accent);
+  box-shadow:0 12px 48px rgba(255,200,60,0.25);
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  gap:4px; transition:width 0.05s, height 0.05s;
+  font-size:clamp(10px,1.2vw,13px);
+  opacity:0.92; transform:rotate(-3deg) scale(1.05);
+  padding:6px 4px;
+}
+.drag-ghost .card-icon { font-size:clamp(24px,3.5vw,36px); }
+.drag-ghost .card-name { font-weight:600; color:var(--color-text); text-align:center; }
+
+/* Skill Activation Flash */
+.skill-flash {
+  position:fixed; inset:0; pointer-events:none; z-index:500;
+  animation:skillFlash 0.6s ease-out forwards;
+}
+@keyframes skillFlash {
+  0%{background:radial-gradient(circle at var(--flash-x,50%) var(--flash-y,50%), rgba(255,200,60,0.3) 0%, transparent 60%); opacity:1}
+  100%{background:radial-gradient(circle at var(--flash-x,50%) var(--flash-y,50%), rgba(255,200,60,0) 0%, transparent 60%); opacity:0}
+}
+
+/* Collapse Animation */
+.collapse-anim {
+  animation:cardCollapse 0.5s ease-in forwards;
+}
+@keyframes cardCollapse {
+  0%{transform:scale(1); opacity:1}
+  50%{transform:scale(1.1); opacity:0.5}
+  100%{transform:scale(0); opacity:0}
+}
+
+/* ─── Result Screen ─── */
+#screen-result {
+  background:linear-gradient(180deg, #0b0f1c 0%, #111827 40%, #1a2744 100%);
+}
+.result-content {
+  text-align:center; z-index:1; padding:24px;
+}
+.result-content .result-icon {
+  font-size:clamp(48px,8vw,72px); margin-bottom:12px;
+  animation:resultBounce 0.6s cubic-bezier(0.34,1.56,0.64,1);
+}
+@keyframes resultBounce { 0%{transform:scale(0); opacity:0} 100%{transform:scale(1); opacity:1} }
+.result-content h2 {
+  font-size:clamp(1.5rem,4vw,2.5rem); font-weight:700;
+  margin-bottom:8px; letter-spacing:-0.02em;
+}
+.result-content h2.win { background:linear-gradient(135deg, #f0d060, #f59e0b); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+.result-content h2.lose { color:#f87171; }
+.result-stats {
+  display:grid; grid-template-columns:1fr 1fr; gap:12px;
+  margin:20px auto; max-width:280px;
+}
+.result-stat {
+  background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08);
+  border-radius:var(--radius-md); padding:12px 16px;
+}
+.result-stat .stat-value {
+  font-family:var(--font-mono); font-size:1.3rem; font-weight:700;
+  color:var(--color-accent);
+}
+.result-stat .stat-label { font-size:0.75rem; color:var(--color-muted); margin-top:2px; }
+.result-stat.best .stat-value { color:#f0d060; }
+.result-btns {
+  display:flex; gap:12px; justify-content:center; margin-top:20px;
+}
+.btn-secondary {
+  display:inline-flex; align-items:center; gap:8px;
+  padding:12px 24px; border-radius:var(--radius-lg); border:1px solid rgba(255,255,255,0.15);
+  background:transparent; color:var(--color-text); cursor:pointer;
+  font-family:'Inter',sans-serif; font-size:0.9rem; font-weight:500;
+  transition:all 0.2s ease;
+}
+.btn-secondary:hover { background:rgba(255,255,255,0.08); border-color:rgba(255,255,255,0.25); }
+
+/* ─── Deck Draw Button ─── */
+.draw-deck-btn {
+  width:clamp(72px,10vw,100px); height:clamp(100px,13vw,132px);
+  border-radius:var(--radius-lg);
+  border:2px dashed rgba(255,255,255,0.12);
+  background:rgba(255,255,255,0.03);
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  cursor:pointer; transition:all 0.2s ease;
+  gap:6px; color:var(--color-muted);
+}
+.draw-deck-btn:hover { border-color:rgba(255,255,255,0.25); background:rgba(255,255,255,0.06); }
+.draw-deck-btn .deck-count {
+  font-family:var(--font-mono); font-size:1.2rem; font-weight:700;
+  color:var(--color-text);
+}
+.draw-deck-btn .deck-label { font-size:0.7rem; text-transform:uppercase; letter-spacing:0.05em; }
+
+/* ─── Floating Combat Text ─── */
+.floating-text {
+  position:fixed; pointer-events:none; z-index:600;
+  font-family:var(--font-mono); font-weight:700; font-size:1.2rem;
+  animation:floatUp 1s ease-out forwards;
+}
+@keyframes floatUp {
+  0%{transform:translateY(0); opacity:1}
+  100%{transform:translateY(-40px); opacity:0}
+}
+
+/* ─── Responsive ─── */
+@media (max-width:480px) {
+  .slot { width:48px; height:62px; margin-bottom:-6px; }
+  .hand-card { width:64px; height:88px; font-size:0.8rem; }
+  .hand-card .card-icon { font-size:22px; }
+  .hand-card .card-desc { display:none; }
+  .hand-card .card-cost { width:22px; height:22px; font-size:10px; top:-6px; right:-6px; }
+  .drag-ghost { width:64px; height:88px; }
+  .drag-ghost .card-icon { font-size:22px; }
+  .hud { padding:8px 12px; flex-wrap:wrap; gap:4px; }
+  .hud-score { font-size:0.75rem; }
+  .title-pyramid { transform:scale(0.7); }
+  .draw-deck-btn { width:64px; height:88px; }
+  .placed-card .card-name { display:none; }
+  .placed-card .card-icon { font-size:20px; }
+  .row-label { display:none; }
+  .result-stats { grid-template-columns:1fr; max-width:200px; }
+}
+
+/* ─── Animations ─── */
+@keyframes glowPulse {
+  0%,100%{box-shadow:0 0 8px rgba(255,200,60,0.1)}
+  50%{box-shadow:0 0 20px rgba(255,200,60,0.2)}
+}
+@keyframes shimmer {
+  0%{background-position:-200% 0}
+  100%{background-position:200% 0}
+}
+</style>
+</head>
+<body>
+
+<!-- Stars Background -->
+<div class="stars"></div>
+<div class="clouds">
+  <div class="cloud"></div>
+  <div class="cloud"></div>
+  <div class="cloud"></div>
+</div>
+
+<!-- ════════════════ Title Screen ════════════════ -->
+<div id="screen-title" class="screen active" data-comp-id="screen-title">
+  <div class="title-content">
+    <!-- Pyramid preview -->
+    <div class="title-pyramid" data-comp-id="title-pyramid">
+      <div class="tp-row"><div class="tp-cell gold"></div></div>
+      <div class="tp-row"><div class="tp-cell filled"></div><div class="tp-cell filled"></div></div>
+      <div class="tp-row"><div class="tp-cell filled"></div><div class="tp-cell filled"></div><div class="tp-cell filled"></div></div>
+      <div class="tp-row"><div class="tp-cell gold"></div><div class="tp-cell filled"></div><div class="tp-cell filled"></div><div class="tp-cell gold"></div></div>
+      <div class="tp-row"><div class="tp-cell gold"></div><div class="tp-cell filled"></div><div class="tp-cell filled"></div><div class="tp-cell filled"></div><div class="tp-cell gold"></div></div>
+    </div>
+    <h1>Skyport Cardhouse</h1>
+    <div class="subtitle">✦ 抽卡 · 放置 · 触发 ✦</div>
+    <p class="tagline">搭叠卡牌筑屋，每张卡都有独特技能<br>抵达屋顶，问鼎天空城</p>
+    <button class="btn-primary" data-comp-id="btn-start" onclick="showScreen('game')">
+      开始游戏 <span>→</span>
+    </button>
+    <div class="title-stats">
+      <span>🏆 最高 <strong id="title-best-score">0</strong></span>
+      <span>🎯 已玩 <strong id="title-games-played">0</strong></span>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════ Game Screen ════════════════ -->
+<div id="screen-game" class="screen hidden" data-comp-id="screen-game">
+
+  <!-- HUD -->
+  <div class="hud" data-comp-id="hud">
+    <div class="hud-left">
+      <div class="hud-score" data-comp-id="hud-score">
+        <span class="label">得分</span>
+        <span class="value" id="score-value">0</span>
+      </div>
+      <div class="hud-timer" data-comp-id="hud-timer">
+        <span class="value" id="timer-value">3:00</span>
+      </div>
+    </div>
+    <div class="hud-right">
+      <div class="hud-deck">牌库 <span id="deck-count">20</span></div>
+      <button class="hud-btn sound-on" data-comp-id="btn-sound" onclick="toggleSound()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg></button>
+    </div>
+  </div>
+
+  <!-- Game Board -->
+  <div class="game-board-wrapper" data-comp-id="game-board">
+    <div class="pyramid-board" id="pyramid-board" data-comp-id="pyramid-board"></div>
+  </div>
+
+  <!-- Hand Area -->
+  <div class="hand-area" id="hand-area" data-comp-id="hand-area">
+    <div class="draw-deck-btn" data-comp-id="draw-deck" onclick="drawCard()">
+      <span class="deck-count" id="hand-deck-count">20</span>
+      <span class="deck-label">抽牌</span>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════ Result Screen ════════════════ -->
+<div id="screen-result" class="screen hidden" data-comp-id="screen-result">
+  <div class="result-content">
+    <div class="result-icon" id="result-icon"><svg width="72" height="72" viewBox="0 0 24 24" fill="none" stroke="#f0d060" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5C7 4 8 6 8 8"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5C17 4 16 6 16 8"/><path d="M12 13c-3.3 0-6-2.7-6-6V4h12v3c0 3.3-2.7 6-6 6z"/><path d="M8 21h8"/><path d="M12 13v8"/></svg></div>
+    <h2 id="result-title" class="win">通关！</h2>
+    <p id="result-subtitle" style="color:var(--color-muted);font-size:0.9rem;">你抵达了天空城之巅</p>
+    <div class="result-stats" data-comp-id="result-stats">
+      <div class="result-stat">
+        <div class="stat-value" id="result-score">0</div>
+        <div class="stat-label">本局得分</div>
+      </div>
+      <div class="result-stat best">
+        <div class="stat-value" id="result-best">0</div>
+        <div class="stat-label">最高纪录</div>
+      </div>
+      <div class="result-stat">
+        <div class="stat-value" id="result-height">0</div>
+        <div class="stat-label">最高层数</div>
+      </div>
+      <div class="result-stat">
+        <div class="stat-value" id="result-time">0:00</div>
+        <div class="stat-label">用时</div>
+      </div>
+    </div>
+    <div class="result-btns">
+      <button class="btn-primary" data-comp-id="btn-replay" onclick="showScreen('game');initGame()">再来一局</button>
+      <button class="btn-secondary" data-comp-id="btn-menu" onclick="showScreen('title')">返回菜单</button>
+    </div>
+  </div>
+</div>
+
+<!-- Drag Ghost -->
+<div id="drag-ghost" class="drag-ghost" style="display:none;"></div>
+
+<!-- ════════════════ JavaScript ════════════════ -->
+<script>
+/* ─── Screen Management ─── */
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(function(s) { s.classList.remove('active'); s.classList.add('hidden'); });
+  var target = document.getElementById(id);
+  if (target) { target.classList.remove('hidden'); target.classList.add('active'); }
+}
+
+/* ─── Card Database ─── */
+var CARDS_DB = [
+  { id:'brick',     name:'砖墙',    icon:'🧱', tier:1, cost:1, hp:2, desc:'放置时：相邻卡获得+2 HP',
+    skill: function(g, idx) {
+      getNeighborSlots(idx).forEach(function(ni) {
+        if (g.board[ni]) { g.board[ni].hp = (g.board[ni].hp||1) + 2; showFloatingText('+2 HP', ni); }
+      });
+    }
+  },
+  { id:'scaffold',  name:'脚手架', icon:'🏗️', tier:1, cost:1, hp:1, desc:'放置时：本层视为已满',
+    skill: function(g, idx) { /* concept: fills the whole layer */ }
+  },
+  { id:'reinforce', name:'强化板', icon:'🛡️', tier:2, cost:2, hp:2, desc:'放置时：本层所有卡 HP+1',
+    skill: function(g, idx) {
+      var layer = PYRAMID_LAYER[idx];
+      for (var i=0; i<SLOT_COUNT; i++) {
+        if (PYRAMID_LAYER[i] === layer && g.board[i]) { g.board[i].hp = (g.board[i].hp||1) + 1; }
+      }
+      showFloatingText('层 HP +1', idx);
+    }
+  },
+  { id:'scry',      name:'透视镜', icon:'👁️', tier:2, cost:2, hp:1, desc:'放置时：预览2张，选1张入手',
+    skill: function(g, idx) { showScryDialog(g); }
+  },
+  { id:'score-x2',  name:'双倍分', icon:'✨', tier:3, cost:3, hp:1, desc:'放置时：当前层得分翻倍',
+    skill: function(g, idx) {
+      var layer = PYRAMID_LAYER[idx];
+      g.scoreMultiplier[layer] = 2;
+      var layerCards = 0;
+      for (var i=0; i<SLOT_COUNT; i++) { if (PYRAMID_LAYER[i] === layer && g.board[i]) layerCards++; }
+      g.score += layerCards * 10;
+      showFloatingText('层分翻倍! +' + (layerCards*10), idx);
+      playSound('skill');
+    }
+  },
+  { id:'collapse',  name:'爆破卡', icon:'💣', tier:3, cost:3, hp:1, desc:'放置时：移除一张相邻卡',
+    skill: function(g, idx) { showCollapseTargets(g, idx); }
+  },
+  { id:'phoenix',   name:'凤凰卡', icon:'🔥', tier:4, cost:4, hp:3, desc:'放置时：复活移除卡到随机空位',
+    skill: function(g, idx) {
+      if (g.removedCards && g.removedCards.length > 0) {
+        var removed = g.removedCards.pop();
+        var emptySlots = [];
+        for (var i=0; i<SLOT_COUNT; i++) { if (!g.board[i] && PYRAMID_LAYER[i] <= g.layerUnlocked) emptySlots.push(i); }
+        if (emptySlots.length > 0) {
+          var target = emptySlots[Math.floor(Math.random() * emptySlots.length)];
+          g.board[target] = { id:removed.id, name:removed.name, icon:removed.icon, tier:removed.tier, hp:2, cost:removed.cost||0, desc:removed.desc };
+          showFloatingText('🔥 复活!', target);
+          playSound('skill');
+        }
+      } else {
+        showFloatingText('无卡可复活', idx);
+      }
+    }
+  },
+  { id:'roof',      name:'屋顶卡', icon:'🏠', tier:4, cost:5, hp:1, desc:'若置于顶层：立即通关！',
+    skill: function(g, idx) {
+      if (PYRAMID_LAYER[idx] === 0) { setTimeout(function() { endGame(true, '屋顶卡！你抵达了天空城之巅！'); }, 400); }
+    }
+  }
+];
+
+/* ─── Pyramid Layout: 5-4-3-2-1 (indices 0-14, top to bottom) ─── */
+var PYRAMID_LAYER = [0,1,1,2,2,2,3,3,3,3,4,4,4,4,4]; // index→layer
+var LAYER_CARDS  = [1,2,3,4,5];                       // cards per layer
+var SLOT_COUNT   = 15;
+
+/* ─── Support Map: which slots support which (chain collapse) ─── */
+var SUPPORT_MAP = {
+  // Upper slot -> [lower slot indices that support it]
+  0: [1, 2],    // top supported by layer 1 (indices 1,2)
+  1: [3, 4],    // layer 1 left supported by layer 2 (3,4)
+  2: [4, 5],    // layer 1 right supported by layer 2 (4,5)
+  3: [6, 7],    // layer 2 left supported by layer 3 (6,7)
+  4: [7, 8],    // layer 2 center supported by layer 3 (7,8)
+  5: [8, 9],    // layer 2 right supported by layer 3 (8,9)
+  6: [10, 11],  // layer 3 left supported by layer 4 bottom (10,11)
+  7: [11, 12],  // layer 3 center-left supported by bottom (11,12)
+  8: [12, 13],  // layer 3 center-right supported by bottom (12,13)
+  9: [13, 14]   // layer 3 right supported by bottom (13,14)
+  // bottom layer (10-14) has no support dependencies
+};
+
+/* ─── Get neighbor slot indices (adjacent in same layer or below) ─── */
+function getNeighborSlots(idx) {
+  var layer = PYRAMID_LAYER[idx];
+  var startOfLayer = 0;
+  for (var l=4; l>layer; l--) startOfLayer += LAYER_CARDS[l];
+  var posInLayer = idx - startOfLayer;
+  var result = [];
+  // Left neighbor in same layer
+  if (posInLayer > 0) result.push(idx - 1);
+  // Right neighbor in same layer
+  if (posInLayer < LAYER_CARDS[layer] - 1) result.push(idx + 1);
+  return result;
+}
+
+/* ─── Game State ─── */
+var game = {};
+
+function initGame() {
+  game = {
+    board: new Array(SLOT_COUNT).fill(null),
+    hand: [],
+    deck: [],
+    score: 0,
+    bestScore: parseInt(localStorage.getItem('skyport-cardhouse-best')) || 0,
+    gamesPlayed: parseInt(localStorage.getItem('skyport-cardhouse-played')) || 0,
+    layerUnlocked: 1, // start at layer 1 (bottom)
+    timeLeft: 180,
+    timer: null,
+    soundOn: true,
+    isDragging: false,
+    animating: false,
+    usedCards: [],
+    maxTriggerCount: 0,
+    removedCards: [],
+    pendingDialog: false,
+    scoreMultiplier: {}
+  };
+
+  // Build deck (shuffle)
+  var d = [];
+  for (var t=0; t<4; t++) d.push(CARDS_DB[0], CARDS_DB[1]);           // 8 tier1
+  for (var t=0; t<3; t++) d.push(CARDS_DB[2], CARDS_DB[3]);           // 6 tier2
+  for (var t=0; t<2; t++) d.push(CARDS_DB[4], CARDS_DB[5]);           // 4 tier3
+  d.push(CARDS_DB[6], CARDS_DB[7]);                                    // 2 tier4
+  game.deck = shuffle(d);
+
+  // Draw initial hand
+  game.hand = [];
+  for (var i=0; i<3; i++) drawCard();
+
+  // Update title screen stats
+  document.getElementById('title-best-score').textContent = game.bestScore;
+  document.getElementById('title-games-played').textContent = game.gamesPlayed;
+
+  renderBoard();
+  renderHand();
+  updateHUD();
+
+  // Start timer
+  if (game.timer) clearInterval(game.timer);
+  game.timer = setInterval(tick, 1000);
+}
+
+function shuffle(a) {
+  for (var i=a.length-1; i>0; i--) { var j=Math.floor(Math.random()*(i+1)); var t=a[i]; a[i]=a[j]; a[j]=t; }
+  return a;
+}
+
+/* ─── Timer ─── */
+function tick() {
+  game.timeLeft--;
+  if (game.timeLeft <= 0) {
+    clearInterval(game.timer);
+    endGame(false, '时间用尽了…');
+    return;
+  }
+  updateHUD();
+}
+
+/* ─── Draw Card ─── */
+function drawCard() {
+  if (game.hand.length >= 3) return;
+  if (game.deck.length === 0) { /* try reshuffle */ return; }
+  var card = game.deck.pop();
+  game.hand.push(card);
+  renderHand();
+  updateHUD();
+}
+
+/* ─── Render Pyramid Board ─── */
+function renderBoard() {
+  var board = document.getElementById('pyramid-board');
+  board.innerHTML = '';
+  var idx = 0;
+  for (var layer = 4; layer >= 0; layer--) {
+    var row = document.createElement('div');
+    row.className = 'pyramid-row' + (layer > game.layerUnlocked ? ' locked' : '');
+    row.setAttribute('data-layer', layer);
+
+    var cardsInRow = LAYER_CARDS[layer];
+    for (var c = 0; c < cardsInRow; c++) {
+      var slot = document.createElement('div');
+      slot.className = 'slot';
+      slot.setAttribute('data-slot-idx', idx);
+      slot.setAttribute('data-layer', layer);
+
+      var cardData = game.board[idx];
+      if (cardData) {
+        slot.innerHTML = renderPlacedCard(cardData);
+      } else if (layer > game.layerUnlocked) {
+        slot.innerHTML = '<span class="lock-icon">🔒</span>';
+      } else {
+        slot.innerHTML = '<div class="placeholder"></div>';
+      }
+
+      // Events
+      slot.addEventListener('mouseenter', function(e) { onSlotHover(e, this); });
+      slot.addEventListener('mouseleave', function(e) { onSlotLeave(e, this); });
+
+      row.appendChild(slot);
+      idx++;
+    }
+    board.appendChild(row);
+  }
+}
+
+function renderPlacedCard(card) {
+  var tierMap = {1:'tier1',2:'tier2',3:'tier3',4:'tier4'};
+  return '<div class="placed-card ' + (tierMap[card.tier]||'tier1') + '">' +
+    '<div class="card-hp">' + (card.hp||1) + '</div>' +
+    '<div class="card-icon">' + card.icon + '</div>' +
+    '<div class="card-name">' + card.name + '</div>' +
+  '</div>';
+}
+
+/* ─── Render Hand ─── */
+function renderHand() {
+  var area = document.getElementById('hand-area');
+  var deckBtn = area.querySelector('.draw-deck-btn');
+  area.innerHTML = '';
+
+  game.hand.forEach(function(card, i) {
+    var el = document.createElement('div');
+    var tierMap = {1:'tier1',2:'tier2',3:'tier3',4:'tier4'};
+    el.className = 'hand-card ' + (tierMap[card.tier]||'tier1');
+    el.setAttribute('data-card-idx', i);
+    el.setAttribute('data-comp-id', 'hand-card-' + i);
+
+    el.innerHTML =
+      '<div class="card-cost">' + (card.cost||0) + '</div>' +
+      '<div class="card-icon">' + card.icon + '</div>' +
+      '<div class="card-name">' + card.name + '</div>' +
+      '<div class="card-desc">' + card.desc + '</div>' +
+      '<div class="card-tag">T' + (card.tier||1) + '</div>';
+
+    // Drag events (mouse)
+    el.addEventListener('mousedown', function(e) { startDrag(e, card, i); });
+    // Drag events (touch)
+    el.addEventListener('touchstart', function(e) { e.preventDefault(); startDrag(e, card, i); }, {passive:false});
+
+    area.appendChild(el);
+  });
+
+  // Re-add deck button
+  var deckEl = document.createElement('div');
+  deckEl.className = 'draw-deck-btn';
+  deckEl.setAttribute('data-comp-id', 'draw-deck');
+  deckEl.setAttribute('onclick', 'drawCard()');
+  deckEl.innerHTML = '<span class="deck-count" id="hand-deck-count">' + game.deck.length + '</span><span class="deck-label">抽牌</span>';
+  area.appendChild(deckEl);
+}
+
+/* ─── Drag & Drop ─── */
+var dragState = null;
+
+function startDrag(e, card, idx) {
+  if (game.animating) return;
+  game.isDragging = true;
+  var pos = getPointerPos(e);
+  dragState = { card: card, idx: idx, startX: pos.x, startY: pos.y };
+
+  var ghost = document.getElementById('drag-ghost');
+  ghost.style.display = 'flex';
+  ghost.innerHTML = '<div class="card-icon">' + card.icon + '</div><div class="card-name">' + card.name + '</div>';
+  ghost.style.left = (pos.x - 50) + 'px';
+  ghost.style.top = (pos.y - 66) + 'px';
+
+  document.addEventListener('mousemove', onDrag);
+  document.addEventListener('mouseup', endDrag);
+  document.addEventListener('touchmove', onDrag, {passive:false});
+  document.addEventListener('touchend', endDrag);
+}
+
+function onDrag(e) {
+  e.preventDefault();
+  var pos = getPointerPos(e);
+  var ghost = document.getElementById('drag-ghost');
+  ghost.style.left = (pos.x - 50) + 'px';
+  ghost.style.top = (pos.y - 66) + 'px';
+
+  // Highlight slot under cursor
+  document.querySelectorAll('.slot.highlight').forEach(function(s) { s.classList.remove('highlight'); });
+  var targetIdx = findSlotAt(pos.x, pos.y);
+  if (targetIdx >= 0) {
+    var slot = document.querySelector('.slot[data-slot-idx="' + targetIdx + '"]');
+    if (slot && game.board[targetIdx] === null && PYRAMID_LAYER[targetIdx] <= game.layerUnlocked) {
+      slot.classList.add('highlight');
+      // Vibrate
+      try { navigator.vibrate(10); } catch(_) {}
+    }
+  }
+}
+
+function endDrag(e) {
+  var pos = getPointerPos(e);
+  document.getElementById('drag-ghost').style.display = 'none';
+  document.querySelectorAll('.slot.highlight').forEach(function(s) { s.classList.remove('highlight'); });
+
+  document.removeEventListener('mousemove', onDrag);
+  document.removeEventListener('mouseup', endDrag);
+  document.removeEventListener('touchmove', onDrag);
+  document.removeEventListener('touchend', endDrag);
+
+  if (!dragState) return;
+
+  var targetIdx = findSlotAt(pos.x, pos.y);
+  if (targetIdx >= 0 && game.board[targetIdx] === null && PYRAMID_LAYER[targetIdx] <= game.layerUnlocked) {
+    placeCard(targetIdx, dragState.card, dragState.idx);
+  }
+
+  dragState = null;
+  game.isDragging = false;
+}
+
+function getPointerPos(e) {
+  if (e.changedTouches) return { x: e.changedTouches[0].clientX, y: e.changedTouches[0].clientY };
+  if (e.touches) return { x: e.touches[0].clientX, y: e.touches[0].clientY };
+  return { x: e.clientX, y: e.clientY };
+}
+
+function findSlotAt(x, y) {
+  var els = document.querySelectorAll('.slot');
+  for (var i=0; i<els.length; i++) {
+    var r = els[i].getBoundingClientRect();
+    if (x >= r.left && x <= r.right && y >= r.top && y <= r.bottom)
+      return parseInt(els[i].getAttribute('data-slot-idx'));
+  }
+  return -1;
+}
+
+/* ─── Place Card ─── */
+function placeCard(slotIdx, card, handIdx) {
+  game.animating = true;
+
+  // Remove from hand
+  game.hand.splice(handIdx, 1);
+  game.board[slotIdx] = { id:card.id, name:card.name, icon:card.icon, tier:card.tier, hp:(card.hp||1), cost:(card.cost||0), desc:card.desc, skill:card.skill };
+  
+  var baseScore = (card.cost||0) * 10;
+  var layer = PYRAMID_LAYER[slotIdx];
+  var multiplier = game.scoreMultiplier[layer] || 1;
+  var scoredPoints = baseScore * multiplier;
+  game.score += scoredPoints;
+
+  // Vibration
+  try { navigator.vibrate(15); } catch(_) {}
+
+  // Sound
+  playSound('place');
+
+  // Skill activation visual
+  var slotEl = document.querySelector('.slot[data-slot-idx="' + slotIdx + '"]');
+  if (slotEl) {
+    var rect = slotEl.getBoundingClientRect();
+    var flashX = (rect.left + rect.width/2) / window.innerWidth * 100 + '%';
+    var flashY = (rect.top + rect.height/2) / window.innerHeight * 100 + '%';
+    showSkillFlash(flashX, flashY);
+  }
+
+  // Show floating score
+  showFloatingText('+' + scoredPoints + (multiplier > 1 ? ' x' + multiplier : ''), slotIdx);
+
+  // Execute card skill
+  if (typeof card.skill === 'function' && !game.pendingDialog) {
+    card.skill(game, slotIdx);
+  }
+
+  // Unlock next layer check
+  checkLayerUnlock();
+
+  // Draw new card
+  setTimeout(function() {
+    drawCard();
+    renderBoard();
+    renderHand();
+    updateHUD();
+    game.animating = false;
+
+    // Win check - top slot filled (index 0) and not already triggered by roof card
+    if (game.board[0] !== null && game.board[0].id) {
+      endGame(true, '你抵达了天空城之巅！');
+    }
+    // Lose check - deck empty + hand empty
+    if (game.deck.length === 0 && game.hand.length === 0) {
+      var hasEmpty = game.board.some(function(c, i) { return c === null && PYRAMID_LAYER[i] <= game.layerUnlocked; });
+      if (hasEmpty) endGame(false, '牌库耗尽，未能筑成卡屋…');
+    }
+  }, 300);
+}
+
+/* ─── Layer Unlock ─── */
+function checkLayerUnlock() {
+  // Layer 5 (idx 0) top = auto unlock, but for progression:
+  // Check if all slots in current layer+1 are filled to unlock next layer up
+  var filledCount = {};
+  for (var i=0; i<SLOT_COUNT; i++) {
+    var layer = PYRAMID_LAYER[i];
+    if (game.board[i] !== null) {
+      filledCount[layer] = (filledCount[layer]||0) + 1;
+    }
+  }
+  for (var l=game.layerUnlocked; l<4; l++) {
+    var nextLayer = l + 1;
+    var needed = LAYER_CARDS[nextLayer];
+    if (filledCount[l] >= LAYER_CARDS[l]) {
+      game.layerUnlocked = nextLayer;
+      // Flash effect
+    }
+  }
+}
+
+/* ─── End Game ─── */
+function endGame(won, message) {
+  if (game.timer) clearInterval(game.timer);
+
+  var timeUsed = 180 - game.timeLeft;
+  var m = Math.floor(timeUsed / 60);
+  var s = timeUsed % 60;
+
+  document.getElementById('result-icon').textContent = won ? '🏆' : '💔';
+  var titleEl = document.getElementById('result-title');
+  titleEl.textContent = won ? '通关！' : '卡屋崩塌';
+  titleEl.className = won ? 'win' : 'lose';
+  document.getElementById('result-subtitle').textContent = message;
+
+  var finalScore = game.score + (won ? 500 : 0) + (game.layerUnlocked * 50);
+  document.getElementById('result-score').textContent = finalScore;
+  document.getElementById('result-best').textContent = Math.max(finalScore, game.bestScore);
+  document.getElementById('result-height').textContent = (game.layerUnlocked + 1) + ' / 5';
+  document.getElementById('result-time').textContent = m + ':' + (s<10?'0':'') + s;
+
+  // Save
+  if (finalScore > game.bestScore) {
+    game.bestScore = finalScore;
+    localStorage.setItem('skyport-cardhouse-best', finalScore);
+  }
+  game.gamesPlayed++;
+  localStorage.setItem('skyport-cardhouse-played', game.gamesPlayed);
+
+  try { navigator.vibrate(won ? [50,100,100] : [200]); } catch(_) {}
+  playSound(won ? 'win' : 'lose');
+
+  showScreen('result');
+}
+
+/* ─── HUD Update ─── */
+function updateHUD() {
+  document.getElementById('score-value').textContent = game.score;
+  var m = Math.floor(game.timeLeft / 60);
+  var s = game.timeLeft % 60;
+  var timerEl = document.getElementById('timer-value');
+  timerEl.textContent = m + ':' + (s<10?'0':'') + s;
+  var hudTimer = document.querySelector('.hud-timer');
+  if (game.timeLeft < 30) hudTimer.classList.add('urgent'); else hudTimer.classList.remove('urgent');
+  document.getElementById('deck-count').textContent = game.deck.length;
+  var hdc = document.getElementById('hand-deck-count');
+  if (hdc) hdc.textContent = game.deck.length;
+}
+
+/* ─── Visual Effects ─── */
+function showSkillFlash(x, y) {
+  var flash = document.createElement('div');
+  flash.className = 'skill-flash';
+  flash.style.setProperty('--flash-x', x);
+  flash.style.setProperty('--flash-y', y);
+  document.body.appendChild(flash);
+  setTimeout(function() { flash.remove(); }, 600);
+}
+
+function showFloatingText(text, slotIdx) {
+  var slot = document.querySelector('.slot[data-slot-idx="' + slotIdx + '"]');
+  if (!slot) return;
+  var rect = slot.getBoundingClientRect();
+  var ft = document.createElement('div');
+  ft.className = 'floating-text';
+  ft.textContent = text;
+  ft.style.color = 'var(--color-accent)';
+  ft.style.left = (rect.left + rect.width/2 - 20) + 'px';
+  ft.style.top = rect.top + 'px';
+  document.body.appendChild(ft);
+  setTimeout(function() { ft.remove(); }, 1000);
+}
+
+/* ─── Sound ─── */
+var audioCtx = null;
+
+function getAudioCtx() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  return audioCtx;
+}
+
+function playSound(type) {
+  if (!game.soundOn) return;
+  try {
+    var ctx = getAudioCtx();
+    var osc = ctx.createOscillator();
+    var gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+
+    switch(type) {
+      case 'place':
+        osc.frequency.value = 520; osc.type = 'sine';
+        gain.gain.setValueAtTime(0.15, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
+        osc.start(ctx.currentTime); osc.stop(ctx.currentTime + 0.15);
+        break;
+      case 'skill':
+        osc.frequency.value = 880; osc.type = 'triangle';
+        gain.gain.setValueAtTime(0.12, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.2);
+        osc.start(ctx.currentTime); osc.stop(ctx.currentTime + 0.2);
+        break;
+      case 'collapse':
+        osc.frequency.value = 200; osc.type = 'sawtooth';
+        gain.gain.setValueAtTime(0.1, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
+        osc.start(ctx.currentTime); osc.stop(ctx.currentTime + 0.4);
+        break;
+      case 'win':
+        osc.frequency.value = 660; osc.type = 'triangle';
+        gain.gain.setValueAtTime(0.2, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.8);
+        osc.start(ctx.currentTime); osc.stop(ctx.currentTime + 0.8);
+        // Second note
+        var osc2 = ctx.createOscillator(); osc2.frequency.value = 880; osc2.type = 'triangle';
+        var g2 = ctx.createGain(); osc2.connect(g2); g2.connect(ctx.destination);
+        g2.gain.setValueAtTime(0.2, ctx.currentTime + 0.3);
+        g2.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.9);
+        osc2.start(ctx.currentTime + 0.3); osc2.stop(ctx.currentTime + 0.9);
+        break;
+      case 'lose':
+        osc.frequency.value = 300; osc.type = 'sawtooth';
+        gain.gain.setValueAtTime(0.1, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.6);
+        osc.start(ctx.currentTime); osc.stop(ctx.currentTime + 0.6);
+        break;
+    }
+  } catch(_) {}
+}
+
+function toggleSound() {
+  game.soundOn = !game.soundOn;
+  var btn = document.querySelector('[data-comp-id="btn-sound"]');
+  if (btn) {
+    btn.classList.toggle('sound-on', game.soundOn);
+    btn.style.opacity = game.soundOn ? '1' : '0.4';
+  }
+}
+
+/* ─── Scry Dialog ─── */
+function showScryDialog(g) {
+  if (g.pendingDialog) return;
+  g.pendingDialog = true;
+  if (g.deck.length === 0) { g.pendingDialog = false; return; }
+  
+  var preview = [];
+  for (var i=0; i<Math.min(2, g.deck.length); i++) preview.push(g.deck[g.deck.length - 1 - i]);
+  
+  var overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:800;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;';
+  
+  var label = document.createElement('div');
+  label.textContent = '👁️ 预览 — 选一张入手';
+  label.style.cssText = 'color:var(--color-accent);font-family:var(--font-mono);font-size:1rem;';
+  overlay.appendChild(label);
+  
+  var cardRow = document.createElement('div');
+  cardRow.style.cssText = 'display:flex;gap:16px;';
+  
+  preview.forEach(function(card, pi) {
+    var btn = document.createElement('div');
+    var tierMap = {1:'tier1',2:'tier2',3:'tier3',4:'tier4'};
+    btn.className = 'hand-card ' + (tierMap[card.tier]||'tier1');
+    btn.style.cursor = 'pointer';
+    btn.style.transform = 'scale(1.15)';
+    btn.innerHTML =
+      '<div class="card-cost">' + (card.cost||0) + '</div>' +
+      '<div class="card-icon">' + card.icon + '</div>' +
+      '<div class="card-name">' + card.name + '</div>' +
+      '<div class="card-desc">' + (card.desc||'') + '</div>' +
+      '<div class="card-tag">T' + (card.tier||1) + '</div>';
+    
+    btn.addEventListener('click', function() {
+      for (var k=0; k<Math.min(2, g.deck.length); k++) g.deck.pop();
+      if (g.hand.length < 3) {
+        g.hand.push(card);
+      } else {
+        g.deck.push(card);
+      }
+      document.body.removeChild(overlay);
+      g.pendingDialog = false;
+      renderHand();
+      updateHUD();
+    });
+    btn.addEventListener('touchend', function(e) { e.preventDefault(); btn.click(); });
+    cardRow.appendChild(btn);
+  });
+  overlay.appendChild(cardRow);
+  document.body.appendChild(overlay);
+}
+
+/* ─── Collapse Target Selector ─── */
+function showCollapseTargets(g, sourceIdx) {
+  if (g.pendingDialog) return;
+  g.pendingDialog = true;
+  
+  var neighbors = getNeighborSlots(sourceIdx);
+  var targets = neighbors.filter(function(ni) { return g.board[ni] !== null; });
+  
+  if (targets.length === 0) {
+    for (var i=0; i<SLOT_COUNT; i++) {
+      if (g.board[i] !== null) {
+        var n = getNeighborSlots(i);
+        if (n.indexOf(sourceIdx) >= 0) targets.push(i);
+      }
+    }
+  }
+  
+  if (targets.length === 0) {
+    g.pendingDialog = false;
+    showFloatingText('无目标可移除', sourceIdx);
+    return;
+  }
+  
+  // Auto-select first valid target
+  var targetIdx = targets[0];
+  if (g.board[targetIdx]) {
+    g.removedCards.push({ id:g.board[targetIdx].id, name:g.board[targetIdx].name, icon:g.board[targetIdx].icon, tier:g.board[targetIdx].tier, desc:g.board[targetIdx].desc });
+    showFloatingText('💥 移除!', targetIdx);
+    playSound('collapse');
+    g.board[targetIdx] = null;
+    triggerChainCollapse(targetIdx);
+  }
+  g.pendingDialog = false;
+  renderBoard();
+  updateHUD();
+}
+
+/* ─── Chain Collapse ─── */
+function triggerChainCollapse(removedIdx) {
+  if (game.maxTriggerCount > 20) return;
+  game.maxTriggerCount++;
+  
+  for (var upperSlot in SUPPORT_MAP) {
+    var supports = SUPPORT_MAP[upperSlot];
+    if (supports.indexOf(removedIdx) >= 0) {
+      var card = game.board[upperSlot];
+      if (card) {
+        card.hp = (card.hp||1) - 1;
+        showFloatingText('支撑断裂 -1 HP', parseInt(upperSlot));
+        if (card.hp <= 0) {
+          showFloatingText('💥 塌陷!', parseInt(upperSlot));
+          game.removedCards.push({ id:card.id, name:card.name, icon:card.icon, tier:card.tier, desc:card.desc });
+          game.board[upperSlot] = null;
+          playSound('collapse');
+          triggerChainCollapse(parseInt(upperSlot));
+        }
+      }
+    }
+  }
+}
+
+/* ─── Slot Hover for Drag-over ─── */
+function onSlotHover(e, el) {
+  if (!game.isDragging) return;
+  var idx = parseInt(el.getAttribute('data-slot-idx'));
+  if (game.board[idx] === null && PYRAMID_LAYER[idx] <= game.layerUnlocked) {
+    el.classList.add('highlight');
+  }
+}
+
+function onSlotLeave(e, el) {
+  el.classList.remove('highlight');
+}
+
+/* ─── Init ─── */
+document.addEventListener('DOMContentLoaded', function() {
+  game.bestScore = parseInt(localStorage.getItem('skyport-cardhouse-best')) || 0;
+  game.gamesPlayed = parseInt(localStorage.getItem('skyport-cardhouse-played')) || 0;
+  document.getElementById('title-best-score').textContent = game.bestScore;
+  document.getElementById('title-games-played').textContent = game.gamesPlayed;
+});
+</script>
+</body>
+</html>
