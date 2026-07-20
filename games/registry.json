@@ -666,6 +666,25 @@
       "version": "1.0.0",
       "featured": true,
       "rating": 4.0
+    },
+    {
+      "id": "texting-terror",
+      "name": "Texting Terror",
+      "description": "深夜短信悬疑解谜 — 23:58 陌生号码发来短信：Riley Chen 没有跳楼。读消息、保存 6 条矛盾证据、在末班车开走前拖放指认真凶，3 种结局",
+      "category": "puzzle",
+      "tags": [
+        "singleplayer",
+        "puzzle",
+        "detective",
+        "horror",
+        "short-session"
+      ],
+      "thumbnail": "/games/059-texting-terror/thumb.svg",
+      "path": "/games/059-texting-terror/",
+      "hasServer": false,
+      "players": "1",
+      "version": "1.0.0",
+      "rating": 4.2
     }
   ],
   "categories": [
