@@ -685,6 +685,25 @@
       "players": "1",
       "version": "1.0.0",
       "rating": 4.2
+    },
+    {
+      "id": "evil-brother-2",
+      "name": "Evil Brother 2",
+      "description": "对哥哥进行无伤大雅的恶作剧 — 选道具·点热点实施整蛊，S/A/B/C 搞笑评分，集齐 6 枚成就通关",
+      "category": "casual",
+      "tags": [
+        "singleplayer",
+        "casual",
+        "prank",
+        "clicker",
+        "short-session"
+      ],
+      "thumbnail": "/games/057-evil-brother-2/thumb.png",
+      "path": "/games/057-evil-brother-2/",
+      "hasServer": false,
+      "players": "1",
+      "version": "1.0.0",
+      "rating": 4.0
     }
   ],
   "categories": [
