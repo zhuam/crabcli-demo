@@ -604,6 +604,125 @@
       "version": "1.0.0",
       "featured": true,
       "rating": 4.0
+    },
+    {
+      "id": "battle-dogs-arena",
+      "name": "Battle Dogs Arena",
+      "description": "狗狗组队竞技场 — 元素克制、自动战斗，收集犬种赢取回合胜利",
+      "category": "strategy",
+      "tags": [
+        "singleplayer",
+        "strategy",
+        "pets",
+        "auto-battle",
+        "short-session"
+      ],
+      "thumbnail": "/games/064-battle-dogs-arena/thumb.svg",
+      "path": "/games/064-battle-dogs-arena/",
+      "hasServer": false,
+      "players": "1",
+      "version": "1.0.0",
+      "featured": true,
+      "rating": 4.5
+    },
+    {
+      "id": "slime-siege",
+      "name": "Slime Siege",
+      "description": "可爱史莱姆塔防主城 — 放置箭塔、抵御史莱姆浪潮、升级与符文",
+      "category": "strategy",
+      "tags": [
+        "singleplayer",
+        "tower-defense",
+        "strategy",
+        "short-session",
+        "touch"
+      ],
+      "thumbnail": "/games/065-slime-siege/thumb.svg",
+      "path": "/games/065-slime-siege/",
+      "hasServer": false,
+      "players": "1",
+      "version": "1.0.0",
+      "featured": true,
+      "rating": 4.3
+    },
+    {
+      "id": "wheel-o-mon-showdown",
+      "name": "Wheel-o-Mon Showdown",
+      "description": "转轮盘决定技能进行回合制对战 — 宝可梦+轮盘融合",
+      "category": "casual",
+      "tags": [
+        "singleplayer",
+        "turn-based",
+        "strategy",
+        "wheel",
+        "pokemon-style",
+        "short-session"
+      ],
+      "thumbnail": "/games/062-wheel-o-mon-showdown/thumb.svg",
+      "path": "/games/062-wheel-o-mon-showdown/",
+      "hasServer": false,
+      "players": "1",
+      "version": "1.0.0",
+      "featured": true,
+      "rating": 4.0
+    },
+    {
+      "id": "my-talking-luntik",
+      "name": "My Talking Luntik",
+      "description": "养小宠物，喂食洗澡讲故事 — 提升友好度满级通关",
+      "category": "casual",
+      "tags": [
+        "singleplayer",
+        "casual",
+        "pets",
+        "simulation",
+        "short-session"
+      ],
+      "thumbnail": "/games/060-my-talking-luntik/thumb.svg",
+      "path": "/games/060-my-talking-luntik/",
+      "hasServer": false,
+      "players": "1",
+      "version": "1.0.0",
+      "featured": true,
+      "rating": 4.0
+    },
+    {
+      "id": "texting-terror",
+      "name": "Texting Terror",
+      "description": "深夜短信悬疑解谜 — 23:58 陌生号码发来短信：Riley Chen 没有跳楼。读消息、保存 6 条矛盾证据、在末班车开走前拖放指认真凶，3 种结局",
+      "category": "puzzle",
+      "tags": [
+        "singleplayer",
+        "puzzle",
+        "detective",
+        "horror",
+        "short-session"
+      ],
+      "thumbnail": "/games/059-texting-terror/thumb.svg",
+      "path": "/games/059-texting-terror/",
+      "hasServer": false,
+      "players": "1",
+      "version": "1.0.0",
+      "rating": 4.2
+    },
+    {
+      "id": "evil-brother-2",
+      "name": "Evil Brother 2",
+      "description": "对哥哥进行无伤大雅的恶作剧 — 选道具·点热点实施整蛊，S/A/B/C 搞笑评分，集齐 6 枚成就通关",
+      "category": "casual",
+      "tags": [
+        "singleplayer",
+        "casual",
+        "prank",
+        "clicker",
+        "short-session"
+      ],
+      "thumbnail": "/games/057-evil-brother-2/thumb.png",
+      "path": "/games/057-evil-brother-2/",
+      "hasServer": false,
+      "players": "1",
+      "version": "1.0.0",
+      "rating": 4.0
     }
   ],
   "categories": [
@@ -616,6 +735,45 @@
       "id": "puzzle",
       "name": "Puzzle",
       "icon": "🧩"
+    },
+    {
+      "id": "wheel-o-mon-showdown",
+      "name": "Wheel-o-Mon Showdown",
+      "description": "旋转轮盘决定技能进行回合制对战 — 宝可梦+轮盘融合",
+      "category": "casual",
+      "tags": [
+        "singleplayer",
+        "turn-based",
+        "battle",
+        "short-session"
+      ],
+      "thumbnail": "/games/062-wheel-o-mon-showdown/thumb.png",
+      "path": "/games/062-wheel-o-mon-showdown/",
+      "hasServer": false,
+      "players": "1",
+      "version": "1.0.0",
+      "featured": true,
+      "rating": 4.0
+    },
+    {
+      "id": "skyport-cardhouse",
+      "name": "Skyport Cardhouse",
+      "description": "搭叠卡牌筑屋，每张卡都有技能 — 抽卡·放置·触发，抵达屋顶通关",
+      "category": "strategy",
+      "tags": [
+        "singleplayer",
+        "card",
+        "roguelike",
+        "strategy",
+        "short-session"
+      ],
+      "thumbnail": "/games/061-skyport-cardhouse/thumb.svg",
+      "path": "/games/061-skyport-cardhouse/",
+      "hasServer": false,
+      "players": "1",
+      "version": "1.0.0",
+      "featured": true,
+      "rating": 4.0
     },
     {
       "id": "idle",

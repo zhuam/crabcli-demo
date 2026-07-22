@@ -1,0 +1,950 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#050507">
+<link rel="stylesheet" href="/games/shared/game-frame.css" />
+<title>Texting Terror — Marlowe Station</title>
+<style>
+/* ============ tokens (dramatic design system) ============ */
+:root{
+  --bg:#050507; --ink:#0C0714; --ink-amber:#14100B; --white:#fff;
+  --violet-200:#C9B4FE; --sketch:#8A8A96;
+  --frame:#101016; --frame-line:#2A2A33; --frame-ring:#0B0B0F; --frame-btn:#26262E; --black:#000;
+  --surface:#09090B; --surface-2:#101014; --surface-3:#17171D;
+  --line:#22222A; --line-2:#2E2E38;
+  --text:#FAFAFA; --text-dim:#A1A1AA; --text-faint:#60606C;
+  --primary:#8B5CF6; --primary-dim:rgba(139,92,246,.14);
+  --secondary:#F43F5E; --danger:#DC2626; --warning:#D97706; --success:#16A34A;
+  --display:'Outfit','Inter','Avenir Next',system-ui,sans-serif;
+  --body:'Outfit','Inter','Segoe UI',system-ui,-apple-system,sans-serif;
+  --mono:'JetBrains Mono','SFMono-Regular',Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box;margin:0}
+html,body{height:100%}
+body{background:var(--bg);color:var(--text);font-family:var(--body);-webkit-font-smoothing:antialiased;overflow-x:hidden}
+button{font-family:inherit;color:inherit}
+::selection{background:var(--primary);color:var(--ink)}
+
+/* ============ ambient stage ============ */
+.stage{
+  min-height:100dvh;display:grid;grid-template-columns:minmax(320px,420px) auto;
+  align-items:center;justify-content:center;gap:72px;padding:48px 40px;position:relative;
+  background:
+    radial-gradient(1000px 700px at 14% 8%,rgba(139,92,246,.13),transparent 60%),
+    radial-gradient(900px 720px at 90% 94%,rgba(244,63,94,.07),transparent 55%),
+    var(--bg);
+}
+.grain{position:fixed;inset:-60%;z-index:1;pointer-events:none;opacity:.05;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='240' height='240' filter='url(%23n)'/%3E%3C/svg%3E");
+  animation:grain 9s steps(10) infinite}
+@keyframes grain{0%{transform:translate(0,0)}20%{transform:translate(-4%,3%)}40%{transform:translate(3%,-5%)}60%{transform:translate(-5%,-2%)}80%{transform:translate(4%,4%)}100%{transform:translate(0,0)}}
+
+/* ============ case file panel (desktop only) ============ */
+.casefile{position:relative;z-index:2;max-width:400px}
+.cf-eyebrow{font:700 10px/1 var(--mono);letter-spacing:.24em;color:var(--primary)}
+.cf-title{font:900 clamp(56px,6.5vw,84px)/.88 var(--display);letter-spacing:-.035em;margin:18px 0 20px;text-transform:uppercase}
+.cf-title span{display:block;color:transparent;-webkit-text-stroke:1.5px var(--secondary);text-stroke:1.5px var(--secondary)}
+.cf-lede{font-size:15px;line-height:1.55;color:var(--text-dim);max-width:34ch}
+.cf-lede b{color:var(--text);font-weight:600}
+.cf-rule{height:1px;background:linear-gradient(90deg,var(--line-2),transparent);margin:24px 0}
+.cf-loop{list-style:none;display:grid;gap:14px}
+.cf-loop li{display:grid;grid-template-columns:34px 1fr;gap:12px;align-items:baseline}
+.cf-loop b{font:700 12px/1 var(--mono);color:var(--secondary)}
+.cf-loop span{font-size:13.5px;color:var(--text-dim);line-height:1.45}
+.cf-loop strong{color:var(--text);font-weight:700;letter-spacing:.04em}
+.cf-meta{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:26px 0 14px}
+.cf-meta div{border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:rgba(16,16,20,.6)}
+.cf-meta span{display:block;font:700 8.5px/1 var(--mono);letter-spacing:.18em;color:var(--text-faint)}
+.cf-meta b{display:block;font:700 12px/1 var(--mono);margin-top:7px;color:var(--text)}
+.cf-best{font:700 11px/1 var(--mono);letter-spacing:.14em;color:var(--text-dim)}
+.cf-best b{color:var(--warning)}
+.cf-keys{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:18px;font:600 10px/1 var(--mono);letter-spacing:.1em;color:var(--text-faint)}
+.cf-keys span{border:1px solid var(--line);border-radius:6px;padding:6px 8px}
+
+/* ============ phone ============ */
+.phone{position:relative;z-index:2;width:392px;height:min(844px,92dvh);padding:10px;border-radius:56px;
+  background:linear-gradient(180deg,var(--frame),var(--surface));border:1px solid var(--frame-line);
+  box-shadow:0 80px 140px -50px rgba(0,0,0,.85),0 0 0 8px var(--frame-ring),0 40px 120px -30px rgba(139,92,246,.22)}
+.phone::before{content:'';position:absolute;left:-11px;top:190px;width:3px;height:62px;background:var(--frame-btn);border-radius:2px}
+.phone::after{content:'';position:absolute;right:-11px;top:222px;width:3px;height:96px;background:var(--frame-btn);border-radius:2px}
+.island{position:absolute;top:22px;left:50%;transform:translateX(-50%);width:112px;height:30px;background:var(--black);border-radius:20px;z-index:40}
+.screen{position:relative;height:100%;border-radius:46px;background:var(--surface);overflow:hidden;display:flex;flex-direction:column}
+
+.scr{position:absolute;inset:0;display:none;flex-direction:column}
+.scr.active{display:flex;animation:scrIn .38s cubic-bezier(.2,.8,.3,1) both}
+@keyframes scrIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+
+/* status bar */
+.sbar{display:flex;justify-content:space-between;align-items:center;padding:16px 26px 4px;font:600 12px/1 var(--mono);color:var(--text-dim);position:relative;z-index:30;flex:none}
+.sb-right{display:inline-flex;align-items:center;gap:8px}
+.bars{display:inline-flex;gap:2.5px;align-items:flex-end;height:10px}
+.bars i{width:3px;background:currentColor;border-radius:1px;display:block;transition:opacity .4s}
+.bars i:nth-child(1){height:3.5px}.bars i:nth-child(2){height:5.5px}.bars i:nth-child(3){height:7.5px}.bars i:nth-child(4){height:10px}
+.bars i.off{opacity:.16}
+.batt.low{color:var(--warning)}
+
+/* ============ lock screen ============ */
+.lockbody{flex:1;display:flex;flex-direction:column;align-items:center;padding:9vh 20px 0;
+  background:radial-gradient(420px 300px at 50% -4%,rgba(139,92,246,.16),transparent 70%),
+             radial-gradient(360px 260px at 88% 108%,rgba(244,63,94,.08),transparent 60%)}
+.lock-clock{text-align:center}
+.lock-clock b{display:block;font:900 86px/1 var(--display);letter-spacing:-.035em;font-variant-numeric:tabular-nums}
+.lock-clock span{display:block;margin-top:8px;font:600 11px/1 var(--mono);letter-spacing:.2em;color:var(--text-dim);text-transform:uppercase}
+.notif-stack{width:100%;margin-top:auto;display:grid;gap:10px;padding-bottom:14px}
+.notif{display:flex;gap:12px;align-items:flex-start;width:100%;text-align:left;cursor:pointer;
+  background:rgba(23,23,29,.82);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  border:1px solid var(--line-2);border-radius:20px;padding:14px 15px;
+  box-shadow:0 16px 40px -16px rgba(0,0,0,.8);
+  transition:transform .2s cubic-bezier(.2,.8,.3,1.3),border-color .2s,box-shadow .2s}
+.notif:hover,.notif:focus-visible{transform:translateY(-2px) scale(1.012);border-color:var(--primary);box-shadow:0 20px 44px -16px rgba(139,92,246,.35);outline:none}
+.notif:active{transform:scale(.985)}
+.notif-ic{width:38px;height:38px;border-radius:11px;background:var(--primary);display:grid;place-items:center;flex:none;box-shadow:0 6px 18px -6px rgba(139,92,246,.7)}
+.notif-ic svg{width:20px;height:20px;stroke:var(--ink);fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.notif-tx{flex:1;min-width:0}
+.notif-top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px}
+.notif-top b{font:800 11px/1 var(--display);letter-spacing:.1em}
+.notif-when{font:600 9px/1 var(--mono);color:var(--text-faint)}
+.notif-body{display:block;font-size:13.5px;line-height:1.4;color:var(--text-dim)}
+.notif-2{opacity:0;transform:translateY(14px);pointer-events:none;transition:opacity .45s ease .1s,transform .45s cubic-bezier(.2,.8,.3,1.3) .1s}
+.notif-2.show{opacity:1;transform:none;pointer-events:auto}
+.lock-hint{font:700 8.5px/1.6 var(--mono);letter-spacing:.22em;color:var(--text-faint);text-align:center;padding:2px 0 10px}
+.lock-foot{flex:none;display:flex;justify-content:space-between;align-items:center;padding:10px 42px 14px}
+.lbtn{width:44px;height:44px;border-radius:50%;background:rgba(23,23,29,.7);border:1px solid var(--line);display:grid;place-items:center}
+.lbtn svg{width:18px;height:18px;stroke:var(--text-dim);fill:none;stroke-width:1.8;stroke-linecap:round}
+.homebar{position:absolute;bottom:7px;left:50%;transform:translateX(-50%);width:120px;height:4px;border-radius:2px;background:var(--line-2)}
+
+/* ============ chat ============ */
+.ch-head{display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid var(--line);flex:none;position:relative;z-index:25;background:var(--surface)}
+.ch-back{background:none;border:0;padding:4px;cursor:default;display:grid;place-items:center}
+.ch-back svg{width:18px;height:18px;stroke:var(--primary);fill:none;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+.ch-ava{width:34px;height:34px;border-radius:50%;background:var(--surface-3);border:1px solid var(--line-2);display:grid;place-items:center;font:900 15px var(--display);color:var(--primary);flex:none}
+.ch-id{flex:1;min-width:0}
+.ch-id b{display:block;font:800 12px/1.1 var(--display);letter-spacing:.08em}
+.ch-status{display:block;font:600 9.5px/1 var(--mono);letter-spacing:.12em;color:var(--text-faint);margin-top:3px;min-height:9px}
+.ch-status.typing{color:var(--primary)}
+.pillbtn{display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 10px;border-radius:99px;border:1px solid var(--line-2);background:var(--surface-2);cursor:pointer;transition:border-color .2s,background .2s}
+.pillbtn:hover{border-color:var(--primary)}
+.pillbtn svg{width:13px;height:13px;stroke:var(--text-dim);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.pillbtn b{font:700 10px/1 var(--mono);color:var(--primary)}
+.pillbtn .slash{display:none}
+.pillbtn.muted .slash{display:block}
+.pillbtn.muted .wave{display:none}
+
+.msgs{flex:1;overflow-y:auto;padding:16px 14px 90px;display:flex;flex-direction:column;gap:6px;scroll-behavior:smooth;overscroll-behavior:contain}
+.msgs::-webkit-scrollbar{width:3px}
+.msgs::-webkit-scrollbar-thumb{background:var(--line-2);border-radius:2px}
+.msg{display:flex;max-width:84%;animation:pop .3s cubic-bezier(.2,.9,.3,1.25) both}
+@keyframes pop{from{opacity:0;transform:translateY(9px) scale(.96)}to{opacity:1;transform:none}}
+.msg.in{align-self:flex-start}
+.msg.out{align-self:flex-end}
+.bubble{padding:10px 13px;border-radius:18px;font-size:14.5px;line-height:1.45;position:relative;word-break:break-word}
+.msg.in .bubble{background:var(--surface-3);border:1px solid var(--line);border-bottom-left-radius:5px}
+.msg.out .bubble{background:var(--primary);color:var(--ink);font-weight:600;border-bottom-right-radius:5px;box-shadow:0 8px 24px -8px rgba(139,92,246,.55)}
+.ts{display:block;margin-top:5px;font:600 8.5px/1 var(--mono);letter-spacing:.1em;opacity:.45}
+.msg.out .ts{text-align:right}
+.msg.sys{align-self:center;max-width:100%}
+.msg.sys span{font:700 8.5px/1 var(--mono);letter-spacing:.24em;color:var(--text-faint);padding:8px 0}
+.msg.typing .bubble{display:flex;gap:5px;padding:13px 15px}
+.msg.typing i{width:6px;height:6px;border-radius:50%;background:var(--text-dim);animation:blink 1.2s infinite}
+.msg.typing i:nth-child(2){animation-delay:.18s}
+.msg.typing i:nth-child(3){animation-delay:.36s}
+@keyframes blink{0%,70%,100%{opacity:.25;transform:translateY(0)}35%{opacity:1;transform:translateY(-3px)}}
+
+/* clue messages */
+.msg.clue .bubble{border:1px dashed rgba(139,92,246,.65);box-shadow:0 0 28px -10px rgba(139,92,246,.4)}
+.ev-tag{display:block;margin-top:10px;padding-top:9px;border-top:1px dashed rgba(139,92,246,.4);font:700 8.5px/1 var(--mono);letter-spacing:.2em;color:var(--primary)}
+.save-btn{display:inline-flex;align-items:center;gap:7px;margin-top:9px;padding:9px 12px;border-radius:9px;cursor:pointer;
+  background:var(--primary-dim);border:1px solid rgba(139,92,246,.55);color:var(--violet-200);
+  font:700 9.5px/1 var(--mono);letter-spacing:.14em;transition:background .18s,color .18s,transform .18s}
+.save-btn:hover{background:var(--primary);color:var(--ink);transform:translateY(-1px)}
+.save-btn b{font-size:12px}
+.save-btn.done{background:none;border-color:var(--line-2);color:var(--text-faint);cursor:default;transform:none}
+.save-btn.glow{animation:saveGlow 1.4s ease infinite}
+@keyframes saveGlow{0%,100%{box-shadow:0 0 0 0 rgba(139,92,246,0)}50%{box-shadow:0 0 0 6px rgba(139,92,246,.18)}}
+
+/* choices */
+.msg.opts{align-self:flex-end;flex-direction:column;align-items:flex-end;gap:6px;max-width:88%}
+.opt{background:var(--surface-3);border:1px solid rgba(139,92,246,.55);color:var(--text);border-radius:16px;border-bottom-right-radius:5px;
+  padding:10px 13px;font-size:13.5px;font-weight:600;cursor:pointer;text-align:left;
+  transition:background .18s,color .18s,transform .18s;display:flex;gap:10px;align-items:center;animation:pop .3s both}
+.opt:nth-child(2){animation-delay:.08s}
+.opt kbd{font:700 8.5px/1 var(--mono);border:1px solid var(--line-2);border-radius:5px;padding:3px 5px;color:var(--text-faint)}
+.opt:hover{background:var(--primary);color:var(--ink);transform:translateX(-3px)}
+.opt:hover kbd{border-color:rgba(12,7,20,.4);color:var(--ink)}
+.msg.opts[data-done] .opt{opacity:.3;pointer-events:none}
+.msg.opts[data-done] .opt.picked{opacity:1;background:var(--primary);color:#0C0714}
+
+.board-btn{margin:4px 0;background:var(--primary);color:var(--ink);border:0;border-radius:14px;padding:15px 22px;cursor:pointer;
+  font:800 12px/1 var(--display);letter-spacing:.14em;box-shadow:0 12px 32px -8px rgba(139,92,246,.6);
+  transition:transform .2s,box-shadow .2s;animation:saveGlow 1.6s ease infinite}
+.board-btn:hover{transform:translateY(-2px);box-shadow:0 18px 40px -10px rgba(139,92,246,.7)}
+
+/* evidence drawer */
+.drawer{position:absolute;left:0;right:0;bottom:0;z-index:28;background:var(--surface-2);border-top:1px solid var(--line-2);
+  border-radius:22px 22px 0 0;transform:translateY(calc(100% - 52px));transition:transform .32s cubic-bezier(.3,.8,.3,1),box-shadow .32s}
+.drawer.open{transform:none;box-shadow:0 -24px 70px rgba(0,0,0,.65)}
+.dw-handle{width:100%;display:flex;align-items:center;gap:10px;padding:15px 18px 13px;background:none;border:0;cursor:pointer;
+  font:700 9.5px/1 var(--mono);letter-spacing:.2em;color:var(--text-dim)}
+.dw-handle i{width:34px;height:4px;border-radius:2px;background:var(--line-2);flex:none}
+.dw-handle b{margin-left:auto;font:700 10px/1 var(--mono);color:var(--primary)}
+.dw-handle.pulse{animation:dwPulse .9s ease 2}
+@keyframes dwPulse{0%,100%{background:none}50%{background:var(--primary-dim)}}
+.dw-body{max-height:44vh;overflow-y:auto;padding:0 14px 18px;display:grid;gap:8px}
+.dw-empty{font:600 10.5px/1.7 var(--mono);letter-spacing:.1em;color:var(--text-faint);text-align:center;padding:14px 8px 6px}
+.cluecard{display:grid;grid-template-columns:38px 1fr;gap:11px;align-items:start;padding:11px 12px;border-radius:12px;
+  background:var(--surface-3);border:1px solid var(--line);border-left:3px solid var(--primary);animation:pop .3s both}
+.cluecard svg{width:22px;height:22px;stroke:var(--primary);fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;margin-top:2px}
+.cluecard b{display:block;font:700 12.5px/1.2 var(--body);letter-spacing:.02em}
+.cluecard small{display:block;font:500 10px/1.5 var(--mono);color:var(--text-dim);margin-top:4px}
+.cluecard em{display:block;font:700 8px/1 var(--mono);letter-spacing:.18em;color:var(--text-faint);font-style:normal;margin-top:6px}
+
+/* ============ identification board ============ */
+.bd-head{padding:12px 18px 8px;flex:none}
+.eyebrow{font:700 9px/1 var(--mono);letter-spacing:.24em;color:var(--primary)}
+.bd-head h2{font:900 23px/1.08 var(--display);letter-spacing:-.015em;margin:9px 0 5px;text-transform:uppercase}
+.bd-head h2 em{font-style:normal;color:var(--secondary)}
+.bd-head p{font-size:12px;line-height:1.5;color:var(--text-dim)}
+.suspects{flex:1;overflow-y:auto;padding:8px 14px 6px;display:grid;gap:10px;align-content:start;overscroll-behavior:contain}
+.susp{position:relative;display:grid;grid-template-columns:56px 1fr;gap:12px;padding:13px;border-radius:16px;
+  background:var(--surface-2);border:1px solid var(--line);transition:border-color .2s,box-shadow .2s,transform .2s;animation:pop .35s both}
+.susp:nth-child(2){animation-delay:.06s}.susp:nth-child(3){animation-delay:.12s}
+.susp.over{border-color:var(--primary);transform:scale(1.015);box-shadow:0 0 0 1px var(--primary),0 16px 36px -14px rgba(139,92,246,.45)}
+.susp.armed .susp-zone{border-color:rgba(139,92,246,.5);color:var(--text-dim)}
+.susp-por{width:56px;height:56px;border-radius:12px;background:var(--surface-3);border:1px solid var(--line-2);display:grid;place-items:center}
+.susp-por svg{width:40px;height:40px;stroke:var(--sketch);fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.susp-info b{display:block;font:800 14px/1.1 var(--display);letter-spacing:.01em}
+.susp-role{display:block;font:700 7.5px/1 var(--mono);letter-spacing:.16em;color:var(--text-faint);margin-top:4px}
+.susp-quote{display:block;font-size:11px;line-height:1.45;color:var(--text-dim);font-style:italic;margin-top:6px}
+.susp-zone{grid-column:1/-1;display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:10px;
+  border:1px dashed var(--line-2);transition:border-color .2s,color .2s,background .2s}
+.slots{display:flex;gap:6px}
+.slots i{width:30px;height:30px;border-radius:8px;border:1px dashed var(--line-2);display:inline-grid;place-items:center;
+  font:700 7px/1 var(--mono);letter-spacing:.04em;color:transparent;transition:all .25s;font-style:normal}
+.slots i.filled{border-style:solid;border-color:var(--primary);background:var(--primary-dim);color:var(--primary);animation:pop .3s both}
+.zone-hint{font:700 8.5px/1 var(--mono);letter-spacing:.2em;color:var(--text-faint)}
+.susp.over .zone-hint{color:var(--primary)}
+.susp-react{grid-column:1/-1;display:grid;gap:5px}
+.susp-react p{font:500 10.5px/1.45 var(--mono);color:var(--text-dim);border-left:2px solid var(--secondary);padding-left:9px;animation:pop .3s both}
+.identify{grid-column:1/-1;background:var(--primary);color:var(--ink);border:0;border-radius:12px;padding:14px;cursor:pointer;
+  font:800 11.5px/1 var(--display);letter-spacing:.14em;transition:transform .2s,box-shadow .2s;animation:pop .35s both}
+.identify:hover{transform:translateY(-1px);box-shadow:0 12px 28px -8px rgba(139,92,246,.6)}
+.confirm{grid-column:1/-1;display:grid;gap:9px;padding:12px;border-radius:12px;background:rgba(220,38,38,.07);border:1px solid rgba(220,38,38,.45);animation:pop .3s both}
+.confirm b{font:700 12px/1.45 var(--body)}
+.confirm .row{display:flex;gap:8px}
+.confirm .row button{flex:1;padding:11px;border-radius:10px;font:800 10px/1 var(--display);letter-spacing:.12em;cursor:pointer;transition:transform .18s}
+.cf-yes{background:var(--danger);border:0;color:var(--white)}
+.cf-yes:hover{transform:translateY(-1px)}
+.cf-no{background:none;border:1px solid var(--line-2);color:var(--text-dim)}
+
+.tray{flex:none;border-top:1px solid var(--line-2);background:var(--surface-2);padding:10px 14px calc(12px + env(safe-area-inset-bottom))}
+.tray-label{display:block;font:700 8px/1 var(--mono);letter-spacing:.2em;color:var(--text-faint);margin-bottom:9px}
+.tray-chips{display:flex;gap:7px;overflow-x:auto;padding-bottom:2px}
+.tray-chips::-webkit-scrollbar{height:0}
+.chip{flex:none;display:inline-flex;align-items:center;gap:7px;padding:10px 12px;border-radius:12px;cursor:grab;
+  background:var(--surface-3);border:1px solid var(--line-2);font:700 9px/1 var(--mono);letter-spacing:.1em;
+  touch-action:none;user-select:none;-webkit-user-select:none;transition:border-color .2s,box-shadow .2s}
+.chip svg{width:14px;height:14px;stroke:var(--primary);fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.chip:hover{border-color:var(--primary)}
+.chip.sel{border-color:var(--primary);box-shadow:0 0 0 2px var(--primary-dim),0 0 18px -4px rgba(139,92,246,.7);animation:selPulse 1.1s ease infinite}
+@keyframes selPulse{0%,100%{box-shadow:0 0 0 2px var(--primary-dim),0 0 18px -4px rgba(139,92,246,.7)}50%{box-shadow:0 0 0 4px var(--primary-dim),0 0 24px -2px rgba(139,92,246,.85)}}
+.drag-ghost{position:fixed;z-index:99;pointer-events:none;display:inline-flex;align-items:center;gap:7px;padding:10px 12px;border-radius:12px;
+  background:var(--surface-3);border:1px solid var(--primary);font:700 9px/1 var(--mono);letter-spacing:.1em;
+  transform:translate(-50%,-50%) scale(1.1) rotate(-2deg);box-shadow:0 20px 44px -8px rgba(0,0,0,.85),0 0 24px -6px rgba(139,92,246,.7)}
+.drag-ghost svg{width:14px;height:14px;stroke:var(--primary);fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.toast{position:absolute;top:56px;left:50%;transform:translate(-50%,-8px);z-index:45;pointer-events:none;
+  background:var(--surface-3);border:1px solid rgba(244,63,94,.55);border-radius:99px;padding:9px 15px;
+  font:700 9px/1 var(--mono);letter-spacing:.16em;opacity:0;transition:opacity .3s,transform .3s}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+
+/* ============ ending ============ */
+#scr-end{overflow-y:auto;background:radial-gradient(560px 420px at 50% -6%,rgba(139,92,246,.16),transparent 70%),var(--surface)}
+#scr-end.bad{background:radial-gradient(560px 420px at 50% -6%,rgba(244,63,94,.15),transparent 70%),var(--surface)}
+#scr-end.cold{background:radial-gradient(560px 420px at 50% -6%,rgba(161,161,170,.09),transparent 70%),var(--surface)}
+.end-wrap{margin:auto;width:100%;padding:64px 22px 28px;animation:scrIn .5s cubic-bezier(.2,.8,.3,1) both}
+.end-tag{display:inline-block;font:700 9px/1 var(--mono);letter-spacing:.26em;color:var(--secondary);
+  border:1px solid rgba(244,63,94,.45);border-radius:99px;padding:7px 12px}
+#scr-end.cold .end-tag{color:var(--text-dim);border-color:var(--line-2)}
+.end-title{font:900 36px/1 var(--display);letter-spacing:-.02em;margin:16px 0 12px;text-transform:uppercase}
+.end-verdict{font-size:13.5px;line-height:1.6;color:var(--text-dim);max-width:40ch}
+.epilogue{display:grid;gap:6px;margin:16px 0 4px}
+.epilogue p{justify-self:start;max-width:88%;background:var(--surface-3);border:1px solid var(--line);border-radius:14px;border-bottom-left-radius:5px;
+  padding:9px 12px;font-size:12.5px;line-height:1.45;color:var(--text-dim);animation:pop .35s both}
+.epilogue p:nth-child(2){animation-delay:.5s}.epilogue p:nth-child(3){animation-delay:1s}
+.epilogue em{display:block;font:700 7.5px/1 var(--mono);letter-spacing:.2em;color:var(--secondary);font-style:normal;margin-bottom:5px}
+.end-stats{display:grid;grid-template-columns:repeat(3,1fr);border:1px solid var(--line);border-radius:14px;overflow:hidden;margin:18px 0 14px;background:var(--surface-2)}
+.end-stats>div{padding:13px 8px;text-align:center}
+.end-stats>div + div{border-left:1px solid var(--line)}
+.end-stats span{font:700 8px/1 var(--mono);letter-spacing:.2em;color:var(--text-faint)}
+.end-stats b{display:block;font:700 17px/1 var(--mono);margin-top:8px;font-variant-numeric:tabular-nums}
+.codex{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:14px}
+.codex>div{border:1px dashed var(--line-2);border-radius:10px;padding:10px 8px;text-align:center;
+  font:700 7.5px/1.5 var(--mono);letter-spacing:.12em;color:var(--text-faint);transition:border-color .2s}
+.codex .got{border-style:solid;border-color:var(--primary);color:var(--text)}
+.codex .got b{display:block;color:var(--primary)}
+.end-best{font:700 10px/1 var(--mono);letter-spacing:.16em;color:var(--text-dim);margin-bottom:16px}
+.end-best b{color:var(--warning)}
+.new-best{display:inline-block;margin-left:8px;background:var(--warning);color:var(--ink-amber);border-radius:5px;padding:3px 6px;font:800 8px/1 var(--mono);letter-spacing:.1em;animation:selPulse 1.2s infinite}
+.end-btns{display:grid;gap:9px}
+.btn-primary{background:var(--primary);color:var(--ink);border:0;border-radius:14px;padding:17px;cursor:pointer;
+  font:800 13px/1 var(--display);letter-spacing:.14em;transition:transform .2s,box-shadow .2s}
+.btn-primary:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 14px 32px -8px rgba(139,92,246,.6)}
+.btn-primary:disabled{opacity:.45;cursor:wait}
+.btn-ghost{background:none;border:1px solid var(--line-2);border-radius:14px;padding:14px;cursor:pointer;
+  font:700 10px/1 var(--mono);letter-spacing:.16em;color:var(--text-dim);transition:border-color .2s,color .2s}
+.btn-ghost:hover{border-color:var(--text-dim);color:var(--text)}
+
+/* ============ fx ============ */
+.vig{position:absolute;inset:0;pointer-events:none;z-index:55;opacity:0;box-shadow:inset 0 0 90px rgba(220,38,38,.5);transition:opacity .15s}
+.vig.on{opacity:1;animation:vpulse .55s ease 2}
+@keyframes vpulse{0%,100%{opacity:.15}50%{opacity:1}}
+.blackout{position:absolute;inset:0;z-index:60;background:rgba(3,3,5,.93);display:none;place-items:center}
+.blackout.on{display:grid;animation:scrIn .3s both}
+.blackout b{font:700 11px/1 var(--mono);letter-spacing:.34em;color:var(--secondary);animation:vpulse .9s ease infinite}
+.screen.glitch .scr.active{animation:glitch .28s steps(2) both}
+@keyframes glitch{0%{transform:translate(0)}25%{transform:translate(-3px,1px);filter:hue-rotate(16deg) saturate(1.4)}50%{transform:translate(2px,-2px)}75%{transform:translate(-1px,2px);filter:hue-rotate(-20deg)}100%{transform:none;filter:none}}
+
+/* ============ responsive ============ */
+@media (max-width:1080px){.stage{gap:40px;padding:32px 24px}}
+@media (max-width:960px){
+  .stage{grid-template-columns:1fr;gap:0;padding:0}
+  .casefile{display:none}
+  .phone{width:100%;height:100dvh;padding:0;border-radius:0;border:0;box-shadow:none;background:var(--surface)}
+  .phone::before,.phone::after,.island{display:none}
+  .screen{border-radius:0}
+}
+@media (prefers-reduced-motion:reduce){
+  .grain{display:none}
+  *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
+}
+</style>
+</head>
+<body>
+<a href="/" class="back-to-hub" onclick="window.recordPlayed && window.recordPlayed('texting-terror')" aria-label="Back to arcade hub">&larr; Arcade</a>
+<script>
+  /* hub integration: record this visit in recently-played (same shim pattern as other arcade games) */
+  window.recordPlayed = function recordPlayed(gameId) {
+    try {
+      const recent = JSON.parse(localStorage.getItem('recentlyPlayed') || '[]');
+      const filtered = recent.filter(p => p.id !== gameId);
+      filtered.unshift({ id: gameId, playedAt: Date.now() });
+      localStorage.setItem('recentlyPlayed', JSON.stringify(filtered.slice(0, 10)));
+    } catch (e) {}
+  };
+  window.recordPlayed('texting-terror');
+</script>
+<div class="grain" aria-hidden="true"></div>
+
+<main class="stage" data-comp-id="stage">
+
+  <!-- ======== case file panel (desktop framing) ======== -->
+  <aside class="casefile" data-comp-id="casefile">
+    <span class="cf-eyebrow" data-comp-id="cf-eyebrow">CASE Nº 059 · MARLOWE STATION · EAST PLATFORM</span>
+    <h1 class="cf-title" data-comp-id="cf-title">Texting<span>Terror</span></h1>
+    <p class="cf-lede" data-comp-id="cf-lede">Riley Chen didn't jump. Someone on that platform made sure of it — and at 23:58, <b>that someone starts texting you</b>.</p>
+    <div class="cf-rule" aria-hidden="true"></div>
+    <ol class="cf-loop" data-comp-id="cf-loop">
+      <li><b>01</b><span><strong>READ</strong> — a "witness" talks. Every delay is their choice, not yours.</span></li>
+      <li><b>02</b><span><strong>COLLECT</strong> — save the six pieces that don't add up.</span></li>
+      <li><b>03</b><span><strong>IDENTIFY</strong> — drag three onto one name before the last train leaves.</span></li>
+    </ol>
+    <div class="cf-meta" data-comp-id="cf-meta">
+      <div><span>SESSION</span><b>≤ 3 MIN</b></div>
+      <div><span>ENDINGS</span><b id="cfEndings">0 / 3</b></div>
+      <div><span>INPUT</span><b>TAP · DRAG · KEYS</b></div>
+    </div>
+    <div class="cf-best" data-comp-id="cf-best">LOCAL BEST · <b id="cfBest">—</b></div>
+    <div class="cf-keys" data-comp-id="cf-keys">
+      <span>[⏎] SKIP WAIT</span><span>[1–3] PICK / PIN</span><span>[E] EVIDENCE</span><span>[M] MUTE</span>
+    </div>
+  </aside>
+
+  <!-- ======== the phone ======== -->
+  <div class="phone" data-comp-id="phone-frame">
+    <div class="island" aria-hidden="true"></div>
+    <div class="screen" id="screen" data-comp-id="phone-screen">
+
+      <!-- LOCK -->
+      <section class="scr active" id="scr-lock" data-comp-id="screen-lock" aria-label="Lock screen">
+        <div class="sbar">
+          <span class="sbtime">23:58</span>
+          <span class="sb-right">
+            <span class="bars" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+            <span class="batt">23%</span>
+          </span>
+        </div>
+        <div class="lockbody">
+          <div class="lock-clock" data-comp-id="lock-clock">
+            <b class="sbtime">23:58</b>
+            <span id="lockDate">Saturday, October 12</span>
+          </div>
+          <div class="notif-stack" data-comp-id="notif-stack">
+            <button class="notif" id="notif1" data-comp-id="notif-main">
+              <span class="notif-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 6h16v10H9l-5 4z"/><path d="M8 10h8M8 13h5"/></svg></span>
+              <span class="notif-tx">
+                <span class="notif-top"><b>UNKNOWN NUMBER</b><span class="notif-when">now</span></span>
+                <span class="notif-body">I know what happened to Riley Chen. Open this if you want the truth.</span>
+              </span>
+            </button>
+            <button class="notif notif-2" id="notif2" data-comp-id="notif-second">
+              <span class="notif-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 6h16v10H9l-5 4z"/><path d="M8 10h8M8 13h5"/></svg></span>
+              <span class="notif-tx">
+                <span class="notif-top"><b>UNKNOWN NUMBER</b><span class="notif-when">now</span></span>
+                <span class="notif-body">She didn't jump. And the last train leaves in three minutes.</span>
+              </span>
+            </button>
+          </div>
+          <div class="lock-hint" data-comp-id="lock-hint">TAP THE MESSAGE · NO TUTORIAL · THE CASE TEACHES ITSELF</div>
+        </div>
+        <div class="lock-foot" aria-hidden="true">
+          <span class="lbtn"><svg viewBox="0 0 24 24"><path d="M9 3h6l1 4H8zM12 7v13M8 20h8"/></svg></span>
+          <span class="lbtn"><svg viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="13" rx="2"/><circle cx="12" cy="13.5" r="3.5"/><path d="M8 7l1.5-3h5L16 7"/></svg></span>
+        </div>
+        <span class="homebar" aria-hidden="true"></span>
+      </section>
+
+      <!-- CHAT -->
+      <section class="scr" id="scr-chat" data-comp-id="screen-chat" aria-label="Messages">
+        <div class="sbar">
+          <span class="sbtime">23:58</span>
+          <span class="sb-right">
+            <span class="bars" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+            <span class="batt">23%</span>
+          </span>
+        </div>
+        <header class="ch-head" data-comp-id="chat-header">
+          <span class="ch-back" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M14 5l-7 7 7 7"/></svg></span>
+          <span class="ch-ava" data-comp-id="avatar-unknown" aria-hidden="true">?</span>
+          <span class="ch-id">
+            <b>UNKNOWN NUMBER</b>
+            <span class="ch-status" id="chStatus" data-comp-id="chat-status">delivered</span>
+          </span>
+          <button class="pillbtn" id="muteBtn" data-comp-id="mute-btn" aria-label="Toggle sound">
+            <svg viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9z"/><path class="wave" d="M16 9a4 4 0 0 1 0 6M18 7a7 7 0 0 1 0 10"/><path class="slash" d="M4 4l16 16"/></svg>
+          </button>
+          <button class="pillbtn" id="evBtn" data-comp-id="evidence-btn" aria-label="Toggle evidence drawer">
+            <svg viewBox="0 0 24 24"><path d="M3 7h7l2 3h9v9H3z"/></svg><b id="evCount">0</b>
+          </button>
+        </header>
+        <div class="msgs" id="msgs" data-comp-id="chat-messages" role="log" aria-live="polite"></div>
+        <div class="drawer" id="drawer" data-comp-id="evidence-drawer">
+          <button class="dw-handle" id="dwHandle" data-comp-id="drawer-handle" aria-label="Toggle evidence drawer"><i></i><span>EVIDENCE</span><b id="dwCount">0 / 6</b></button>
+          <div class="dw-body" id="dwBody" data-comp-id="drawer-body">
+            <p class="dw-empty">Nothing saved yet.<br>When a message matters, it will ask to be kept.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- BOARD -->
+      <section class="scr" id="scr-board" data-comp-id="screen-board" aria-label="Identification board">
+        <div class="sbar">
+          <span class="sbtime">23:58</span>
+          <span class="sb-right">
+            <span class="bars" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+            <span class="batt">11%</span>
+          </span>
+        </div>
+        <header class="bd-head" data-comp-id="board-header">
+          <span class="eyebrow">STEP 2 OF 2 — IDENTIFICATION</span>
+          <h2>Who put Riley<br>on that <em>platform?</em></h2>
+          <p>Drag three pieces onto one name. Or tap a chip, then tap a face. No take-backs.</p>
+        </header>
+        <div class="suspects" id="suspects" data-comp-id="suspect-list"></div>
+        <div class="tray" data-comp-id="evidence-tray">
+          <span class="tray-label" id="trayLabel">EVIDENCE TRAY — 0 / 6 COLLECTED</span>
+          <div class="tray-chips" id="trayChips" data-comp-id="tray-chips"></div>
+        </div>
+        <div class="toast" id="toast" data-comp-id="board-toast" role="status"></div>
+      </section>
+
+      <!-- ENDING -->
+      <section class="scr" id="scr-end" data-comp-id="screen-end" aria-label="Result" role="status">
+        <div class="end-wrap" data-comp-id="ending-card">
+          <span class="end-tag" id="endTag" data-comp-id="ending-tag">TRUE ENDING · 1 OF 3</span>
+          <h2 class="end-title" id="endTitle" data-comp-id="ending-title">The Last Train</h2>
+          <p class="end-verdict" id="endVerdict" data-comp-id="ending-verdict"></p>
+          <div class="epilogue" id="epilogue" data-comp-id="epilogue"></div>
+          <div class="end-stats" data-comp-id="end-stats">
+            <div><span>TIME</span><b id="stTime">00:00</b></div>
+            <div><span>CLUES</span><b id="stClues">0/6</b></div>
+            <div><span>SCORE</span><b id="stScore">0</b></div>
+          </div>
+          <div class="codex" id="codex" data-comp-id="ending-codex"></div>
+          <div class="end-best" data-comp-id="best-score">LOCAL BEST · <b id="bestVal">—</b><span class="new-best" id="newBest" hidden>NEW BEST</span></div>
+          <div class="end-btns" data-comp-id="ending-actions">
+            <button class="btn-primary" id="restartBtn" data-comp-id="restart-btn" aria-label="Play again">PLAY AGAIN ▸</button>
+            <button class="btn-ghost" id="lockBtn" data-comp-id="back-to-lock">RE-READ THE CASE FILE</button>
+          </div>
+        </div>
+      </section>
+
+      <div class="vig" id="vig" aria-hidden="true"></div>
+      <div class="blackout" id="blackout" data-comp-id="blackout" aria-hidden="true"><b id="blackoutTx">IDENTIFYING</b></div>
+    </div>
+  </div>
+  <div class="drag-ghost" id="ghost" hidden aria-hidden="true"></div>
+</main>
+
+<script>
+(() => {
+'use strict';
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const REDUCED=matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ---------- persistence (textingterror:* keys, safe wrappers) ---------- */
+const lsGet=(k,f)=>{try{const v=localStorage.getItem(k);return v?JSON.parse(v):f}catch(e){return f}};
+const lsSet=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
+let save=Object.assign({best:0,endings:[],played:0},lsGet('textingterror:save',{}));
+let muted=lsGet('textingterror:muted',false);
+const persist=()=>lsSet('textingterror:save',save);
+
+/* ---------- audio: WebAudio synth, unlocked on first gesture ---------- */
+let AC=null;
+const ac=()=>{if(!AC){try{AC=new (window.AudioContext||window.webkitAudioContext)()}catch(e){}}if(AC&&AC.state==='suspended')AC.resume();return AC};
+function tone(f,dur,type='sine',g=.07,when=0,slide=0){
+  const c=ac();if(!c||muted)return;
+  try{
+    const o=c.createOscillator(),v=c.createGain(),t=c.currentTime+when;
+    o.type=type;o.frequency.setValueAtTime(f,t);
+    if(slide)o.frequency.exponentialRampToValueAtTime(slide,t+dur);
+    v.gain.setValueAtTime(0,t);v.gain.linearRampToValueAtTime(g,t+.015);
+    v.gain.exponentialRampToValueAtTime(.0001,t+dur);
+    o.connect(v).connect(c.destination);o.start(t);o.stop(t+dur+.05);
+  }catch(e){}
+}
+const sfx={
+  ping:()=>{tone(880,.12,'sine',.055);tone(1318,.16,'sine',.045,.09)},
+  send:()=>tone(520,.09,'triangle',.05,0,760),
+  tick:()=>tone(1900,.03,'square',.011),
+  save:()=>{tone(340,.06,'square',.05);tone(680,.1,'square',.04,.05)},
+  pin:()=>tone(620,.09,'triangle',.05,0,930),
+  deny:()=>tone(170,.15,'sawtooth',.05,0,110),
+  glitch:()=>{tone(140,.18,'sawtooth',.05,0,70);tone(93,.18,'sawtooth',.04,.02,52)},
+  resolve:()=>{tone(392,.25,'sine',.06);tone(494,.25,'sine',.05,.12);tone(587,.35,'sine',.06,.24);tone(784,.55,'sine',.05,.36)},
+  fail:()=>{tone(220,.4,'sawtooth',.05,0,110);tone(233,.42,'sawtooth',.04,.05,116)},
+  heart:()=>{tone(55,.15,'sine',.09);tone(55,.12,'sine',.07,.24)},
+};
+const vib=p=>{try{navigator.vibrate&&navigator.vibrate(p)}catch(e){}};
+
+/* ---------- clocks ---------- */
+const two=n=>String(n).padStart(2,'0');
+function tickClock(){
+  const d=new Date(),t=two(d.getHours())+':'+two(d.getMinutes());
+  $$('.sbtime').forEach(e=>e.textContent=t);
+}
+setInterval(tickClock,10000);
+tickClock();
+$('#lockDate').textContent=new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
+
+/* ---------- story data ---------- */
+const ICONS={
+  cam:'<svg viewBox="0 0 24 24"><rect x="3" y="7" width="13" height="10" rx="2"/><path d="M16 10l5-2v8l-5-2"/><circle cx="9" cy="12" r="2.5"/></svg>',
+  pass:'<svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M3 10h18M7 14.5h4"/></svg>',
+  rcpt:'<svg viewBox="0 0 24 24"><path d="M6 3h12v18l-2-1.5L14 21l-2-1.5L10 21l-2-1.5L6 21z"/><path d="M9 8h6M9 11.5h6"/></svg>',
+  doc:'<svg viewBox="0 0 24 24"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4M9 12h6M9 15.5h6"/></svg>',
+  msg:'<svg viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/><path d="M8 9h8M8 12h5"/></svg>',
+  key:'<svg viewBox="0 0 24 24"><circle cx="8" cy="12" r="4"/><path d="M12 12h9M18 12v4M21 12v3"/></svg>',
+};
+const CLUES={
+  cctv:{code:'CCTV-4',title:'Six minutes of black',q:'Camera 4, east platform — 23:41 to 23:47. Nobody unplugs a camera by accident.',ic:'cam',
+    react:{dana:'She needed six dark minutes. She got exactly six.',other:'The feed died for anyone. It isn’t a name.'}},
+  pass:{code:'PASS-½',title:'Torn transit pass',q:'Marcus’s pass, torn clean in half, found in Riley’s hand.',ic:'pass',
+    react:{marcus:'His pass. His anger. Maybe his hands.',dana:'That points at Marcus, not at her.',other:'Half a pass proves half of nothing.'}},
+  receipt:{code:'RCPT-23:20',title:'The alibi receipt',q:'Last Call Bar, 23:20 to 01:04. Card verified. He was across town.',ic:'rcpt',
+    react:{marcus:'This clears him. You just pinned an alibi.',dana:'That receipt puts Marcus miles away. Keep digging.',other:'An alibi, not an accusation.'}},
+  scholar:{code:'NG-ESSAY',title:'The stolen essay',q:'Northgate Scholarship. Two applicants, one essay, word for word. One of them was Riley.',ic:'doc',
+    react:{dana:'Word for word. One of them had to go.',other:'The essay points at the best friend, not here.'}},
+  draft:{code:'DRAFT-D',title:'The unsent draft',q:'“It wasn’t me, D. I was going to tell you I found out about the—”',ic:'msg',
+    react:{dana:'“D.” She never got to press send.',other:'Read the initial again. It isn’t his name.'}},
+  key:{code:'KEY-07',title:'Keycard 07, 23:43',q:'East staff gate, opened four minutes before the fall. Keycard 07 is Dana’s shift key.',ic:'key',
+    react:{dana:'Her key. Her gate. 23:43.',other:'Keycard 07 doesn’t hang on his belt.'}},
+};
+const TRIO=['draft','key','scholar'];
+const ORDER=['dana','marcus','calloway'];
+const SUS={
+  dana:{name:'Dana Whitfield',role:'BEST FRIEND · NORTHGATE SHIFT LEAD',tag:'DW',
+    q:'“Riley left the party at eleven. That’s the last I saw her.”',
+    por:'<svg viewBox="0 0 56 56"><circle cx="28" cy="22" r="8.5"/><path d="M19.5 20c0-8 4-11.5 8.5-11.5S36.5 12 36.5 20v13M19.5 20v13M13 51c2.5-7.5 8-10.5 15-10.5s12.5 3 15 10.5"/></svg>'},
+  marcus:{name:'Marcus Vale',role:'BOYFRIEND · ARGUED WITH RILEY ALL WEEK',tag:'MV',
+    q:'“I wasn’t even at the station. Check the bar. I was at the bar.”',
+    por:'<svg viewBox="0 0 56 56"><circle cx="28" cy="25" r="8.5"/><path d="M19.5 23a8.5 8.5 0 0 1 17 0M17 23h25M13 51c2.5-7.5 8-10.5 15-10.5s12.5 3 15 10.5"/></svg>'},
+  calloway:{name:'S. Calloway',role:'STATION JANITOR · MASTER KEY HOLDER',tag:'SC',
+    q:'“I mopped the west concourse all night. Camera two saw me.”',
+    por:'<svg viewBox="0 0 56 56"><circle cx="28" cy="25" r="8.5"/><path d="M19.5 23h17v-3.5c0-5.5-3.8-8.5-8.5-8.5s-8.5 3-8.5 8.5zM24 30.5h8M13 51c2.5-7.5 8-10.5 15-10.5s12.5 3 15 10.5"/></svg>'},
+};
+const BEATS=[
+  {t:'in',d:900,ty:1500,text:'You don’t know me. But I know what happened to Riley tonight.'},
+  {t:'in',d:1500,ty:1700,text:'Marlowe Station. East platform. 23:47. You’re her sister. You should hear this from someone who was there.'},
+  {t:'choice',d:1200,options:['Who is this?','What do you want?']},
+  {t:'in',d:1100,ty:1600,text:'A witness. I was standing twelve feet away when she went over the rail.'},
+  {t:'in',d:1500,ty:1800,text:'Police logged it as a fall. Accidental. It wasn’t.'},
+  {t:'clue',d:1800,ty:2100,clue:'cctv',glitch:1,text:'I pulled the station feed before they sealed it. Camera 4, east platform — 23:41 to 23:47. Six minutes of black. Nobody unplugs a camera by accident.'},
+  {t:'choice',d:1300,options:['Who was with her?','Why send this to me?']},
+  {t:'in',d:1200,ty:1700,text:'Three names. Marcus Vale — the boyfriend. S. Calloway — the janitor. And Dana Whitfield. Her best friend.'},
+  {t:'in',d:1600,ty:1800,text:'Marcus screamed at her outside the station all week. Jealous. Half the platform heard.'},
+  {t:'clue',d:1600,ty:2000,clue:'pass',text:'They found his transit pass in Riley’s hand. Torn clean in half. Make of that what you want.'},
+  {t:'clue',d:2100,ty:2200,clue:'receipt',text:'…fine, full picture. His lawyer posted this an hour ago. Last Call Bar, 23:20 to 01:04. Card verified. Two drinks. He was across town.'},
+  {t:'in',d:1700,ty:1900,glitch:1,text:'That leaves the janitor. Master key to every gate on that platform. But camera 2 shows him mopping the west concourse all night.'},
+  {t:'in',d:1600,ty:1900,text:'So it keeps coming back to Dana. They fought at 23:30 — ten minutes before. About a scholarship.'},
+  {t:'clue',d:1800,ty:2100,clue:'scholar',text:'Northgate Scholarship. Full ride. Two applicants submitted the same essay, word for word. One of them was Riley.'},
+  {t:'choice',d:1400,options:['How do you know all this?','Keep going.']},
+  {t:'in',d:1100,ty:2400,text:'…'},
+  {t:'in',d:900,ty:2000,text:'Let’s say I was closer to it than I should have been.'},
+  {t:'clue',d:1900,ty:2300,clue:'draft',glitch:1,text:'Riley’s phone unlocked once before they bagged it. One unsent draft: “It wasn’t me, D. I was going to tell you I found out about the—” It stops there.'},
+  {t:'clue',d:2200,ty:2200,clue:'key',text:'Last thing I got. Gate log. East staff gate, keycard 07, opened 23:43 — four minutes before she fell. Keycard 07 is Dana’s shift key.'},
+  {t:'in',d:1600,ty:1900,text:'That’s everything I have. Six pieces. One story that doesn’t hold.'},
+  {t:'in',d:1500,ty:2000,text:'Pin the three that matter to the one who did it. Choose wrong, and this case dies tonight.'},
+  {t:'board',d:1500},
+];
+const WRONGTXT={
+  marcus:'You pinned half an answer on the wrong man. Your own receipt put Marcus Vale across town — while Dana Whitfield bought a one-way ticket north.',
+  calloway:'S. Calloway never left the west concourse. Camera two watched him mop for three hours. The only camera that lied was the one that went dark.',
+  dana:'Two threads don’t hang a case. The scholarship, the keycard, the unsent draft — you left the story unfinished, and Dana Whitfield walked.',
+};
+const END={
+  true:{tag:'TRUE ENDING · 1 OF 3',title:'The Last Train',cls:'',vib:[60,35,90],sfx:'resolve',
+    v:'Dana Whitfield was arrested on the northbound platform with a one-way ticket and Riley’s scholarship file in her bag. The draft was the first loose thread. You pulled the whole knot.',
+    epi:['You got it all right. The scholarship, the key, the draft.','She was going to take everything I built. Everything.','Tell them I’m sorry. Or don’t. You never reply anyway.']},
+  wrong:{tag:'WRONG ACCUSATION · 2 OF 3',title:'Reasonable Doubt',cls:'bad',vib:[120,50,120],sfx:'fail',
+    v:'',epi:['…I almost felt bad for you. Almost.','The last train left four minutes ago. She’s on it.','Case closed. The wrong way.']},
+  cold:{tag:'COLD CASE · 3 OF 3',title:'Silence',cls:'cold',vib:[120,50,120],sfx:'fail',
+    v:'The last train left without an answer. The chat goes quiet, the feed stays dark, and Marlowe Station files Riley Chen under accidental. Some cases just stop.',epi:[]},
+};
+const COD=[['true','THE LAST TRAIN'],['wrong','REASONABLE DOUBT'],['cold','SILENCE']];
+
+/* ---------- state & pause-aware timing ---------- */
+let st,failSus=null;
+const freshState=()=>({cur:0,clues:[],pins:{dana:[],marcus:[],calloway:[]},running:true,start:performance.now(),b1:false,b2:false,ended:false});
+let hiddenAt=0,hiddenTotal=0,hurry=false,tickIv=null,cdIv=null;
+document.addEventListener('visibilitychange',()=>{
+  if(document.hidden)hiddenAt=performance.now();
+  else hiddenTotal+=performance.now()-hiddenAt;
+});
+const elapsedS=()=>Math.max(0,(performance.now()-st.start-hiddenTotal)/1000);
+function wait(ms){return new Promise(res=>{
+  let acc=0,last=performance.now();
+  const iv=setInterval(()=>{
+    if(!document.hidden)acc+=performance.now()-last;
+    last=performance.now();
+    if(acc>=ms||hurry||!st.running){clearInterval(iv);res()}
+  },60);
+})}
+
+/* ---------- dom helpers ---------- */
+const msgs=$('#msgs');
+const esc=s=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const el=h=>{const t=document.createElement('template');t.innerHTML=h.trim();return t.content.firstElementChild};
+const nowT=()=>{const d=new Date();return two(d.getHours())+':'+two(d.getMinutes())};
+const scroll=()=>{msgs.scrollTop=msgs.scrollHeight};
+function setBars(n){$$('.bars').forEach(b=>[...b.children].forEach((i,x)=>i.classList.toggle('off',x>=n)))}
+function glitchFx(){
+  if(REDUCED)return;
+  const sc=$('#screen');sc.classList.add('glitch');sfx.glitch();vib([60,30,60]);
+  $('#vig').classList.add('on');
+  setTimeout(()=>{sc.classList.remove('glitch');$('#vig').classList.remove('on')},420);
+}
+function toast(tx){const t=$('#toast');t.textContent=tx;t.classList.add('show');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('show'),1900)}
+
+/* ---------- chat rendering ---------- */
+function showTyping(){$('#chStatus').textContent='typing…';$('#chStatus').classList.add('typing');
+  if(msgs.querySelector('.typing'))return;
+  msgs.appendChild(el('<div class="msg in typing" aria-hidden="true"><div class="bubble"><i></i><i></i><i></i></div></div>'));scroll();
+  tickIv=setInterval(()=>sfx.tick(),430);}
+function hideTyping(){clearInterval(tickIv);
+  const t=msgs.querySelector('.typing');if(t)t.remove();
+  $('#chStatus').textContent='online';$('#chStatus').classList.remove('typing');}
+function addIn(text){const m=el(`<div class="msg in"><div class="bubble">${esc(text)}<span class="ts">${nowT()}</span></div></div>`);msgs.appendChild(m);scroll();return m}
+function addOut(text){const m=el(`<div class="msg out"><div class="bubble">${esc(text)}<span class="ts">${nowT()}</span></div></div>`);msgs.appendChild(m);scroll()}
+function sysLine(tx){msgs.appendChild(el(`<div class="msg sys"><span>${esc(tx)}</span></div>`));scroll()}
+function addChoice(b){
+  const box=el('<div class="msg opts"></div>');
+  b.options.forEach((o,i)=>{
+    const bt=el(`<button class="opt">${esc(o)}<kbd>${i+1}</kbd></button>`);
+    bt.addEventListener('click',()=>{
+      if(box.dataset.done)return;box.dataset.done='1';bt.classList.add('picked');
+      sfx.send();addOut(o);st.cur++;run();
+    });
+    box.appendChild(bt);
+  });
+  msgs.appendChild(box);scroll();
+}
+function addClueMsg(text,clueId){
+  const c=CLUES[clueId];
+  const m=el(`<div class="msg in clue"><div class="bubble">${esc(text)}
+    <span class="ev-tag">EVIDENCE ${two(st.clues.length+1)} · ${c.code}</span>
+    <button class="save-btn${st.clues.length===0?' glow':''}" data-clue="${clueId}">SAVE TO EVIDENCE <b>+</b></button>
+    <span class="ts">${nowT()}</span></div></div>`);
+  msgs.appendChild(m);scroll();
+}
+msgs.addEventListener('click',e=>{
+  hurry=true;
+  const b=e.target.closest('.save-btn');
+  if(b&&!b.classList.contains('done'))collect(b.dataset.clue,b);
+});
+function collect(id,btn){
+  if(st.clues.includes(id))return;
+  st.clues.push(id);
+  btn.classList.remove('glow');btn.classList.add('done');btn.innerHTML='SAVED ✓';
+  sfx.save();vib([35,25,35]);updateEvUI();
+  const h=$('#dwHandle');h.classList.remove('pulse');void h.offsetWidth;h.classList.add('pulse');
+}
+function updateEvUI(){
+  const n=st.clues.length;
+  $('#evCount').textContent=n;$('#dwCount').textContent=n+' / 6';
+  const body=$('#dwBody');
+  body.innerHTML = n ? st.clues.map(id=>{const c=CLUES[id];return `<div class="cluecard" data-comp-id="clue-${id}">${ICONS[c.ic]}<div><b>${c.title}</b><small>${c.q}</small><em>${c.code} · FROM UNKNOWN</em></div></div>`}).join('')
+    : '<p class="dw-empty">Nothing saved yet.<br>When a message matters, it will ask to be kept.</p>';
+}
+
+/* ---------- beat engine ---------- */
+async function deliver(b){
+  if(b.ty&&!REDUCED){showTyping();await wait(Math.min(b.ty,2400));hideTyping();if(!st.running)return}
+  if(b.clue)addClueMsg(b.text,b.clue);else addIn(b.text);
+  sfx.ping();vib(15);
+}
+async function run(){
+  while(st.cur<BEATS.length&&st.running){
+    hurry=false;
+    const b=BEATS[st.cur];
+    if(b.d){await wait(b.d);if(!st.running)return}
+    if(b.glitch)glitchFx();
+    if(b.t==='in'){await deliver(b);st.cur++}
+    else if(b.t==='clue'){await deliver(b);st.cur++}
+    else if(b.t==='choice'){addChoice(b);return}
+    else if(b.t==='board'){
+      msgs.appendChild(el('<div class="msg sys"><button class="board-btn" id="openBoard">OPEN THE BOARD ▸</button></div>'));scroll();
+      $('#openBoard').addEventListener('click',enterBoard);return;
+    }
+  }
+}
+
+/* ---------- drawer ---------- */
+const drawer=$('#drawer');
+const toggleDrawer=()=>drawer.classList.toggle('open');
+$('#dwHandle').addEventListener('click',toggleDrawer);
+$('#evBtn').addEventListener('click',toggleDrawer);
+
+/* ---------- mute ---------- */
+const muteBtn=$('#muteBtn');
+function applyMute(){muteBtn.classList.toggle('muted',muted)}
+function toggleMute(){muted=!muted;lsSet('textingterror:muted',muted);applyMute();if(!muted)sfx.pin()}
+muteBtn.addEventListener('click',toggleMute);applyMute();
+
+/* ---------- identification board ---------- */
+const susList=$('#suspects'),trayChips=$('#trayChips');
+function enterBoard(){
+  $$('.scr').forEach(s=>s.classList.remove('active'));
+  $('#scr-board').classList.add('active');
+  drawer.classList.remove('open');
+  setBars(2);$$('.batt').forEach(b=>b.textContent='11%');
+  buildBoard();startCountdown();
+  sfx.glitch();vib([60,30,60]);
+}
+function buildBoard(){
+  susList.innerHTML=ORDER.map(id=>{const s=SUS[id];return `
+    <article class="susp" id="susp-${id}" data-sus="${id}" data-comp-id="suspect-${id}">
+      <span class="susp-por" aria-hidden="true">${s.por}</span>
+      <span class="susp-info">
+        <b>${s.name}</b><span class="susp-role">${s.role}</span><span class="susp-quote">${s.q}</span>
+      </span>
+      <span class="susp-zone" data-comp-id="zone-${id}">
+        <span class="slots"><i></i><i></i><i></i></span>
+        <span class="zone-hint">DROP EVIDENCE · OR TAP [${ORDER.indexOf(id)+1}]</span>
+      </span>
+      <div class="susp-react" data-comp-id="react-${id}"></div>
+    </article>`}).join('');
+  trayChips.innerHTML=st.clues.map(id=>{const c=CLUES[id];return `<span class="chip" data-clue="${id}" data-comp-id="chip-${id}" tabindex="0">${ICONS[c.ic]}${c.code}</span>`}).join('');
+  $('#trayLabel').textContent=`EVIDENCE TRAY — ${st.clues.length} / 6 COLLECTED${st.clues.length<3?' · THIN CASE. THIN TIME.':''}`;
+  if(st.clues.length===0)trayChips.innerHTML='<span class="dw-empty" style="text-align:left">You saved nothing. A case with no evidence only ends one way.</span>';
+  susList.querySelectorAll('.susp').forEach(card=>{
+    card.addEventListener('click',()=>{const sel=trayChips.querySelector('.chip.sel');if(sel)pin(sel.dataset.clue,card.dataset.sus)});
+  });
+}
+/* drag: pointer events + ghost + click-select fallback */
+let drag=null;
+const ghost=$('#ghost');
+trayChips.addEventListener('pointerdown',e=>{
+  const chip=e.target.closest('.chip');if(!chip)return;
+  drag={chip,sx:e.clientX,sy:e.clientY,moved:false};
+  try{chip.setPointerCapture(e.pointerId)}catch(err){}
+});
+trayChips.addEventListener('pointermove',e=>{
+  if(!drag)return;
+  if(!drag.moved&&Math.hypot(e.clientX-drag.sx,e.clientY-drag.sy)>7){
+    drag.moved=true;
+    ghost.innerHTML=drag.chip.innerHTML;ghost.hidden=false;
+    $$('.susp').forEach(s=>s.classList.add('armed'));
+    drag.chip.style.opacity=.35;
+  }
+  if(drag.moved){
+    ghost.style.left=e.clientX+'px';ghost.style.top=e.clientY+'px';
+    const z=zoneAt(e.clientX,e.clientY);
+    $$('.susp').forEach(s=>s.classList.toggle('over',s===z));
+  }
+});
+trayChips.addEventListener('pointerup',e=>{
+  if(!drag)return;const d=drag;drag=null;
+  if(d.moved){
+    const z=zoneAt(e.clientX,e.clientY);
+    ghost.hidden=true;$$('.susp').forEach(s=>s.classList.remove('armed','over'));
+    d.chip.style.opacity='';
+    if(z)pin(d.chip.dataset.clue,z.dataset.sus);
+  }else toggleSel(d.chip);
+});
+trayChips.addEventListener('pointercancel',()=>{
+  if(!drag)return;ghost.hidden=true;drag.chip.style.opacity='';
+  $$('.susp').forEach(s=>s.classList.remove('armed','over'));drag=null;
+});
+function zoneAt(x,y){
+  return [...susList.querySelectorAll('.susp')].find(s=>{const r=s.getBoundingClientRect();return x>=r.left&&x<=r.right&&y>=r.top&&y<=r.bottom})||null;
+}
+function toggleSel(chip){
+  const was=chip.classList.contains('sel');
+  $$('.chip').forEach(c=>c.classList.remove('sel'));
+  if(!was){chip.classList.add('sel');sfx.tick()}
+}
+function pin(clueId,susId){
+  const pins=st.pins[susId],card=$('#susp-'+susId);
+  if(pins.length>=3){sfx.deny();toast('THREE PIECES — THAT’S A CASE');return}
+  if(pins.includes(clueId))return;
+  const chip=trayChips.querySelector(`.chip[data-clue="${clueId}"]`);
+  if(!chip)return;
+  pins.push(clueId);chip.remove();
+  const slot=card.querySelectorAll('.slots i')[pins.length-1];
+  slot.classList.add('filled');slot.textContent=CLUES[clueId].code.split('-')[0];
+  const react=CLUES[clueId].react[susId]||CLUES[clueId].react.other;
+  card.querySelector('.susp-react').appendChild(el(`<p>${esc(react)}</p>`));
+  sfx.pin();vib([60,30,60]);
+  $$('.chip').forEach(c=>c.classList.remove('sel'));
+  if(pins.length===3)card.appendChild(el(`<button class="identify" data-comp-id="identify-${susId}">IDENTIFY ${SUS[susId].name.toUpperCase()} ▸</button>`))
+    .addEventListener('click',()=>askConfirm(susId));
+}
+function askConfirm(susId){
+  const card=$('#susp-'+susId);
+  if(card.querySelector('.confirm'))return;
+  const c=el(`<div class="confirm" data-comp-id="confirm-${susId}">
+    <b>This closes the case. ${SUS[susId].name} goes down — and the chat goes quiet. No take-backs.</b>
+    <span class="row"><button class="cf-yes">CONFIRM</button><button class="cf-no">NOT YET</button></span></div>`);
+  card.appendChild(c);
+  c.querySelector('.cf-no').addEventListener('click',()=>c.remove());
+  c.querySelector('.cf-yes').addEventListener('click',async()=>{
+    failSus=susId;
+    clearInterval(cdIv);
+    const ok=susId==='dana'&&TRIO.every(t=>st.pins.dana.includes(t));
+    $('#blackoutTx').textContent='IDENTIFYING';$('#blackout').classList.add('on');
+    for(let i=0;i<3;i++){sfx.heart();vib(40);await new Promise(r=>setTimeout(r,430))}
+    $('#blackout').classList.remove('on');
+    end(ok?'true':'wrong');
+  });
+}
+
+/* ---------- 180s budget (ambient, no visible countdown) ---------- */
+function startCountdown(){
+  clearInterval(cdIv);
+  cdIv=setInterval(()=>{
+    if(document.hidden||!st.running||st.ended)return;
+    const s=elapsedS();
+    if(s>=120&&!st.b1){st.b1=true;setBars(1);sfx.deny()}
+    if(s>=150&&!st.b2){st.b2=true;toast('LAST TRAIN: DEPARTED');vib([120,50,120]);sfx.deny()}
+    if(s>=180){clearInterval(cdIv);end('cold')}
+  },500);
+}
+
+/* ---------- ending ---------- */
+function end(type){
+  if(st.ended)return;st.ended=true;st.running=false;
+  clearInterval(cdIv);hideTyping();
+  if(type==='wrong')END.wrong.v=WRONGTXT[failSus]||WRONGTXT.dana;
+  const E=END[type];
+  const secs=Math.round(elapsedS());
+  const bonus={true:2000,cold:500,wrong:0}[type];
+  const score=Math.max(0,10000-secs*20+st.clues.length*150+bonus);
+  const isBest=score>save.best;
+  if(isBest)save.best=score;
+  if(!save.endings.includes(type))save.endings.push(type);
+  save.played++;persist();
+
+  const sc=$('#scr-end');sc.className='scr '+E.cls;
+  $('#endTag').textContent=E.tag;
+  $('#endTitle').textContent=E.title;
+  $('#endVerdict').textContent=E.v;
+  $('#epilogue').innerHTML=E.epi.length?'<em>INCOMING — UNKNOWN NUMBER</em>'+E.epi.map(l=>`<p>${esc(l)}</p>`).join(''):'';
+  $('#stTime').textContent=two(Math.floor(secs/60))+':'+two(secs%60);
+  $('#stClues').textContent=st.clues.length+'/6';
+  $('#bestVal').textContent=save.best.toLocaleString('en-US');
+  $('#newBest').hidden=!isBest;
+  $('#codex').innerHTML=COD.map(([k,n])=>save.endings.includes(k)?`<div class="got"><b>${n}</b>UNLOCKED</div>`:`<div>——————<br>UNDISCOVERED</div>`).join('');
+  $$('.scr').forEach(s=>s.classList.remove('active'));
+  sc.classList.add('active');sc.scrollTop=0;
+  countUp($('#stScore'),score);
+  sfx[E.sfx]();vib(E.vib);
+  $('#cfEndings').textContent=save.endings.length+' / 3';
+  $('#cfBest').textContent=save.best?save.best.toLocaleString('en-US'):'—';
+
+  const rb=$('#restartBtn');rb.disabled=true;rb.textContent='HOLD ON…';
+  setTimeout(()=>{rb.disabled=false;rb.textContent='PLAY AGAIN ▸'},1500); /* mis-tap cooldown */
+}
+function countUp(node,to){
+  const t0=performance.now(),ms=900;
+  const f=()=>{const p=Math.min(1,(performance.now()-t0)/ms);
+    node.textContent=Math.round(to*(0.15+0.85*p)).toLocaleString('en-US');
+    if(p<1)requestAnimationFrame(f)};
+  f();
+}
+
+/* ---------- restart ---------- */
+function resetGame(toLock){
+  st=freshState();hiddenTotal=0;failSus=null;
+  msgs.innerHTML='';updateEvUI();drawer.classList.remove('open');
+  susList.innerHTML='';trayChips.innerHTML='';ghost.hidden=true;
+  clearInterval(cdIv);hideTypingSafe();
+  setBars(4);$$('.batt').forEach(b=>{b.textContent='23%';b.classList.remove('low')});
+  $$('.scr').forEach(s=>s.classList.remove('active'));
+  if(toLock){$('#scr-lock').classList.add('active');rearmNotifs()}
+  else{$('#scr-chat').classList.add('active');run()}
+}
+function hideTypingSafe(){clearInterval(tickIv);$('#chStatus').textContent='delivered';$('#chStatus').classList.remove('typing')}
+function rearmNotifs(){
+  const n2=$('#notif2');n2.classList.remove('show');
+  clearTimeout(n2._h);n2._h=setTimeout(()=>n2.classList.add('show'),1600);
+}
+$('#restartBtn').addEventListener('click',()=>resetGame(false));
+$('#lockBtn').addEventListener('click',()=>resetGame(true));
+
+/* ---------- lock screen entry ---------- */
+function enterGame(){
+  ac();sfx.ping();vib(15);
+  if(!st)st=freshState();
+  $$('.scr').forEach(s=>s.classList.remove('active'));
+  $('#scr-chat').classList.add('active');
+  run();
+}
+$('#notif1').addEventListener('click',enterGame);
+$('#notif2').addEventListener('click',enterGame);
+
+/* ---------- keyboard (touch / mouse / keys — AC3) ---------- */
+addEventListener('keydown',e=>{
+  if(e.key==='m'||e.key==='M')toggleMute();
+  if(e.key==='e'||e.key==='E')toggleDrawer();
+  if((e.key==='Enter'||e.key===' ')&&$('#scr-chat').classList.contains('active')){hurry=true;if(e.key===' ')e.preventDefault()}
+  if(['1','2','3'].includes(e.key)){
+    if($('#scr-board').classList.contains('active')){
+      const sel=trayChips.querySelector('.chip.sel');
+      if(sel)pin(sel.dataset.clue,ORDER[+e.key-1]);
+    }else if($('#scr-chat').classList.contains('active')){
+      const opts=[...document.querySelectorAll('.msg.opts:not([data-done]) .opt')];
+      const b=opts[+e.key-1];if(b)b.click();
+    }
+  }
+});
+
+/* ---------- boot ---------- */
+st=freshState();
+updateEvUI();rearmNotifs();
+$('#cfEndings').textContent=save.endings.length+' / 3';
+$('#cfBest').textContent=save.best?save.best.toLocaleString('en-US'):'—';
+})();
+</script>
+</body>
+</html>

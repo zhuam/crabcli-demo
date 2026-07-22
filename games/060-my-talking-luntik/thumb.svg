@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120">
+  <rect width="120" height="120" rx="16" fill="#fdf6ef"/>
+  <!-- Pet body -->
+  <circle cx="60" cy="58" r="32" fill="#f5d4b8"/>
+  <!-- Ears -->
+  <circle cx="36" cy="38" r="12" fill="#eac4a0"/>
+  <circle cx="84" cy="38" r="12" fill="#eac4a0"/>
+  <!-- Eyes -->
+  <circle cx="50" cy="56" r="5" fill="#3d352c"/>
+  <circle cx="51" cy="54" r="2" fill="#fff"/>
+  <circle cx="70" cy="56" r="5" fill="#3d352c"/>
+  <circle cx="71" cy="54" r="2" fill="#fff"/>
+  <!-- Mouth (smile) -->
+  <path d="M54 68 Q60 74 66 68" stroke="#c49570" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+  <!-- Blush -->
+  <ellipse cx="40" cy="66" rx="6" ry="4" fill="rgba(232,146,90,0.25)"/>
+  <ellipse cx="80" cy="66" rx="6" ry="4" fill="rgba(232,146,90,0.25)"/>
+  <!-- Heart -->
+  <text x="85" y="38" font-size="14" fill="#e8925a">❤️</text>
+  <!-- Decorative sparkle -->
+  <text x="18" y="30" font-size="10" fill="#d4a84b">✦</text>
+  <text x="95" y="90" font-size="10" fill="#d4a84b">✦</text>
+</svg>

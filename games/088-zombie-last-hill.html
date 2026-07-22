@@ -1,0 +1,859 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ZOMBIE LAST HILL</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --color-bg: #0A0A0A;
+    --color-surface: #111316;
+    --color-border: #1E2328;
+    --data-primary: #00FF41;
+    --data-secondary: #7FFF00;
+    --data-tertiary: #5A9A5A;
+    --data-warning: #FFB800;
+    --data-alert: #FF3B3B;
+    --font-display: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+    --font-body: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+    --font-label: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    --glow-primary: 0 0 6px rgba(0, 255, 65, 0.4), 0 0 20px rgba(0, 255, 65, 0.1);
+    --glow-alert: 0 0 6px rgba(255, 59, 59, 0.4), 0 0 20px rgba(255, 59, 59, 0.1);
+    --glow-warning: 0 0 6px rgba(255, 184, 0, 0.4), 0 0 20px rgba(255, 184, 0, 0.1);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body {
+    width: 100%; height: 100%;
+    background: var(--color-bg);
+    color: var(--data-primary);
+    font-family: var(--font-body);
+    overflow: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+  /* HUD GRID */
+  .hud-grid { position: fixed; inset: 0; pointer-events: none; z-index: 0; }
+  .hud-grid::before, .hud-grid::after { content: ''; position: absolute; background: var(--data-tertiary); opacity: 0.15; }
+  .hud-grid::before { left: 50%; top: 0; bottom: 0; width: 1px; transform: translateX(-50%); }
+  .hud-grid::after { top: 50%; left: 0; right: 0; height: 1px; transform: translateY(-50%); }
+  .hud-grid .reticle-ring { position: absolute; top: 50%; left: 50%; width: 120px; height: 120px; transform: translate(-50%, -50%); border: 1px solid var(--data-tertiary); border-radius: 50%; opacity: 0.12; }
+  .hud-grid .reticle-ring-inner { width: 60px; height: 60px; }
+  .hud-grid .corner-tl, .hud-grid .corner-tr, .hud-grid .corner-bl, .hud-grid .corner-br { position: absolute; width: 40px; height: 40px; border-color: var(--data-primary); border-style: solid; opacity: 0.25; }
+  .hud-grid .corner-tl { top: 16px; left: 16px; border-width: 2px 0 0 2px; }
+  .hud-grid .corner-tr { top: 16px; right: 16px; border-width: 2px 2px 0 0; }
+  .hud-grid .corner-bl { bottom: 16px; left: 16px; border-width: 0 0 2px 2px; }
+  .hud-grid .corner-br { bottom: 16px; right: 16px; border-width: 0 2px 2px 0; }
+  /* SCREENS */
+  .screen { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 10; opacity: 0; pointer-events: none; transition: opacity 300ms ease-out; }
+  .screen.active { opacity: 1; pointer-events: all; }
+  /* START SCREEN */
+  #screen-start { background: var(--color-bg); }
+  .start-badge { font-family: var(--font-label); font-size: 11px; font-weight: 600; letter-spacing: 0.3em; color: var(--data-tertiary); text-transform: uppercase; margin-bottom: 24px; }
+  .start-title { font-family: var(--font-display); font-size: clamp(32px, 7vw, 72px); font-weight: 700; color: var(--data-primary); text-transform: uppercase; letter-spacing: 0.15em; line-height: 1.0; text-shadow: var(--glow-primary); text-align: center; margin-bottom: 8px; }
+  .start-title .sub { display: block; font-size: clamp(14px, 2.5vw, 28px); font-weight: 400; letter-spacing: 0.4em; color: var(--data-secondary); text-shadow: 0 0 10px rgba(127, 255, 0, 0.3); margin-top: 12px; }
+  .start-divider { width: 200px; height: 1px; background: var(--data-primary); opacity: 0.3; margin: 32px auto; box-shadow: var(--glow-primary); }
+  .start-instruction { font-family: var(--font-body); font-size: 13px; color: var(--data-tertiary); letter-spacing: 0.05em; text-align: center; line-height: 1.8; margin-bottom: 40px; }
+  .start-instruction span { color: var(--data-primary); }
+  /* HUD BUTTONS */
+  .hud-btn { position: relative; display: inline-flex; align-items: center; justify-content: center; gap: 10px; padding: 16px 48px; background: transparent; border: 1px solid var(--data-primary); color: var(--data-primary); font-family: var(--font-label); font-size: 14px; font-weight: 700; letter-spacing: 0.25em; text-transform: uppercase; cursor: pointer; transition: all 200ms ease; text-decoration: none; }
+  .hud-btn:hover { background: rgba(0, 255, 65, 0.08); box-shadow: var(--glow-primary); }
+  .hud-btn:active { background: rgba(0, 255, 65, 0.15); transform: scale(0.98); }
+  .hud-btn::before, .hud-btn::after { content: ''; position: absolute; width: 8px; height: 8px; border-color: var(--data-primary); border-style: solid; transition: opacity 200ms; }
+  .hud-btn::before { top: -1px; left: -1px; border-width: 2px 0 0 2px; }
+  .hud-btn::after { bottom: -1px; right: -1px; border-width: 0 2px 2px 0; }
+  .hud-btn:hover::before, .hud-btn:hover::after { opacity: 0.6; }
+  .hud-btn.secondary { border-color: var(--data-tertiary); color: var(--data-tertiary); }
+  .hud-btn.secondary:hover { border-color: var(--data-primary); color: var(--data-primary); background: rgba(0, 255, 65, 0.05); }
+  /* GAME HUD */
+  #screen-game { background: var(--color-bg); justify-content: flex-start; padding: 0; }
+  .hud-topbar { position: absolute; top: 0; left: 0; right: 0; display: flex; justify-content: space-between; align-items: flex-start; padding: 20px 32px; z-index: 20; }
+  .hud-panel { background: rgba(10, 10, 10, 0.85); border: 1px solid var(--data-tertiary); padding: 12px 20px; min-width: 140px; opacity: 0.7; }
+  .hud-panel-label { font-family: var(--font-label); font-size: 9px; font-weight: 600; letter-spacing: 0.2em; color: var(--data-tertiary); text-transform: uppercase; margin-bottom: 4px; }
+  .hud-panel-value { font-family: var(--font-display); font-size: 28px; font-weight: 700; color: var(--data-primary); line-height: 1.0; text-shadow: 0 0 8px rgba(0, 255, 65, 0.2); }
+  .hud-panel-value.warning { color: var(--data-warning); text-shadow: var(--glow-warning); }
+  .hud-panel-value.alert { color: var(--data-alert); text-shadow: var(--glow-alert); animation: blink-alert 0.6s infinite; }
+  .hud-wave { text-align: left; }
+  .hud-wave .hud-panel-value { font-size: 22px; }
+  .hud-score { text-align: right; }
+  .hud-status-cluster { display: flex; gap: 16px; }
+  .hud-compact { background: rgba(10, 10, 10, 0.85); border: 1px solid var(--data-tertiary); padding: 10px 16px; min-width: 80px; opacity: 0.7; }
+  .hud-compact-label { font-family: var(--font-label); font-size: 8px; font-weight: 600; letter-spacing: 0.15em; color: var(--data-tertiary); text-transform: uppercase; }
+  .hud-compact-value { font-family: var(--font-display); font-size: 20px; font-weight: 700; color: var(--data-primary); line-height: 1.2; }
+  .hud-compact-value.alert { color: var(--data-alert); }
+  .health-bar-track { width: 100%; height: 3px; background: var(--color-border); margin-top: 4px; }
+  .health-bar-fill { height: 100%; background: var(--data-primary); transition: width 300ms ease, background 300ms; width: 100%; }
+  .health-bar-fill.caution { background: var(--data-warning); }
+  .health-bar-fill.critical { background: var(--data-alert); }
+  .ammo-display { font-family: var(--font-display); font-size: 32px; font-weight: 700; color: var(--data-primary); line-height: 1.0; }
+  .ammo-display .ammo-total { font-size: 16px; color: var(--data-tertiary); }
+  .ammo-display.reloading { animation: blink-reload 0.5s infinite; }
+  /* Crosshair */
+  .crosshair { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 15; pointer-events: none; }
+  .crosshair-dot { width: 4px; height: 4px; background: var(--data-primary); border-radius: 50%; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); box-shadow: var(--glow-primary); opacity: 0.5; }
+  .crosshair-line { position: absolute; background: var(--data-primary); opacity: 0.5; }
+  .crosshair-line.top { top: -18px; left: 50%; width: 1px; height: 14px; transform: translateX(-50%); }
+  .crosshair-line.bottom { bottom: -18px; left: 50%; width: 1px; height: 14px; transform: translateX(-50%); }
+  .crosshair-line.left { left: -18px; top: 50%; height: 1px; width: 14px; transform: translateY(-50%); }
+  .crosshair-line.right { right: -18px; top: 50%; height: 1px; width: 14px; transform: translateY(-50%); }
+  .crosshair-gap { width: 8px; height: 8px; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); }
+  /* Bottom bar */
+  .hud-bottombar { position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 12px; z-index: 20; }
+  .kill-counter { font-family: var(--font-display); font-size: 14px; font-weight: 500; color: var(--data-tertiary); letter-spacing: 0.1em; }
+  .kill-counter span { color: var(--data-primary); font-weight: 700; }
+  .reload-prompt { font-family: var(--font-label); font-size: 10px; font-weight: 600; letter-spacing: 0.3em; color: var(--data-warning); text-transform: uppercase; opacity: 0; transition: opacity 200ms; }
+  .reload-prompt.visible { opacity: 1; animation: blink-warning 0.8s infinite; }
+  /* Wave indicator */
+  .wave-indicator { position: absolute; right: 32px; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; align-items: center; gap: 6px; z-index: 15; opacity: 0.5; }
+  .wave-indicator .wi-label { font-family: var(--font-label); font-size: 8px; letter-spacing: 0.2em; color: var(--data-tertiary); text-transform: uppercase; }
+  .wave-indicator .wi-dots { display: flex; flex-direction: column; gap: 4px; align-items: center; }
+  .wave-indicator .wi-dot { width: 4px; height: 4px; border-radius: 0; background: var(--data-tertiary); opacity: 0.3; }
+  .wave-indicator .wi-dot.active { background: var(--data-primary); opacity: 0.8; }
+  .wave-indicator .wi-dot.done { background: var(--data-tertiary); opacity: 0.15; }
+  /* Result screen */
+  #screen-result { background: rgba(10, 10, 10, 0.92); backdrop-filter: blur(4px); }
+  .result-icon { font-family: var(--font-display); font-size: 48px; margin-bottom: 16px; line-height: 1; }
+  .result-icon.victory { color: var(--data-primary); text-shadow: var(--glow-primary); }
+  .result-icon.defeat { color: var(--data-alert); text-shadow: var(--glow-alert); }
+  .result-title { font-family: var(--font-display); font-size: clamp(28px, 5vw, 52px); font-weight: 700; text-transform: uppercase; letter-spacing: 0.15em; line-height: 1.0; margin-bottom: 8px; }
+  .result-title.victory { color: var(--data-primary); text-shadow: var(--glow-primary); }
+  .result-title.defeat { color: var(--data-alert); text-shadow: var(--glow-alert); }
+  .result-subtitle { font-family: var(--font-label); font-size: 12px; font-weight: 600; letter-spacing: 0.25em; color: var(--data-tertiary); text-transform: uppercase; margin-bottom: 40px; }
+  .result-stats { display: flex; gap: 32px; margin-bottom: 48px; }
+  .result-stat { text-align: center; min-width: 100px; }
+  .result-stat-value { font-family: var(--font-display); font-size: 32px; font-weight: 700; color: var(--data-primary); line-height: 1.0; text-shadow: 0 0 8px rgba(0, 255, 65, 0.2); }
+  .result-stat-label { font-family: var(--font-label); font-size: 9px; font-weight: 600; letter-spacing: 0.15em; color: var(--data-tertiary); text-transform: uppercase; margin-top: 6px; }
+  .result-stat.best .result-stat-value { color: var(--data-secondary); }
+  .result-actions { display: flex; gap: 16px; align-items: center; }
+  /* Animations */
+  @keyframes blink-alert { 0%, 100% { opacity: 1; } 50% { opacity: 0.2; } }
+  @keyframes blink-warning { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+  @keyframes blink-reload { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+  @keyframes muzzle-pop { 0% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: scale(2.5); } }
+  @keyframes float-up { 0% { opacity: 1; transform: translateY(0); } 100% { opacity: 0; transform: translateY(-30px); } }
+  @keyframes shake-screen { 0%, 100% { transform: translate(0); } 25% { transform: translate(-3px, 2px); } 50% { transform: translate(3px, -1px); } 75% { transform: translate(-2px, 3px); } }
+  @keyframes splatter-fade { 0% { opacity: 0.8; transform: scale(1); } 100% { opacity: 0; transform: scale(0.3); } }
+  @keyframes spin-reload { to { transform: rotate(360deg); } }
+  /* Scanline overlay */
+  .scanlines { position: fixed; inset: 0; pointer-events: none; z-index: 100; background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0, 255, 65, 0.015) 2px, rgba(0, 255, 65, 0.015) 4px); }
+  /* GAME ENTITIES */
+  #game-world { position: absolute; inset: 0; overflow: hidden; z-index: 5; }
+  .zombie { position: absolute; width: 32px; height: 32px; pointer-events: none; z-index: 8; will-change: transform; }
+  .zombie-body { width: 100%; height: 100%; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #2d5a1e, #1a3a0e); border: 1px solid rgba(0, 255, 65, 0.15); position: relative; box-shadow: 0 0 8px rgba(0, 255, 65, 0.1); }
+  .zombie-body::before { content: ''; position: absolute; top: 4px; left: 6px; width: 6px; height: 6px; background: #ff3333; border-radius: 50%; box-shadow: 4px 0 #ff3333; }
+  .zombie.hit .zombie-body { background: radial-gradient(circle at 35% 35%, #5a2a1e, #3a1a0e); box-shadow: 0 0 12px rgba(255, 50, 50, 0.5); }
+  .zombie.dead .zombie-body { opacity: 0.3; transform: scale(0.5); transition: all 400ms ease; }
+  .zombie.elite .zombie-body { border-color: var(--data-warning); box-shadow: 0 0 12px rgba(255, 184, 0, 0.3); width: 120%; height: 120%; margin: -10%; }
+  .zombie-health-bar { position: absolute; bottom: -6px; left: 50%; transform: translateX(-50%); width: 24px; height: 3px; background: rgba(255, 59, 59, 0.3); border-radius: 1px; overflow: hidden; }
+  .zombie-health-fill { height: 100%; background: var(--data-alert); transition: width 100ms; }
+  .muzzle-flash { position: absolute; width: 16px; height: 16px; border-radius: 50%; background: radial-gradient(circle, #fff 0%, var(--data-primary) 40%, transparent 70%); pointer-events: none; z-index: 12; opacity: 0; animation: muzzle-pop 100ms ease-out forwards; }
+  .bullet-tracer { position: absolute; height: 2px; background: var(--data-primary); box-shadow: 0 0 4px var(--data-primary); pointer-events: none; z-index: 7; opacity: 0.6; transform-origin: left center; }
+  .damage-float { position: absolute; font-family: var(--font-display); font-size: 14px; font-weight: 700; color: var(--data-warning); pointer-events: none; z-index: 20; animation: float-up 600ms ease-out forwards; }
+  .screen-shake { animation: shake-screen 200ms ease-out; }
+  .blood-splatter { position: absolute; width: 8px; height: 8px; border-radius: 50%; background: var(--data-alert); pointer-events: none; z-index: 6; animation: splatter-fade 500ms ease-out forwards; }
+  .wave-banner { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-family: var(--font-display); font-size: clamp(28px, 5vw, 48px); font-weight: 700; color: var(--data-primary); text-shadow: var(--glow-primary); z-index: 25; pointer-events: none; opacity: 0; transition: opacity 300ms; text-align: center; line-height: 1.3; }
+  .wave-banner.show { opacity: 1; }
+  .wave-banner .wave-sub { display: block; font-size: clamp(14px, 2vw, 22px); color: var(--data-tertiary); letter-spacing: 0.2em; text-shadow: none; font-weight: 400; }
+  .reload-progress { position: absolute; bottom: 80px; left: 50%; transform: translateX(-50%); z-index: 20; pointer-events: none; opacity: 0; transition: opacity 200ms; }
+  .reload-progress.active { opacity: 1; }
+  .reload-ring { width: 40px; height: 40px; border-radius: 50%; border: 2px solid var(--data-tertiary); border-top-color: var(--data-primary); animation: spin-reload 1.2s linear infinite; box-shadow: 0 0 8px rgba(0, 255, 65, 0.2); }
+  .touch-reload-btn { position: absolute; bottom: 80px; right: 24px; width: 56px; height: 56px; border-radius: 50%; border: 2px solid var(--data-warning); background: rgba(10, 10, 10, 0.8); color: var(--data-warning); font-family: var(--font-display); font-size: 11px; font-weight: 700; letter-spacing: 0.1em; z-index: 30; cursor: pointer; display: none; align-items: center; justify-content: center; text-transform: uppercase; box-shadow: 0 0 10px rgba(255, 184, 0, 0.2); }
+  .touch-reload-btn:active { background: rgba(255, 184, 0, 0.2); transform: scale(0.92); }
+  /* RESPONSIVE */
+  @media (max-width: 768px) {
+    .hud-topbar { padding: 12px 16px; flex-wrap: wrap; gap: 8px; }
+    .hud-panel { padding: 8px 14px; min-width: 100px; }
+    .hud-panel-value { font-size: 20px; }
+    .hud-compact { padding: 6px 10px; min-width: 60px; }
+    .hud-compact-value { font-size: 16px; }
+    .ammo-display { font-size: 24px; }
+    .hud-status-cluster { gap: 8px; }
+    .hud-bottombar { bottom: 24px; }
+    .result-stats { flex-direction: column; gap: 16px; align-items: center; }
+    .start-instruction { font-size: 11px; padding: 0 24px; }
+    .hud-btn { padding: 14px 32px; font-size: 12px; }
+    .wave-indicator { right: 16px; }
+  }
+  @media (max-width: 480px) {
+    .hud-topbar { padding: 8px 10px; }
+    .hud-panel { padding: 6px 10px; min-width: 80px; }
+    .hud-panel-value { font-size: 16px; }
+    .hud-compact-value { font-size: 13px; }
+    .hud-bottombar { bottom: 16px; }
+    .crosshair { display: none; }
+    .touch-reload-btn { display: flex; }
+  }
+</style>
+</head>
+<body>
+
+<div class="hud-grid">
+  <div class="reticle-ring"></div>
+  <div class="reticle-ring reticle-ring-inner"></div>
+  <div class="corner-tl"></div>
+  <div class="corner-tr"></div>
+  <div class="corner-bl"></div>
+  <div class="corner-br"></div>
+</div>
+<div class="scanlines"></div>
+
+<!-- START SCREEN -->
+<section id="screen-start" class="screen active">
+  <div class="start-badge">// astrocade //</div>
+  <h1 class="start-title">
+    ZOMBIE LAST HILL
+    <span class="sub">Survive the Onslaught</span>
+  </h1>
+  <div class="start-divider"></div>
+  <p class="start-instruction">
+    <span>[ MOUSE ]</span> — Aim &bull; Click — Shoot<br>
+    <span>[ R ]</span> — Reload &bull; Survive all waves to win
+  </p>
+  <button class="hud-btn" id="btn-start" onclick="window.startGame()">DEPLOY</button>
+</section>
+
+<!-- GAME HUD -->
+<section id="screen-game" class="screen">
+  <div class="hud-topbar">
+    <div class="hud-status-cluster">
+      <div class="hud-compact">
+        <div class="hud-compact-label">HP</div>
+        <div class="hud-compact-value" id="health-value">10</div>
+        <div class="health-bar-track">
+          <div class="health-bar-fill" id="health-bar" style="width:100%"></div>
+        </div>
+      </div>
+      <div class="hud-compact">
+        <div class="hud-compact-label">AMMO</div>
+        <div class="ammo-display" id="ammo-display">
+          <span id="ammo-current">30</span><span class="ammo-total"> / <span id="ammo-reserve">120</span></span>
+        </div>
+      </div>
+    </div>
+    <div class="hud-panel hud-wave">
+      <div class="hud-panel-label">Wave</div>
+      <div class="hud-panel-value" id="wave-display">01 / 05</div>
+    </div>
+    <div class="hud-panel hud-score">
+      <div class="hud-panel-label">Score</div>
+      <div class="hud-panel-value" id="score-display">00000</div>
+    </div>
+  </div>
+  <div class="crosshair">
+    <div class="crosshair-line top"></div>
+    <div class="crosshair-line bottom"></div>
+    <div class="crosshair-line left"></div>
+    <div class="crosshair-line right"></div>
+    <div class="crosshair-dot"></div>
+    <div class="crosshair-gap"></div>
+  </div>
+  <div class="wave-indicator">
+    <div class="wi-label">WAVES</div>
+    <div class="wi-dots" id="wave-dots">
+      <div class="wi-dot active"></div>
+      <div class="wi-dot"></div>
+      <div class="wi-dot"></div>
+      <div class="wi-dot"></div>
+      <div class="wi-dot"></div>
+    </div>
+  </div>
+  <div class="hud-bottombar">
+    <div class="kill-counter">KILLS: <span id="kill-count">000</span></div>
+    <div class="reload-prompt" id="reload-prompt">PRESS [R] TO RELOAD</div>
+  </div>
+</section>
+
+<!-- RESULT SCREEN -->
+<section id="screen-result" class="screen">
+  <div class="result-icon victory" id="result-icon">◆</div>
+  <h2 class="result-title victory" id="result-title">MISSION COMPLETE</h2>
+  <p class="result-subtitle" id="result-subtitle">All hostiles neutralized</p>
+  <div class="result-stats">
+    <div class="result-stat">
+      <div class="result-stat-value" id="final-score">00000</div>
+      <div class="result-stat-label">Score</div>
+    </div>
+    <div class="result-stat">
+      <div class="result-stat-value" id="final-waves">5</div>
+      <div class="result-stat-label">Waves Survived</div>
+    </div>
+    <div class="result-stat">
+      <div class="result-stat-value" id="final-kills">000</div>
+      <div class="result-stat-label">Zombies Eliminated</div>
+    </div>
+    <div class="result-stat best">
+      <div class="result-stat-value" id="final-best">00000</div>
+      <div class="result-stat-label">Best Score</div>
+    </div>
+  </div>
+  <div class="result-actions">
+    <button class="hud-btn" onclick="window.restartGame()">PLAY AGAIN</button>
+    <button class="hud-btn secondary" onclick="window.backToMenu()">MAIN MENU</button>
+  </div>
+</section>
+
+<script>
+(() => {
+  'use strict';
+  const $ = (id) => document.getElementById(id);
+  const qs = (s, el) => (el || document).querySelector(s);
+  const qsa = (s, el) => [...(el || document).querySelectorAll(s)];
+
+  // ── Audio Engine ──
+  const Audio = (() => {
+    let ctx = null;
+    let muted = false;
+    try { muted = localStorage.getItem('zlh_muted') === '1'; } catch(e) {}
+    function getCtx() {
+      if (!ctx) {
+        const C = window.AudioContext || window.webkitAudioContext;
+        if (!C) return null;
+        ctx = new C();
+      }
+      return ctx;
+    }
+    function play(type, freq, dur, vol) {
+      if (muted) return;
+      const c = getCtx();
+      if (!c) return;
+      const osc = c.createOscillator();
+      const g = c.createGain();
+      osc.type = type;
+      osc.frequency.value = freq;
+      g.gain.setValueAtTime(vol || 0.15, c.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + (dur || 0.1));
+      osc.connect(g); g.connect(c.destination);
+      osc.start(); osc.stop(c.currentTime + (dur || 0.1));
+    }
+    function noise(dur, vol) {
+      if (muted) return;
+      const c = getCtx();
+      if (!c) return;
+      const bufSize = c.sampleRate * (dur || 0.1);
+      const buf = c.createBuffer(1, bufSize, c.sampleRate);
+      const data = buf.getChannelData(0);
+      for (let i = 0; i < bufSize; i++) data[i] = (Math.random() * 2 - 1);
+      const src = c.createBufferSource();
+      src.buffer = buf;
+      const g = c.createGain();
+      g.gain.setValueAtTime(vol || 0.08, c.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + (dur || 0.1));
+      src.connect(g); g.connect(c.destination);
+      src.start();
+    }
+    return {
+      get muted() { return muted; },
+      set muted(v) { muted = v; try { localStorage.setItem('zlh_muted', v ? '1' : '0'); } catch(e) {} },
+      shoot() { play('square', 800, 0.06, 0.12); },
+      reloadStart() { play('sawtooth', 200, 0.04, 0.1); },
+      reloadEnd() { play('sine', 1200, 0.1, 0.12); },
+      zombieHit() { noise(0.08, 0.1); },
+      zombieDeath() { play('sawtooth', 250, 0.15, 0.12); play('sawtooth', 150, 0.2, 0.08); },
+      playerHit() { noise(0.1, 0.15); play('sawtooth', 100, 0.12, 0.2); },
+      waveStart() { play('sine', 400, 0.1, 0.1); setTimeout(() => play('sine', 600, 0.1, 0.1), 100); setTimeout(() => play('sine', 800, 0.15, 0.1), 200); },
+      victory() { play('sine', 523, 0.15, 0.12); setTimeout(() => play('sine', 659, 0.15, 0.12), 150); setTimeout(() => play('sine', 784, 0.2, 0.12), 300); },
+      defeat() { play('sawtooth', 600, 0.15, 0.1); setTimeout(() => play('sawtooth', 400, 0.2, 0.1), 200); setTimeout(() => play('sawtooth', 200, 0.3, 0.1), 400); },
+      emptyClick() { play('square', 300, 0.03, 0.05); }
+    };
+  })();
+
+  const vibrate = (ms) => { try { navigator.vibrate && navigator.vibrate(ms); } catch(e) {} };
+
+  // ── Storage ──
+  const LS_BEST = 'zlh_best_score';
+  const LS_STATS = 'zlh_stats';
+  function loadBest() { try { return parseInt(localStorage.getItem(LS_BEST)) || 0; } catch(e) { return 0; } }
+  function saveBest(v) { try { localStorage.setItem(LS_BEST, v.toString()); } catch(e) {} }
+  function loadStats() { try { return JSON.parse(localStorage.getItem(LS_STATS)) || { games: 0, wins: 0, totalKills: 0 }; } catch(e) { return { games: 0, wins: 0, totalKills: 0 }; } }
+  function saveStats(s) { try { localStorage.setItem(LS_STATS, JSON.stringify(s)); } catch(e) {} }
+
+  // ── Config ──
+  const CFG = {
+    PLAYER_HP: 10,
+    PLAYER_X: () => window.innerWidth / 2,
+    PLAYER_Y: () => window.innerHeight - 80,
+    RELOAD_MS: 1200,
+    ZOMBIE_BASE_SPEED: 45,
+    ZOMBIE_MELEE_RANGE: 35,
+    ZOMBIE_ATTACK_INTERVAL: 1500,
+    BULLET_DAMAGE: 1,
+    MAG_SIZE: 30,
+    MAX_AMMO: 120,
+    SCORE_PER_KILL: 100,
+    SCORE_WAVE_BONUS: 500,
+    CROSSHAIR_RADIUS: 120,
+    WAVES: [
+      { count: 5,  spawnInterval: 2000, speedMult: 1.0, hp: 1, label: 'WAVE 01' },
+      { count: 8,  spawnInterval: 1800, speedMult: 1.1, hp: 1, label: 'WAVE 02' },
+      { count: 10, spawnInterval: 1500, speedMult: 1.2, hp: 2, label: 'WAVE 03' },
+      { count: 12, spawnInterval: 1200, speedMult: 1.3, hp: 2, label: 'WAVE 04' },
+      { count: 15, spawnInterval: 1000, speedMult: 1.4, hp: 3, label: 'WAVE 05 — FINAL' },
+    ],
+  };
+
+  // ── State ──
+  let G = {
+    screen: 'start',
+    wave: 0, waveActive: false, waveTimer: 0, waveSpawnTimer: 0,
+    waveZombiesSpawned: 0, waveZombiesAlive: 0, waveCountdown: 0,
+    playerHp: CFG.PLAYER_HP, ammo: CFG.MAG_SIZE, ammoReserve: CFG.MAX_AMMO,
+    reloading: false, reloadTimer: 0, reloadCancelable: true,
+    score: 0, kills: 0, bestScore: loadBest(),
+    zombies: [], bullets: [],
+    mouseX: 0, mouseY: 0, crosshairX: 0, crosshairY: 0,
+    isPointerLocked: false, isTouch: false,
+    animFrameId: null, lastTime: 0, gameTime: 0,
+    finished: false, result: null, muteBtn: null,
+  };
+
+  let worldEl, crosshairEl, bannerEl, reloadProgEl, touchReloadEl;
+
+  function showScreen(id) {
+    qsa('.screen').forEach(s => s.classList.remove('active'));
+    $(id).classList.add('active');
+    G.screen = id.replace('screen-', '');
+  }
+
+  function updateHUD() {
+    const hp = Math.max(0, G.playerHp);
+    $('health-value').textContent = hp;
+    const pct = (hp / CFG.PLAYER_HP) * 100;
+    const bar = $('health-bar');
+    bar.style.width = Math.max(0, pct) + '%';
+    bar.className = 'health-bar-fill';
+    if (pct <= 25) bar.classList.add('critical');
+    else if (pct <= 50) bar.classList.add('caution');
+    $('health-value').className = 'hud-compact-value' + (pct <= 25 ? ' alert' : '');
+    $('ammo-current').textContent = String(G.ammo).padStart(2, '0');
+    $('ammo-reserve').textContent = G.ammoReserve;
+    $('ammo-display').className = 'ammo-display' + (G.reloading ? ' reloading' : '');
+    const totalWaves = CFG.WAVES.length;
+    const curWave = Math.min(G.wave + 1, totalWaves);
+    $('wave-display').textContent = String(curWave).padStart(2, '0') + ' / ' + String(totalWaves).padStart(2, '0');
+    $('score-display').textContent = String(G.score).padStart(5, '0');
+    $('kill-count').textContent = String(G.kills).padStart(3, '0');
+    $('reload-prompt').className = 'reload-prompt' + (G.ammo === 0 && !G.reloading ? ' visible' : '');
+    const dots = qsa('#wave-dots .wi-dot');
+    dots.forEach((dot, i) => {
+      dot.className = 'wi-dot';
+      if (i <= G.wave) dot.classList.add('active');
+      if (i < G.wave) dot.classList.add('done');
+    });
+    if (G.muteBtn) G.muteBtn.textContent = Audio.muted ? 'SND OFF' : 'SND ON';
+  }
+
+  function spawnZombie(waveCfg) {
+    const W = window.innerWidth, H = window.innerHeight;
+    const side = Math.floor(Math.random() * 3);
+    let x, y;
+    if (side === 0) { x = Math.random() * (W - 80) + 40; y = -30; }
+    else if (side === 1) { x = -30; y = Math.random() * (H * 0.5) + 40; }
+    else { x = W + 30; y = Math.random() * (H * 0.5) + 40; }
+    const hp = waveCfg.hp;
+    const isElite = hp > 1;
+    const el = document.createElement('div');
+    el.className = 'zombie' + (isElite ? ' elite' : '');
+    el.innerHTML = '<div class="zombie-body"></div><div class="zombie-health-bar"><div class="zombie-health-fill" style="width:100%"></div></div>';
+    worldEl.appendChild(el);
+    const z = { id: Date.now() + '_' + Math.random(), el, x, y, hp, maxHp: hp, speed: CFG.ZOMBIE_BASE_SPEED * waveCfg.speedMult * (0.85 + Math.random() * 0.3), dead: false, hitFlashTimer: 0, attackTimer: 0 };
+    G.zombies.push(z);
+    G.waveZombiesAlive++;
+    updateZombiePos(z);
+    return z;
+  }
+
+  function updateZombiePos(z) {
+    z.el.style.transform = 'translate3d(' + (z.x - 16) + 'px, ' + (z.y - 16) + 'px, 0)';
+    const fill = z.el.querySelector('.zombie-health-fill');
+    if (fill) fill.style.width = Math.max(0, (z.hp / z.maxHp) * 100) + '%';
+  }
+
+  function spawnBullet(fromX, fromY, toX, toY) {
+    const dx = toX - fromX, dy = toY - fromY;
+    const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+    const speed = 600;
+    const tr = document.createElement('div');
+    tr.className = 'bullet-tracer';
+    tr.style.cssText = 'left:' + fromX + 'px;top:' + fromY + 'px;width:1px;transform:rotate(' + (Math.atan2(dy, dx) * (180 / Math.PI)) + 'deg);';
+    worldEl.appendChild(tr);
+    G.bullets.push({ x: fromX, y: fromY, vx: (dx / dist) * speed, vy: (dy / dist) * speed, el: tr, life: 1.5 });
+    const fl = document.createElement('div');
+    fl.className = 'muzzle-flash';
+    fl.style.cssText = 'left:' + fromX + 'px;top:' + fromY + 'px;';
+    worldEl.appendChild(fl);
+    setTimeout(() => fl.remove(), 150);
+  }
+
+  function spawnDamageFloat(x, y, text) {
+    const el = document.createElement('div');
+    el.className = 'damage-float';
+    el.textContent = text;
+    el.style.cssText = 'left:' + x + 'px;top:' + y + 'px;';
+    worldEl.appendChild(el);
+    setTimeout(() => el.remove(), 700);
+  }
+
+  function spawnBlood(x, y) {
+    for (let i = 0; i < 3; i++) {
+      const el = document.createElement('div');
+      el.className = 'blood-splatter';
+      el.style.cssText = 'left:' + (x + (Math.random() - 0.5) * 20) + 'px;top:' + (y + (Math.random() - 0.5) * 20) + 'px;width:' + (4 + Math.random() * 8) + 'px;height:' + (4 + Math.random() * 8) + 'px;';
+      worldEl.appendChild(el);
+      setTimeout(() => el.remove(), 600);
+    }
+  }
+
+  function updateCrosshair() {
+    const px = CFG.PLAYER_X(), py = CFG.PLAYER_Y();
+    const dx = G.mouseX - px, dy = G.mouseY - py;
+    const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+    const maxR = CFG.CROSSHAIR_RADIUS;
+    let cx = dist <= maxR ? G.mouseX : px + (dx / dist) * maxR;
+    let cy = dist <= maxR ? G.mouseY : py + (dy / dist) * maxR;
+    if (cy > py - 10) cy = py - 10;
+    cx = Math.max(20, Math.min(window.innerWidth - 20, cx));
+    cy = Math.max(20, Math.min(window.innerHeight - 20, cy));
+    G.crosshairX = cx; G.crosshairY = cy;
+    if (!G.isTouch && crosshairEl) {
+      crosshairEl.style.left = cx + 'px';
+      crosshairEl.style.top = cy + 'px';
+    }
+  }
+
+  function shoot() {
+    if (G.reloading) return;
+    if (G.ammo <= 0) { Audio.emptyClick(); startReload(); return; }
+    G.ammo--;
+    Audio.shoot();
+    vibrate(20);
+    const px = CFG.PLAYER_X(), py = CFG.PLAYER_Y() - 10;
+    const dx = G.crosshairX - px, dy = G.crosshairY - py;
+    const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+    let bestZ = null, bestT = Infinity;
+    for (const z of G.zombies) {
+      if (z.dead) continue;
+      const t = ((z.x - px) * dx + (z.y - py) * dy) / (dist * dist);
+      if (t < 0) continue;
+      const nearX = px + t * dx, nearY = py + t * dy;
+      const zDist = Math.sqrt((nearX - z.x) ** 2 + (nearY - z.y) ** 2);
+      if (zDist < 28 && t < bestT) { bestT = t; bestZ = z; }
+    }
+    if (bestZ) {
+      bestZ.hp -= CFG.BULLET_DAMAGE;
+      bestZ.hitFlashTimer = 100;
+      Audio.zombieHit();
+      spawnBlood(bestZ.x, bestZ.y);
+      updateZombiePos(bestZ);
+      if (bestZ.hp <= 0) {
+        bestZ.dead = true;
+        bestZ.el.classList.add('dead');
+        G.kills++;
+        G.score += CFG.SCORE_PER_KILL;
+        spawnDamageFloat(bestZ.x, bestZ.y - 10, '+' + CFG.SCORE_PER_KILL);
+        Audio.zombieDeath();
+        vibrate(30);
+        G.waveZombiesAlive--;
+        setTimeout(() => { bestZ.el.remove(); const idx = G.zombies.indexOf(bestZ); if (idx !== -1) G.zombies.splice(idx, 1); }, 500);
+      }
+    }
+    spawnBullet(px + (G.crosshairX - px) * 0.2, py + (G.crosshairY - py) * 0.2, G.crosshairX, G.crosshairY);
+    updateHUD();
+  }
+
+  function startReload() {
+    if (G.reloading || G.ammo >= CFG.MAG_SIZE || G.ammoReserve <= 0) return;
+    G.reloading = true; G.reloadTimer = CFG.RELOAD_MS; G.reloadCancelable = true;
+    Audio.reloadStart();
+    if (reloadProgEl) reloadProgEl.classList.add('active');
+    updateHUD();
+  }
+
+  function cancelReload() {
+    if (!G.reloading || !G.reloadCancelable) return;
+    G.reloading = false; G.reloadTimer = 0;
+    if (reloadProgEl) reloadProgEl.classList.remove('active');
+    updateHUD();
+  }
+
+  function completeReload() {
+    const take = Math.min(CFG.MAG_SIZE - G.ammo, G.ammoReserve);
+    G.ammo += take; G.ammoReserve -= take;
+    G.reloading = false; G.reloadTimer = 0;
+    Audio.reloadEnd(); vibrate(50);
+    if (reloadProgEl) reloadProgEl.classList.remove('active');
+    updateHUD();
+  }
+
+  function startWave(index) {
+    if (index >= CFG.WAVES.length) { endGame(true); return; }
+    G.wave = index;
+    G.waveActive = false;
+    G.waveZombiesSpawned = 0; G.waveZombiesAlive = 0;
+    G.waveTimer = 0; G.waveSpawnTimer = 0; G.waveCountdown = 2.5;
+    Audio.waveStart(); vibrate(100);
+    if (bannerEl) {
+      const cfg = CFG.WAVES[index];
+      bannerEl.innerHTML = cfg.label + '<span class="wave-sub">' + cfg.count + ' hostiles detected</span>';
+      bannerEl.classList.add('show');
+      setTimeout(() => bannerEl.classList.remove('show'), 2000);
+    }
+    updateHUD();
+  }
+
+  function updateWave(dt) {
+    if (G.wave >= CFG.WAVES.length) return;
+    const cfg = CFG.WAVES[G.wave];
+    if (!G.waveActive) {
+      G.waveCountdown -= dt;
+      if (G.waveCountdown <= 0) { G.waveActive = true; G.waveTimer = 0; }
+      return;
+    }
+    G.waveTimer += dt;
+    G.waveSpawnTimer += dt * 1000;
+    if (G.waveZombiesSpawned < cfg.count && G.waveSpawnTimer >= cfg.spawnInterval) {
+      G.waveSpawnTimer = 0;
+      spawnZombie(cfg);
+      G.waveZombiesSpawned++;
+    }
+    if (G.waveZombiesSpawned >= cfg.count && G.waveZombiesAlive <= 0) {
+      G.score += CFG.SCORE_WAVE_BONUS;
+      spawnDamageFloat(window.innerWidth / 2, window.innerHeight / 2, 'WAVE BONUS +' + CFG.SCORE_WAVE_BONUS);
+      updateHUD();
+      startWave(G.wave + 1);
+    }
+  }
+
+  function updateZombies(dt) {
+    const px = CFG.PLAYER_X(), py = CFG.PLAYER_Y();
+    for (const z of G.zombies) {
+      if (z.dead) continue;
+      if (z.hitFlashTimer > 0) { z.hitFlashTimer -= dt * 1000; z.el.classList.add('hit'); }
+      else { z.el.classList.remove('hit'); }
+      const dx = px - z.x, dy = py - z.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist > CFG.ZOMBIE_MELEE_RANGE) {
+        const s = z.speed * dt;
+        z.x += (dx / dist) * s; z.y += (dy / dist) * s;
+      } else {
+        z.attackTimer += dt * 1000;
+        if (z.attackTimer >= CFG.ZOMBIE_ATTACK_INTERVAL) {
+          z.attackTimer = 0;
+          G.playerHp--;
+          Audio.playerHit(); vibrate(100);
+          spawnBlood(px, py - 20);
+          spawnDamageFloat(px + (Math.random() - 0.5) * 30, py - 30, '-1 HP');
+          $('screen-game').classList.add('screen-shake');
+          setTimeout(() => $('screen-game').classList.remove('screen-shake'), 200);
+          updateHUD();
+          if (G.playerHp <= 0) { endGame(false); return; }
+        }
+      }
+      updateZombiePos(z);
+    }
+  }
+
+  function updateBullets(dt) {
+    for (let i = G.bullets.length - 1; i >= 0; i--) {
+      const b = G.bullets[i];
+      b.x += b.vx * dt; b.y += b.vy * dt;
+      b.life -= dt;
+      b.el.style.left = b.x + 'px'; b.el.style.top = b.y + 'px';
+      if (b.life <= 0) { b.el.remove(); G.bullets.splice(i, 1); }
+    }
+  }
+
+  function endGame(victory) {
+    if (G.finished) return;
+    G.finished = true; G.result = victory ? 'won' : 'lost';
+    if (G.animFrameId) { cancelAnimationFrame(G.animFrameId); G.animFrameId = null; }
+    G.zombies.forEach(z => z.el.remove()); G.zombies = [];
+    G.bullets.forEach(b => b.el.remove()); G.bullets = [];
+    if (victory) { Audio.victory(); vibrate(300); }
+    else { Audio.defeat(); vibrate(500); }
+    if (G.score > G.bestScore) { G.bestScore = G.score; saveBest(G.bestScore); }
+    const stats = loadStats();
+    stats.games++; if (victory) stats.wins++; stats.totalKills += G.kills;
+    saveStats(stats);
+    const icon = $('result-icon');
+    const title = $('result-title');
+    const subtitle = $('result-subtitle');
+    icon.className = 'result-icon ' + (victory ? 'victory' : 'defeat');
+    icon.textContent = victory ? '◆' : '▲';
+    title.className = 'result-title ' + (victory ? 'victory' : 'defeat');
+    title.textContent = victory ? 'MISSION COMPLETE' : 'SECTOR LOST';
+    subtitle.textContent = victory ? 'All hostiles neutralized' : 'Zombie breach detected';
+    $('final-score').textContent = String(G.score).padStart(5, '0');
+    const wavesReached = victory ? CFG.WAVES.length : Math.max(1, G.wave + 1);
+    $('final-waves').textContent = wavesReached + ' / ' + CFG.WAVES.length;
+    $('final-kills').textContent = String(G.kills).padStart(3, '0');
+    $('final-best').textContent = String(G.bestScore).padStart(5, '0');
+    showScreen('screen-result');
+    if (G.isPointerLocked) { try { document.exitPointerLock(); } catch(e) {} }
+  }
+
+  function gameLoop(timestamp) {
+    if (G.finished) return;
+    const dt = Math.min((timestamp - G.lastTime) / 1000, 0.05);
+    G.lastTime = timestamp;
+    G.gameTime += dt;
+    if (G.gameTime >= 180) { endGame(false); return; }
+    updateCrosshair();
+    updateWave(dt);
+    updateZombies(dt);
+    updateBullets(dt);
+    if (G.reloading) {
+      G.reloadTimer -= dt * 1000;
+      if (G.reloadTimer <= 0) { completeReload(); }
+    }
+    G.animFrameId = requestAnimationFrame(gameLoop);
+  }
+
+  function startGame() {
+    G.zombies.forEach(z => z.el.remove()); G.bullets.forEach(b => b.el.remove());
+    if (G.animFrameId) { cancelAnimationFrame(G.animFrameId); G.animFrameId = null; }
+    G.zombies = []; G.bullets = [];
+    G.playerHp = CFG.PLAYER_HP; G.ammo = CFG.MAG_SIZE; G.ammoReserve = CFG.MAX_AMMO;
+    G.reloading = false; G.reloadTimer = 0;
+    G.score = 0; G.kills = 0; G.wave = 0;
+    G.waveActive = false; G.waveZombiesSpawned = 0; G.waveZombiesAlive = 0;
+    G.gameTime = 0; G.finished = false; G.result = null; G.lastTime = 0;
+    if (reloadProgEl) reloadProgEl.classList.remove('active');
+    showScreen('screen-game');
+    updateHUD();
+    if (!G.isTouch) { try { document.body.requestPointerLock(); } catch(e) {} }
+    setTimeout(() => {
+      if (!G.finished) {
+        G.lastTime = performance.now();
+        G.animFrameId = requestAnimationFrame(gameLoop);
+        startWave(0);
+      }
+    }, 500);
+  }
+
+  function restartGame() { startGame(); }
+
+  function backToMenu() {
+    if (G.animFrameId) { cancelAnimationFrame(G.animFrameId); G.animFrameId = null; }
+    G.zombies.forEach(z => z.el.remove()); G.bullets.forEach(b => b.el.remove());
+    G.zombies = []; G.bullets = [];
+    G.finished = true;
+    showScreen('screen-start');
+  }
+
+  // ── Input: Mouse ──
+  document.addEventListener('mousemove', (e) => {
+    if (G.screen !== 'game') return;
+    if (G.isPointerLocked) {
+      G.mouseX = Math.min(window.innerWidth, Math.max(0, G.mouseX + e.movementX));
+      G.mouseY = Math.min(window.innerHeight, Math.max(0, G.mouseY + e.movementY));
+    } else { G.mouseX = e.clientX; G.mouseY = e.clientY; }
+  });
+
+  document.addEventListener('mousedown', (e) => {
+    if (e.button !== 0) return;
+    if (G.screen === 'start') { startGame(); return; }
+    if (G.screen === 'game') {
+      if (G.reloading && G.reloadCancelable && G.ammo > 0) cancelReload();
+      shoot();
+    }
+  });
+
+  document.addEventListener('pointerlockchange', () => {
+    G.isPointerLocked = document.pointerLockElement === document.body;
+  });
+
+  // ── Input: Keyboard ──
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      if (G.screen === 'start') { startGame(); e.preventDefault(); return; }
+      if (G.screen === 'result') { restartGame(); e.preventDefault(); return; }
+      if (G.screen === 'game') {
+        if (G.reloading && G.reloadCancelable && G.ammo > 0) cancelReload();
+        shoot(); e.preventDefault();
+      }
+    }
+    if ((e.key === 'r' || e.key === 'R') && G.screen === 'game') {
+      e.preventDefault();
+      if (G.reloading && G.reloadCancelable) cancelReload();
+      startReload();
+    }
+    if (e.key === 'm' || e.key === 'M') { Audio.muted = !Audio.muted; updateHUD(); }
+  });
+
+  // ── Input: Touch ──
+  let touchStartX = 0, touchStartY = 0;
+  document.addEventListener('touchstart', (e) => {
+    const touch = e.touches[0];
+    G.isTouch = true;
+    if (crosshairEl) crosshairEl.style.display = 'none';
+    if (G.screen === 'start') { startGame(); e.preventDefault(); return; }
+    if (G.screen === 'game') {
+      if (touchReloadEl) {
+        const r = touchReloadEl.getBoundingClientRect();
+        if (touch.clientX >= r.left && touch.clientX <= r.right && touch.clientY >= r.top && touch.clientY <= r.bottom) {
+          if (G.reloading && G.reloadCancelable) cancelReload();
+          startReload(); e.preventDefault(); return;
+        }
+      }
+      touchStartX = touch.clientX; touchStartY = touch.clientY;
+      if (G.zombies.length > 0) {
+        let nearest = null, nearD = Infinity;
+        for (const z of G.zombies) { if (z.dead) continue; const d = Math.sqrt((z.x - touch.clientX) ** 2 + (z.y - touch.clientY) ** 2); if (d < nearD) { nearD = d; nearest = z; } }
+        if (nearest) { G.mouseX = nearest.x; G.mouseY = nearest.y; }
+      }
+      if (G.reloading && G.reloadCancelable && G.ammo > 0) cancelReload();
+      shoot(); e.preventDefault();
+    }
+  });
+
+  document.addEventListener('touchmove', (e) => {
+    if (G.screen !== 'game') return;
+    const touch = e.touches[0];
+    const dx = touch.clientX - touchStartX, dy = touch.clientY - touchStartY;
+    if (Math.abs(dx) > 10 || Math.abs(dy) > 10) {
+      G.mouseX = CFG.PLAYER_X() + dx * 3; G.mouseY = CFG.PLAYER_Y() + dy * 3 - 80;
+      touchStartX = touch.clientX; touchStartY = touch.clientY;
+    }
+    e.preventDefault();
+  }, { passive: false });
+
+  // ── Init ──
+  function init() {
+    worldEl = document.createElement('div');
+    worldEl.id = 'game-world';
+    qs('.scanlines').parentNode.insertBefore(worldEl, qs('.scanlines').nextSibling);
+    crosshairEl = qs('.crosshair');
+    bannerEl = document.createElement('div');
+    bannerEl.className = 'wave-banner';
+    document.body.appendChild(bannerEl);
+    reloadProgEl = document.createElement('div');
+    reloadProgEl.className = 'reload-progress';
+    reloadProgEl.innerHTML = '<div class="reload-ring"></div>';
+    document.body.appendChild(reloadProgEl);
+    touchReloadEl = document.createElement('button');
+    touchReloadEl.className = 'touch-reload-btn';
+    touchReloadEl.textContent = 'R';
+    touchReloadEl.addEventListener('click', (e) => { e.stopPropagation(); if (G.screen !== 'game') return; if (G.reloading && G.reloadCancelable) { cancelReload(); return; } startReload(); });
+    document.body.appendChild(touchReloadEl);
+    G.muteBtn = document.createElement('button');
+    G.muteBtn.textContent = Audio.muted ? 'SND OFF' : 'SND ON';
+    Object.assign(G.muteBtn.style, { position: 'fixed', top: '12px', right: '12px', zIndex: '200', background: 'transparent', border: '1px solid var(--data-tertiary)', color: 'var(--data-tertiary)', fontFamily: 'var(--font-label)', fontSize: '9px', fontWeight: '600', letterSpacing: '0.15em', padding: '4px 8px', cursor: 'pointer', opacity: '0.5', textTransform: 'uppercase' });
+    G.muteBtn.addEventListener('click', () => { Audio.muted = !Audio.muted; G.muteBtn.textContent = Audio.muted ? 'SND OFF' : 'SND ON'; });
+    document.body.appendChild(G.muteBtn);
+    if (G.bestScore > 0) {
+      const el = document.createElement('div');
+      el.style.cssText = 'font-family:var(--font-display);font-size:12px;color:var(--data-tertiary);margin-top:24px;letter-spacing:0.1em;';
+      el.textContent = 'BEST SCORE: ' + String(G.bestScore).padStart(5, '0');
+      qs('.start-divider').after(el);
+    }
+    window.startGame = startGame;
+    window.restartGame = restartGame;
+    window.backToMenu = backToMenu;
+  }
+
+  document.addEventListener('DOMContentLoaded', init);
+})();
+</script>
+</body>
+</html>

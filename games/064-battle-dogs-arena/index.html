@@ -1,0 +1,2260 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+  <meta name="theme-color" content="#1a1a2e" />
+  <title>Battle Dogs Arena · 狗狗竞技场</title>
+  <link rel="stylesheet" href="/games/shared/game-frame.css" />
+  <style>
+    /* =============================================
+       Battle Dogs Arena — Game Styles
+       Design: Modern Minimal (game-adapted)
+       ============================================= */
+    :root {
+      --bg-dark: #1a1a2e;
+      --bg-darker: #0f0f1a;
+      --bg-surface: #252540;
+      --bg-card: #1e1e35;
+      --text-light: #e8e8f0;
+      --text-dim: #8888aa;
+      --text-muted: #555577;
+      --border: #3a3a55;
+      --hp-green: #2ecc71;
+      --hp-yellow: #f1c40f;
+      --hp-red: #e74c3c;
+      --gold: #f1c40f;
+      --fire: #e74c3c;
+      --water: #3498db;
+      --earth: #27ae60;
+      --air: #9b59b6;
+      --spirit: #f39c12;
+      --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Consolas, monospace;
+      --radius: 8px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg-darker);
+      color: var(--text-light);
+      font-family: var(--font-sans);
+      overflow: hidden;
+      height: 100vh;
+      width: 100vw;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: none;
+      -webkit-touch-callout: none;
+    }
+
+    #app {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* ---- Canvas ---- */
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      background: var(--bg-darker);
+    }
+
+    /* ---- Overlay Screens ---- */
+    .overlay {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+      transition: opacity 0.4s ease;
+      padding: 20px;
+    }
+    .overlay.hidden { opacity: 0; pointer-events: none; }
+
+    /* ---- Title Screen ---- */
+    #title-screen {
+      background: linear-gradient(180deg, #0f0f1a 0%, #1a1a2e 40%, #2a1f2e 100%);
+      text-align: center;
+      gap: 0;
+    }
+    #title-screen .logo-icon {
+      font-size: 72px;
+      line-height: 1;
+      margin-bottom: 8px;
+      filter: drop-shadow(0 4px 20px rgba(255,200,100,0.3));
+    }
+    #title-screen .game-title {
+      font-size: clamp(32px, 7vw, 42px);
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      background: linear-gradient(135deg, #f0e6d0, #f1c40f, #e67e22);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 4px;
+    }
+    #title-screen .game-subtitle {
+      font-size: 15px;
+      color: var(--text-dim);
+      margin-bottom: 6px;
+    }
+    #title-screen .element-orbits {
+      display: flex;
+      gap: 10px;
+      margin: 18px 0 28px;
+    }
+    #title-screen .element-orbits span {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      font-size: 20px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+    .press-key {
+      font-size: 13px;
+      color: var(--text-dim);
+      animation: pulse 2s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 0.35; }
+      50% { opacity: 1; }
+    }
+
+    /* ---- Team Selection ---- */
+    #team-screen {
+      background: linear-gradient(180deg, #0f0f1a 0%, #1a1a2e 100%);
+      padding: 20px;
+      justify-content: flex-start;
+      padding-top: 60px;
+      gap: 12px;
+    }
+    #team-screen .team-hdr {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      max-width: 560px;
+    }
+    #team-screen .team-hdr h2 {
+      font-size: 20px;
+      font-weight: 700;
+    }
+    #team-screen .team-hdr .round-badge {
+      font-size: 13px;
+      color: var(--gold);
+      font-family: var(--font-mono);
+      background: rgba(241,196,15,0.12);
+      padding: 4px 12px;
+      border-radius: 20px;
+    }
+    .team-slots {
+      display: flex;
+      gap: 12px;
+      width: 100%;
+      max-width: 560px;
+      min-height: 120px;
+    }
+    .team-slot {
+      flex: 1;
+      border: 2px dashed var(--border);
+      border-radius: var(--radius);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 10px;
+      min-height: 110px;
+      background: rgba(255,255,255,0.03);
+      transition: all 0.2s;
+      position: relative;
+    }
+    .team-slot.filled {
+      border-style: solid;
+      border-color: var(--border);
+    }
+    .team-slot.drag-over {
+      border-color: var(--gold);
+      background: rgba(241,196,15,0.08);
+    }
+    .team-slot .slot-label {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+    }
+    .team-slot .slot-dog {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+    }
+    .team-slot .slot-dog .dog-icon {
+      font-size: 32px;
+      line-height: 1;
+    }
+    .team-slot .slot-dog .dog-name {
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .team-slot .slot-dog .dog-elem {
+      font-size: 10px;
+      color: var(--text-dim);
+    }
+    .team-slot .remove-btn {
+      position: absolute;
+      top: 4px;
+      right: 4px;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      border: none;
+      background: rgba(231,76,60,0.3);
+      color: var(--hp-red);
+      font-size: 12px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .team-slot .remove-btn:hover { background: rgba(231,76,60,0.6); }
+
+    .roster-section {
+      width: 100%;
+      max-width: 560px;
+      flex: 1;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    .roster-section .roster-hdr {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+    .roster-section .roster-hdr h3 {
+      font-size: 14px;
+      color: var(--text-dim);
+    }
+    .roster-section .roster-hdr .gold-display {
+      font-size: 13px;
+      color: var(--gold);
+      font-weight: 600;
+    }
+    .roster-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+      gap: 8px;
+    }
+    .dog-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 10px;
+      cursor: pointer;
+      transition: all 0.15s;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      touch-action: manipulation;
+    }
+    .dog-card:active { transform: scale(0.96); }
+    .dog-card .dog-card-icon { font-size: 28px; line-height: 1; }
+    .dog-card .dog-card-name { font-size: 12px; font-weight: 600; }
+    .dog-card .dog-card-elem {
+      font-size: 10px;
+      padding: 1px 8px;
+      border-radius: 10px;
+    }
+    .dog-card .dog-card-stats {
+      display: flex;
+      gap: 6px;
+      font-size: 10px;
+      color: var(--text-dim);
+      font-family: var(--font-mono);
+    }
+    .dog-card.locked {
+      opacity: 0.5;
+      filter: grayscale(0.8);
+    }
+    .dog-card .locked-label {
+      font-size: 10px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    .elem-fire { color: #e74c3c; border-color: rgba(231,76,60,0.3); }
+    .elem-water { color: #3498db; border-color: rgba(52,152,219,0.3); }
+    .elem-earth { color: #27ae60; border-color: rgba(39,174,96,0.3); }
+    .elem-air { color: #9b59b6; border-color: rgba(155,89,182,0.3); }
+    .elem-spirit { color: #f39c12; border-color: rgba(243,156,18,0.3); }
+
+    .elem-bg-fire { background: rgba(231,76,60,0.15); }
+    .elem-bg-water { background: rgba(52,152,219,0.15); }
+    .elem-bg-earth { background: rgba(39,174,96,0.15); }
+    .elem-bg-air { background: rgba(155,89,182,0.15); }
+    .elem-bg-spirit { background: rgba(243,156,18,0.15); }
+
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: linear-gradient(135deg, #e67e22, #f1c40f);
+      color: #1a1a2e;
+      font-family: var(--font-sans);
+      font-size: 16px;
+      font-weight: 700;
+      padding: 14px 48px;
+      border: none;
+      border-radius: var(--radius);
+      cursor: pointer;
+      transition: all 0.2s;
+      touch-action: manipulation;
+    }
+    .btn-primary:hover { transform: scale(1.03); filter: brightness(1.1); }
+    .btn-primary:active { transform: scale(0.97); }
+    .btn-primary:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+      transform: none;
+      filter: none;
+    }
+
+    .btn-secondary {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(255,255,255,0.08);
+      color: var(--text-light);
+      font-family: var(--font-sans);
+      font-size: 14px;
+      font-weight: 600;
+      padding: 10px 24px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      cursor: pointer;
+      transition: all 0.15s;
+      touch-action: manipulation;
+    }
+    .btn-secondary:hover { background: rgba(255,255,255,0.14); }
+    .btn-secondary:active { transform: scale(0.97); }
+
+    .btn-sm {
+      padding: 6px 14px;
+      font-size: 12px;
+    }
+
+    /* ---- Battle HUD (DOM overlay on canvas) ---- */
+    #battle-hud {
+      position: fixed;
+      inset: 0;
+      z-index: 5;
+      pointer-events: none;
+    }
+    #battle-hud > * { pointer-events: auto; }
+    #battle-hud .hud-top {
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      background: linear-gradient(180deg, rgba(15,15,26,0.85) 0%, transparent 100%);
+    }
+    #battle-hud .hud-round {
+      font-size: 13px;
+      color: var(--gold);
+      font-weight: 600;
+      font-family: var(--font-mono);
+    }
+    #battle-hud .hud-gold {
+      font-size: 14px;
+      color: var(--gold);
+      font-weight: 700;
+    }
+    #battle-hud .hud-btn {
+      pointer-events: auto;
+      background: rgba(255,255,255,0.1);
+      border: 1px solid var(--border);
+      color: var(--text-dim);
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      font-size: 16px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    #battle-hud .hud-btn:hover { background: rgba(255,255,255,0.2); }
+
+    #battle-hud .hud-bottom {
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      padding: 10px 16px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    #battle-hud .hud-target-hint {
+      text-align: center;
+      font-size: 11px;
+      color: var(--text-dim);
+      background: rgba(15,15,26,0.6);
+      padding: 6px;
+      border-radius: 6px;
+      backdrop-filter: blur(4px);
+    }
+    #battle-hud .hud-team-bars {
+      display: flex;
+      gap: 8px;
+    }
+    #battle-hud .hud-mini-bar {
+      flex: 1;
+      background: rgba(15,15,26,0.7);
+      border-radius: 6px;
+      padding: 6px 8px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      backdrop-filter: blur(4px);
+      cursor: pointer;
+      pointer-events: auto;
+      transition: all 0.15s;
+      border: 1px solid transparent;
+    }
+    #battle-hud .hud-mini-bar:hover {
+      border-color: rgba(255,255,255,0.2);
+      background: rgba(15,15,26,0.85);
+    }
+    #battle-hud .hud-mini-bar.targeted {
+      border-color: var(--gold);
+      box-shadow: 0 0 8px rgba(241,196,15,0.3);
+    }
+    #battle-hud .hud-mini-bar .mini-icon { font-size: 20px; flex-shrink: 0; }
+    #battle-hud .hud-mini-bar .mini-info { flex: 1; min-width: 0; }
+    #battle-hud .hud-mini-bar .mini-info .mini-name {
+      font-size: 10px;
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    #battle-hud .hud-mini-bar .mini-info .mini-hp-track {
+      height: 4px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 2px;
+      margin-top: 2px;
+      overflow: hidden;
+    }
+    #battle-hud .hud-mini-bar .mini-info .mini-hp-fill {
+      height: 100%;
+      border-radius: 2px;
+      transition: width 0.3s ease;
+    }
+    #battle-hud .hud-mini-bar .mini-hp-text {
+      font-size: 10px;
+      font-family: var(--font-mono);
+      color: var(--text-dim);
+      flex-shrink: 0;
+    }
+    #battle-hud .hud-mini-bar.dead {
+      opacity: 0.35;
+      filter: grayscale(0.8);
+    }
+
+    /* ---- Result Screen ---- */
+    #result-screen {
+      text-align: center;
+      gap: 0;
+    }
+    #result-screen.victory {
+      background: linear-gradient(180deg, #0f0f1a 0%, #1a2a1e 100%);
+    }
+    #result-screen.defeat { background: linear-gradient(180deg, #0f0f1a 0%, #2e1a1a 100%); }
+    #result-screen .result-icon { font-size: 64px; margin-bottom: 8px; }
+    #result-screen .result-title {
+      font-size: 30px;
+      font-weight: 800;
+      margin-bottom: 4px;
+    }
+    #result-screen.victory .result-title { color: var(--gold); }
+    #result-screen.defeat .result-title { color: var(--hp-red); }
+    #result-screen .result-sub {
+      font-size: 14px;
+      color: var(--text-dim);
+      margin-bottom: 20px;
+    }
+    #result-screen .result-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      width: min(320px, 85%);
+      margin: 0 auto 20px;
+    }
+    #result-screen .result-grid .stat-item {
+      background: rgba(255,255,255,0.05);
+      border-radius: var(--radius);
+      padding: 10px 8px;
+    }
+    #result-screen .result-grid .stat-item .stat-label {
+      font-size: 10px;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      font-family: var(--font-mono);
+    }
+    #result-screen .result-grid .stat-item .stat-value {
+      font-size: 20px;
+      font-weight: 700;
+      font-family: var(--font-mono);
+    }
+    #result-screen .result-grid .stat-item .stat-value.highlight { color: var(--gold); }
+
+    .best-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: rgba(241,196,15,0.12);
+      color: var(--gold);
+      font-size: 12px;
+      font-weight: 600;
+      padding: 4px 14px;
+      border-radius: 6px;
+      margin-bottom: 16px;
+    }
+
+    .btn-retry {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--gold);
+      color: #1a1a2e;
+      font-family: var(--font-sans);
+      font-size: 16px;
+      font-weight: 700;
+      padding: 14px 48px;
+      border: none;
+      border-radius: var(--radius);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-retry:hover { transform: scale(1.03); filter: brightness(1.1); }
+    .btn-retry:active { transform: scale(0.97); }
+
+    .btn-hub {
+      display: inline-block;
+      margin-top: 14px;
+      font-size: 13px;
+      color: var(--text-dim);
+      text-decoration: none;
+      cursor: pointer;
+      background: none;
+      border: none;
+      font-family: var(--font-sans);
+    }
+    .btn-hub:hover { color: var(--text-light); }
+
+    /* ---- Reward Between Rounds ---- */
+    #reward-screen {
+      background: linear-gradient(180deg, #0f0f1a 0%, #1a2a1e 100%);
+      text-align: center;
+      gap: 12px;
+    }
+    #reward-screen .reward-icon { font-size: 48px; }
+    #reward-screen .reward-title {
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--gold);
+    }
+    #reward-screen .reward-gold {
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--gold);
+      font-family: var(--font-mono);
+    }
+    #reward-screen .reward-detail {
+      font-size: 13px;
+      color: var(--text-dim);
+      max-width: 320px;
+    }
+    #reward-screen .reward-actions {
+      display: flex;
+      gap: 12px;
+      margin-top: 8px;
+    }
+
+    /* ---- Shop Screen ---- */
+    #shop-screen {
+      background: linear-gradient(180deg, #0f0f1a 0%, #1a1a2e 100%);
+      padding: 20px;
+      justify-content: flex-start;
+      padding-top: 60px;
+      gap: 12px;
+    }
+    #shop-screen .shop-hdr {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      max-width: 560px;
+    }
+    #shop-screen .shop-hdr h2 { font-size: 20px; font-weight: 700; }
+    #shop-screen .shop-gold {
+      font-size: 16px;
+      color: var(--gold);
+      font-weight: 700;
+    }
+    #shop-screen .shop-grid {
+      width: 100%;
+      max-width: 560px;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 8px;
+      flex: 1;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      padding-bottom: 60px;
+    }
+    #shop-screen .shop-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      text-align: center;
+    }
+    #shop-screen .shop-card .shop-icon { font-size: 32px; }
+    #shop-screen .shop-card .shop-name { font-size: 13px; font-weight: 600; }
+    #shop-screen .shop-card .shop-price {
+      font-size: 14px;
+      color: var(--gold);
+      font-weight: 700;
+      font-family: var(--font-mono);
+    }
+    #shop-screen .shop-card .shop-elem {
+      font-size: 10px;
+      padding: 1px 8px;
+      border-radius: 10px;
+    }
+    #shop-screen .shop-card .shop-stats {
+      font-size: 10px;
+      color: var(--text-dim);
+      font-family: var(--font-mono);
+    }
+    #shop-screen .shop-buy-btn {
+      margin-top: 6px;
+      background: rgba(241,196,15,0.15);
+      color: var(--gold);
+      border: 1px solid rgba(241,196,15,0.3);
+      padding: 6px 20px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: var(--font-sans);
+      transition: all 0.15s;
+    }
+    #shop-screen .shop-buy-btn:hover { background: rgba(241,196,15,0.25); }
+    #shop-screen .shop-buy-btn:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+    }
+    #shop-screen .shop-buy-btn.owned {
+      background: rgba(46,204,113,0.15);
+      color: var(--hp-green);
+      border-color: rgba(46,204,113,0.3);
+      cursor: default;
+    }
+    #shop-screen .shop-actions {
+      position: fixed;
+      bottom: 0;
+      left: 0; right: 0;
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      padding: 16px;
+      background: linear-gradient(0deg, rgba(15,15,26,0.95) 60%, transparent);
+    }
+
+    @media (max-height: 600px) {
+      #title-screen .logo-icon { font-size: 48px; }
+      #title-screen .game-title { font-size: 24px; }
+      #title-screen .element-orbits { margin: 12px 0 16px; }
+      #team-screen { padding-top: 40px; gap: 8px; }
+      .team-slots { min-height: 90px; }
+      .team-slot { min-height: 80px; padding: 6px; }
+      .team-slot .slot-dog .dog-icon { font-size: 24px; }
+      .roster-grid { grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); }
+    }
+  </style>
+</head>
+<body>
+  <a href="/" class="back-to-hub" onclick="window.recordPlayed && window.recordPlayed('battle-dogs-arena')">← Arcade</a>
+
+  <script>
+    window.recordPlayed = function recordPlayed(gameId) {
+      try {
+        const recent = JSON.parse(localStorage.getItem('recentlyPlayed') || '[]');
+        const filtered = recent.filter(p => p.id !== gameId);
+        filtered.unshift({ id: gameId, playedAt: Date.now() });
+        localStorage.setItem('recentlyPlayed', JSON.stringify(filtered.slice(0, 10)));
+      } catch {}
+    };
+
+    // =============================================
+    //  Battle Dogs Arena — Full Game
+    // =============================================
+    (() => {
+      'use strict';
+
+      // ── Element Definitions ──
+      const ELEMENTS = {
+        fire:   { name: 'Fire',   icon: '🔥', color: '#e74c3c', bg: 'elem-bg-fire' },
+        water:  { name: 'Water',  icon: '💧', color: '#3498db', bg: 'elem-bg-water' },
+        earth:  { name: 'Earth',  icon: '🌍', color: '#27ae60', bg: 'elem-bg-earth' },
+        air:    { name: 'Air',    icon: '🌪️', color: '#9b59b6', bg: 'elem-bg-air' },
+        spirit: { name: 'Spirit', icon: '✨', color: '#f39c12', bg: 'elem-bg-spirit' },
+      };
+      // Counter matrix: attacker element -> defender element -> multiplier
+      // fire > air > earth > water > fire, spirit neutral
+      const ELEMENT_MULT = {
+        fire:   { fire:1, water:0.5, earth:0.5, air:2,   spirit:1 },
+        water:  { fire:2, water:1,   earth:0.5, air:0.5, spirit:1 },
+        earth:  { fire:0.5, water:2, earth:1,   air:0.5, spirit:1 },
+        air:    { fire:0.5, water:0.5, earth:2, air:1,   spirit:1 },
+        spirit: { fire:1, water:1,   earth:1,   air:1,   spirit:1 },
+      };
+      const ELEM_ORDER = ['fire','water','earth','air','spirit'];
+
+      // ── Dog Definitions ──
+      const ALL_DOGS = [
+        // Fire 🔥
+        { id:'pug',        breed:'Pug',        icon:'🐶', elem:'fire',  hp:80,  atk:14, def:8,  spd:7,  skill:'Fire Breath', ult:'Inferno Bark',  ultDmg:35, cost:0, rarity:0 },
+        { id:'husky',      breed:'Husky',      icon:'🐺', elem:'fire',  hp:95,  atk:12, def:10, spd:9,  skill:'Flame Claw',  ult:'Blaze Charge',  ultDmg:30, cost:80, rarity:1 },
+        // Water 💧
+        { id:'labrador',   breed:'Labrador',   icon:'🐕', elem:'water', hp:85,  atk:10, def:12, spd:8,  skill:'Water Jet',   ult:'Tidal Wave',    ultDmg:32, cost:75, rarity:1 },
+        { id:'corgi',      breed:'Corgi',      icon:'🐕', elem:'water', hp:70,  atk:16, def:6,  spd:13, skill:'Bubble Shot',  ult:'Tsunami Splash',ultDmg:38, cost:0, rarity:0 },
+        // Earth 🌍
+        { id:'bulldog',    breed:'Bulldog',    icon:'🐗', elem:'earth', hp:115, atk:8,  def:16, spd:5,  skill:'Stone Bash',  ult:'Earthquake',    ultDmg:28, cost:0, rarity:0 },
+        { id:'shiba',      breed:'Shiba Inu',   icon:'🐕', elem:'earth', hp:80,  atk:14, def:10, spd:11, skill:'Sand Blast',  ult:'Rock Shield',   ultDmg:0,  cost:85, rarity:1 },
+        // Air 🌪️
+        { id:'greyhound',  breed:'Greyhound',  icon:'🐕', elem:'air',   hp:72,  atk:18, def:5,  spd:16, skill:'Wind Slash',  ult:'Tempest Fury',  ultDmg:40, cost:0, rarity:0 },
+        { id:'collie',     breed:'Collie',     icon:'🐕', elem:'air',   hp:90,  atk:12, def:11, spd:12, skill:'Gust Strike',  ult:'Tornado Spin',  ultDmg:34, cost:80, rarity:1 },
+        // Spirit ✨
+        { id:'samoyed',    breed:'Samoyed',    icon:'🐕', elem:'spirit',hp:100, atk:13, def:10, spd:9,  skill:'Light Beam',  ult:'Moonlight Heal',ultDmg:0,  cost:0, rarity:0 },
+        { id:'golden',     breed:'Golden Ret.',icon:'🐕', elem:'spirit',hp:105, atk:11, def:13, spd:8,  skill:'Holy Slap',   ult:'Blessing Aura', ultDmg:30, cost:90, rarity:2 },
+        { id:'doberman',   breed:'Doberman',   icon:'🐕', elem:'fire',  hp:100, atk:16, def:9,  spd:10, skill:'Fire Fang',   ult:'Infernal Howl',  ultDmg:36, cost:120, rarity:2 },
+        { id:'malamute',   breed:'Malamute',   icon:'🐕', elem:'water', hp:110, atk:9,  def:14, spd:6,  skill:'Ice Shard',   ult:'Glacier Crush',  ultDmg:30, cost:110, rarity:2 },
+      ];
+      const RARITY_LABEL = ['Common','Rare','Epic'];
+
+      // ── DOM Refs ──
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      const app = document.getElementById('app');
+      app.appendChild(canvas);
+
+      // Screens
+      const titleScreen = (() => {
+        const el = document.createElement('div');
+        el.id = 'title-screen'; el.className = 'overlay';
+        el.innerHTML = `
+          <div class="logo-icon">🐕⚔️🐩</div>
+          <div class="game-title">Battle Dogs Arena</div>
+          <div class="game-subtitle">狗狗竞技场 · 组队自动战斗</div>
+          <div class="element-orbits">
+            <span>🔥</span><span>💧</span><span>🌍</span><span>🌪️</span><span>✨</span>
+          </div>
+          <div class="press-key">— 点击 / 按任意键开始 —</div>
+        `;
+        app.appendChild(el);
+        return el;
+      })();
+
+      const teamScreen = (() => {
+        const el = document.createElement('div');
+        el.id = 'team-screen'; el.className = 'overlay hidden';
+        el.innerHTML = `
+          <div class="team-hdr">
+            <h2>🐕 选择出战狗狗</h2>
+            <span class="round-badge">💰 <span id="teamGold">0</span></span>
+          </div>
+          <div class="team-slots" id="teamSlots">
+            <div class="team-slot" data-index="0"><span class="slot-label">Slot 1</span></div>
+            <div class="team-slot" data-index="1"><span class="slot-label">Slot 2</span></div>
+            <div class="team-slot" data-index="2"><span class="slot-label">Slot 3</span></div>
+          </div>
+          <div class="roster-section">
+            <div class="roster-hdr">
+              <h3>你的犬舍</h3>
+              <span class="gold-display">💰 <span id="rosterGold">0</span></span>
+            </div>
+            <div class="roster-grid" id="rosterGrid"></div>
+          </div>
+          <button class="btn-primary" id="fightBtn" disabled>⚔️ 开战!</button>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:4px;text-align:center">
+            点击犬添加 · 点击已选移除 · <kbd style="background:rgba(255,255,255,0.1);padding:1px 6px;border-radius:3px">Enter</kbd> 开战 · <kbd style="background:rgba(255,255,255,0.1);padding:1px 6px;border-radius:3px">M</kbd> 音效
+          </div>
+        `;
+        app.appendChild(el);
+        return el;
+      })();
+
+      const battleHUD = (() => {
+        const el = document.createElement('div');
+        el.id = 'battle-hud'; el.className = 'hidden';
+        el.innerHTML = `
+          <div class="hud-top">
+            <button class="hud-btn" id="muteBtn" title="Toggle sound">🔊</button>
+            <span class="hud-round">Round <span id="hudRound">1</span></span>
+            <span class="hud-gold">💰 <span id="hudGold">0</span></span>
+          </div>
+          <div class="hud-bottom">
+            <div class="hud-target-hint" id="targetHint">👆 点击敌方狗狗集中火力</div>
+            <div class="hud-team-bars" id="allyBars"></div>
+            <div class="hud-team-bars" id="enemyBars"></div>
+            <div style="text-align:center;font-size:10px;color:var(--text-muted)">
+              <kbd style="background:rgba(255,255,255,0.08);padding:1px 5px;border-radius:3px">4 5 6</kbd> 集火 · <kbd style="background:rgba(255,255,255,0.08);padding:1px 5px;border-radius:3px">M</kbd> 音效
+            </div>
+          </div>
+        `;
+        app.appendChild(el);
+        return el;
+      })();
+
+      const resultScreen = (() => {
+        const el = document.createElement('div');
+        el.id = 'result-screen'; el.className = 'overlay hidden';
+        app.appendChild(el);
+        return el;
+      })();
+
+      const rewardScreen = (() => {
+        const el = document.createElement('div');
+        el.id = 'reward-screen'; el.className = 'overlay hidden';
+        app.appendChild(el);
+        return el;
+      })();
+
+      const shopScreen = (() => {
+        const el = document.createElement('div');
+        el.id = 'shop-screen'; el.className = 'overlay hidden';
+        app.appendChild(el);
+        return el;
+      })();
+
+      // ── Audio Engine ──
+      let audioCtx = null;
+      let sfxMuted = false;
+
+      function getAudioCtx() {
+        if (!audioCtx) {
+          audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        return audioCtx;
+      }
+
+      function playSynth(freq, dur, type = 'square', vol = 0.1) {
+        if (sfxMuted) return;
+        try {
+          const c = getAudioCtx();
+          const o = c.createOscillator();
+          const g = c.createGain();
+          o.type = type;
+          o.frequency.setValueAtTime(freq, c.currentTime);
+          g.gain.setValueAtTime(vol, c.currentTime);
+          g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + dur);
+          o.connect(g).connect(c.destination);
+          o.start(); o.stop(c.currentTime + dur);
+        } catch {}
+      }
+      function playSweep(f1, f2, dur, type = 'sine', vol = 0.1) {
+        if (sfxMuted) return;
+        try {
+          const c = getAudioCtx();
+          const o = c.createOscillator();
+          const g = c.createGain();
+          o.type = type;
+          o.frequency.setValueAtTime(f1, c.currentTime);
+          o.frequency.exponentialRampToValueAtTime(f2, c.currentTime + dur);
+          g.gain.setValueAtTime(vol, c.currentTime);
+          g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + dur);
+          o.connect(g).connect(c.destination);
+          o.start(); o.stop(c.currentTime + dur);
+        } catch {}
+      }
+      function playHit() { playSynth(440, 0.06, 'square', 0.07); }
+      function playCritHit() { playSynth(880, 0.08, 'square', 0.09); }
+      function playHeal() { playSweep(660, 880, 0.15, 'sine', 0.07); }
+      function playKo() { playSweep(400, 80, 0.3, 'sawtooth', 0.1); }
+      function playWinRound() {
+        [523, 659, 784].forEach((n,i) => setTimeout(() => playSynth(n,0.2,'sine',0.08), i*150));
+      }
+      function playVictory() {
+        [523, 659, 784, 1047].forEach((n,i) => setTimeout(() => playSynth(n,0.3,'sine',0.1), i*200));
+      }
+      function playDefeat() { playSweep(400, 100, 0.6, 'sawtooth', 0.12); }
+      function playButton() { playSynth(660, 0.04, 'sine', 0.06); }
+      function playBark() { playSweep(300, 600, 0.1, 'sine', 0.06); }
+      function playCoin() { playSynth(1047, 0.05, 'sine', 0.08); }
+      function playUlt() { playSweep(200, 1200, 0.25, 'sawtooth', 0.1); }
+
+      // ── Haptic ──
+      function hapticLight() { try { navigator.vibrate(10); } catch {} }
+      function hapticMedium() { try { navigator.vibrate([15,8,15]); } catch {} }
+      function hapticHeavy() { try { navigator.vibrate([40,20,40]); } catch {} }
+
+      // ── localStorage ──
+      const LS_KEY = 'battle_dogs_arena';
+
+      function loadSave() {
+        try {
+          const d = JSON.parse(localStorage.getItem(LS_KEY));
+          if (d && typeof d === 'object') return d;
+        } catch {}
+        return { bestScore: 0, bestRound: 0, gold: 0, owned: ['pug','corgi','bulldog','greyhound','samoyed'], gamesPlayed: 0, wins: 0 };
+      }
+      function saveSave(d) {
+        try { localStorage.setItem(LS_KEY, JSON.stringify(d)); } catch {}
+      }
+
+      // ── Utility ──
+      function rand(min, max) { return Math.random() * (max - min) + min; }
+      function randInt(min, max) { return Math.floor(rand(min, max + 1)); }
+      function clamp(v, mn, mx) { return Math.max(mn, Math.min(mx, v)); }
+      function lerp(a, b, t) { return a + (b - a) * t; }
+
+      // ── Game State ──
+      let G = null; // game state
+      let animId = null;
+      let lastTime = 0;
+
+      function makeDogFromTemplate(tpl) {
+        const atkRange = Math.floor(tpl.atk * 0.85);
+        return {
+          ...tpl,
+          maxHp: tpl.hp,
+          hp: tpl.hp,
+          atk: tpl.atk + randInt(0, Math.floor(tpl.atk * 0.3)),
+          def: tpl.def + randInt(0, Math.floor(tpl.def * 0.3)),
+          spd: tpl.spd + randInt(0, Math.floor(tpl.spd * 0.3)),
+          ultCharge: 0,
+          ultMax: 3,  // ult ready after 3 basic attacks received/done
+          alive: true,
+          animX: 0, animY: 0, // battle position
+          targetX: 0, targetY: 0,
+          bobPhase: rand(0, Math.PI * 2),
+          hitFlash: 0,
+          scale: 1,
+        };
+      }
+
+      function createEnemyDog(round) {
+        const pool = ALL_DOGS.filter(d => d.id !== 'doberman' && d.id !== 'malamute'); // keep some exclusives
+        const rating = Math.min(round, 6);
+        const available = pool.filter(d => d.rarity <= rating);
+        const tpl = available[randInt(0, available.length - 1)];
+        const dog = makeDogFromTemplate(tpl);
+        const scale = 1 + (round - 1) * 0.08;
+        dog.maxHp = Math.floor(tpl.hp * scale);
+        dog.hp = dog.maxHp;
+        dog.atk = Math.floor(tpl.atk * scale);
+        dog.def = Math.floor(tpl.def * scale);
+        dog.spd = Math.floor(tpl.spd * scale);
+        dog.ultDmg = Math.floor(tpl.ultDmg * scale);
+        return dog;
+      }
+
+      function createGame() {
+        const save = loadSave();
+        const ownedDogs = ALL_DOGS.filter(d => save.owned.includes(d.id));
+        return {
+          screen: 'title',
+          save,
+          round: 1,
+          gold: save.gold,
+          ownedDogIds: [...save.owned],
+          totalKills: 0,
+          totalDmg: 0,
+          roundWins: 0,
+
+          // Team composition (for current round)
+          team: [], // 3 dogs selected from owned
+
+          // Battle state
+          allies: [],
+          enemies: [],
+          targetIndex: -1, // which enemy to focus (-1 = auto)
+          battleLog: [],
+          battleTimer: 0,
+          turnTimer: 0,
+          battleOver: false,
+          victory: false,
+          turnCount: 0,
+
+          // Animations
+          particles: [],
+          damageNumbers: [],
+          floatingTexts: [],
+          animating: false,
+          pauseAnim: 0,
+
+          // Special effects
+          screenShake: 0,
+
+          muted: false,
+        };
+      }
+
+      // ── AI Enemy Team Generation ──
+      function generateEnemyTeam(round) {
+        const team = [];
+        const count = 3;
+        // Ensure element diversity
+        const usedElems = new Set();
+        for (let i = 0; i < count; i++) {
+          let dog = createEnemyDog(round);
+          // Try to get variety
+          if (usedElems.size < 3) {
+            let attempts = 0;
+            while (usedElems.has(dog.elem) && attempts < 10) {
+              dog = createEnemyDog(round);
+              attempts++;
+            }
+          }
+          usedElems.add(dog.elem);
+          team.push(dog);
+        }
+        return team;
+      }
+
+      // ── Layout Position Calculation ──
+      function calcBattleLayout(w, h, allies, enemies) {
+        const cw = Math.min(w, 600);
+        const ox = (w - cw) / 2;
+        // Allies on left, enemies on right
+        for (let i = 0; i < allies.length; i++) {
+          if (!allies[i].alive) continue;
+          const slotY = h * 0.35 + (i - 1) * (h * 0.18);
+          allies[i].targetX = ox + cw * 0.15;
+          allies[i].targetY = clamp(slotY, h * 0.15, h * 0.75);
+        }
+        for (let i = 0; i < enemies.length; i++) {
+          if (!enemies[i].alive) continue;
+          const slotY = h * 0.35 + (i - 1) * (h * 0.18);
+          enemies[i].targetX = ox + cw * 0.85;
+          enemies[i].targetY = clamp(slotY, h * 0.15, h * 0.75);
+        }
+      }
+
+      // ── Battle Logic ──
+      function getElemMult(attacker, defender) {
+        return ELEMENT_MULT[attacker.elem][defender.elem] || 1;
+      }
+
+      function getTarget(allies, enemies, focusIdx) {
+        const alive = enemies.filter(e => e.alive);
+        if (!alive.length) return null;
+        if (focusIdx >= 0 && focusIdx < enemies.length && enemies[focusIdx].alive) {
+          return enemies[focusIdx];
+        }
+        // auto-target: lowest HP enemy
+        return alive.reduce((a, b) => a.hp < b.hp ? a : b);
+      }
+
+      function getAllyTarget(allies, enemies, dog) {
+        // Allies auto-target: if focused enemy alive, hit it; otherwise lowest HP enemy
+        const aliveE = enemies.filter(e => e.alive);
+        if (!aliveE.length) return null;
+        return aliveE[randInt(0, aliveE.length - 1)];
+      }
+
+      function getEnemyTarget(allies, enemies, dog) {
+        // Enemy AI: target lowest HP ally
+        const aliveA = allies.filter(a => a.alive);
+        if (!aliveA.length) return null;
+        return aliveA.reduce((a, b) => a.hp < b.hp ? a : b);
+      }
+
+      function calcDamage(attacker, defender, skillDmg, isUlt) {
+        const base = skillDmg || attacker.atk;
+        const elemMult = getElemMult(attacker, defender);
+        const defFactor = 100 / (100 + defender.def);
+        const variance = rand(0.85, 1.15);
+        let dmg = Math.max(1, Math.floor(base * elemMult * defFactor * variance));
+        const isCrit = Math.random() < 0.1;
+        if (isCrit) dmg = Math.floor(dmg * 1.5);
+        return { dmg, elemMult, isCrit };
+      }
+
+      function performAttack(attacker, defender, skillDmg, isUlt) {
+        if (!attacker.alive || !defender.alive) return null;
+        const result = calcDamage(attacker, defender, skillDmg, isUlt);
+        defender.hp -= result.dmg;
+        if (defender.hp <= 0) {
+          defender.hp = 0;
+          defender.alive = false;
+        }
+        defender.hitFlash = 0.2;
+
+        // Element text
+        let elemText = '';
+        if (result.elemMult >= 2) elemText = '💥 克制!';
+        else if (result.elemMult <= 0.5) elemText = '🔽 被抗';
+
+        return {
+          attacker,
+          defender,
+          dmg: result.dmg,
+          isCrit: result.isCrit,
+          elemText,
+          isUlt,
+          killed: defender.hp <= 0,
+          elemMult: result.elemMult,
+        };
+      }
+
+      function performHeal(dog, amount) {
+        if (!dog.alive) return null;
+        const healed = Math.min(amount, dog.maxHp - dog.hp);
+        dog.hp += healed;
+        return { dog, healed };
+      }
+
+      function runBattleTurn(G) {
+        G.turnCount++;
+
+        // Collect all acting entities, sort by speed descending
+        const actors = [];
+        for (const a of G.allies) if (a.alive) actors.push(a);
+        for (const e of G.enemies) if (e.alive) actors.push(e);
+        actors.sort((a, b) => b.spd - a.spd);
+
+        const events = [];
+
+        for (const actor of actors) {
+          if (!actor.alive) continue;
+
+          // Determine if this is ally or enemy
+          const isAlly = G.allies.includes(actor);
+          const team = isAlly ? G.allies : G.enemies;
+          const opponents = isAlly ? G.enemies : G.allies;
+
+          // Check if any opponent alive
+          if (!opponents.some(o => o.alive)) continue;
+
+          // Ultimate ready?
+          let usedUlt = false;
+          if (actor.ultCharge >= actor.ultMax) {
+            actor.ultCharge = 0;
+            usedUlt = true;
+
+            if (actor.ultDmg > 0) {
+              // Attack ultimate
+              const target = isAlly
+                ? getTarget(G.allies, G.enemies, G.targetIndex)
+                : getEnemyTarget(G.allies, G.enemies, actor);
+              if (target) {
+                const evt = performAttack(actor, target, actor.ultDmg, true);
+                if (evt) {
+                  events.push(evt);
+                  playUlt();
+                  hapticMedium();
+                  addParticles(G, target.animX, target.animY, ELEMENTS[actor.elem].color, 16);
+                  addDamageNum(G, target.animX, target.animY - 20, evt.dmg, '#f1c40f', true);
+                  // Shake screen
+                  G.screenShake = 0.15;
+                  if (evt.killed) {
+                    playKo();
+                    addParticles(G, target.animX, target.animY, '#e74c3c', 20);
+                  }
+                }
+              }
+            } else {
+              // Healing ultimate (Shiba Rock Shield, Samoyed Moonlight)
+              if (actor.id === 'samoyed') {
+                // Heal whole team
+                for (const ally of G.allies) {
+                  if (ally.alive) {
+                    const healAmt = Math.floor(ally.maxHp * 0.3);
+                    const evt = performHeal(ally, healAmt);
+                    if (evt) {
+                      events.push({ type: 'heal', dog: ally, amount: evt.healed });
+                      playHeal();
+                      addDamageNum(G, ally.animX, ally.animY - 20, '+' + evt.healed, '#2ecc71');
+                    }
+                  }
+                }
+                addParticles(G, actor.animX, actor.animY - 20, '#f1c40f', 12);
+              } else if (actor.id === 'shiba') {
+                // Shield self
+                const healAmt = Math.floor(actor.maxHp * 0.35);
+                const evt = performHeal(actor, healAmt);
+                if (evt) {
+                  events.push({ type: 'heal', dog: actor, amount: evt.healed });
+                  playHeal();
+                  addDamageNum(G, actor.animX, actor.animY - 20, '+' + evt.healed, '#2ecc71');
+                }
+              }
+            }
+          } else {
+            actor.ultCharge++;
+          }
+
+          // Basic attack
+          if (!usedUlt) {
+            const target = isAlly
+              ? getTarget(G.allies, G.enemies, G.targetIndex)
+              : getEnemyTarget(G.allies, G.enemies, actor);
+            // If no valid target from focus, pick randomly
+            const actualTarget = target || (opponents.filter(o => o.alive)[randInt(0, opponents.filter(o => o.alive).length - 1)]);
+            if (actualTarget) {
+              const evt = performAttack(actor, actualTarget, Math.floor(actor.atk * 0.6), false);
+              if (evt) {
+                events.push(evt);
+                if (evt.isCrit) {
+                  playCritHit();
+                  hapticLight();
+                } else {
+                  playHit();
+                }
+                const color = evt.isCrit ? '#f1c40f' : ELEMENTS[actor.elem].color;
+                addParticles(G, actualTarget.animX, actualTarget.animY, color, 5);
+                addDamageNum(G, actualTarget.animX, actualTarget.animY - 15, evt.dmg, color);
+                if (evt.killed) {
+                  playKo();
+                  addParticles(G, actualTarget.animX, actualTarget.animY, '#e74c3c', 12);
+                }
+              }
+            }
+          }
+        }
+
+        // Check win/lose
+        const alliesAlive = G.allies.filter(a => a.alive).length;
+        const enemiesAlive = G.enemies.filter(e => e.alive).length;
+
+        if (enemiesAlive === 0) {
+          G.battleOver = true;
+          G.victory = true;
+        } else if (alliesAlive === 0) {
+          G.battleOver = true;
+          G.victory = false;
+        }
+
+        G.turnTimer = 0;
+        return events;
+      }
+
+      // ── Particles & Effects ──
+      function addParticles(G, x, y, color, count = 8) {
+        for (let i = 0; i < count; i++) {
+          const angle = rand(0, Math.PI * 2);
+          const speed = rand(40, 150);
+          G.particles.push({
+            x, y,
+            vx: Math.cos(angle) * speed,
+            vy: Math.sin(angle) * speed - 50,
+            life: rand(0.3, 0.7),
+            maxLife: 0.7,
+            color,
+            size: rand(2, 5),
+          });
+        }
+      }
+
+      function addDamageNum(G, x, y, val, color = '#f1c40f', big = false) {
+        G.damageNumbers.push({ x, y, val, vy: -80, life: 1, color, big });
+      }
+
+      function addFloatingText(G, x, y, text, color = '#f1c40f') {
+        G.floatingTexts.push({ x, y, text, vy: -50, life: 1.2, color });
+      }
+
+      // ── Start Battle ──
+      function startBattle() {
+        if (animId) cancelAnimationFrame(animId);
+        G.screen = 'battle';
+        G.battleOver = false;
+        G.victory = false;
+        G.turnCount = 0;
+        G.battleTimer = 0;
+        G.turnTimer = 0;
+        G.particles = [];
+        G.damageNumbers = [];
+        G.floatingTexts = [];
+        G.screenShake = 0;
+        G.targetIndex = -1;
+
+        // Create battle copies
+        G.allies = G.team.map(d => {
+          const copy = makeDogFromTemplate(d);
+          copy.bobPhase = rand(0, Math.PI * 2);
+          return copy;
+        });
+        G.enemies = generateEnemyTeam(G.round);
+
+        battleHUD.classList.remove('hidden');
+        // Bind mute button
+        const muteBtn = document.getElementById('muteBtn');
+        if (muteBtn) {
+          muteBtn.onclick = (e) => {
+            e.stopPropagation();
+            G.muted = !G.muted;
+            sfxMuted = G.muted;
+            muteBtn.textContent = G.muted ? '🔇' : '🔊';
+          };
+        }
+        teamScreen.classList.add('hidden');
+        rewardScreen.classList.add('hidden');
+        shopScreen.classList.add('hidden');
+        resultScreen.classList.add('hidden');
+
+        updateHUD();
+        resize();
+
+        // Initial layout
+        calcBattleLayout(canvas._w, canvas._h, G.allies, G.enemies);
+        // Place dogs at target positions
+        for (const a of G.allies) { a.animX = a.targetX; a.animY = a.targetY; }
+        for (const e of G.enemies) { e.animX = e.targetX; e.animY = e.targetY; }
+
+        // First turn after a short delay
+        G.pauseAnim = 0.8;
+
+        lastTime = performance.now();
+        animId = requestAnimationFrame(gameLoop);
+      }
+
+      // ── End Battle / Round ──
+      function afterBattle() {
+        const g = G;
+        g.screen = 'pause';
+        const newBest = false;
+
+        if (g.victory) {
+          g.roundWins++;
+          // Calculate gold reward
+          const goldReward = 10 + g.round * 5 + randInt(0, 5);
+          g.gold += goldReward;
+          g.save.gold = g.gold;
+          g.save.wins++;
+          playWinRound();
+          hapticHeavy();
+
+          // Update best
+          if (g.round > g.save.bestRound) {
+            g.save.bestRound = g.round;
+          }
+
+          // Check for dog unlock
+          const unlocked = maybeUnlockDog(g);
+
+          // Show reward screen
+          showReward(goldReward, unlocked);
+        } else {
+          // Defeat - show result
+          g.save.gamesPlayed++;
+          const score = g.round * 100 + g.totalKills * 20 + g.roundWins * 50;
+          if (score > g.save.bestScore) {
+            g.save.bestScore = score;
+          }
+          saveSave(g.save);
+          playDefeat();
+          hapticHeavy();
+
+          setTimeout(() => showResult(false, score), 600);
+        }
+      }
+
+      function showReward(goldReward, unlockedText) {
+        const g = G;
+        g.screen = 'reward';
+        updateHUD();
+
+        rewardScreen.innerHTML = `
+          <div class="reward-icon">🏆</div>
+          <div class="reward-title">Round ${g.round - 1} 胜利!</div>
+          <div class="reward-gold">+${goldReward} 💰</div>
+          <div class="reward-detail">${unlockedText || '继续前进到下一轮!'}</div>
+          <div class="reward-actions">
+            <button class="btn-primary" id="rewardContinueBtn">⚔️ 继续战斗</button>
+            <button class="btn-secondary" id="rewardShopBtn">🏪 商店</button>
+          </div>
+        `;
+        rewardScreen.classList.remove('hidden');
+
+        document.getElementById('rewardContinueBtn').onclick = () => {
+          playButton();
+          G.round++;
+          showTeamScreen();
+        };
+        document.getElementById('rewardShopBtn').onclick = () => {
+          playButton();
+          showShop();
+        };
+      }
+
+      function maybeUnlockDog(g) {
+        // Random chance to unlock a new dog based on round
+        const locked = ALL_DOGS.filter(d => !g.ownedDogIds.includes(d.id) && d.rarity <= Math.ceil(g.round / 1.5));
+        if (locked.length > 0 && Math.random() < 0.3 + g.round * 0.03) {
+          const newDog = locked[randInt(0, locked.length - 1)];
+          g.ownedDogIds.push(newDog.id);
+          if (!g.save.owned.includes(newDog.id)) {
+            g.save.owned.push(newDog.id);
+          }
+          const elem = ELEMENTS[newDog.elem];
+          return `🎉 新伙伴! <strong>${newDog.breed}</strong> (${elem.icon} ${elem.name}) 加入你的犬舍!`;
+        }
+        return '';
+      }
+
+      // ── Show Result ──
+      function showResult(victory, score) {
+        G.screen = 'result';
+        const save = G.save;
+        const isNewBest = score > 0 && score >= save.bestScore;
+
+        resultScreen.className = 'overlay ' + (victory ? 'victory' : 'defeat');
+        resultScreen.innerHTML = `
+          <div class="result-icon">${victory ? '🏆' : '💀'}</div>
+          <div class="result-title">${victory ? '完全胜利!' : '败北'}</div>
+          <div class="result-sub">${victory ? '所有敌人被击败!' : '狗狗小队倒下了...'}</div>
+          <div class="result-grid">
+            <div class="stat-item">
+              <div class="stat-label">到达回合</div>
+              <div class="stat-value">${G.round}</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-label">得分</div>
+              <div class="stat-value highlight">${score.toLocaleString()}</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-label">击败敌犬</div>
+              <div class="stat-value">${G.totalKills}</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-label">局数</div>
+              <div class="stat-value">${save.gamesPlayed + 1}</div>
+            </div>
+          </div>
+          ${isNewBest ? '<div class="best-badge">⭐ 新纪录!</div>' : ''}
+          <button class="btn-retry" onclick="restartGame()">
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none" style="display:inline-block;vertical-align:middle;">
+              <path d="M4 14a7 7 0 1 1 .5-10L2 6V1h5v5H5l1.5-1.5A6 6 0 1 0 14 4.5L12.5 6A4.5 4.5 0 1 1 4 14z" fill="#1a1a2e"/>
+            </svg>
+            再来一局
+          </button>
+          <button class="btn-hub">← 返回游戏大厅</button>
+        `;
+        resultScreen.classList.remove('hidden');
+        resultScreen.querySelector('.btn-hub').onclick = () => window.location.href = '/';
+      }
+
+      window.restartGame = function() {
+        resultScreen.classList.add('hidden');
+        const save = loadSave();
+        G = createGame();
+        G.gold = save.gold;
+        G.ownedDogIds = [...save.owned];
+        G.save = save;
+        G.screenShake = 0;
+        battleHUD.classList.add('hidden');
+        G.screen = 'title';
+        showTitle();
+      };
+
+      // ── Team Selection Screen ──
+      function showTeamScreen() {
+        G.screen = 'team';
+        battleHUD.classList.add('hidden');
+        resultScreen.classList.add('hidden');
+        rewardScreen.classList.add('hidden');
+        shopScreen.classList.add('hidden');
+        titleScreen.classList.add('hidden');
+
+        // Reset team selection
+        G.team = [];
+
+        renderTeamScreen();
+        teamScreen.classList.remove('hidden');
+      }
+
+      function renderTeamScreen() {
+        document.getElementById('teamGold').textContent = G.gold;
+        document.getElementById('rosterGold').textContent = G.gold;
+
+        // Render slots
+        const slotsEl = document.getElementById('teamSlots');
+        slotsEl.innerHTML = '';
+        for (let i = 0; i < 3; i++) {
+          const slot = document.createElement('div');
+          slot.className = 'team-slot';
+          slot.dataset.index = i;
+          slot.innerHTML = `<span class="slot-label">Slot ${i + 1}</span>`;
+
+          if (G.team[i]) {
+            const dog = G.team[i];
+            const elem = ELEMENTS[dog.elem];
+            slot.classList.add('filled');
+            slot.innerHTML = `
+              <div class="slot-dog">
+                <div class="dog-icon">${dog.icon}</div>
+                <div class="dog-name">${dog.breed}</div>
+                <div class="dog-elem" style="color:${elem.color}">${elem.icon} ${elem.name}</div>
+              </div>
+              <button class="remove-btn" data-index="${i}">✕</button>
+            `;
+            slot.querySelector('.remove-btn').onclick = (e) => {
+              e.stopPropagation();
+              G.team[i] = null;
+              renderTeamScreen();
+            };
+          }
+
+          // Drag/drop click handler
+          slot.onclick = () => {
+            if (G.team[i]) {
+              G.team[i] = null;
+              renderTeamScreen();
+            }
+          };
+
+          slotsEl.appendChild(slot);
+        }
+
+        // Render roster
+        const grid = document.getElementById('rosterGrid');
+        grid.innerHTML = '';
+        const owned = ALL_DOGS.filter(d => G.ownedDogIds.includes(d.id));
+
+        for (const dog of owned) {
+          const inTeam = G.team.some(t => t && t.id === dog.id);
+          const card = document.createElement('div');
+          const elem = ELEMENTS[dog.elem];
+          card.className = `dog-card ${elem.bg}`;
+          card.style.borderColor = elem.color + '44';
+          card.innerHTML = `
+            <div class="dog-card-icon">${dog.icon}</div>
+            <div class="dog-card-name">${dog.breed}</div>
+            <div class="dog-card-elem" style="color:${elem.color}">${elem.icon} ${elem.name}</div>
+            <div class="dog-card-stats">❤️${dog.hp} ⚔️${dog.atk} 🛡️${dog.def}</div>
+          `;
+          if (inTeam) {
+            card.style.opacity = '0.4';
+          } else {
+            card.onclick = () => {
+              if (G.team.filter(t => t).length >= 3) return;
+              if (G.team.some(t => t && t.id === dog.id)) return;
+              const emptySlot = G.team.findIndex(t => !t);
+              if (emptySlot >= 0) {
+                G.team[emptySlot] = dog;
+                playButton();
+                renderTeamScreen();
+              }
+            };
+          }
+          grid.appendChild(card);
+        }
+
+        // Fight button
+        const btn = document.getElementById('fightBtn');
+        const ready = G.team.filter(t => t).length === 3;
+        btn.disabled = !ready;
+        btn.onclick = () => {
+          if (!ready) return;
+          playButton();
+          // Randomize team order
+          G.team = G.team.sort(() => Math.random() - 0.5);
+          startBattle();
+        };
+      }
+
+      // ── Shop ──
+      function showShop() {
+        G.screen = 'shop';
+        rewardScreen.classList.add('hidden');
+        renderShop();
+        shopScreen.classList.remove('hidden');
+      }
+
+      function renderShop() {
+        const owned = G.ownedDogIds;
+        shopScreen.innerHTML = `
+          <div class="shop-hdr">
+            <h2>🏪 犬舍商店</h2>
+            <span class="shop-gold">💰 ${G.gold}</span>
+          </div>
+          <div class="shop-grid" id="shopGrid"></div>
+          <div class="shop-actions">
+            <button class="btn-secondary" id="shopBackBtn">← 返回</button>
+          </div>
+        `;
+
+        const grid = document.getElementById('shopGrid');
+        for (const dog of ALL_DOGS) {
+          const alreadyOwned = owned.includes(dog.id);
+          const canAfford = G.gold >= dog.cost;
+          const elem = ELEMENTS[dog.elem];
+          const rarity = RARITY_LABEL[dog.rarity] || 'Common';
+
+          const card = document.createElement('div');
+          card.className = 'shop-card';
+          card.innerHTML = `
+            <div class="shop-icon">${dog.icon}</div>
+            <div class="shop-name">${dog.breed}</div>
+            <div class="shop-elem ${elem.bg}" style="border:1px solid ${elem.color}33;color:${elem.color}">
+              ${elem.icon} ${elem.name} · ${rarity}
+            </div>
+            <div class="shop-stats">❤️${dog.hp} ⚔️${dog.atk} 🛡️${dog.def} 💨${dog.spd}</div>
+            <div class="shop-price">${dog.cost > 0 ? '💰 ' + dog.cost : '免费'}</div>
+            <button class="shop-buy-btn ${alreadyOwned ? 'owned' : ''}" ${alreadyOwned ? 'disabled' : (!canAfford || dog.cost === 0 ? 'disabled' : '')}>
+              ${alreadyOwned ? '✓ 已拥有' : (dog.cost === 0 ? '初始' : (canAfford ? '购买' : '💰不足'))}
+            </button>
+          `;
+
+          if (!alreadyOwned && dog.cost > 0 && canAfford) {
+            card.querySelector('.shop-buy-btn').onclick = () => {
+              G.gold -= dog.cost;
+              G.ownedDogIds.push(dog.id);
+              G.save.gold = G.gold;
+              if (!G.save.owned.includes(dog.id)) {
+                G.save.owned.push(dog.id);
+              }
+              saveSave(G.save);
+              playCoin();
+              renderShop();
+            };
+          }
+
+          grid.appendChild(card);
+        }
+
+        document.getElementById('shopBackBtn').onclick = () => {
+          playButton();
+          G.round++;
+          showTeamScreen();
+        };
+      }
+
+      // ── Title Screen ──
+      function showTitle() {
+        G.screen = 'title';
+        teamScreen.classList.add('hidden');
+        battleHUD.classList.add('hidden');
+        resultScreen.classList.add('hidden');
+        rewardScreen.classList.add('hidden');
+        shopScreen.classList.add('hidden');
+        titleScreen.classList.remove('hidden');
+
+        // Start the title loop for background rendering
+        if (animId) cancelAnimationFrame(animId);
+        lastTime = performance.now();
+
+        // Draw title background on canvas
+        function titleLoop(time) {
+          if (G.screen !== 'title') return;
+          const dt = Math.min((time - lastTime) / 1000, 0.05);
+          lastTime = time;
+          renderTitleBg(dt);
+          animId = requestAnimationFrame(titleLoop);
+        }
+        animId = requestAnimationFrame(titleLoop);
+      }
+
+      function renderTitleBg(dt) {
+        const w = canvas._w, h = canvas._h;
+        const grad = ctx.createRadialGradient(w / 2, h * 0.3, 0, w / 2, h * 0.3, h * 0.8);
+        grad.addColorStop(0, '#2a1f2e');
+        grad.addColorStop(0.5, '#1a1a2e');
+        grad.addColorStop(1, '#0f0f1a');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, w, h);
+
+        // Floating dog icons
+        const t = performance.now() / 1000;
+        const emojis = ['🐶', '🐩', '🐕', '🔥', '💧', '🌍', '🌪️', '✨'];
+        for (let i = 0; i < 12; i++) {
+          const x = ((i * 137 + t * 30 * (0.5 + (i % 3) * 0.25)) % (w + 100)) - 50;
+          const y = ((i * 97 + t * 20 * (0.3 + (i % 2) * 0.2) + Math.sin(t + i) * 30) % (h + 100)) - 50;
+          ctx.globalAlpha = 0.15 + Math.sin(t + i * 2) * 0.08;
+          ctx.font = '24px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(emojis[i % emojis.length], x, y);
+        }
+        ctx.globalAlpha = 1;
+      }
+
+      // ── Canvas Resize ──
+      function resize() {
+        const dpr = window.devicePixelRatio || 1;
+        const w = window.innerWidth;
+        const h = window.innerHeight;
+        canvas.style.width = w + 'px';
+        canvas.style.height = h + 'px';
+        canvas.width = w * dpr;
+        canvas.height = h * dpr;
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.scale(dpr, dpr);
+        canvas._w = w;
+        canvas._h = h;
+      }
+
+      // ── Update HUD ──
+      function updateHUD() {
+        document.getElementById('hudRound').textContent = G.round;
+        document.getElementById('hudGold').textContent = G.gold;
+
+        // Ally bars
+        const allyBars = document.getElementById('allyBars');
+        allyBars.innerHTML = '';
+        for (const dog of G.allies) {
+          const bar = document.createElement('div');
+          bar.className = 'hud-mini-bar' + (dog.alive ? '' : ' dead');
+          const hpPct = dog.hp / dog.maxHp;
+          const hpColor = hpPct > 0.5 ? 'var(--hp-green)' : hpPct > 0.25 ? 'var(--hp-yellow)' : 'var(--hp-red)';
+          bar.innerHTML = `
+            <span class="mini-icon">${dog.icon}</span>
+            <div class="mini-info">
+              <div class="mini-name">${dog.breed}</div>
+              <div class="mini-hp-track"><div class="mini-hp-fill" style="width:${hpPct * 100}%;background:${hpColor}"></div></div>
+            </div>
+            <span class="mini-hp-text">${Math.ceil(dog.hp)}</span>
+          `;
+          allyBars.appendChild(bar);
+        }
+
+        // Enemy bars (clickable to focus)
+        const enemyBars = document.getElementById('enemyBars');
+        enemyBars.innerHTML = '';
+        for (let i = 0; i < G.enemies.length; i++) {
+          const dog = G.enemies[i];
+          const bar = document.createElement('div');
+          bar.className = 'hud-mini-bar' + (dog.alive ? '' : ' dead') + (G.targetIndex === i ? ' targeted' : '');
+          const hpPct = dog.hp / dog.maxHp;
+          const hpColor = hpPct > 0.5 ? 'var(--hp-green)' : hpPct > 0.25 ? 'var(--hp-yellow)' : 'var(--hp-red)';
+          bar.dataset.index = i;
+          bar.innerHTML = `
+            <span class="mini-icon">${dog.icon}</span>
+            <div class="mini-info">
+              <div class="mini-name">${dog.breed}</div>
+              <div class="mini-hp-track"><div class="mini-hp-fill" style="width:${hpPct * 100}%;background:${hpColor}"></div></div>
+            </div>
+            <span class="mini-hp-text">${Math.ceil(dog.hp)}</span>
+          `;
+          bar.onclick = () => {
+            if (dog.alive) {
+              G.targetIndex = G.targetIndex === i ? -1 : i;
+              updateHUD();
+              document.getElementById('targetHint').textContent =
+                G.targetIndex >= 0 ? `🎯 集中火力: ${G.enemies[G.targetIndex].breed}` : '👆 点击敌方狗狗集中火力';
+            }
+          };
+          enemyBars.appendChild(bar);
+        }
+
+        document.getElementById('muteBtn').textContent = G.muted ? '🔇' : '🔊';
+      }
+
+      // ── Game Loop ──
+      let turnAccum = 0;
+
+      function gameLoop(time) {
+        const dt = Math.min((time - lastTime) / 1000, 0.05);
+        lastTime = time;
+
+        if (G.screen === 'battle') {
+          updateBattle(dt);
+          renderBattle();
+        } else if (G.screen === 'pause') {
+          renderBattle();
+        } else if (G.screen === 'reward' || G.screen === 'team' || G.screen === 'shop') {
+          // Keep rendering frozen battle or background
+          renderBattle();
+        }
+
+        animId = requestAnimationFrame(gameLoop);
+      }
+
+      function updateBattle(dt) {
+        if (G.battleOver) return;
+
+        G.battleTimer += dt;
+
+        // Pause before first turn
+        if (G.pauseAnim > 0) {
+          G.pauseAnim -= dt;
+          return;
+        }
+
+        // Smooth movement
+        for (const a of G.allies) {
+          if (!a.alive) continue;
+          a.animX = lerp(a.animX, a.targetX, dt * 8);
+          a.animY = lerp(a.animY, a.targetY, dt * 8);
+          a.bobPhase += dt * 2;
+          a.hitFlash = Math.max(0, a.hitFlash - dt);
+        }
+        for (const e of G.enemies) {
+          if (!e.alive) continue;
+          e.animX = lerp(e.animX, e.targetX, dt * 8);
+          e.animY = lerp(e.animY, e.targetY, dt * 8);
+          e.bobPhase += dt * 2;
+          e.hitFlash = Math.max(0, e.hitFlash - dt);
+        }
+
+        // Screen shake decay
+        G.screenShake = Math.max(0, G.screenShake - dt);
+
+        // Update particles
+        for (let i = G.particles.length - 1; i >= 0; i--) {
+          const p = G.particles[i];
+          p.x += p.vx * dt;
+          p.y += p.vy * dt;
+          p.vy += 200 * dt;
+          p.life -= dt;
+          if (p.life <= 0) G.particles.splice(i, 1);
+        }
+
+        // Update damage numbers
+        for (let i = G.damageNumbers.length - 1; i >= 0; i--) {
+          const n = G.damageNumbers[i];
+          n.y += n.vy * dt;
+          n.life -= dt;
+          if (n.life <= 0) G.damageNumbers.splice(i, 1);
+        }
+
+        // Update floating texts
+        for (let i = G.floatingTexts.length - 1; i >= 0; i--) {
+          const t = G.floatingTexts[i];
+          t.y += t.vy * dt;
+          t.life -= dt;
+          if (t.life <= 0) G.floatingTexts.splice(i, 1);
+        }
+
+        // Turn timer
+        G.turnTimer += dt;
+        if (G.turnTimer >= 1.2) {
+          runBattleTurn(G);
+          updateHUD();
+
+          if (G.battleOver) {
+            G.screen = 'pause';
+            G.totalKills += G.enemies.filter(e => !e.alive).length;
+
+            // Brief pause then show outcome
+            setTimeout(() => {
+              if (G.victory) {
+                // Check if all enemies dead
+                G.round++;
+                afterBattle();
+              } else {
+                // Total defeat
+                G.save.gamesPlayed++;
+                const score = G.round * 100 + G.totalKills * 20 + G.roundWins * 50;
+                const s = G.save;
+                if (score > s.bestScore) s.bestScore = score;
+                saveSave(s);
+                playDefeat();
+                hapticHeavy();
+                setTimeout(() => showResult(false, score), 500);
+              }
+            }, 800);
+          }
+        }
+      }
+
+      // ── Render Battle ──
+      function renderBattle() {
+        const w = canvas._w, h = canvas._h;
+
+        // Background
+        const grad = ctx.createRadialGradient(w / 2, h * 0.2, 0, w / 2, h * 0.2, h * 0.9);
+        grad.addColorStop(0, '#2a2535');
+        grad.addColorStop(0.5, '#1a1a2e');
+        grad.addColorStop(1, '#0a0a12');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, w, h);
+
+        // Arena floor
+        const floorGrad = ctx.createLinearGradient(0, h * 0.7, 0, h);
+        floorGrad.addColorStop(0, 'rgba(26,20,30,0)');
+        floorGrad.addColorStop(0.4, 'rgba(26,20,30,0.3)');
+        floorGrad.addColorStop(1, 'rgba(20,15,25,0.5)');
+        ctx.fillStyle = floorGrad;
+        ctx.fillRect(0, h * 0.7, w, h * 0.3);
+
+        // Arena circle
+        ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.ellipse(w / 2, h * 0.55, Math.min(w, 500) * 0.4, h * 0.3, 0, 0, Math.PI * 2);
+        ctx.stroke();
+
+        // Screen shake
+        let sx = 0, sy = 0;
+        if (G.screenShake > 0) {
+          sx = (Math.random() - 0.5) * G.screenShake * 20;
+          sy = (Math.random() - 0.5) * G.screenShake * 20;
+        }
+        ctx.save();
+        ctx.translate(sx, sy);
+
+        // Draw VS text
+        ctx.globalAlpha = 0.08;
+        ctx.fillStyle = '#fff';
+        ctx.font = `bold ${Math.min(w, h) * 0.12}px sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('VS', w / 2, h * 0.45);
+        ctx.globalAlpha = 1;
+
+        // Draw damage numbers
+        for (const n of G.damageNumbers) {
+          ctx.globalAlpha = n.life;
+          ctx.fillStyle = n.color;
+          ctx.font = (n.big ? 'bold 26px' : 'bold 18px') + ' "JetBrains Mono", monospace';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.shadowColor = 'rgba(0,0,0,0.6)';
+          ctx.shadowBlur = 6;
+          ctx.fillText(n.val, n.x, n.y);
+          ctx.shadowBlur = 0;
+        }
+        ctx.globalAlpha = 1;
+
+        // Draw particles
+        for (const p of G.particles) {
+          const alpha = p.life / p.maxLife;
+          ctx.globalAlpha = alpha;
+          ctx.fillStyle = p.color;
+          ctx.fillRect(p.x - p.size / 2, p.y - p.size / 2, p.size, p.size);
+        }
+        ctx.globalAlpha = 1;
+
+        // Draw dogs
+        const allDogs = [...G.allies, ...G.enemies];
+        for (const dog of allDogs) {
+          if (!dog.alive) continue;
+          const elem = ELEMENTS[dog.elem];
+          const bob = Math.sin(dog.bobPhase) * 3;
+          const x = dog.animX;
+          const y = dog.animY + bob;
+          const isEnemy = G.enemies.includes(dog);
+          const size = 24;
+
+          // Shadow
+          ctx.shadowColor = 'rgba(0,0,0,0.3)';
+          ctx.shadowBlur = 8;
+          ctx.fillStyle = 'rgba(0,0,0,0.2)';
+          ctx.beginPath();
+          ctx.ellipse(x, y + size * 0.6, size * 0.5, size * 0.15, 0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.shadowBlur = 0;
+
+          // Element aura
+          ctx.shadowColor = elem.color + '44';
+          ctx.shadowBlur = 20;
+          ctx.fillStyle = elem.color + '22';
+          ctx.beginPath();
+          ctx.arc(x, y, size * 0.7, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.shadowBlur = 0;
+
+          // Body
+          const flash = dog.hitFlash > 0;
+          const bodyColor = flash ? '#fff' : elem.color;
+          ctx.shadowColor = flash ? 'rgba(255,255,255,0.5)' : elem.color + '33';
+          ctx.shadowBlur = flash ? 12 : 6;
+          ctx.fillStyle = bodyColor;
+          ctx.beginPath();
+          ctx.arc(x, y, size * 0.5, 0, Math.PI * 2);
+          ctx.fill();
+
+          // Face
+          ctx.shadowBlur = 0;
+          ctx.fillStyle = '#1a1a2e';
+          // Eyes
+          const eyeOff = size * 0.15;
+          const eyeR = size * 0.08;
+          ctx.beginPath();
+          ctx.arc(x - eyeOff, y - size * 0.08, eyeR, 0, Math.PI * 2);
+          ctx.arc(x + eyeOff, y - size * 0.08, eyeR, 0, Math.PI * 2);
+          ctx.fill();
+
+          // Eye shine
+          ctx.fillStyle = '#fff';
+          ctx.beginPath();
+          ctx.arc(x - eyeOff + 1.5, y - size * 0.1, eyeR * 0.35, 0, Math.PI * 2);
+          ctx.arc(x + eyeOff + 1.5, y - size * 0.1, eyeR * 0.35, 0, Math.PI * 2);
+          ctx.fill();
+
+          // Nose
+          ctx.fillStyle = '#0a0a12';
+          ctx.beginPath();
+          ctx.arc(x, y + size * 0.06, eyeR * 0.5, 0, Math.PI * 2);
+          ctx.fill();
+
+          // Ear (pointy for enemy dogs)
+          ctx.fillStyle = flash ? '#fff' : elem.color + 'cc';
+          if (isEnemy) {
+            // Pointy ears (enemy)
+            ctx.beginPath();
+            ctx.moveTo(x - size * 0.4, y - size * 0.3);
+            ctx.lineTo(x - size * 0.25, y - size * 0.55);
+            ctx.lineTo(x - size * 0.1, y - size * 0.3);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.moveTo(x + size * 0.1, y - size * 0.3);
+            ctx.lineTo(x + size * 0.25, y - size * 0.55);
+            ctx.lineTo(x + size * 0.4, y - size * 0.3);
+            ctx.fill();
+          } else {
+            // Floppy ears (ally)
+            ctx.beginPath();
+            ctx.ellipse(x - size * 0.35, y - size * 0.15, size * 0.12, size * 0.2, -0.2, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.ellipse(x + size * 0.35, y - size * 0.15, size * 0.12, size * 0.2, 0.2, 0, Math.PI * 2);
+            ctx.fill();
+          }
+
+          // Element mark (on body)
+          ctx.font = '12px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillStyle = '#fff';
+          ctx.globalAlpha = 0.6;
+          ctx.fillText(elem.icon, x, y + size * 0.25);
+          ctx.globalAlpha = 1;
+
+          // HP bar overhead
+          const barW = 36;
+          const barH = 4;
+          const barX = x - barW / 2;
+          const barY = y - size * 0.65;
+          const hpPct = dog.hp / dog.maxHp;
+          ctx.fillStyle = 'rgba(0,0,0,0.5)';
+          ctx.fillRect(barX - 1, barY - 1, barW + 2, barH + 2);
+          const hpColor = hpPct > 0.5 ? '#2ecc71' : hpPct > 0.25 ? '#f1c40f' : '#e74c3c';
+          ctx.fillStyle = hpColor;
+          ctx.fillRect(barX, barY, barW * Math.max(0, hpPct), barH);
+
+          // Name
+          ctx.fillStyle = isEnemy ? '#e8b4b4' : '#b4e8b4';
+          ctx.font = 'bold 10px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'bottom';
+          ctx.fillText(dog.breed, x, y - size * 0.55);
+        }
+
+        // Focus target indicator
+        if (G.targetIndex >= 0 && G.targetIndex < G.enemies.length && G.enemies[G.targetIndex].alive) {
+          const target = G.enemies[G.targetIndex];
+          const bob = Math.sin(target.bobPhase) * 3;
+          const pulse = Math.sin(performance.now() * 0.005) * 0.3 + 0.7;
+          ctx.strokeStyle = `rgba(241,196,15,${pulse * 0.5})`;
+          ctx.lineWidth = 2;
+          ctx.setLineDash([4, 4]);
+          ctx.beginPath();
+          ctx.arc(target.animX, target.animY + bob, 28, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.setLineDash([]);
+        }
+
+        // Charging indicator (ult bar)
+        for (const dog of allDogs) {
+          if (!dog.alive) continue;
+          if (dog.ultCharge >= dog.ultMax) {
+            const bob = Math.sin(dog.bobPhase) * 3;
+            const pulse = Math.sin(performance.now() * 0.008) * 0.3 + 0.7;
+            ctx.fillStyle = `rgba(241,196,15,${pulse * 0.4})`;
+            ctx.font = 'bold 14px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'bottom';
+            ctx.fillText('⭐', dog.animX, dog.animY + bob - 32);
+          } else {
+            // Show charge dots
+            const bob = Math.sin(dog.bobPhase) * 3;
+            for (let c = 0; c < dog.ultMax; c++) {
+              ctx.fillStyle = c < dog.ultCharge ? 'rgba(241,196,15,0.6)' : 'rgba(255,255,255,0.15)';
+              ctx.beginPath();
+              ctx.arc(dog.animX - 6 + c * 6, dog.animY + bob - 30, 2, 0, Math.PI * 2);
+              ctx.fill();
+            }
+          }
+        }
+
+        // Element typeline on the side
+        if (G.screen === 'battle' && G.pauseAnim <= 0) {
+          ctx.fillStyle = 'rgba(255,255,255,0.06)';
+          ctx.font = '10px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'bottom';
+          ctx.fillText('🔥 > 🌪️ > 🌍 > 💧 > 🔥    ✨ 中立', w / 2, h - 10);
+        }
+
+        ctx.restore();
+      }
+
+      // ── Input Handlers ──
+      function onKeyDown(e) {
+        const key = e.key.toLowerCase();
+
+        if (G && G.screen === 'title') {
+          e.preventDefault();
+          titleScreen.classList.add('hidden');
+          if (animId) cancelAnimationFrame(animId);
+          showTeamScreen();
+          return;
+        }
+
+        if (G && G.screen === 'result') {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            window.restartGame();
+            return;
+          }
+        }
+
+        if (G && G.screen === 'reward') {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            const btn = document.getElementById('rewardContinueBtn');
+            if (btn) btn.click();
+            return;
+          }
+          if (e.key === 's') {
+            const btn = document.getElementById('rewardShopBtn');
+            if (btn) btn.click();
+            return;
+          }
+        }
+
+        if (G && G.screen === 'team') {
+          if (e.key === 'Enter' && G.team.filter(t => t).length === 3) {
+            e.preventDefault();
+            document.getElementById('fightBtn').click();
+            return;
+          }
+          // Number keys for quick select
+          if (key >= '1' && key <= '3') {
+            const idx = parseInt(key) - 1;
+            const slots = document.querySelectorAll('.team-slot');
+            if (slots[idx]) slots[idx].click();
+          }
+        }
+
+        if (e.key === 'm' && G) {
+          G.muted = !G.muted;
+          sfxMuted = G.muted;
+          const btn = document.getElementById('muteBtn');
+          if (btn) btn.textContent = G.muted ? '🔇' : '🔊';
+        }
+
+        // Focus target with 4,5,6 during battle
+        if (G && G.screen === 'battle' && !G.battleOver) {
+          if (key === '4' || key === '5' || key === '6') {
+            const idx = parseInt(key) - 4;
+            if (idx < G.enemies.length && G.enemies[idx].alive) {
+              G.targetIndex = G.targetIndex === idx ? -1 : idx;
+              updateHUD();
+              document.getElementById('targetHint').textContent =
+                G.targetIndex >= 0 ? `🎯 集中火力: ${G.enemies[G.targetIndex].breed}` : '👆 点击敌方狗狗集中火力';
+            }
+          }
+        }
+      }
+
+      function onPointerDown(e) {
+        // Title screen tap
+        if (G && G.screen === 'title') {
+          e.preventDefault();
+          titleScreen.classList.add('hidden');
+          if (animId) cancelAnimationFrame(animId);
+          showTeamScreen();
+          return;
+        }
+      }
+
+      // ---- Context loss guard (roundRect) ----
+      if (!CanvasRenderingContext2D.prototype.roundRect) {
+        CanvasRenderingContext2D.prototype.roundRect = function(x, y, w, h, r) {
+          if (r > w / 2) r = w / 2;
+          if (r > h / 2) r = h / 2;
+          this.moveTo(x + r, y);
+          this.arcTo(x + w, y, x + w, y + h, r);
+          this.arcTo(x + w, y + h, x, y + h, r);
+          this.arcTo(x, y + h, x, y, r);
+          this.arcTo(x, y, x + w, y, r);
+          this.closePath();
+          return this;
+        };
+      }
+
+      // ---- Init ----
+      function init() {
+        resize();
+        window.addEventListener('resize', resize);
+        window.addEventListener('orientationchange', () => setTimeout(resize, 200));
+
+        // Keyboard
+        window.addEventListener('keydown', onKeyDown);
+
+        // Mouse
+        canvas.addEventListener('mousedown', onPointerDown);
+        canvas.addEventListener('contextmenu', e => e.preventDefault());
+
+        // Touch
+        canvas.addEventListener('touchstart', e => {
+          e.preventDefault();
+          onPointerDown({ type: 'touchstart', preventDefault: () => {} });
+        });
+
+        // Prevent iOS rubber-band scrolling
+        document.body.addEventListener('touchmove', e => e.preventDefault(), { passive: false });
+
+        // Init audio on first interaction
+        function initAudio() {
+          getAudioCtx();
+          document.removeEventListener('click', initAudio);
+          document.removeEventListener('touchstart', initAudio);
+          document.removeEventListener('keydown', initAudio);
+        }
+        document.addEventListener('click', initAudio);
+        document.addEventListener('touchstart', initAudio);
+        document.addEventListener('keydown', initAudio);
+
+        // Load save & start
+        const save = loadSave();
+        G = createGame();
+        G.gold = save.gold;
+        G.ownedDogIds = [...save.owned];
+        G.save = save;
+
+        showTitle();
+      }
+
+      init();
+    })();
+  </script>
+</body>
+</html>

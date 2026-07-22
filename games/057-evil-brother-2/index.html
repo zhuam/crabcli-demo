@@ -1,0 +1,930 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<link rel="stylesheet" href="/games/shared/game-frame.css" />
+<title>Evil Brother 2 · 整蛊兄弟</title>
+<style>
+/* ============ doodle design tokens (from t3-design mockup) ============ */
+:root{
+  --c-primary:#49B6E5; --c-ink:#263D5B; --c-paper:#FFF9EC; --c-paper2:#FFF3D6;
+  --c-card:#FFFFFF; --c-text:#111827; --c-success:#16A34A; --c-warning:#D97706;
+  --c-danger:#DC2626; --c-yellow:#FFD23F; --c-orange:#F97316; --c-pink:#FF7BAC;
+  --c-lilac:#9F8FEF; --c-teal:#14B8A6; --c-sky:#49B6E5; --c-board:#FDF1D8;
+  --c-phone:#131c2b; --c-skin:#FFD9A0; --c-skin-deep:#FFCE8E; --c-mouth-dark:#7c2d12;
+  --c-sofa:#F97316; --c-sofa2:#FB923C;
+  --c-wall:#FDEBD2; --c-wall2:#FBE3C0; --c-floor:#F3D9A8; --c-floor2:#EDCE97;
+  --c-kwall:#DFF3EC; --c-kwall2:#CBEAE0; --c-kfloor:#E8D9B0; --c-kfloor2:#DEC994;
+  --c-tv:#9adcf8; --c-tv-glare:#e8f7ff;
+  --c-glow-warm:#FFEFC2; --c-glow-a:#FFE9A8; --c-glow-b:#FFD9E6; --c-glow-c:#D7F0FB;
+  --c-paper-mid:#FFF4DD; --c-paper-deep:#FFEFC9;
+  --c-muted:#5a6d88; --c-muted-deep:#41546e; --c-faint:#7b8ba3; --c-faint2:#93a3b8;
+  --c-key-line:#9fb0c7; --c-stripe-a:#eef2f7; --c-stripe-b:#dfe6ee; --c-stripe-c:#e2e8f0;
+  --f-display:'Delius Swash Caps','Delius','Comic Sans MS','Chalkboard SE','Segoe Print',cursive;
+  --f-hand:'Comic Sans MS','Chalkboard SE','Segoe Print','Delius',cursive;
+  --f-body:'Comic Sans MS','Chalkboard SE','Segoe Print',cursive;
+  --f-mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+  --w-line:3px;
+  --shadow-card:5px 6px 0 rgba(38,61,91,.16);
+  --shadow-btn:0 5px 0 rgba(38,61,91,.35);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{min-height:100%}
+body{
+  font-family:var(--f-body);color:var(--c-text);background:var(--c-paper);
+  background-image:
+    radial-gradient(rgba(38,61,91,.075) 1.4px, transparent 1.5px),
+    linear-gradient(180deg,var(--c-paper) 0%,var(--c-paper-mid) 60%,var(--c-paper-deep) 100%);
+  background-size:26px 26px,100% 100%;
+  display:flex;align-items:stretch;justify-content:center;
+  touch-action:manipulation;-webkit-tap-highlight-color:transparent;
+}
+.bg-doodle{position:fixed;z-index:0;opacity:.14;pointer-events:none;animation:floaty 7s ease-in-out infinite alternate}
+.bg-doodle svg{width:100%;height:100%}
+@keyframes floaty{from{transform:translateY(0) rotate(-4deg)}to{transform:translateY(-18px) rotate(5deg)}}
+
+/* ============ common doodle bits ============ */
+.g{display:block;width:100%;height:100%}
+.fill-ink{fill:var(--c-ink)} .fill-card{fill:var(--c-card)} .fill-pink{fill:var(--c-pink)}
+.fill-yellow{fill:var(--c-yellow)} .fill-sky{fill:var(--c-sky)} .fill-sofa{fill:var(--c-sofa)} .fill-sofa2{fill:var(--c-sofa2)}
+.fill-none{fill:none}
+.stroke-ink{stroke:var(--c-ink);stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+.stroke-burst{stroke:var(--c-ink);stroke-width:3.5;stroke-linecap:round;stroke-linejoin:round}
+.stroke-bg{stroke:var(--c-ink);stroke-width:4;stroke-linecap:round;fill:none}
+.stroke-card{stroke:var(--c-card);stroke-width:2.2;stroke-linecap:round}
+.squiggle-red path{fill:none;stroke:var(--c-danger);stroke-width:5;stroke-linecap:round}
+.dbtn{
+  font-family:var(--f-display);border:var(--w-line) solid var(--c-ink);border-radius:16px 13px 17px 12px/13px 17px 12px 16px;
+  background:var(--c-card);color:var(--c-ink);cursor:pointer;position:relative;box-shadow:var(--shadow-btn);
+  transition:transform .12s,box-shadow .12s;display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  -webkit-tap-highlight-color:transparent;
+}
+.dbtn:hover{transform:translateY(-2px)}
+.dbtn:active{transform:translateY(4px);box-shadow:0 1px 0 rgba(38,61,91,.35)}
+.dbtn:disabled{opacity:.55;cursor:not-allowed;transform:none;box-shadow:0 2px 0 rgba(38,61,91,.2)}
+.dbtn:focus-visible{outline:3px dashed var(--c-danger);outline-offset:3px}
+.dbtn.primary{background:var(--c-primary);color:var(--c-card);font-size:21px;padding:15px 34px;letter-spacing:.02em;min-height:60px}
+.dbtn.ghost{background:var(--c-card);font-size:14px;padding:10px 18px}
+.dbtn.warn{background:var(--c-yellow);font-size:14px;padding:10px 16px}
+.dbtn .kbd-hint{font-family:var(--f-mono);font-size:10px;border:2px solid currentColor;border-radius:6px;padding:1px 5px;opacity:.85}
+
+/* ============ stage & screens ============ */
+#app{position:relative;z-index:1;width:min(430px,100vw);min-height:100vh;display:flex;flex-direction:column;background:var(--c-paper);box-shadow:0 0 0 1px rgba(38,61,91,.06)}
+.screen{display:none;flex-direction:column;flex:1;min-height:100vh;position:relative}
+.screen.on{display:flex;animation:screen-in .45s cubic-bezier(.22,1.2,.36,1)}
+@keyframes screen-in{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+
+/* ============ screen 1 · title ============ */
+#scr-title{background:
+  radial-gradient(circle at 82% 14%, var(--c-glow-a) 0 68px, transparent 69px),
+  radial-gradient(circle at 12% 78%, var(--c-glow-b) 0 46px, transparent 47px),
+  var(--c-paper);
+  align-items:center;padding:34px 20px 26px;overflow:hidden}
+.tape{position:absolute;width:74px;height:22px;background:rgba(73,182,229,.4);border-left:2px dashed rgba(38,61,91,.35);border-right:2px dashed rgba(38,61,91,.35)}
+.tape.l{top:10px;left:30px;transform:rotate(-7deg)}
+.tape.r{top:10px;right:30px;transform:rotate(6deg)}
+.logo{margin-top:20px;text-align:center;position:relative}
+.logo .evil{font-family:var(--f-display);font-size:60px;line-height:.95;color:var(--c-danger);display:inline-block;transform:rotate(-4deg);text-shadow:3px 3px 0 rgba(38,61,91,.2)}
+.logo .brother{font-family:var(--f-display);font-size:60px;line-height:1;color:var(--c-ink);display:inline-block;transform:rotate(2.5deg) translateY(4px)}
+.logo .two{font-family:var(--f-display);font-size:28px;color:var(--c-card);background:var(--c-warning);border:var(--w-line) solid var(--c-ink);border-radius:50% 45% 52% 48%;width:52px;height:52px;display:inline-grid;place-items:center;transform:rotate(10deg);vertical-align:top;margin-left:6px;box-shadow:3px 3px 0 rgba(38,61,91,.25)}
+.logo .cn{font-family:var(--f-hand);font-size:17px;letter-spacing:.5em;margin-top:10px;color:var(--c-warning)}
+.logo .squiggle{display:block;margin:6px auto 0}
+.logo .squiggle path{fill:none;stroke:var(--c-primary);stroke-width:4;stroke-linecap:round}
+.brother-hero{margin-top:4px;position:relative;width:210px;height:200px}
+.brother-hero .float-a,.brother-hero .float-b{position:absolute;font-size:26px;animation:floaty 4s ease-in-out infinite alternate}
+.brother-hero .float-a{left:-6px;top:24px}
+.brother-hero .float-b{right:-2px;top:70px;animation-delay:.8s;width:26px;height:24px}
+.brother-hero .zzz{font-family:var(--f-display);color:var(--c-ink);font-size:30px;line-height:1}
+.brother-hero .zzz span{font-size:.7em;opacity:.75}
+.brother-hero .zzz span+span{font-size:.52em}
+.armchair{position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:198px;height:104px;background:var(--c-sofa);border:3px solid var(--c-ink);border-radius:48% 48% 16% 16%/82% 82% 10% 10%;box-shadow:6px 7px 0 rgba(38,61,91,.16)}
+.armchair::before,.armchair::after{content:"";position:absolute;bottom:8px;width:46px;height:76px;background:var(--c-sofa2);border:3px solid var(--c-ink);border-radius:42% 42% 20% 20%/62% 62% 14% 14%}
+.armchair::before{left:-16px;transform:rotate(5deg)}
+.armchair::after{right:-16px;transform:rotate(-5deg)}
+.brother-hero .slipper{position:absolute;left:8px;bottom:2px;width:34px;height:14px;background:var(--c-yellow);border:3px solid var(--c-ink);border-radius:60% 90% 40% 60%/80% 100% 60% 80%;transform:rotate(-14deg)}
+.best-chip{margin-top:2px;font-family:var(--f-mono);font-size:11.5px;color:var(--c-ink);background:var(--c-card);border:2px solid var(--c-ink);border-radius:999px;padding:5px 14px;box-shadow:2px 3px 0 rgba(38,61,91,.18)}
+.best-chip b{color:var(--c-danger)}
+.title-cta{margin-top:20px;position:relative}
+.start-sub{margin-top:16px;text-align:center;font-size:12px;color:var(--c-muted);line-height:1.9}
+.start-sub .kbd{font-family:var(--f-mono);border:2px solid var(--c-key-line);border-bottom-width:4px;border-radius:6px;padding:1px 6px;font-size:10.5px;background:var(--c-card);color:var(--c-ink)}
+.tap-line{margin-top:auto;padding-top:16px;font-family:var(--f-mono);font-size:10px;letter-spacing:.14em;color:var(--c-faint);text-transform:uppercase}
+
+/* ============ brother NPC (shared) ============ */
+.brother{position:absolute;left:50%;bottom:6px;transform:translateX(-50%);width:150px;z-index:2}
+.brother .b-head{position:relative;width:118px;height:112px;margin:0 auto;background:var(--c-skin);border:var(--w-line) solid var(--c-ink);border-radius:48% 52% 46% 54%/54% 48% 52% 46%}
+.brother .b-hair{position:absolute;top:-16px;left:-6px;right:-6px;height:46px;background:var(--c-ink);border-radius:60% 55% 30% 40%/90% 80% 40% 40%;transform:rotate(-2deg)}
+.brother .b-hair::after{content:"";position:absolute;top:-8px;left:44%;width:16px;height:18px;background:var(--c-ink);border-radius:50% 50% 10% 10%;transform:rotate(18deg)}
+.brother .eyes{position:absolute;top:44px;left:0;right:0;display:flex;justify-content:center;gap:26px}
+.brother .eye{position:relative;width:11px;height:11px;background:var(--c-ink);border-radius:50%}
+.brother .eye.open{animation:blink 3.6s infinite}
+@keyframes blink{0%,92%,100%{transform:scaleY(1)}95%{transform:scaleY(.1)}}
+.brother .brow{position:absolute;top:33px;width:18px;height:5px;background:var(--c-ink);border-radius:3px;transition:transform .15s,top .15s}
+.brother .brow.l{left:26px;transform:rotate(8deg)}
+.brother .brow.r{right:26px;transform:rotate(-8deg)}
+.brother .mouth{position:absolute;bottom:22px;left:50%;transform:translateX(-50%);width:26px;height:12px;border:3px solid var(--c-ink);border-top:none;border-radius:0 0 20px 20px;background:var(--c-card);transition:all .15s}
+.brother .blush{position:absolute;top:60px;width:14px;height:8px;background:rgba(249,115,22,.35);border-radius:50%}
+.brother .blush.l{left:12px}.brother .blush.r{right:12px}
+.brother .b-body{width:128px;height:64px;margin:-6px auto 0;background:var(--c-primary);border:var(--w-line) solid var(--c-ink);border-radius:26px 26px 14px 14px;position:relative}
+.brother .b-body::before,.brother .b-body::after{content:"";position:absolute;top:14px;width:20px;height:36px;background:var(--c-primary);border:var(--w-line) solid var(--c-ink);border-radius:12px}
+.brother .b-body::before{left:-16px;transform:rotate(12deg)}
+.brother .b-body::after{right:-16px;transform:rotate(-12deg)}
+.brother.scared .b-head{animation:jolt .5s;background:var(--c-skin-deep)}
+.brother.scared .eye{width:17px;height:17px;background:var(--c-card);border:3px solid var(--c-ink);animation:none}
+.brother.scared .eye::after{content:"";position:absolute;inset:4px;background:var(--c-ink);border-radius:50%}
+.brother.scared .brow.l{transform:rotate(24deg);top:27px}
+.brother.scared .brow.r{transform:rotate(-24deg);top:27px}
+.brother.scared .mouth{width:24px;height:24px;border:3px solid var(--c-ink);border-radius:50%;background:var(--c-mouth-dark);bottom:14px}
+@keyframes jolt{0%{transform:translateY(0)}30%{transform:translateY(-10px) rotate(-4deg)}60%{transform:translateY(2px) rotate(3deg)}100%{transform:translateY(0)}}
+.burst{position:absolute;top:-38px;right:-34px;width:118px;animation:burst-in .45s cubic-bezier(.34,1.9,.5,1)}
+@keyframes burst-in{from{transform:scale(0) rotate(-25deg)}to{transform:scale(1) rotate(0)}}
+.burst text{font-family:var(--f-display);font-size:23px;fill:var(--c-danger)}
+/* title-screen sleeping variant */
+.brother.sleeping{bottom:30px;width:120px;transform:translateX(-50%) rotate(-6deg)}
+.brother.sleeping .b-head{width:96px;height:90px}
+.brother.sleeping .eyes{top:42px;gap:20px}
+.brother.sleeping .eye{width:14px;height:7px;background:none;border-bottom:3px solid var(--c-ink);border-radius:0 0 12px 12px;animation:none}
+.brother.sleeping .brow.l{transform:rotate(3deg);top:31px}
+.brother.sleeping .brow.r{transform:rotate(-3deg);top:31px}
+.brother.sleeping .mouth{width:13px;height:13px;border:3px solid var(--c-ink);border-radius:50%;background:var(--c-mouth-dark);bottom:15px}
+.brother.sleeping .drool{position:absolute;bottom:0;right:24px;width:8px;height:15px;background:var(--c-sky);border:2px solid var(--c-ink);border-radius:0 0 8px 8px}
+.brother.sleeping .b-body{width:102px;height:44px}
+.brother.sleeping .b-body::before,.brother.sleeping .b-body::after{height:26px;top:8px}
+
+/* ============ screen 2 · game ============ */
+#scr-game{background:var(--c-paper)}
+.hud{flex:none;background:var(--c-card);border-bottom:var(--w-line) solid var(--c-ink);padding:10px 12px 9px;position:relative;z-index:5}
+.hud-row1{display:flex;justify-content:space-between;align-items:center}
+.hud-left{display:flex;align-items:center;gap:8px}
+.hud-scene{font-family:var(--f-display);font-size:15px;color:var(--c-ink)}
+.hud-prank{font-family:var(--f-mono);font-size:10px;background:var(--c-paper2);border:2px solid var(--c-ink);border-radius:999px;padding:2px 8px;color:var(--c-ink)}
+.hud-right{display:flex;align-items:center;gap:8px}
+.hud-score{font-family:var(--f-mono);font-size:12px;font-weight:700;background:var(--c-yellow);border:2px solid var(--c-ink);border-radius:10px 8px 11px 8px;padding:3px 9px;box-shadow:2px 2px 0 rgba(38,61,91,.2)}
+.hud-score b{font-size:14px}
+.hud-timer{font-family:var(--f-mono);font-size:11px;font-weight:700;color:var(--c-ink);background:var(--c-paper2);border:2px solid var(--c-ink);border-radius:8px;padding:3px 7px}
+.hud-timer.low{color:var(--c-card);background:var(--c-danger);animation:rec-wiggle 1s infinite}
+.hud-ico{width:30px;height:30px;border:2px solid var(--c-ink);border-radius:50% 46% 50% 44%;background:var(--c-card);display:grid;place-items:center;font-size:14px;cursor:pointer;transition:transform .12s}
+.hud-ico:hover{transform:translateY(-2px)}
+.hud-ico svg{width:16px;height:16px}
+.badge-strip{display:flex;gap:7px;margin-top:9px}
+.badge{width:36px;height:36px;flex:none;border:2.5px solid var(--c-ink);border-radius:50% 46% 52% 48%/48% 52% 46% 50%;display:grid;place-items:center;font-size:16px;position:relative;background:var(--c-card)}
+.badge.earned{background:var(--c-yellow);box-shadow:2px 2px 0 rgba(38,61,91,.22)}
+.badge.locked{background:repeating-linear-gradient(45deg,var(--c-stripe-a) 0 5px,var(--c-stripe-b) 5px 10px);color:var(--c-faint2);filter:grayscale(.4)}
+.badge.pop{animation:badge-pop .5s cubic-bezier(.34,1.8,.5,1)}
+.badge .spark{position:absolute;top:-7px;right:-5px;font-size:11px}
+@keyframes badge-pop{0%{transform:scale(.4) rotate(-30deg)}70%{transform:scale(1.25) rotate(8deg)}100%{transform:scale(1)}}
+
+/* scene area */
+.scene-wrap{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;padding:12px 10px}
+.scene{width:100%;max-width:440px;height:254px;border:var(--w-line) solid var(--c-ink);border-radius:20px 16px 22px 15px/16px 22px 15px 20px;background:var(--c-board);position:relative;overflow:hidden;box-shadow:var(--shadow-card)}
+.scene.shake{animation:shake-x .45s}
+@keyframes shake-x{0%,100%{transform:translateX(0)}20%{transform:translateX(-7px) rotate(-.6deg)}40%{transform:translateX(6px)}60%{transform:translateX(-5px) rotate(.5deg)}80%{transform:translateX(4px)}}
+.sc-wall{height:158px;position:relative;background:linear-gradient(180deg,var(--c-wall) 0%,var(--c-wall2) 100%)}
+.scene.kitchen .sc-wall{background:linear-gradient(180deg,var(--c-kwall) 0%,var(--c-kwall2) 100%)}
+.living-wall::before{content:"";position:absolute;left:10%;top:22%;width:44px;height:34px;border:3px solid rgba(38,61,91,.28);border-radius:6px;transform:rotate(-3deg)}
+.living-wall::after{content:"";position:absolute;left:26%;top:16%;width:30px;height:26px;border:3px solid rgba(38,61,91,.22);border-radius:6px;transform:rotate(4deg)}
+.sc-floor{height:96px;background:repeating-linear-gradient(90deg,var(--c-floor) 0 46px,var(--c-floor2) 46px 92px);border-top:3px solid rgba(38,61,91,.3);position:relative}
+.scene.kitchen .sc-floor{background:repeating-linear-gradient(90deg,var(--c-kfloor) 0 46px,var(--c-kfloor2) 46px 92px)}
+.living-wall .glow{position:absolute;right:6%;top:8%;width:68px;height:68px;background:radial-gradient(circle,var(--c-glow-warm) 0 34px,transparent 35px)}
+
+/* hotspots */
+.hotspot{position:absolute;width:62px;height:62px;border:3px dashed transparent;border-radius:50%;display:grid;place-items:center;font-size:34px;cursor:pointer;background:none;transition:transform .15s;-webkit-tap-highlight-color:transparent;z-index:3}
+.hotspot::before{content:"";position:absolute;inset:2px;border:2.5px dashed rgba(38,61,91,.5);border-radius:inherit;animation:spin-slow 14s linear infinite}
+.hotspot::after{content:"";position:absolute;inset:-4px;border-radius:50%;box-shadow:0 0 0 0 rgba(73,182,229,.5);animation:hot-pulse 2.2s ease-out infinite}
+@keyframes spin-slow{to{transform:rotate(360deg)}}
+@keyframes hot-pulse{0%{box-shadow:0 0 0 0 rgba(73,182,229,.45)}70%{box-shadow:0 0 0 13px rgba(73,182,229,0)}100%{box-shadow:0 0 0 0 rgba(73,182,229,0)}}
+.hotspot:hover,.hotspot:focus-visible{transform:scale(1.12) rotate(-4deg);outline:none}
+.hotspot.match::before{border-color:var(--c-danger);border-style:solid;animation-duration:5s}
+.hotspot.match::after{animation:hot-pulse-red 1.4s ease-out infinite}
+@keyframes hot-pulse-red{0%{box-shadow:0 0 0 0 rgba(220,38,38,.45)}70%{box-shadow:0 0 0 15px rgba(220,38,38,0)}100%{box-shadow:0 0 0 0 rgba(220,38,38,0)}}
+.hotspot .k{position:absolute;bottom:-4px;right:-4px;font-family:var(--f-mono);font-size:9px;background:var(--c-ink);color:var(--c-card);border-radius:5px;padding:1px 5px}
+.hs-sofa{left:22px;bottom:88px;font-size:44px}
+.hs-cup{right:34px;bottom:150px;background:rgba(255,255,255,.55);border-radius:14px 12px 15px 12px;width:52px;height:52px}
+.hs-tv{right:14px;bottom:78px;width:70px;height:58px;background:rgba(255,255,255,.4);border-radius:10px}
+.hs-tv .tv-frame{width:54px;height:36px;background:var(--c-ink);border-radius:6px;position:relative}
+.hs-tv .tv-frame::after{content:"";position:absolute;inset:4px;background:linear-gradient(120deg,var(--c-tv) 30%,var(--c-tv-glare) 45%,var(--c-tv) 60%)}
+.hs-fridge{left:20px;bottom:96px;font-size:46px}
+.hs-pot{left:50%;transform:translateX(-50%);bottom:88px;font-size:42px}
+.hs-spice{right:24px;bottom:140px;font-size:38px}
+
+/* reaction bubble */
+.reaction{position:absolute;left:12px;top:12px;max-width:200px;background:var(--c-card);border:var(--w-line) solid var(--c-ink);border-radius:16px 14px 18px 12px;padding:9px 12px;font-family:var(--f-hand);font-size:14px;color:var(--c-ink);box-shadow:4px 4px 0 rgba(38,61,91,.18);animation:bubble-in .4s cubic-bezier(.34,1.8,.5,1);z-index:4}
+.reaction::after{content:"";position:absolute;bottom:-13px;left:34px;width:16px;height:14px;background:var(--c-card);border-right:var(--w-line) solid var(--c-ink);border-bottom:var(--w-line) solid var(--c-ink);transform:rotate(45deg)}
+@keyframes bubble-in{from{transform:scale(.3) translateY(10px);opacity:0}to{transform:scale(1);opacity:1}}
+
+/* grade pop */
+.grade-pop{position:absolute;left:50%;top:44%;transform:translate(-50%,-50%) rotate(-4deg);z-index:6;background:var(--c-yellow);border:4px solid var(--c-ink);border-radius:24px 19px 26px 18px/19px 26px 18px 24px;padding:14px 22px 12px;text-align:center;box-shadow:7px 8px 0 rgba(38,61,91,.25);animation:grade-in .5s cubic-bezier(.3,1.9,.45,1)}
+@keyframes grade-in{from{transform:translate(-50%,-50%) scale(0) rotate(-40deg)}to{transform:translate(-50%,-50%) scale(1) rotate(-4deg)}}
+.grade-pop .g-letter{font-family:var(--f-display);font-size:56px;line-height:1;color:var(--c-danger);text-shadow:3px 3px 0 rgba(38,61,91,.18)}
+.grade-pop .g-letter.c{color:var(--c-faint)}
+.grade-pop .g-line{font-family:var(--f-hand);font-size:13px;color:var(--c-ink);margin-top:4px;max-width:190px}
+.grade-pop .g-pts{font-family:var(--f-mono);font-weight:700;font-size:13px;background:var(--c-card);border:2px solid var(--c-ink);border-radius:999px;padding:2px 10px;display:inline-block;margin-top:7px}
+.grade-pop .g-tap{font-family:var(--f-mono);font-size:9px;color:rgba(38,61,91,.6);margin-top:6px;letter-spacing:.08em}
+.grade-pop .stamp{position:absolute;top:-14px;right:-16px;font-family:var(--f-mono);font-size:10px;font-weight:700;color:var(--c-card);background:var(--c-danger);border:2px solid var(--c-ink);border-radius:8px;padding:2px 7px;transform:rotate(10deg)}
+.hidden{display:none !important}
+
+/* toast */
+.toast{position:absolute;left:50%;top:14%;transform:translateX(-50%);z-index:8;background:var(--c-ink);color:var(--c-card);font-family:var(--f-hand);font-size:13px;border-radius:999px;padding:8px 16px;box-shadow:3px 4px 0 rgba(38,61,91,.3);animation:bubble-in .4s;white-space:nowrap}
+
+/* tool tray */
+.tray{flex:none;background:var(--c-card);border-top:var(--w-line) solid var(--c-ink);padding:10px 12px 12px;position:relative;z-index:5}
+.tray-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:8px}
+.tray-title{font-family:var(--f-hand);font-size:12.5px;color:var(--c-muted)}
+.tray-title b{color:var(--c-ink)}
+.tray-hint{font-family:var(--f-mono);font-size:9px;color:var(--c-faint2);letter-spacing:.06em;flex:none}
+.tray-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.tool{border:2.5px solid var(--c-ink);border-radius:14px 11px 15px 11px/11px 15px 11px 14px;background:var(--c-card);padding:7px 4px 5px;display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;position:relative;transition:transform .13s;-webkit-tap-highlight-color:transparent}
+.tool:hover{transform:translateY(-3px) rotate(-2deg)}
+.tool .t-ico{width:26px;height:24px;line-height:1.1}
+.tool .t-ico svg{width:100%;height:100%}
+.tool .t-name{font-family:var(--f-hand);font-size:10px;color:var(--c-ink);white-space:nowrap}
+.tool .t-k{position:absolute;top:3px;left:5px;font-family:var(--f-mono);font-size:8.5px;color:var(--c-key-line)}
+.tool.sel{background:var(--c-yellow);transform:translateY(-5px) rotate(-2deg);box-shadow:3px 4px 0 rgba(38,61,91,.22)}
+.tool.sel::after{content:"";position:absolute;inset:-7px;border:2.5px dashed var(--c-danger);border-radius:18px;animation:spin-slow 10s linear infinite}
+.tool.locked{background:repeating-linear-gradient(45deg,var(--c-stripe-a) 0 5px,var(--c-stripe-c) 5px 10px);cursor:not-allowed}
+.tool.locked .t-ico{filter:grayscale(1);opacity:.55}
+.tool.locked .t-lock{position:absolute;top:2px;right:4px;font-size:11px}
+.tool .t-pts{font-family:var(--f-mono);font-size:8.5px;color:var(--c-success);font-weight:700}
+
+/* ============ screen 3 · result ============ */
+#scr-result{background:
+  radial-gradient(circle at 18% 12%, var(--c-glow-a) 0 52px, transparent 53px),
+  radial-gradient(circle at 86% 70%, var(--c-glow-c) 0 44px, transparent 45px),
+  var(--c-paper);overflow:hidden}
+.confetti{position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:1}
+.confetti i{position:absolute;top:-12px;width:8px;height:13px;border:2px solid var(--c-ink);animation:fall linear infinite}
+@keyframes fall{from{transform:translateY(-20px) rotate(0)}to{transform:translateY(760px) rotate(560deg)}}
+.res-head{text-align:center;padding-top:20px;position:relative;z-index:2}
+.res-banner{font-family:var(--f-display);font-size:30px;color:var(--c-ink);display:inline-block;transform:rotate(-2deg);position:relative}
+.res-banner svg{position:absolute;left:-6%;bottom:-8px;width:112%;height:11px}
+.res-sub{font-family:var(--f-hand);font-size:13px;color:var(--c-muted);margin-top:10px}
+.score-card{margin:16px 14px 0;background:var(--c-card);border:var(--w-line) solid var(--c-ink);border-radius:20px 16px 22px 15px/16px 22px 15px 20px;padding:16px 18px 14px;position:relative;z-index:2;box-shadow:var(--shadow-card);transform:rotate(-.6deg)}
+.score-line{display:flex;align-items:baseline;gap:10px}
+.score-line .lab{font-family:var(--f-hand);font-size:14px;color:var(--c-muted)}
+.score-line .val{font-family:var(--f-display);font-size:44px;color:var(--c-danger);line-height:1}
+.new-rec{font-family:var(--f-mono);font-size:10px;font-weight:700;color:var(--c-card);background:var(--c-danger);border:2px solid var(--c-ink);border-radius:8px;padding:2px 8px;transform:rotate(-6deg);animation:rec-wiggle 1.6s ease-in-out infinite}
+@keyframes rec-wiggle{0%,100%{transform:rotate(-6deg) scale(1)}50%{transform:rotate(-2deg) scale(1.08)}}
+.score-row2{display:flex;gap:8px;margin-top:12px}
+.mini-stat{flex:1;border:2px solid var(--c-ink);border-radius:12px 10px 13px 10px;padding:7px 10px;background:var(--c-paper2)}
+.mini-stat .ms-l{font-family:var(--f-mono);font-size:9px;letter-spacing:.08em;color:var(--c-faint);text-transform:uppercase}
+.mini-stat .ms-v{font-family:var(--f-mono);font-weight:700;font-size:15px;color:var(--c-ink);margin-top:2px}
+.stamp-book{margin:14px 14px 0;background:var(--c-card);border:var(--w-line) solid var(--c-ink);border-radius:16px 20px 15px 22px/20px 15px 22px 16px;padding:13px 16px 15px;position:relative;z-index:2;box-shadow:var(--shadow-card);transform:rotate(.5deg)}
+.stamp-book .sb-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px}
+.stamp-book .sb-title{font-family:var(--f-display);font-size:16px;color:var(--c-ink)}
+.stamp-book .sb-count{font-family:var(--f-mono);font-size:11px;font-weight:700;background:var(--c-yellow);border:2px solid var(--c-ink);border-radius:999px;padding:2px 9px}
+.stamp-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px 8px}
+.stamp{display:flex;flex-direction:column;align-items:center;gap:4px}
+.stamp .s-medal{width:52px;height:52px;border:3px solid var(--c-ink);border-radius:50% 46% 52% 48%/48% 52% 46% 50%;display:grid;place-items:center;font-size:22px;position:relative}
+.stamp.earned .s-medal{background:var(--c-yellow);box-shadow:2px 3px 0 rgba(38,61,91,.22)}
+.stamp.earned .s-medal::after{content:"";position:absolute;inset:-7px;border:2px dashed var(--c-danger);border-radius:50%;opacity:.7}
+.stamp.locked .s-medal{background:repeating-linear-gradient(45deg,var(--c-stripe-a) 0 5px,var(--c-stripe-b) 5px 10px);color:var(--c-faint2)}
+.stamp .s-name{font-family:var(--f-hand);font-size:10px;color:var(--c-ink)}
+.stamp.locked .s-name{color:var(--c-faint2)}
+.res-actions{display:flex;flex-direction:column;align-items:center;gap:11px;padding:20px 20px 6px;position:relative;z-index:2}
+.res-actions .primary{width:100%}
+.res-actions .row2{display:flex;gap:10px;width:100%}
+.res-actions .row2 .dbtn{flex:1;font-size:13px;padding:10px 8px}
+.res-foot{margin-top:auto;text-align:center;font-family:var(--f-mono);font-size:9.5px;letter-spacing:.12em;color:var(--c-faint2);padding:12px 0 14px;text-transform:uppercase;position:relative;z-index:2}
+
+@media (max-width:430px){#app{box-shadow:none}}
+</style>
+</head>
+<body>
+<a href="/" class="back-to-hub" onclick="window.recordPlayed && window.recordPlayed('evil-brother-2')" aria-label="Back to arcade hub">&larr; Arcade</a>
+
+<!-- floating background doodles -->
+<div class="bg-doodle" style="top:10%;left:4%;width:90px;height:90px" aria-hidden="true"><svg viewBox="0 0 90 90"><g class="stroke-bg"><path d="M20 62 Q18 30 45 26 Q74 22 70 52 Q66 78 38 74 Q14 70 24 48"/><path d="M66 20 l10 -10 M72 34 l13 -4"/></g></svg></div>
+<div class="bg-doodle" style="top:64%;right:3%;width:110px;height:110px;animation-delay:1.2s" aria-hidden="true"><svg viewBox="0 0 110 110"><g class="stroke-bg"><path d="M55 14 L66 44 L98 46 L72 66 L82 98 L55 78 L28 98 L38 66 L12 46 L44 44 Z"/></g></svg></div>
+<div class="bg-doodle" style="top:36%;right:6%;width:70px;height:70px;animation-delay:.6s" aria-hidden="true"><svg viewBox="0 0 70 70"><g class="stroke-bg"><path d="M12 24 q6 -10 14 -4 q8 6 -2 12"/><path d="M10 44 h34 M10 54 h24"/></g></svg></div>
+
+<div id="app">
+
+  <!-- ============ Screen 1 · Title ============ -->
+  <section id="scr-title" class="screen on" aria-label="标题屏">
+    <div class="tape l"></div><div class="tape r"></div>
+    <div class="logo">
+      <span class="evil">EVIL</span><span class="brother">BROTHER</span><span class="two">2</span>
+      <div class="cn">整 蛊 兄 弟</div>
+      <svg class="squiggle" width="180" height="14" viewBox="0 0 180 14"><path d="M4 8 Q14 2 24 8 T44 8 T64 8 T84 8 T104 8 T124 8 T144 8 T164 8 T176 7"/></svg>
+    </div>
+
+    <div class="brother-hero" aria-label="在沙发上打瞌睡的哥哥">
+      <span class="float-a zzz" aria-hidden="true">Z<span>z</span><span>z</span></span>
+      <span class="float-b" aria-hidden="true"><svg class="g" viewBox="0 0 24 22"><ellipse class="fill-ink" cx="12" cy="15" rx="6" ry="4.6"/><path class="fill-card stroke-ink" d="M12 12 q-9 -9 -11 -3 q-1 6 11 3 z"/><path class="fill-card stroke-ink" d="M12 12 q9 -9 11 -3 q1 6 -11 3 z"/></svg></span>
+      <div class="armchair" aria-hidden="true"></div>
+      <div class="brother sleeping" aria-hidden="true">
+        <div class="b-head">
+          <div class="b-hair"></div>
+          <span class="brow l"></span><span class="brow r"></span>
+          <div class="eyes"><span class="eye"></span><span class="eye"></span></div>
+          <span class="blush l"></span><span class="blush r"></span>
+          <div class="mouth"></div>
+          <span class="drool"></span>
+        </div>
+        <div class="b-body"></div>
+      </div>
+      <span class="slipper" aria-hidden="true"></span>
+    </div>
+
+    <div class="best-chip">本地最高分 <b id="title-best">0</b> · evil_brother_2_best</div>
+
+    <div class="title-cta">
+      <button id="btn-start" class="dbtn primary" type="button">开始整蛊 !<span class="kbd-hint">Enter</span></button>
+    </div>
+
+    <p class="start-sub">
+      <span class="kbd">1</span>-<span class="kbd">5</span> 选道具 · <span class="kbd">←</span><span class="kbd">→</span> 选热点 · <span class="kbd">Space</span> 实施 · <span class="kbd">R</span> 再来一局<br>
+      首次点击即解锁音效 · 震动反馈自动开启 · 集齐 6 枚成就通关
+    </p>
+
+    <div class="tap-line">single html · loads &lt; 3s · 即点即玩</div>
+  </section>
+
+  <!-- ============ Screen 2 · Game ============ -->
+  <section id="scr-game" class="screen" aria-label="游戏屏">
+    <div class="hud">
+      <div class="hud-row1">
+        <div class="hud-left">
+          <button id="btn-scene" class="hud-ico" type="button" title="切换场景" aria-label="切换场景">🔁</button>
+          <span id="hud-scene" class="hud-scene">客厅</span>
+          <span id="hud-prank" class="hud-prank">第 0 次整蛊</span>
+        </div>
+        <div class="hud-right">
+          <span id="hud-timer" class="hud-timer">3:00</span>
+          <span class="hud-score">分数 <b id="hud-score">0</b></span>
+          <button id="btn-mute" class="hud-ico" type="button" title="静音切换" aria-label="静音切换">
+            <svg class="g" viewBox="0 0 28 24"><path class="fill-ink" d="M4 9 h5 l6 -5 v16 l-6 -5 h-5 z"/><path class="stroke-ink fill-none" id="mute-wave" d="M19 8 q4 4 0 8 M22 5 q7 7 0 14"/></svg>
+          </button>
+        </div>
+      </div>
+      <div id="badge-strip" class="badge-strip" aria-label="成就徽章 6 枚"></div>
+    </div>
+
+    <div class="scene-wrap">
+      <div id="scene" class="scene">
+        <div id="sc-wall" class="sc-wall living-wall"><span class="glow"></span></div>
+        <div class="sc-floor"></div>
+        <div id="reaction" class="reaction hidden"></div>
+        <div id="hotspots"></div>
+        <div id="brother" class="brother">
+          <svg id="burst" class="burst hidden" viewBox="0 0 120 70" aria-hidden="true">
+            <path class="fill-yellow stroke-burst" d="M60 4 L70 20 L90 10 L84 30 L112 28 L92 44 L110 62 L80 56 L74 68 L60 52 L44 66 L42 50 L14 56 L30 40 L8 30 L34 28 L26 8 L48 18 Z"/>
+            <text id="burst-text" x="60" y="44" text-anchor="middle">噗!!</text>
+          </svg>
+          <div class="b-head">
+            <div class="b-hair"></div>
+            <span class="brow l"></span><span class="brow r"></span>
+            <div class="eyes"><span class="eye open"></span><span class="eye open"></span></div>
+            <span class="blush l"></span><span class="blush r"></span>
+            <div class="mouth"></div>
+          </div>
+          <div class="b-body"></div>
+        </div>
+        <div id="grade-pop" class="grade-pop hidden">
+          <span id="grade-stamp" class="stamp hidden">COMBO ×2</span>
+          <div id="grade-letter" class="g-letter">S</div>
+          <div id="grade-line" class="g-line"></div>
+          <span id="grade-pts" class="g-pts">+0 分</span>
+          <div class="g-tap">点按跳过 · 1s 自动消失</div>
+        </div>
+        <div id="toast" class="toast hidden"></div>
+      </div>
+    </div>
+
+    <div class="tray">
+      <div class="tray-head">
+        <span id="tray-title" class="tray-title">道具托盘 · 选一个道具</span>
+        <span class="tray-hint">点场景热点实施</span>
+      </div>
+      <div id="tray-grid" class="tray-grid"></div>
+    </div>
+  </section>
+
+  <!-- ============ Screen 3 · Result ============ -->
+  <section id="scr-result" class="screen" aria-label="结算屏">
+    <div id="confetti" class="confetti" aria-hidden="true"></div>
+    <div class="res-head">
+      <div id="res-banner" class="res-banner">整蛊大成功!
+        <svg class="squiggle-red" viewBox="0 0 200 12" preserveAspectRatio="none"><path d="M3 8 Q30 2 60 7 T120 7 T197 6"/></svg>
+      </div>
+      <div id="res-sub" class="res-sub">哥哥气笑了</div>
+    </div>
+
+    <div class="score-card">
+      <div class="score-line">
+        <span class="lab">本局得分</span>
+        <span id="res-score" class="val">0</span>
+        <span id="new-rec" class="new-rec hidden">新纪录!</span>
+      </div>
+      <div class="score-row2">
+        <div class="mini-stat"><div class="ms-l">历史最高</div><div id="res-best" class="ms-v">0</div></div>
+        <div class="mini-stat"><div class="ms-l">整蛊次数</div><div id="res-pranks" class="ms-v">0 次</div></div>
+        <div class="mini-stat"><div class="ms-l">用时</div><div id="res-time" class="ms-v">0:00</div></div>
+      </div>
+    </div>
+
+    <div class="stamp-book">
+      <div class="sb-head">
+        <span class="sb-title">整蛊成就集章册</span>
+        <span id="stamp-count" class="sb-count">0 / 6</span>
+      </div>
+      <div id="stamp-grid" class="stamp-grid"></div>
+    </div>
+
+    <div class="res-actions">
+      <button id="btn-restart" class="dbtn primary" type="button">再来一局<span class="kbd-hint">R</span></button>
+      <div class="row2">
+        <button id="btn-next-scene" class="dbtn ghost" type="button">换个场景 &rarr;</button>
+        <button id="btn-title" class="dbtn warn" type="button">回标题页</button>
+      </div>
+    </div>
+
+    <div class="res-foot">evil_brother_2_best / _achievements · 已写入 localStorage</div>
+  </section>
+
+</div>
+
+<script>
+/* hub integration: record this visit in recently-played (same shim as other arcade games) */
+window.recordPlayed = window.recordPlayed || function(){};
+</script>
+
+<script>
+'use strict';
+/* ================= Evil Brother 2 — game logic (issue #57) ================= */
+
+/* ===== config ===== */
+const CONFIG = {
+  RESTART_COOLDOWN: 1500,
+  MAX_GAME_SEC: 180,
+  GRADE_MS: 1000,
+  WIN_BADGES: 6,
+  KITCHEN_UNLOCK_BADGES: 3,
+  TOOL_UNLOCK_BADGES: 2,
+  LS_BEST: 'evil_brother_2_best',
+  LS_ACH: 'evil_brother_2_achievements',
+  LS_SET: 'evil_brother_2_settings'
+};
+
+/* ===== data ===== */
+const TOOLS = [
+  { id:'cushion', name:'放屁垫', pts:'1-5', unlockAt:0, burst:'噗!!',
+    react:['谁放的屁?!','是沙发先动的手!','呃……真不是我!'],
+    svg:'<svg viewBox="0 0 32 26"><path class="fill-pink stroke-ink" d="M6 15 q0 -9 10 -9 q10 0 10 9 q0 8 -10 8 q-10 0 -10 -8 z"/><path class="stroke-ink fill-none" d="M12 13 q4 -4 8 0 q-3 3 -6 1"/><path class="stroke-ink fill-none" d="M26 9 q5 -2 3 -7"/></svg>' },
+  { id:'spider', name:'假蜘蛛', pts:'2-6', unlockAt:0, burst:'啊!!',
+    react:['蜘蛛!蜘蛛!!','哪来的蜘蛛!?','快拿走啊啊啊!'],
+    svg:'<svg viewBox="0 0 32 28"><circle class="fill-ink" cx="16" cy="14" r="7"/><circle class="fill-card" cx="13.6" cy="12.4" r="1.9"/><circle class="fill-card" cx="18.6" cy="12.4" r="1.9"/><path class="stroke-ink fill-none" d="M10 9 q-5 -3 -7 -8 M9 14 h-8 M10 19 q-5 3 -6 8 M22 9 q5 -3 7 -8 M23 14 h8 M22 19 q5 3 6 8"/></svg>' },
+  { id:'gum', name:'口香糖', pts:'2-5', unlockAt:0, burst:'呸!',
+    react:['我的头发!粘住了!','谁把口香糖放这的!','呸呸呸!'],
+    svg:'<svg viewBox="0 0 32 24"><path class="fill-yellow stroke-ink" d="M11 7 h10 q3 0 3 5 t-3 5 h-10 q-3 0 -3 -5 t3 -5 z"/><path class="fill-card stroke-ink" d="M11 9 l-7 -5 q-3 8 0 16 l7 -5 z"/><path class="fill-card stroke-ink" d="M21 9 l7 -5 q3 8 0 16 l-7 -5 z"/></svg>' },
+  { id:'ice', name:'冰水', pts:'3-6', unlockAt:0, burst:'嘶!',
+    react:['冰死我了!','水怎么这么冰!','牙齿都在打颤!'],
+    svg:'<svg viewBox="0 0 26 30"><path class="fill-sky stroke-ink" d="M5 9 l8 -5 8 5 v12 l-8 5 -8 -5 z"/><path class="stroke-card fill-none" d="M9.5 12.5 v6 M13 9.8 v3.4"/></svg>' },
+  { id:'roach', name:'蟑螂玩具', pts:'4-6', unlockAt:2, burst:'哇呀!',
+    react:['蟑螂!!会飞的那种!','别过来别过来!','救命啊!!'],
+    svg:'<svg viewBox="0 0 32 24"><ellipse class="fill-sofa stroke-ink" cx="16" cy="13" rx="9" ry="7"/><path class="stroke-ink fill-none" d="M12 8 q-2 -4 -6 -5 M20 8 q2 -4 6 -5 M8 13 h-6 M24 13 h6 M10 18 q-3 3 -6 3 M22 18 q3 3 6 3"/><circle class="fill-ink" cx="16" cy="11" r="2.6"/></svg>' }
+];
+
+const ACH = [
+  { id:'first',  name:'首噗',       icon:'💨' },
+  { id:'spider', name:'蛛心',       icon:'🕷️' },
+  { id:'ice',    name:'冰爽',       icon:'🧊' },
+  { id:'gum',    name:'粘粘乐',     icon:'🍬' },
+  { id:'tv',     name:'电视惊魂',   icon:'📺' },
+  { id:'king',   name:'终极整蛊王', icon:'👑' }
+];
+
+const SCENES = [
+  { id:'living', name:'客厅', hotspots:[
+    { id:'sofa', name:'沙发', cls:'hs-sofa', isTv:false, best:['cushion','roach'],
+      icon:'<svg class="g" viewBox="0 0 44 34"><path class="fill-sofa stroke-ink" d="M8 19 q-5 -15 6 -15 h16 q11 0 6 15 v7 q0 4 -4 4 h-20 q-4 0 -4 -4 z"/><path class="fill-sofa2 stroke-ink" d="M5 25 h34 v3 q0 4 -4 4 h-26 q-4 0 -4 -4 z"/><path class="stroke-ink fill-none" d="M16 10 q6 -3 12 0"/></svg>' },
+    { id:'cup', name:'水杯', cls:'hs-cup', isTv:false, best:['ice','gum','roach'],
+      icon:'<svg class="g" viewBox="0 0 24 32"><path class="fill-card stroke-ink" d="M5 9 h14 l-2 19 q0 2 -2 2 h-6 q-2 0 -2 -2 z"/><path class="stroke-ink fill-none" d="M12 9 l4 -7"/><path class="fill-sky stroke-ink" d="M6.4 15 h11.2 l-.9 7 h-9.4 z"/></svg>' },
+    { id:'tv', name:'电视', cls:'hs-tv', isTv:true, best:['spider','roach'],
+      icon:'<span class="tv-frame"></span>' }
+  ]},
+  { id:'kitchen', name:'厨房', hotspots:[
+    { id:'fridge', name:'冰箱', cls:'hs-fridge', isTv:false, best:['spider','roach'], icon:'🧊' },
+    { id:'pot', name:'汤锅', cls:'hs-pot', isTv:false, best:['ice','roach'], icon:'🍲' },
+    { id:'spice', name:'调料架', cls:'hs-spice', isTv:false, best:['gum','roach'], icon:'🧂' }
+  ]}
+];
+
+const GRADE_LINES = {
+  S:['天才级整蛊!','哥哥当场石化!','教科书级恶作剧!'],
+  A:['漂亮!哥哥中招了!','这波操作很秀!','哥哥一脸懵!'],
+  B:['差点意思……','哥哥只是抖了一下','再接再厉!'],
+  C:['完全没吓到……','哥哥:就这?','道具选错地方了吧!']
+};
+const GRADE_PTS = { S:200, A:150, B:80, C:30 };
+const CONF_COLORS = ['var(--c-yellow)','var(--c-sky)','var(--c-pink)','var(--c-success)','var(--c-sofa)','var(--c-lilac)'];
+
+/* ===== state ===== */
+const state = {
+  fsm:'title', sceneIdx:0, toolIdx:0, hsFocus:0,
+  score:0, pranks:0, combo:0, timeLeft:CONFIG.MAX_GAME_SEC, timerId:null,
+  earned:new Set(), muted:false, busy:false, pendingWin:false, gradeTimer:null,
+  lockedRestart:false, announcedTool:false, announcedKitchen:false
+};
+
+/* ===== dom / storage helpers ===== */
+function $(id){ return document.getElementById(id); }
+function lsGet(key, fallback){
+  try { const v = JSON.parse(window.localStorage.getItem(key)); return (v === null || v === undefined) ? fallback : v; }
+  catch (e){ return fallback; }
+}
+function lsSet(key, val){
+  try { window.localStorage.setItem(key, JSON.stringify(val)); } catch (e){ /* storage unavailable */ }
+}
+function fmtTime(s){ s = Math.max(0, s); return Math.floor(s/60) + ':' + String(s%60).padStart(2,'0'); }
+
+/* ===== audio (lazy WebAudio, zero external files) ===== */
+let audioCtx = null;
+function ensureAudio(){
+  if (!audioCtx) {
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (AC) { try { audioCtx = new AC(); } catch (e){ audioCtx = null; } }
+  }
+  if (audioCtx && audioCtx.state === 'suspended') { try { audioCtx.resume(); } catch (e){} }
+  return audioCtx;
+}
+function tone(freq, dur, type, vol, when){
+  if (state.muted) return;
+  const ctx = ensureAudio(); if (!ctx) return;
+  try {
+    const t = ctx.currentTime + (when || 0);
+    const osc = ctx.createOscillator(), gain = ctx.createGain();
+    osc.type = type || 'square';
+    osc.frequency.setValueAtTime(freq, t);
+    gain.gain.setValueAtTime(vol || 0.12, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + dur);
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.start(t); osc.stop(t + dur + 0.02);
+  } catch (e){}
+}
+function sfxSelect(){ tone(660, 0.06, 'square', 0.1); }
+function sfxPrank(){ tone(220, 0.12, 'sawtooth', 0.16); tone(150, 0.2, 'sawtooth', 0.14, 0.06); }
+function sfxGrade(g){
+  if (g === 'S') { tone(784, 0.1, 'square', 0.15); tone(1047, 0.16, 'square', 0.15, 0.09); }
+  else if (g === 'A') { tone(659, 0.1, 'square', 0.14); tone(880, 0.14, 'square', 0.14, 0.08); }
+  else if (g === 'B') { tone(440, 0.12, 'triangle', 0.12); }
+  else { tone(196, 0.2, 'triangle', 0.1); }
+}
+function sfxBadge(){ tone(523,0.08,'sine',0.18); tone(784,0.1,'sine',0.18,0.07); tone(1047,0.14,'sine',0.18,0.14); }
+function sfxWin(){ [523,659,784,1047].forEach(function(f,i){ tone(f, 0.18, 'sine', 0.2, i*0.11); }); }
+function sfxFail(){ tone(330,0.16,'triangle',0.14); tone(262,0.24,'triangle',0.14,0.12); }
+
+/* haptics: truthy guard + try/catch (CSS shake is the iOS fallback) */
+function vibrate(pattern){
+  if (navigator.vibrate) try { navigator.vibrate(pattern); } catch (e){}
+}
+
+/* ===== FSM / screens ===== */
+function showScreen(name){
+  state.fsm = name;
+  ['title','game','result'].forEach(function(s){
+    $('scr-' + s).classList.toggle('on', s === name);
+  });
+}
+
+/* ===== rendering ===== */
+function renderBadges(){
+  const wrap = $('badge-strip'); wrap.innerHTML = '';
+  ACH.forEach(function(a){
+    const got = state.earned.has(a.id);
+    const el = document.createElement('span');
+    el.className = 'badge ' + (got ? 'earned' : 'locked');
+    el.title = a.name;
+    el.innerHTML = got ? (a.icon + '<i class="spark">✦</i>') : '🔒';
+    wrap.appendChild(el);
+  });
+}
+function popBadge(id){
+  const idx = ACH.findIndex(function(a){ return a.id === id; });
+  const el = $('badge-strip').children[idx];
+  if (el) { el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop'); }
+}
+function renderTools(){
+  const grid = $('tray-grid'); grid.innerHTML = '';
+  TOOLS.forEach(function(t, i){
+    const unlocked = state.earned.size >= t.unlockAt;
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'tool' + (i === state.toolIdx ? ' sel' : '') + (unlocked ? '' : ' locked');
+    btn.setAttribute('aria-label', (unlocked ? '' : '未解锁 ') + t.name);
+    btn.innerHTML = '<span class="t-k">' + (i+1) + '</span>'
+      + '<span class="t-ico">' + t.svg + '</span>'
+      + '<span class="t-name">' + t.name + '</span>'
+      + (unlocked ? '<span class="t-pts">' + t.pts + '</span>' : '<span class="t-lock">🔒</span>');
+    btn.addEventListener('click', function(){ selectTool(i); });
+    grid.appendChild(btn);
+  });
+  updateTrayTitle();
+}
+function updateTrayTitle(){
+  const t = TOOLS[state.toolIdx];
+  $('tray-title').innerHTML = '道具托盘 · <b>' + t.name + '</b> 已选中 → 点场景热点实施';
+}
+function renderHotspots(){
+  const sc = SCENES[state.sceneIdx];
+  $('hud-scene').textContent = sc.name;
+  $('sc-wall').className = 'sc-wall ' + (sc.id === 'kitchen' ? 'kitchen-wall' : 'living-wall');
+  const wrap = $('hotspots'); wrap.innerHTML = '';
+  sc.hotspots.forEach(function(h, i){
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'hotspot ' + h.cls;
+    btn.setAttribute('aria-label', h.name + ' — 实施 ' + TOOLS[state.toolIdx].name);
+    btn.innerHTML = h.icon;
+    btn.addEventListener('click', function(){ executePrank(i); });
+    wrap.appendChild(btn);
+  });
+  applyMatchHighlights();
+}
+function applyMatchHighlights(){
+  const sc = SCENES[state.sceneIdx];
+  const tool = TOOLS[state.toolIdx];
+  const nodes = $('hotspots').children;
+  for (let i = 0; i < nodes.length; i++){
+    nodes[i].classList.toggle('match', sc.hotspots[i].best.indexOf(tool.id) !== -1);
+  }
+}
+function highlightFocus(){
+  const nodes = $('hotspots').children;
+  if (nodes[state.hsFocus]) nodes[state.hsFocus].focus();
+}
+function renderStamps(){
+  const grid = $('stamp-grid'); grid.innerHTML = '';
+  ACH.forEach(function(a){
+    const got = state.earned.has(a.id);
+    const div = document.createElement('div');
+    div.className = 'stamp ' + (got ? 'earned' : 'locked');
+    div.innerHTML = '<span class="s-medal">' + (got ? a.icon : '?') + '</span><span class="s-name">' + a.name + '</span>';
+    grid.appendChild(div);
+  });
+  $('stamp-count').textContent = state.earned.size + ' / ' + ACH.length;
+}
+function buildConfetti(win){
+  const box = $('confetti'); box.innerHTML = '';
+  const n = win ? 16 : 6;
+  for (let i = 0; i < n; i++){
+    const p = document.createElement('i');
+    p.style.left = (4 + Math.random() * 92) + '%';
+    p.style.background = win ? CONF_COLORS[i % CONF_COLORS.length] : 'var(--c-faint2)';
+    p.style.animationDuration = (3 + Math.random() * 1.6) + 's';
+    p.style.animationDelay = (Math.random() * 2) + 's';
+    box.appendChild(p);
+  }
+}
+let toastTimer = null;
+function toast(msg){
+  const el = $('toast');
+  el.textContent = msg;
+  el.classList.remove('hidden');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(function(){ el.classList.add('hidden'); }, 1400);
+}
+
+/* ===== game flow ===== */
+function startGame(){
+  ensureAudio();
+  state.score = 0; state.pranks = 0; state.combo = 0;
+  state.toolIdx = 0; state.hsFocus = 0; state.busy = false; state.pendingWin = false;
+  state.earned = new Set(lsGet(CONFIG.LS_ACH, []));
+  state.announcedTool = state.earned.size >= CONFIG.TOOL_UNLOCK_BADGES;
+  state.announcedKitchen = state.earned.size >= CONFIG.KITCHEN_UNLOCK_BADGES;
+  $('hud-score').textContent = '0';
+  $('hud-prank').textContent = '第 0 次整蛊';
+  $('grade-pop').classList.add('hidden');
+  $('reaction').classList.add('hidden');
+  $('burst').classList.add('hidden');
+  renderBadges(); renderTools(); renderHotspots();
+  showScreen('game');
+  startTimer();
+}
+function selectTool(i){
+  const t = TOOLS[i];
+  if (!t) return;
+  if (state.earned.size < t.unlockAt){
+    toast('再集 ' + (t.unlockAt - state.earned.size) + ' 枚成就解锁「' + t.name + '」');
+    sfxSelect();
+    return;
+  }
+  state.toolIdx = i;
+  sfxSelect(); vibrate(10);
+  renderTools(); applyMatchHighlights();
+}
+function executePrank(hsIdx){
+  if (state.fsm !== 'game' || state.busy) return;
+  const sc = SCENES[state.sceneIdx];
+  const hs = sc.hotspots[hsIdx];
+  const tool = TOOLS[state.toolIdx];
+  if (!hs || !tool) return;
+  if (state.earned.size < tool.unlockAt) return;
+  state.busy = true;
+  state.hsFocus = hsIdx;
+  ensureAudio();
+
+  const isBest = hs.best.indexOf(tool.id) !== -1;
+  const grade = isBest ? (Math.random() < 0.4 ? 'S' : 'A') : (Math.random() < 0.5 ? 'B' : 'C');
+  if (grade === 'S' || grade === 'A') state.combo += 1; else state.combo = 0;
+  const pts = Math.round(GRADE_PTS[grade] * (state.combo >= 2 ? 1 + 0.25 * (state.combo - 1) : 1) / 10) * 10;
+
+  state.score += pts;
+  state.pranks += 1;
+  $('hud-score').textContent = state.score;
+  $('hud-prank').textContent = '第 ' + state.pranks + ' 次整蛊';
+
+  /* quadruple feedback: shake + scared face + burst + sfx/haptic */
+  const sceneEl = $('scene');
+  sceneEl.classList.remove('shake'); void sceneEl.offsetWidth; sceneEl.classList.add('shake');
+  $('brother').classList.add('scared');
+  $('burst-text').textContent = tool.burst;
+  $('burst').classList.remove('hidden');
+  sfxPrank();
+  vibrate((grade === 'S' || grade === 'A') ? [30,30,50] : 25);
+
+  const rEl = $('reaction');
+  rEl.textContent = tool.react[Math.floor(Math.random() * tool.react.length)];
+  rEl.classList.remove('hidden');
+  rEl.style.animation = 'none'; void rEl.offsetWidth; rEl.style.animation = '';
+
+  setTimeout(function(){ showGrade(grade, pts, tool, hs); }, 350);
+}
+function awardAchievements(tool, hs){
+  const success = true; /* called only for S/A */
+  const newAch = [];
+  if (!state.earned.has('first')) newAch.push('first');
+  if (tool.id === 'spider' && !state.earned.has('spider')) newAch.push('spider');
+  if (tool.id === 'ice' && !state.earned.has('ice')) newAch.push('ice');
+  if (tool.id === 'gum' && !state.earned.has('gum')) newAch.push('gum');
+  if (hs.isTv && !state.earned.has('tv')) newAch.push('tv');
+  newAch.forEach(function(id){ state.earned.add(id); });
+  const coreDone = ['first','spider','ice','gum','tv'].every(function(id){ return state.earned.has(id); });
+  if (coreDone && !state.earned.has('king')){ state.earned.add('king'); newAch.push('king'); }
+  if (newAch.length){
+    lsSet(CONFIG.LS_ACH, Array.from(state.earned));
+    renderBadges(); renderTools();
+    newAch.forEach(function(id, i){ setTimeout(function(){ popBadge(id); sfxBadge(); }, i * 220); });
+    checkUnlocks();
+  }
+  return newAch;
+}
+function checkUnlocks(){
+  const n = state.earned.size;
+  if (n >= CONFIG.TOOL_UNLOCK_BADGES && !state.announcedTool){ state.announcedTool = true; toast('新道具「蟑螂玩具」已解锁!'); }
+  if (n >= CONFIG.KITCHEN_UNLOCK_BADGES && !state.announcedKitchen){ state.announcedKitchen = true; toast('新场景「厨房」已解锁! 点 🔁 切换'); }
+}
+function showGrade(grade, pts, tool, hs){
+  if (state.fsm !== 'game'){ state.busy = false; return; }
+  sfxGrade(grade);
+  $('grade-letter').textContent = grade;
+  $('grade-letter').className = 'g-letter' + (grade === 'C' ? ' c' : '');
+  const lines = GRADE_LINES[grade];
+  $('grade-line').textContent = '「' + lines[Math.floor(Math.random() * lines.length)] + '」';
+  $('grade-pts').textContent = '+' + pts + ' 分';
+  const stamp = $('grade-stamp');
+  if (state.combo >= 2 && (grade === 'S' || grade === 'A')){
+    stamp.textContent = 'COMBO ×' + state.combo;
+    stamp.classList.remove('hidden');
+  } else { stamp.classList.add('hidden'); }
+  const pop = $('grade-pop');
+  pop.classList.remove('hidden');
+  pop.style.animation = 'none'; void pop.offsetWidth; pop.style.animation = '';
+
+  if (grade === 'S' || grade === 'A') awardAchievements(tool, hs);
+  state.pendingWin = state.earned.size >= CONFIG.WIN_BADGES;
+  clearTimeout(state.gradeTimer);
+  state.gradeTimer = setTimeout(dismissGrade, CONFIG.GRADE_MS);
+}
+function dismissGrade(){
+  clearTimeout(state.gradeTimer);
+  $('grade-pop').classList.add('hidden');
+  $('reaction').classList.add('hidden');
+  $('burst').classList.add('hidden');
+  $('brother').classList.remove('scared');
+  $('scene').classList.remove('shake');
+  state.busy = false;
+  if (state.pendingWin){ state.pendingWin = false; finishGame(true); }
+}
+function finishGame(win){
+  stopTimer();
+  const used = CONFIG.MAX_GAME_SEC - Math.max(0, state.timeLeft);
+  const prevBest = lsGet(CONFIG.LS_BEST, 0) || 0;
+  const isNewBest = state.score > prevBest;
+  if (isNewBest) lsSet(CONFIG.LS_BEST, state.score);
+  lsSet(CONFIG.LS_ACH, Array.from(state.earned));
+
+  $('res-score').textContent = state.score.toLocaleString();
+  $('res-best').textContent = Math.max(prevBest, state.score).toLocaleString();
+  $('new-rec').classList.toggle('hidden', !isNewBest);
+  $('res-pranks').textContent = state.pranks + ' 次';
+  $('res-time').textContent = fmtTime(used);
+  $('res-banner').firstChild.textContent = win ? '整蛊大成功!' : '时间到!';
+  $('res-sub').textContent = win
+    ? '哥哥气笑了 · ' + state.earned.size + ' / 6 成就集齐,通关!'
+    : '哥哥逃过一劫 · 已集 ' + state.earned.size + ' / 6 成就,再来!';
+  renderStamps();
+  buildConfetti(win);
+  if (win) sfxWin(); else sfxFail();
+  vibrate(win ? [60,40,90] : [120,50,120]);
+  showScreen('result');
+
+  /* restart cooldown (1.5s anti-mistap) */
+  const rb = $('btn-restart');
+  rb.disabled = true;
+  state.lockedRestart = true;
+  setTimeout(function(){ rb.disabled = false; state.lockedRestart = false; }, CONFIG.RESTART_COOLDOWN);
+}
+function startTimer(){
+  stopTimer();
+  state.timeLeft = CONFIG.MAX_GAME_SEC;
+  updateTimerHud();
+  state.timerId = setInterval(function(){
+    state.timeLeft -= 1;
+    updateTimerHud();
+    if (state.timeLeft <= 0){ stopTimer(); finishGame(false); }
+  }, 1000);
+}
+function stopTimer(){ if (state.timerId){ clearInterval(state.timerId); state.timerId = null; } }
+function updateTimerHud(){
+  const el = $('hud-timer');
+  el.textContent = fmtTime(state.timeLeft);
+  el.classList.toggle('low', state.timeLeft <= 30);
+}
+function switchScene(restart){
+  const next = (state.sceneIdx + 1) % SCENES.length;
+  if (next === 1 && state.earned.size < CONFIG.KITCHEN_UNLOCK_BADGES){
+    toast('集齐 ' + CONFIG.KITCHEN_UNLOCK_BADGES + ' 枚成就解锁厨房!');
+    sfxSelect();
+    return;
+  }
+  state.sceneIdx = next;
+  state.hsFocus = 0;
+  sfxSelect(); vibrate(12);
+  if (restart) startGame();
+  else { renderHotspots(); toast('来到' + SCENES[next].name + '!'); }
+}
+function toggleMute(){
+  state.muted = !state.muted;
+  lsSet(CONFIG.LS_SET, { muted: state.muted });
+  $('mute-wave').style.display = state.muted ? 'none' : '';
+  $('btn-mute').title = state.muted ? '已静音' : '静音切换';
+  if (!state.muted) sfxSelect();
+}
+
+/* ===== input ===== */
+document.addEventListener('keydown', function(e){
+  const key = e.key;
+  if (state.fsm === 'title'){
+    if (key === 'Enter'){ e.preventDefault(); startGame(); }
+    return;
+  }
+  if (state.fsm === 'result'){
+    if ((key === 'r' || key === 'R') && !state.lockedRestart){ e.preventDefault(); startGame(); }
+    return;
+  }
+  if (state.fsm === 'game'){
+    if (key >= '1' && key <= '5'){ e.preventDefault(); selectTool(parseInt(key, 10) - 1); return; }
+    if (key === 'ArrowLeft' || key === 'ArrowRight'){
+      e.preventDefault();
+      const n = SCENES[state.sceneIdx].hotspots.length;
+      state.hsFocus = (state.hsFocus + (key === 'ArrowRight' ? 1 : -1) + n) % n;
+      highlightFocus();
+      return;
+    }
+    if (key === ' ' || key === 'Spacebar'){ e.preventDefault(); executePrank(state.hsFocus); return; }
+    if (key === 'r' || key === 'R'){ e.preventDefault(); startGame(); return; }
+    if (key === 'm' || key === 'M'){ e.preventDefault(); toggleMute(); return; }
+  }
+});
+
+/* ===== init ===== */
+function init(){
+  const set = lsGet(CONFIG.LS_SET, {});
+  state.muted = !!set.muted;
+  $('mute-wave').style.display = state.muted ? 'none' : '';
+  state.earned = new Set(lsGet(CONFIG.LS_ACH, []));
+  $('title-best').textContent = (lsGet(CONFIG.LS_BEST, 0) || 0).toLocaleString();
+
+  $('btn-start').addEventListener('click', startGame);
+  $('btn-mute').addEventListener('click', toggleMute);
+  $('btn-scene').addEventListener('click', function(){ if (state.fsm === 'game') switchScene(false); });
+  $('grade-pop').addEventListener('click', function(){
+    if (!$('grade-pop').classList.contains('hidden')) dismissGrade();
+  });
+  $('btn-restart').addEventListener('click', function(){ if (!state.lockedRestart) startGame(); });
+  $('btn-next-scene').addEventListener('click', function(){ switchScene(true); });
+  $('btn-title').addEventListener('click', function(){
+    stopTimer();
+    $('title-best').textContent = (lsGet(CONFIG.LS_BEST, 0) || 0).toLocaleString();
+    showScreen('title');
+  });
+
+  renderBadges(); renderTools(); renderHotspots();
+  showScreen('title');
+}
+init();
+</script>
+</body>
+</html>

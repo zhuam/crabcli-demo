@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#050507"/>
+      <stop offset="100%" stop-color="#14141C"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#8B5CF6"/>
+      <stop offset="100%" stop-color="#F43F5E"/>
+    </linearGradient>
+    <filter id="shadow">
+      <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#8B5CF6" flood-opacity="0.35"/>
+    </filter>
+  </defs>
+  <rect width="200" height="200" fill="url(#bg)" rx="16"/>
+  <!-- ambient glow -->
+  <circle cx="40" cy="30" r="60" fill="#8B5CF6" opacity="0.08"/>
+  <circle cx="170" cy="180" r="55" fill="#F43F5E" opacity="0.07"/>
+  <!-- phone frame -->
+  <rect x="58" y="24" width="84" height="150" rx="14" fill="#101016" stroke="#2A2A33" stroke-width="2" filter="url(#shadow)"/>
+  <rect x="88" y="31" width="24" height="6" rx="3" fill="#0B0B0F"/>
+  <!-- incoming: typing dots -->
+  <rect x="66" y="50" width="46" height="20" rx="9" fill="#17171D" stroke="#22222A"/>
+  <circle cx="77" cy="60" r="2.5" fill="#60606C"/>
+  <circle cx="86" cy="60" r="2.5" fill="#8A8A96"/>
+  <circle cx="95" cy="60" r="2.5" fill="#A1A1AA"/>
+  <!-- evidence message (dashed violet) -->
+  <rect x="66" y="78" width="62" height="28" rx="9" fill="#17171D" stroke="#8B5CF6" stroke-width="1.5" stroke-dasharray="4,3"/>
+  <rect x="73" y="86" width="38" height="3" rx="1.5" fill="#A1A1AA"/>
+  <rect x="73" y="93" width="28" height="3" rx="1.5" fill="#60606C"/>
+  <rect x="73" y="99" width="20" height="2.5" rx="1.25" fill="#8B5CF6"/>
+  <!-- outgoing violet bubble -->
+  <rect x="84" y="114" width="50" height="18" rx="9" fill="url(#accent)"/>
+  <rect x="92" y="121.5" width="32" height="3" rx="1.5" fill="#0C0714"/>
+  <!-- unknown-number badge -->
+  <circle cx="134" cy="50" r="10" fill="#F43F5E"/>
+  <text x="134" y="54.5" text-anchor="middle" font-family="Menlo,Consolas,monospace" font-size="12" font-weight="700" fill="#0C0714">?</text>
+  <!-- last-train clock -->
+  <text x="100" y="158" text-anchor="middle" font-family="Menlo,Consolas,monospace" font-size="12" letter-spacing="2" fill="#A1A1AA">23:58</text>
+  <rect x="80" y="165" width="40" height="3" rx="1.5" fill="#2E2E38"/>
+</svg>
