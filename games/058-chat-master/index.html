@@ -338,9 +338,15 @@ let state = {
 };
 
 // ===== Sound =====
+let _ac = null;
+function getAC() {
+  if (!_ac) _ac = new (window.AudioContext||window.webkitAudioContext)();
+  if (_ac.state === 'suspended') _ac.resume();
+  return _ac;
+}
 function playNote(freq=520, dur=100) {
   try {
-    const ac = new (window.AudioContext||window.webkitAudioContext)();
+    const ac = getAC();
     const osc = ac.createOscillator();
     const gain = ac.createGain();
     osc.connect(gain); gain.connect(ac.destination);
@@ -384,6 +390,11 @@ function startGame(charId) {
   state.affinity = 10;
   state.gameOver = false;
   state.usedNodes = new Set();
+  // Clear leftover DOM from previous game (Major-5)
+  document.getElementById('chat-area').innerHTML = '';
+  document.getElementById('options').innerHTML = '';
+  // Invalidate any pending timeouts from a previous session
+  state._round = (state._round || 0) + 1;
   const story = STORIES[charId];
   document.getElementById('char-name').textContent = story.name + ' ' + story.avatar;
   show('game');
@@ -464,8 +475,10 @@ function chooseOption(opt, idx, btn) {
   vibrate(15);
 
   // Show response message if present
+  const round = state._round;
   if (opt.msg) {
     setTimeout(() => {
+      if (state._round !== round) return; // stale — player already reset
       const resp = document.createElement('div');
       resp.className = 'msg system';
       resp.textContent = opt.msg;
@@ -475,10 +488,10 @@ function chooseOption(opt, idx, btn) {
       resp.style.maxWidth = '90%';
       chatArea.appendChild(resp);
       chatArea.scrollTop = chatArea.scrollHeight;
-      setTimeout(() => renderChat(), 400);
+      setTimeout(() => { if (state._round === round) renderChat(); }, 400);
     }, 400);
   } else {
-    setTimeout(() => renderChat(), 400);
+    setTimeout(() => { if (state._round === round) renderChat(); }, 400);
   }
 
   chatArea.scrollTop = chatArea.scrollHeight;
@@ -494,28 +507,35 @@ function updateAffinity() {
 }
 
 // ===== End Game =====
+function lsSafeGet(key, def) {
+  try { const v = localStorage.getItem(key); return v !== null ? v : def; } catch(e) { return def; }
+}
+function lsSafeSet(key, val) {
+  try { localStorage.setItem(key, String(val)); } catch(e) { /* noop */ }
+}
+
 function endGame(endingType) {
   const story = STORIES[state.char];
   const ending = story.endings[endingType];
   const isWin = state.affinity >= story.targetAffinity;
 
-  if (isWin && endingType === 'good') {
-    // Good ending
+  // Save high score (AC6 — both win and loss)
+  const key = 'chatmaster_hs';
+  const prev = parseInt(lsSafeGet(key, '0'), 10);
+  const best = isNaN(prev) ? 0 : prev;
+  if (state.affinity > best) lsSafeSet(key, state.affinity);
+
+  if (isWin) {
+    // Victory — show the ending the player earned
     document.getElementById('ending-title').textContent = ending.title;
     document.getElementById('ending-text').textContent = ending.text;
-    // Save high score
-    const key = 'chatmaster_hs';
-    const prev = parseInt(localStorage.getItem(key) || '0');
-    if (state.affinity > prev) {
-      localStorage.setItem(key, String(state.affinity));
-    }
     document.getElementById('score-display').textContent =
-      `最高好感度: ${Math.max(state.affinity, prev)}`;
+      `最高好感度: ${Math.max(state.affinity, best)}`;
     setTimeout(() => { show('victory'); playNote(880,200); }, 300);
   } else {
-    // Bad/Normal ending or non-good ending
+    // Defeat — affinity not high enough for the character's target
     document.getElementById('defeat-score').textContent =
-      `最终好感度: ${state.affinity} / ${story.targetAffinity}`;
+      `最终好感度: ${state.affinity} / ${story.targetAffinity}  「${ending.title}」`;
     setTimeout(() => { show('defeat'); playNote(330,150); }, 300);
   }
 }
