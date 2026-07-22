@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Chat Master · 聊天恋爱模拟</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+:root{--bg:#fef8f3;--surface:#fffaf5;--accent:#c1694f;--accent2:#e8a87c;--text:#3d2c2a;--text2:#7a5a4e;--bubble-self:#fce9de;--bubble-other:#fff0e6;--golden:#d4a05a;--radius:20px;--shadow:0 2px 12px rgba(0,0,0,.06)}
+body{font-family:-apple-system,'Segoe UI','Noto Sans SC',sans-serif;background:var(--bg);color:var(--text);display:flex;justify-content:center;min-height:100dvh}
+#app{width:100%;max-width:480px;min-height:100dvh;display:flex;flex-direction:column;background:var(--surface);position:relative;overflow:hidden}
+.screen{display:none;flex-direction:column;height:100dvh;position:absolute;inset:0}.screen.active{display:flex}
+/* Header */
+.header{padding:12px 16px;background:var(--surface);border-bottom:1px solid rgba(0,0,0,.04);display:flex;align-items:center;gap:10px;z-index:10}
+.header .back{font-size:20px;cursor:pointer;padding:4px 8px;border:none;background:none;color:var(--text)}
+.header h2{flex:1;font-size:16px;font-weight:600;text-align:center;color:var(--text)}
+.affinity-bar{height:4px;background:#f0e0d8;border-radius:2px;margin:0 16px 4px;overflow:hidden;position:relative}
+.affinity-fill{height:100%;background:linear-gradient(90deg,var(--accent2),var(--accent));border-radius:2px;transition:width .6s cubic-bezier(.34,1.56,.64,1)}
+.affinity-label{font-size:11px;color:var(--text2);text-align:right;padding:0 16px 8px;display:flex;justify-content:space-between}
+/* Chat area */
+.chat-area{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px;scroll-behavior:smooth}
+.chat-area::-webkit-scrollbar{width:4px}
+.chat-area::-webkit-scrollbar-thumb{background:#ddd;border-radius:2px}
+.msg{max-width:82%;padding:12px 16px;border-radius:var(--radius);font-size:15px;line-height:1.6;animation:msgIn .3s ease;word-break:break-word}
+.msg.other{align-self:flex-start;background:var(--bubble-other);border-bottom-left-radius:4px;color:var(--text)}
+.msg.self{align-self:flex-end;background:var(--accent);color:#fff;border-bottom-right-radius:4px}
+.msg.system{align-self:center;background:rgba(0,0,0,.03);color:var(--text2);font-size:13px;padding:6px 16px;border-radius:30px;max-width:90%}
+.msg .name{font-size:12px;font-weight:600;color:var(--accent);margin-bottom:4px}
+.msg.self .name{color:rgba(255,255,255,.8)}
+@keyframes msgIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+/* Options */
+.options{display:flex;flex-direction:column;gap:8px;padding:12px 16px 20px;border-top:1px solid rgba(0,0,0,.04);background:var(--surface)}
+.opt{background:var(--surface);border:1.5px solid #e8ddd5;border-radius:14px;padding:14px 18px;font-size:14px;color:var(--text);cursor:pointer;transition:all .2s;text-align:left;line-height:1.5}
+.opt:active{transform:scale(.97);border-color:var(--accent2)}
+.opt:hover{border-color:var(--accent2)}
+.opt.selected{background:var(--accent);color:#fff;border-color:var(--accent)}
+.opt:disabled{opacity:.4;cursor:default}
+/* Characters */
+.char-grid{display:flex;gap:16px;padding:24px 16px;flex:1;align-items:center}
+.char-card{flex:1;background:var(--surface);border:2px solid #e8ddd5;border-radius:var(--radius);padding:24px 12px;text-align:center;cursor:pointer;transition:all .2s}
+.char-card:active{transform:scale(.95);border-color:var(--accent2)}
+.char-card .avatar{width:80px;height:80px;border-radius:50%;margin:0 auto 12px;display:flex;align-items:center;justify-content:center;font-size:36px}
+.char-card h3{font-size:16px;color:var(--text);margin-bottom:4px}
+.char-card p{font-size:13px;color:var(--text2);line-height:1.5}
+/* Result */
+.result{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 24px;text-align:center}
+.result .icon{font-size:64px;margin-bottom:16px}
+.result h2{font-size:24px;margin-bottom:8px}
+.result p{color:var(--text2);margin-bottom:24px;font-size:15px;line-height:1.6}
+.btn{background:var(--accent);color:#fff;border:none;border-radius:30px;padding:14px 40px;font-size:16px;cursor:pointer;transition:all .2s}
+.btn:active{transform:scale(.95)}
+.btn-outline{background:transparent;color:var(--accent);border:1.5px solid var(--accent);border-radius:30px;padding:14px 40px;font-size:16px;cursor:pointer}
+/* splash */
+.splash{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px}
+.splash h1{font-size:28px;color:var(--text)}.splash p{color:var(--text2);font-size:14px}
+.tap-start{animation:pulse 2s ease infinite;margin-top:24px;font-size:14px;color:var(--accent)}
+@keyframes pulse{0%,100%{opacity:.6}50%{opacity:1}}
+</style>
+</head>
+<body>
+<div id="app">
+
+<!-- Splash -->
+<div id="splash" class="screen active" data-comp-id="splash-screen">
+  <div class="splash">
+    <div style="font-size:48px">💬</div>
+    <h1>Chat Master</h1>
+    <p>聊天恋爱模拟 · 用心跳选择</p>
+    <div class="tap-start">点击开始</div>
+  </div>
+</div>
+
+<!-- Character Select -->
+<div id="char-select" class="screen" data-comp-id="char-select">
+  <div class="header"><h2>选择攻略对象</h2></div>
+  <div class="char-grid">
+    <div class="char-card" onclick="startGame('shuo')">
+      <div class="avatar">🎭</div>
+      <h3>朔</h3>
+      <p>温柔学长<br>图书馆偶遇</p>
+    </div>
+    <div class="char-card" onclick="startGame('xing')">
+      <div class="avatar">🎸</div>
+      <h3>星</h3>
+      <p>酷飒社团人<br>天台初遇</p>
+    </div>
+  </div>
+</div>
+
+<!-- Game -->
+<div id="game" class="screen" data-comp-id="game-screen">
+  <div class="header">
+    <button class="back" onclick="backToChar()">✕</button>
+    <h2 id="char-name">朔</h2>
+  </div>
+  <div class="affinity-bar"><div class="affinity-fill" id="affinity-fill" style="width:10%"></div></div>
+  <div class="affinity-label"><span id="affinity-text">好感度: 10</span><span id="target-text">目标: 80</span></div>
+  <div class="chat-area" id="chat-area"></div>
+  <div class="options" id="options"></div>
+</div>
+
+<!-- Victory -->
+<div id="victory" class="screen" data-comp-id="victory-screen">
+  <div class="result">
+    <div class="icon">💕</div>
+    <h2 id="ending-title">Happy End</h2>
+    <p id="ending-text">你们终于走到了一起……</p>
+    <button class="btn" onclick="resetGame()">再来一局</button>
+    <br><br>
+    <div style="font-size:13px;color:var(--text2)" id="score-display"></div>
+  </div>
+</div>
+
+<!-- Defeat -->
+<div id="defeat" class="screen" data-comp-id="defeat-screen">
+  <div class="result">
+    <div class="icon">😔</div>
+    <h2>缘尽于此</h2>
+    <p>好感度未能达标，故事到此结束。<br>下次试试不同的选择吧！</p>
+    <button class="btn" onclick="resetGame()">再来一局</button>
+    <br><br>
+    <div style="font-size:13px;color:var(--text2)" id="defeat-score"></div>
+  </div>
+</div>
+
+</div>
+
+<script>
+// ===== Dialogue Data =====
+const STORIES = {
+  shuo: {
+    name: '朔', avatar: '🎭',
+    targetAffinity: 80,
+    endings: {
+      good: { title: '星空告白', text: '朔在漫天星光下牵起你的手——「从第一次在图书馆遇见你，我就一直在等这一天。」' },
+      normal: { title: '平淡温馨', text: '你们成了图书馆的固定自习搭子。虽然没有更进一步，但那份默契让每一天都温暖。' },
+      bad: { title: '渐行渐远', text: '朔依然是那个温柔的学长，只是你们之间似乎隔了一层看不见的距离。' }
+    },
+    tree: {
+      start: {
+        msg: '（今天下午，你在图书馆靠窗的位置复习。对面坐下一个人——是学生会的朔学长，他冲你笑了笑。）',
+        options: [
+          { text: '微笑点头回应', affinity: 10, next: 's1a', msg: '你礼貌地微笑点头。朔眼底的笑意更深了。' },
+          { text: '低头继续看书', affinity: 0, next: 's1b', msg: '你有些紧张地移开目光。朔并不介意，安静地翻开自己的书。' }
+        ]
+      },
+      s1a: {
+        msg: '「在复习什么？」朔低声问，声音像春日午后的风。',
+        options: [
+          { text: '「期末论文，头好大……」', affinity: 8, next: 's2a', msg: '「那门课我去年修过，需要笔记的话跟我说。」他眨眨眼。' },
+          { text: '「随便翻翻而已。」', affinity: 3, next: 's2b', msg: '朔点点头，目光里带着好奇。' },
+          { text: '反问：「学长呢？」', affinity: 12, next: 's2c', msg: '「我啊——在找一个搭讪的理由。」他半开玩笑地说，你心跳漏了一拍。' }
+        ]
+      },
+      s1b: {
+        msg: '安静看了一会儿书，朔轻轻推过来一张纸条：「遇到不懂的可以问我——9排3号桌的常客。」',
+        options: [
+          { text: '收下纸条，回以一笑', affinity: 12, next: 's2a', msg: '你收下纸条，对上他温和的目光。' },
+          { text: '点头致谢，继续看书', affinity: 5, next: 's2d', msg: '你点头示意，心里却一直想着那张纸条。' }
+        ]
+      },
+      s2a: {
+        msg: '你们断断续续聊了半个下午。朔合上书：「我差不多得去开会了。加个微信？」',
+        options: [
+          { text: '大方扫码加微信', affinity: 15, next: 's3a', msg: '你们加了微信。他发来第一个消息：「很高兴认识你 :)」' },
+          { text: '「下次吧……！」', affinity: -5, next: 's3b', msg: '朔笑笑：「好，下次。」但你没看到他眼底一闪而过的失落。' }
+        ]
+      },
+      s2b: {
+        msg: '「期末压力大吗？」朔合上书，似乎不急着走。',
+        options: [
+          { text: '「还好，就是有点焦虑」', affinity: 8, next: 's2a', msg: '「正常的。」温和地安慰你。' },
+          { text: '「还好吧」保持距离', affinity: 2, next: 's2d', msg: '「那就好。」他点点头，没有继续追问。' }
+        ]
+      },
+      s2c: {
+        msg: '朔被你逗笑了：「开玩笑的。不过，能请你喝杯咖啡吗——就现在？」',
+        options: [
+          { text: '「好呀，走吧」✨', affinity: 20, next: 's3a', msg: '你们收拾好东西，一起走向校门口的咖啡店。阳光正好，你的心跳有些快。' },
+          { text: '「我还有论文……」委婉拒绝', affinity: 5, next: 's3b', msg: '「没关系，下次。」朔温和地说，但你看出他有点失望。' }
+        ]
+      },
+      s2d: {
+        msg: '傍晚离开时，朔在门口等你：「明天还来吗？」',
+        options: [
+          { text: '「嗯，来的。」', affinity: 10, next: 's3a', msg: '他笑了：「那明天见。」简简单单三个字，让你的心暖了起来。' },
+          { text: '「看情况吧……」', affinity: 0, next: 's3b', msg: '「好。如果来的话，老位置。」他的语气依然温柔。' }
+        ]
+      },
+      s3a: {
+        msg: '【一周后】你们的微信聊天渐渐从学习延伸到生活。朔约你周末去市里的美术馆。',
+        options: [
+          { text: '欣然赴约', affinity: 18, next: 's4a', msg: '在美术馆里，他站在一幅画前说：「这幅让我想到你——安静又有温度。」你的脸一下子红了。' },
+          { text: '有点犹豫还是去了', affinity: 8, next: 's4b', msg: '你赴约了，但始终有些放不开。朔很体贴，没有多问。' }
+        ]
+      },
+      s3b: {
+        msg: '【几天后】你们在校园里偶遇几次，每次都只是点头之交。',
+        options: [
+          { text: '主动上前打招呼', affinity: 10, next: 's4b', msg: '朔有些意外，但很高兴：「这几天没在图书馆见到你。」' },
+          { text: '低头走开', affinity: -10, next: 's4c', msg: '你绕开了。也许你们真的没有什么缘分。' }
+        ]
+      },
+      s4a: {
+        msg: '回去的路上，朔突然停下脚步：「其实从第一次在图书馆见到你，我就很想认识你。」他认真地看着你。',
+        options: [
+          { text: '「其实我也是」', affinity: 25, next: 's5_good', msg: '他的眼睛亮了起来，轻轻握住了你的手。那一瞬间，世界安静得只剩你们两个人。' },
+          { text: '「我需要点时间……」', affinity: 8, next: 's5_normal', msg: '朔点点头：「没关系，我会等你的。」他的掌心温暖而坚定。' }
+        ]
+      },
+      s4b: {
+        msg: '学期末，朔发来消息：「假期有空的话，要不要一起去旅行？」',
+        options: [
+          { text: '「好！我想去海边」', affinity: 15, next: 's5_good', msg: '他订好了海边的民宿。你们在海滩上看了一场橘子色的日落。' },
+          { text: '「我考虑一下」', affinity: 5, next: 's5_normal', msg: '「好，决定好了告诉我。」朔的语气平静，但你听出了一点期待。' }
+        ]
+      },
+      s4c: {
+        msg: '期末之后，你再也没有在图书馆见到朔。听说他出国交换了。',
+        options: [
+          { text: '发微信祝福他', affinity: 5, next: 's5_bad', msg: '你发了一条「一路顺风」。他回了「谢谢，也祝你一切都好。」' },
+          { text: '算了，就这样吧', affinity: 0, next: 's5_bad', msg: '你删掉了聊天框里打了又删的消息。有些人注定是过客。' }
+        ]
+      },
+      s5_good: { ending: 'good' },
+      s5_normal: { ending: 'normal' },
+      s5_bad: { ending: 'bad' }
+    }
+  },
+  xing: {
+    name: '星', avatar: '🎸',
+    targetAffinity: 80,
+    endings: {
+      good: { title: '天台约定', text: '星把拨片放在你手心：「下次演出，你一定要来。这首歌——是写给你的。」' },
+      normal: { title: '音乐知己', text: '你们成了音乐上的灵魂搭档。虽然没有更进一步的告白，但旋律替你们说了所有的话。' },
+      bad: { title: '两条平行线', text: '热闹的社团活动里，你们再也没有单独说过话。星依然是那个耀眼的舞台中心。' }
+    },
+    tree: {
+      start: {
+        msg: '（社团招新季。你路过吉他社的摊位，一个短发女生正弹唱一首你没听过的歌。她抬头看见了你——）',
+        options: [
+          { text: '停下来听完这首歌', affinity: 12, next: 'x1a', msg: '你站在人群里听完了整首歌。她弹下最后一个音，朝你笑了笑。' },
+          { text: '拿了传单就走', affinity: 0, next: 'x1b', msg: '你拿起一张传单准备走，她叫住了你——「喂，好听吗？」' }
+        ]
+      },
+      x1a: {
+        msg: '唱完后她径直走向你：「你站那听了全程——是不是该给点反馈？」',
+        options: [
+          { text: '「超级好听！那是什么歌？」', affinity: 15, next: 'x2a', msg: '「我自己写的，还没名字。帮我想一个？」她眨眨眼。' },
+          { text: '「还不错……」故作淡定', affinity: 5, next: 'x2b', msg: '她歪歪头：「就『还不错』？那我得再练练了。」' }
+        ]
+      },
+      x1b: {
+        msg: '「你觉得怎么样？」她追问道。',
+        options: [
+          { text: '「真的很好听，很有才华」', affinity: 12, next: 'x2a', msg: '她咧嘴笑了：「加个微信？下次写新歌先唱给你听。」' },
+          { text: '「抱歉我赶时间……」', affinity: -5, next: 'x2c', msg: '她耸耸肩：「好吧。下次路过再听啊。」' }
+        ]
+      },
+      x2a: {
+        msg: '你们加了微信。半小时后她发来一段demo：「刚录的——你是第一个听众。」',
+        options: [
+          { text: '认真听完给建议', affinity: 18, next: 'x3a', msg: '你认真听完，写了一大段反馈发过去。她回复了一串感叹号。' },
+          { text: '回个「好听👍」', affinity: 3, next: 'x3b', msg: '她回了个开心的表情包。虽然感觉有点敷衍……' }
+        ]
+      },
+      x2b: {
+        msg: '「下次社团活动来玩吧？我教你弹。」她递来一张报名表。',
+        options: [
+          { text: '当场填表报名', affinity: 15, next: 'x3a', msg: '「够爽快！」她在报名表上画了个小星星。' },
+          { text: '「我考虑一下」', affinity: 3, next: 'x3b', msg: '「行，传单上有群号，想来随时加。」她弹了一个和弦。' }
+        ]
+      },
+      x2c: {
+        msg: '你走出一段距离，身后又传来她的歌声。这次是一首慢歌。',
+        options: [
+          { text: '折返回去认真听', affinity: 15, next: 'x2a', msg: '你走回去，站在人群边缘。她看到你了，歌声里多了一丝笑意。' },
+          { text: '头也不回地走了', affinity: -15, next: 'x3c', msg: '音乐声渐渐远去。有些相遇，错过了就是错过了。' }
+        ]
+      },
+      x3a: {
+        msg: '【周末社团活动】星手把手教你按和弦。她靠得很近，你能闻到她身上淡淡的洗衣粉味道。',
+        options: [
+          { text: '趁机拉近距离', affinity: 18, next: 'x4a', msg: '「你弹得很好——以后教我更多的歌好不好？」她愣了一下，笑了：「好啊，教一辈子都行。」' },
+          { text: '专心学和弦', affinity: 8, next: 'x4b', msg: '你认真学习的样子让星很欣赏。「有天赋嘛！」她拍了拍你的肩。' }
+        ]
+      },
+      x3b: {
+        msg: '你在吉他社的群里潜水，偶尔看她的消息。有一天她突然私聊你——「周末来看我们排练吗？」',
+        options: [
+          { text: '「好，几点？」', affinity: 12, next: 'x4a', msg: '排练室里，她特意为你唱了那首没写完的新歌。' },
+          { text: '「这周有点忙……」', affinity: 0, next: 'x4c', msg: '「没关系，下次。」她的消息末尾少了一个笑脸。' }
+        ]
+      },
+      x3c: {
+        msg: '你在校园里再也没有特地去听她唱歌。偶尔路过吉他社，远远看到她被一群人围着。',
+        options: [
+          { text: '鼓起勇气走进去', affinity: 10, next: 'x4b', msg: '她看到你时愣了一下，然后露出一个大大的笑容。「好久不见。」' },
+          { text: '默默走开', affinity: -10, next: 'x4c', msg: '你们之间的距离，好像越来越远了。' }
+        ]
+      },
+      x4a: {
+        msg: '【校庆前夜】星紧张地调试琴弦。「明天的演出……你会来看的吧？」',
+        options: [
+          { text: '「当然！我给你带了润喉糖」', affinity: 25, next: 'x5_good', msg: '她接过润喉糖，眼圈有点红。「你这个人怎么这么好啊……」' },
+          { text: '「加油！」', affinity: 8, next: 'x5_normal', msg: '她深吸一口气：「有你在台下的话，我好像就不紧张了。」' }
+        ]
+      },
+      x4b: {
+        msg: '校庆那天，星在台上闪闪发光。目光穿过人群，落在你身上。',
+        options: [
+          { text: '用力挥手回应', affinity: 15, next: 'x5_good', msg: '她差点弹错一个和弦，但笑得更灿烂了。' },
+          { text: '默默鼓掌', affinity: 5, next: 'x5_normal', msg: '演出结束后，她发来消息：「我看到你了。」后面跟了一个小心心。' }
+        ]
+      },
+      x4c: {
+        msg: '校庆之后，星突然变得很忙。你们的消息停留在她的「晚安」。',
+        options: [
+          { text: '主动约她出来', affinity: 8, next: 'x5_normal', msg: '她犹豫了一下答应了。但那天你们聊的都是乐队排练的事，好像隔了一层什么。' },
+          { text: '不去打扰她', affinity: -5, next: 'x5_bad', msg: '一个月后，你看到她在舞台上的照片——她笑得那么耀眼，好像不需要你也行。' }
+        ]
+      },
+      x5_good: { ending: 'good' },
+      x5_normal: { ending: 'normal' },
+      x5_bad: { ending: 'bad' }
+    }
+  }
+};
+
+// ===== Game State =====
+let state = {
+  char: null,
+  node: 'start',
+  affinity: 10,
+  maxAffinity: 100,
+  gameOver: false,
+  usedNodes: new Set()
+};
+
+// ===== Sound =====
+function playNote(freq=520, dur=100) {
+  try {
+    const ac = new (window.AudioContext||window.webkitAudioContext)();
+    const osc = ac.createOscillator();
+    const gain = ac.createGain();
+    osc.connect(gain); gain.connect(ac.destination);
+    osc.frequency.value = freq;
+    osc.type = 'sine';
+    gain.gain.setValueAtTime(.15, ac.currentTime);
+    gain.gain.exponentialRampToValueAtTime(.001, ac.currentTime + dur/1000);
+    osc.start();
+    osc.stop(ac.currentTime + dur/1000);
+  } catch(e) {}
+}
+
+function vibrate(ms=20) {
+  try { navigator.vibrate && navigator.vibrate(ms); } catch(e) {}
+}
+
+// ===== Affinity helpers =====
+function getLevel(a) {
+  if (a >= 80) return 5; if (a >= 60) return 4; if (a >= 40) return 3; if (a >= 20) return 2; return 1;
+}
+function getLevelEmoji(l) {
+  return ['💔','❤️‍🩹','❤️','💖','💕'][l-1] || '❤️';
+}
+
+// ===== Screen =====
+function show(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+// ===== Splash =====
+document.getElementById('splash').addEventListener('click', () => {
+  playNote(660,80); vibrate(10);
+  show('char-select');
+});
+
+// ===== Game =====
+function startGame(charId) {
+  state.char = charId;
+  state.node = 'start';
+  state.affinity = 10;
+  state.gameOver = false;
+  state.usedNodes = new Set();
+  const story = STORIES[charId];
+  document.getElementById('char-name').textContent = story.name + ' ' + story.avatar;
+  show('game');
+  renderChat();
+}
+
+function backToChar() {
+  show('char-select');
+}
+
+function renderChat() {
+  const story = STORIES[state.char];
+  const nodeId = state.node;
+  const node = story.tree[nodeId];
+  const chatArea = document.getElementById('chat-area');
+  const optionsDiv = document.getElementById('options');
+
+  // Clear and append new message
+  if (node && node.msg) {
+    const div = document.createElement('div');
+    div.className = 'msg other';
+    div.innerHTML = `<div class="name">${story.name}</div>${node.msg}`;
+    chatArea.appendChild(div);
+    chatArea.scrollTop = chatArea.scrollHeight;
+  }
+
+  // Check for ending
+  if (node && node.ending) {
+    state.gameOver = true;
+    setTimeout(() => endGame(node.ending), 800);
+    optionsDiv.innerHTML = '';
+    return;
+  }
+
+  // Render options
+  if (node && node.options) {
+    optionsDiv.innerHTML = '';
+    // Filter out nodes that would revisit the same state
+    node.options.forEach((opt, i) => {
+      const btn = document.createElement('button');
+      btn.className = 'opt';
+      // Show affinity hint (hidden initially, shown on hover)
+      btn.innerHTML = `${opt.text} <span style="font-size:11px;color:var(--text2);opacity:.6">${opt.affinity > 0 ? '+' : ''}${opt.affinity}</span>`;
+      btn.onclick = () => chooseOption(opt, i, btn);
+      btn.dataset.index = i;
+      optionsDiv.appendChild(btn);
+    });
+    // Keyboard support: 1, 2, 3...
+    document.getElementById('game').dataset.optionCount = node.options.length;
+  } else {
+    optionsDiv.innerHTML = '<div style="text-align:center;color:var(--text2);padding:20px">— 对话已结束 —</div>';
+  }
+
+  updateAffinity();
+}
+
+function chooseOption(opt, idx, btn) {
+  if (state.gameOver) return;
+  const chatArea = document.getElementById('chat-area');
+  const optionsDiv = document.getElementById('options');
+
+  // Disable all buttons
+  optionsDiv.querySelectorAll('.opt').forEach(b => b.disabled = true);
+
+  // Show self message
+  const selfMsg = document.createElement('div');
+  selfMsg.className = 'msg self';
+  selfMsg.textContent = opt.text;
+  chatArea.appendChild(selfMsg);
+
+  // Apply affinity
+  state.affinity = Math.max(0, Math.min(100, state.affinity + opt.affinity));
+  state.node = opt.next;
+  state.usedNodes.add(opt.next);
+  updateAffinity();
+
+  playNote(440 + idx * 80, 60);
+  vibrate(15);
+
+  // Show response message if present
+  if (opt.msg) {
+    setTimeout(() => {
+      const resp = document.createElement('div');
+      resp.className = 'msg system';
+      resp.textContent = opt.msg;
+      resp.style.background = 'var(--bubble-other)';
+      resp.style.color = 'var(--text)';
+      resp.style.alignSelf = 'flex-start';
+      resp.style.maxWidth = '90%';
+      chatArea.appendChild(resp);
+      chatArea.scrollTop = chatArea.scrollHeight;
+      setTimeout(() => renderChat(), 400);
+    }, 400);
+  } else {
+    setTimeout(() => renderChat(), 400);
+  }
+
+  chatArea.scrollTop = chatArea.scrollHeight;
+}
+
+function updateAffinity() {
+  const pct = (state.affinity / 100) * 100;
+  document.getElementById('affinity-fill').style.width = pct + '%';
+  document.getElementById('affinity-text').textContent =
+    `好感度: ${state.affinity} ${getLevelEmoji(getLevel(state.affinity))}`;
+  document.getElementById('target-text').textContent =
+    `目标: ${STORIES[state.char].targetAffinity}`;
+}
+
+// ===== End Game =====
+function endGame(endingType) {
+  const story = STORIES[state.char];
+  const ending = story.endings[endingType];
+  const isWin = state.affinity >= story.targetAffinity;
+
+  if (isWin && endingType === 'good') {
+    // Good ending
+    document.getElementById('ending-title').textContent = ending.title;
+    document.getElementById('ending-text').textContent = ending.text;
+    // Save high score
+    const key = 'chatmaster_hs';
+    const prev = parseInt(localStorage.getItem(key) || '0');
+    if (state.affinity > prev) {
+      localStorage.setItem(key, String(state.affinity));
+    }
+    document.getElementById('score-display').textContent =
+      `最高好感度: ${Math.max(state.affinity, prev)}`;
+    setTimeout(() => { show('victory'); playNote(880,200); }, 300);
+  } else {
+    // Bad/Normal ending or non-good ending
+    document.getElementById('defeat-score').textContent =
+      `最终好感度: ${state.affinity} / ${story.targetAffinity}`;
+    setTimeout(() => { show('defeat'); playNote(330,150); }, 300);
+  }
+}
+
+// ===== Reset =====
+function resetGame() {
+  state = { char: null, node: 'start', affinity: 10, maxAffinity: 100, gameOver: false, usedNodes: new Set() };
+  document.getElementById('chat-area').innerHTML = '';
+  document.getElementById('options').innerHTML = '';
+  document.getElementById('char-select').querySelector('.char-grid').style.display = 'flex';
+  show('splash');
+}
+
+// ===== Keyboard support =====
+document.addEventListener('keydown', (e) => {
+  if (e.key >= '1' && e.key <= '9') {
+    const idx = parseInt(e.key) - 1;
+    const options = document.querySelectorAll('#options .opt:not(:disabled)');
+    if (options[idx]) options[idx].click();
+  }
+  if (e.key === 'Enter') {
+    const activeScreen = document.querySelector('.screen.active');
+    if (activeScreen?.id === 'splash') document.getElementById('splash').click();
+  }
+  if (e.key === 'Escape') {
+    if (document.getElementById('game').classList.contains('active')) backToChar();
+  }
+});
+
+// ===== Init =====
+console.log('Chat Master v1.0 — 聊天恋爱模拟');
+</script>
+</body>
+</html>

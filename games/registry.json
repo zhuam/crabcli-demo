@@ -585,6 +585,25 @@
       "version": "1.0.0",
       "featured": true,
       "rating": 4.0
+    },
+    {
+      "id": "chat-master",
+      "name": "Chat Master",
+      "description": "聊天恋爱模拟 — 选择回复推进剧情，达成目标好感度通关",
+      "category": "casual",
+      "tags": [
+        "singleplayer",
+        "casual",
+        "reading",
+        "short-session"
+      ],
+      "thumbnail": "/games/058-chat-master/thumb.svg",
+      "path": "/games/058-chat-master/",
+      "hasServer": false,
+      "players": "1",
+      "version": "1.0.0",
+      "featured": true,
+      "rating": 4.0
     }
   ],
   "categories": [
