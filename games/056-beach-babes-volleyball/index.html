@@ -1090,7 +1090,7 @@ function resetPositions(server){
 function serveVel(fromX,dirSign){
   // serve power scales with court width: target ~42% into opponent court, arc clears the net
   var target=dirSign>0?NETX+(LX1-NETX)*0.42:NETX-(NETX-LX0)*0.42;
-  var vy=-rnd(640,700);
+  var vy=-rnd(720,780)*clamp(H/1080,1,1.35); // higher arc: deep-baseline serves at wide layouts (1920px) cleared the net by <5px or clipped it with the old 640-700 range; net height scales with H, so the arc scales too (factor 1 below 1080p)
   var drop=(LY-B.r)-(LY-60);
   var t=(-vy+Math.sqrt(vy*vy+2*BALL_G*drop))/BALL_G;
   return {vx:(target-fromX)/t,vy:vy};
@@ -1098,6 +1098,7 @@ function serveVel(fromX,dirSign){
 function doServe(){
   if(phase!=='serve'||match.server!=='me'||B.owner!=='me')return;
   B.owner=null;B.live=true;
+  if(B.x>NETX-NETW*3-B.r)B.x=NETX-NETW*3-B.r; // clamp spawn outside the net collision band (no net-camp serve phasing through)
   var fromX=B.x;
   var sv=serveVel(fromX,1);B.vx=sv.vx;B.vy=sv.vy;
   B.lastHitter='me';B.touches=1;lastTouchSide='me';rally=0;
@@ -1108,6 +1109,7 @@ function doServe(){
 }
 function aiServe(){
   B.owner=null;B.live=true;
+  if(B.x<NETX+NETW*3+B.r)B.x=NETX+NETW*3+B.r; // symmetric spawn clamp for the AI side
   var sv=serveVel(B.x,-1);B.vx=sv.vx;B.vy=sv.vy;
   B.lastHitter='ai';B.touches=1;lastTouchSide='ai';rally=0;
   B.y=LY-60;
@@ -1436,7 +1438,7 @@ function loop(now){
     case 'serve':
       updatePlayer(P,dt,false);
       updateAI(dt);
-      B.owner=match.server==='me'?'me':'ai';
+      if(phase==='serve')B.owner=match.server==='me'?'me':'ai'; // updateAI may fire aiServe() (phase->'rally', owner->null); re-gluing owner would freeze the AI serve forever
       updateBall(dt);
       if(match.server==='me'){
         match.serveHold+=dt;
