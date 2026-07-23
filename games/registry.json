@@ -17,7 +17,7 @@
       "players": "1",
       "version": "1.0.0",
       "featured": true,
-      "rating": 4.0
+      "rating": 4
     },
     {
       "id": "trivia-royale",
@@ -131,7 +131,7 @@
       "players": "1",
       "version": "1.0.0",
       "featured": true,
-      "rating": 4.0
+      "rating": 4
     },
     {
       "id": "cube-labyrinth-roll",
@@ -232,7 +232,7 @@
       "players": "1-2",
       "version": "1.0.0",
       "featured": true,
-      "rating": 4.0
+      "rating": 4
     },
     {
       "id": "punch-monkey-cafe",
@@ -252,7 +252,7 @@
       "players": "1",
       "version": "1.0.0",
       "featured": true,
-      "rating": 4.0
+      "rating": 4
     },
     {
       "id": "sort-till-you-cant",
@@ -272,7 +272,7 @@
       "players": "1",
       "version": "1.0.0",
       "featured": false,
-      "rating": 4.0
+      "rating": 4
     },
     {
       "id": "garden-keeper",
@@ -428,7 +428,7 @@
       "hasServer": false,
       "players": "1",
       "version": "1.0.0",
-      "rating": 4.0
+      "rating": 4
     },
     {
       "id": "word-ladder-climb",
@@ -480,7 +480,7 @@
       "hasServer": false,
       "players": "1",
       "version": "1.0.0",
-      "rating": 4.0
+      "rating": 4
     },
     {
       "id": "word-guess",
@@ -497,7 +497,7 @@
       "hasServer": false,
       "players": "1",
       "version": "1.0.0",
-      "rating": 4.0
+      "rating": 4
     },
     {
       "id": "pet-run-io",
@@ -513,7 +513,7 @@
       "hasServer": false,
       "players": "1",
       "version": "1.0.0",
-      "rating": 4.0
+      "rating": 4
     },
     {
       "id": "solar-snake",
@@ -529,7 +529,7 @@
       "hasServer": false,
       "players": "1",
       "version": "1.0.0",
-      "rating": 4.0
+      "rating": 4
     },
     {
       "id": "idle-lemonade-stand",
@@ -545,7 +545,7 @@
       "hasServer": false,
       "players": "1",
       "version": "1.0.0",
-      "rating": 4.0
+      "rating": 4
     },
     {
       "id": "sushi-master",
@@ -564,7 +564,7 @@
       "hasServer": false,
       "players": "1",
       "version": "1.0.0",
-      "rating": 4.0
+      "rating": 4
     },
     {
       "id": "detective-crime-board",
@@ -584,7 +584,7 @@
       "players": "1",
       "version": "1.0.0",
       "featured": true,
-      "rating": 4.0
+      "rating": 4
     },
     {
       "id": "chat-master",
@@ -603,7 +603,7 @@
       "players": "1",
       "version": "1.0.0",
       "featured": true,
-      "rating": 4.0
+      "rating": 4
     },
     {
       "id": "battle-dogs-arena",
@@ -664,7 +664,7 @@
       "players": "1",
       "version": "1.0.0",
       "featured": true,
-      "rating": 4.0
+      "rating": 4
     },
     {
       "id": "my-talking-luntik",
@@ -684,7 +684,7 @@
       "players": "1",
       "version": "1.0.0",
       "featured": true,
-      "rating": 4.0
+      "rating": 4
     },
     {
       "id": "texting-terror",
@@ -722,7 +722,27 @@
       "hasServer": false,
       "players": "1",
       "version": "1.0.0",
-      "rating": 4.0
+      "rating": 4
+    },
+    {
+      "id": "beach-babes-volleyball",
+      "name": "Beach Babes Volleyball",
+      "description": "沙滩排球跳扣救球 — 移动·跳跃·扣杀，3 局 2 胜，贝壳解锁角色与场地",
+      "category": "action",
+      "tags": [
+        "singleplayer",
+        "action",
+        "sports",
+        "physics",
+        "short-session"
+      ],
+      "thumbnail": "/games/056-beach-babes-volleyball/thumb.svg",
+      "path": "/games/056-beach-babes-volleyball/",
+      "hasServer": false,
+      "players": "1",
+      "version": "1.0.0",
+      "featured": true,
+      "rating": 4.3
     }
   ],
   "categories": [
@@ -753,7 +773,7 @@
       "players": "1",
       "version": "1.0.0",
       "featured": true,
-      "rating": 4.0
+      "rating": 4
     },
     {
       "id": "skyport-cardhouse",
@@ -773,7 +793,7 @@
       "players": "1",
       "version": "1.0.0",
       "featured": true,
-      "rating": 4.0
+      "rating": 4
     },
     {
       "id": "idle",
