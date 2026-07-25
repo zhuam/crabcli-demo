@@ -910,13 +910,15 @@ const BRIDGE_LENGTH = 10;    // x-axis
 const BRIDGE_WIDTH = 4;      // z-axis
 const BRIDGE_HALF_L = BRIDGE_LENGTH / 2;
 const BRIDGE_HALF_W = BRIDGE_WIDTH / 2;
-const MAX_HP = 2;
+const MAX_HP = 5;
 const GAME_DURATION = 90;    // seconds
 const PLAYER_SPEED = 4.5;
 const AI_SPEED = 3.2;
 const JUMP_VELOCITY = 5;
-const KNOCKBACK_FORCE = 6;
+const KNOCKBACK_FORCE = 4;
 const COLLISION_DAMAGE = 1;  // HP lost per collision
+const INVULN_DURATION = 2.5; // spawn invulnerability period (seconds)
+const AI_ACTIVATE_DELAY = 1.5; // AI delay at game start (seconds)
 const EDGE_SAFE_ZONE = 0.7;  // units from edge to start warning
 const GRAVITY = -12;
 const REDUCED_MOTION = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -1054,6 +1056,7 @@ const state = {
   shieldActive: false,
   punchActive: false,
   magnetActive: false,
+  spawnInvulnTimer: 0,
 };
 
 // Save data
@@ -1427,9 +1430,9 @@ OPPONENT_COLORS.forEach((color, i) => {
   const char = createCharacter(color, color, OPPONENT_NAMES[i], false);
   const angle = (i / OPPONENT_COLORS.length) * Math.PI * 2;
   char.group.position.set(
-    Math.cos(angle) * 2.5,
+    Math.cos(angle) * 4.5,
     0,
-    Math.sin(angle) * 1.8
+    Math.sin(angle) * 4.5
   );
   scene.add(char.group);
   opponentChars.push(char);
@@ -1717,6 +1720,14 @@ function updateAI(char, dt) {
   const p = char.physics;
   const player = playerChar.physics;
 
+  // AI activation delay at game start — let player breathe
+  if (gameTime < AI_ACTIVATE_DELAY) {
+    // Idle wobble only
+    p.vx *= 0.9;
+    p.vz *= 0.9;
+    return;
+  }
+
   // If player is dead, AI becomes idle
   if (!player.alive) {
     p.vx *= 0.9;
@@ -1858,6 +1869,9 @@ function handleCollisions() {
               if (idx >= 0) state.activePowerUps.splice(idx, 1);
               playTone(400, 0.15, 'sine', 0.12);
               return; // no damage
+            }
+            if (isPlayerTarget && state.spawnInvulnTimer > 0) {
+              return; // spawn invulnerability active
             }
             target.hp -= damage;
             target.flashTimer = 0.15;
@@ -2036,6 +2050,7 @@ function startGame() {
       clearInterval(countInterval);
       countdownOv.classList.remove('show');
       state.phase = 'playing';
+      state.spawnInvulnTimer = INVULN_DURATION;
       hud.classList.remove('hidden');
       startTimer();
       buzz(80);
@@ -2190,7 +2205,7 @@ function resetMapPositions() {
   opponentChars.forEach((char, i) => {
     const angle = (i / OPPONENT_COLORS.length) * Math.PI * 2;
     const hl = getBHL(), hw = getBHW();
-    const r = Math.min(hl * 0.6, hw * 0.6, 2.5);
+    const r = Math.min(hl * 0.7, hw * 0.7, 4.5);
     char.group.position.set(
       Math.cos(angle) * r,
       0,
@@ -2228,6 +2243,7 @@ function resetGame() {
   state.score = 0;
   state.cameraShake = 0;
   state.edgeWarnTimer = 0;
+  state.spawnInvulnTimer = 0;
   lastTime = 0;
   gameTime = 0;
 
@@ -2254,6 +2270,18 @@ function updateGame(dt) {
   gameTime += dt;
 
   const player = playerChar.physics;
+
+  // ===== Spawn Invulnerability =====
+  if (state.spawnInvulnTimer > 0) {
+    state.spawnInvulnTimer -= dt;
+    // Flash player while invulnerable
+    player.flashTimer = Math.max(player.flashTimer, 0.05);
+    if (state.spawnInvulnTimer <= 0) {
+      // Invulnerability just ended — clear flash
+      player.flashTimer = 0;
+      playTone(500, 0.1, 'sine', 0.08);
+    }
+  }
 
   // ===== Player Input =====
   let moveX = 0, moveZ = 0;
@@ -2355,6 +2383,17 @@ function updateGame(dt) {
       if (child.material && child.material.emissiveIntensity !== undefined) {
         child.material.emissiveIntensity = 0.6 + s;
         child.material.emissive?.setHex(0x4488ff);
+      }
+    });
+  }
+
+  // Spawn invulnerability visual: green pulsing glow
+  if (state.spawnInvulnTimer > 0 && playerChar.physics.alive) {
+    const pulse = Math.sin(gameTime * 20) * 0.3 + 0.7;
+    playerChar.group.children.forEach(child => {
+      if (child.material && child.material.emissiveIntensity !== undefined) {
+        child.material.emissiveIntensity = pulse;
+        child.material.emissive?.setHex(0x44ff88);
       }
     });
   }
