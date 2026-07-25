@@ -1,0 +1,854 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
+  <title>Save the Doge · 画线救狗</title>
+  <link rel="stylesheet" href="/games/shared/game-frame.css">
+  <style>
+    /* ── Reset & Base ── */
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    html,body{width:100%;height:100%;overflow:hidden;background:#1a1a2e;font-family:'Inter',system-ui,-apple-system,sans-serif;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;touch-action:none}
+    /* ── UI overlay ── */
+    #app{position:relative;width:100%;height:100%}
+    canvas{display:block;width:100%;height:100%;background:linear-gradient(135deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%);cursor:crosshair}
+    #ui{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none}
+    #ui>*{pointer-events:auto}
+    .back-to-hub{position:fixed;top:10px;left:10px;z-index:100;padding:6px 14px;border-radius:20px;background:rgba(10,14,39,.85);border:1px solid rgba(255,255,255,.15);color:rgba(255,255,255,.8);font-size:.75rem;font-weight:600;cursor:pointer;text-decoration:none;backdrop-filter:blur(8px);font-family:inherit}
+    .back-to-hub:hover{color:#fff;border-color:#e94560}
+    .hud{position:fixed;top:10px;right:10px;z-index:100;display:flex;gap:8px;align-items:center}
+    .hud-btn{background:rgba(10,14,39,.85);border:1px solid rgba(255,255,255,.15);color:#fff;border-radius:20px;padding:6px 12px;font-size:.75rem;cursor:pointer;backdrop-filter:blur(8px);font-family:inherit;transition:all .15s}
+    .hud-btn:hover{background:rgba(233,69,96,.25);border-color:#e94560}
+    .hud-btn.active{background:rgba(233,69,96,.4);border-color:#e94560}
+    .hud-level{background:rgba(10,14,39,.85);border:1px solid rgba(255,255,255,.1);color:#fff;border-radius:20px;padding:6px 12px;font-size:.7rem;backdrop-filter:blur(8px);font-family:inherit}
+    .hud-level .lvl{color:#e94560;font-weight:700}
+    .hud-level .hi{color:#ffd700}
+    /* ── Screens ── */
+    .screen{position:fixed;inset:0;z-index:200;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(10,14,39,.92);backdrop-filter:blur(12px);transition:opacity .4s;text-align:center;padding:24px}
+    .screen.hidden{opacity:0;pointer-events:none}
+    .screen h1{font-size:2.5rem;font-weight:800;margin-bottom:8px;background:linear-gradient(135deg,#e94560,#ffd700);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+    .screen h2{font-size:1.8rem;font-weight:700;color:#fff;margin-bottom:4px}
+    .screen .sub{color:rgba(255,255,255,.6);font-size:.9rem;margin-bottom:24px;max-width:360px;line-height:1.5}
+    .screen .sub em{color:#ffd700;font-style:normal}
+    .btn{display:inline-block;padding:12px 36px;border-radius:30px;border:none;font-size:1rem;font-weight:700;cursor:pointer;transition:all .2s;font-family:inherit}
+    .btn-primary{background:linear-gradient(135deg,#e94560,#c23152);color:#fff;box-shadow:0 4px 20px rgba(233,69,96,.35)}
+    .btn-primary:hover{transform:translateY(-2px);box-shadow:0 6px 28px rgba(233,69,96,.45)}
+    .btn-success{background:linear-gradient(135deg,#2ed573,#17a55a);color:#fff;box-shadow:0 4px 20px rgba(46,213,115,.35)}
+    .btn-success:hover{transform:translateY(-2px);box-shadow:0 6px 28px rgba(46,213,115,.45)}
+    .btn-small{padding:8px 20px;font-size:.85rem}
+    .btn-outline{background:transparent;border:2px solid rgba(255,255,255,.25);color:#fff}
+    .btn-outline:hover{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.5)}
+    .screen .stats{display:flex;gap:24px;margin:16px 0 24px}
+    .screen .stat-item{text-align:center}
+    .screen .stat-item .num{font-size:2rem;font-weight:700;color:#e94560;display:block}
+    .screen .stat-item .lbl{font-size:.75rem;color:rgba(255,255,255,.5)}
+    .screen .star{font-size:3rem;margin-bottom:8px}
+    .screen .dog-face{font-size:4rem;margin-bottom:8px;animation:wag 1s ease-in-out infinite}
+    @keyframes wag{0%,100%{transform:rotate(-5deg)}50%{transform:rotate(5deg)}}
+    .controls-hint{display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap;justify-content:center}
+    .controls-hint .hint{background:rgba(255,255,255,.06);border-radius:12px;padding:8px 14px;font-size:.75rem;color:rgba(255,255,255,.5);display:flex;align-items:center;gap:6px}
+    /* ── Drawing indicator ── */
+    .draw-tip{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:50;background:rgba(10,14,39,.8);border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:8px 20px;color:rgba(255,255,255,.6);font-size:.8rem;backdrop-filter:blur(8px);pointer-events:none;transition:opacity .3s}
+    .draw-tip.hidden{opacity:0}
+    .draw-tip span{color:#e94560;font-weight:600}
+    /* ── Mobile tweaks ── */
+    @media(max-width:600px){
+      .screen h1{font-size:2rem}
+      .screen h2{font-size:1.4rem}
+      .hud{gap:4px;top:8px;right:8px}
+      .hud-btn,.hud-level{padding:4px 10px;font-size:.7rem}
+      .btn{padding:10px 28px;font-size:.9rem}
+      .back-to-hub{top:8px;left:8px;padding:4px 12px;font-size:.7rem}
+    }
+  </style>
+</head>
+<body>
+  <a href="/" class="back-to-hub" onclick="window.recordPlayed&&window.recordPlayed('save-the-doge')">← Arcade</a>
+
+  <!-- HUD -->
+  <div class="hud">
+    <div class="hud-level">Lv <span class="lvl" id="levelDisplay">1</span> · 🏆 <span class="hi" id="hiDisplay">0</span></div>
+    <button class="hud-btn" id="muteBtn" aria-label="Toggle sound">🔊</button>
+    <button class="hud-btn" id="restartBtn" aria-label="Restart level">↻</button>
+  </div>
+
+  <!-- Drawing tip -->
+  <div class="draw-tip" id="drawTip">✏️ <span>拖拽画线</span> 保护狗子！</div>
+
+  <!-- Canvas -->
+  <div id="app">
+    <canvas id="gameCanvas"></canvas>
+  </div>
+
+  <!-- Start Screen -->
+  <div class="screen" id="startScreen">
+    <div class="dog-face">🐶</div>
+    <h1>Save the Doge</h1>
+    <p class="sub">画线保护小狗免受危险！<br>拖拽屏幕画线形成屏障，<em>阻止所有威胁</em>到达狗子。</p>
+    <div class="controls-hint">
+      <span class="hint">🖱 鼠标拖拽</span>
+      <span class="hint">📱 手指滑动</span>
+      <span class="hint">↻ 每关 3 条线</span>
+    </div>
+    <button class="btn btn-primary" id="startBtn">开始游戏</button>
+  </div>
+
+  <!-- Level Complete -->
+  <div class="screen hidden" id="levelScreen">
+    <div class="star">🎉</div>
+    <h2 id="levelTitle">Level Complete!</h2>
+    <p class="sub" id="levelSub">You saved the doge!</p>
+    <div class="stats">
+      <div class="stat-item"><span class="num" id="scoreDisplay">0</span><span class="lbl">Saves</span></div>
+      <div class="stat-item"><span class="num" id="dogesSaved">0</span><span class="lbl">Saved</span></div>
+    </div>
+    <button class="btn btn-success" id="nextBtn">下一关 →</button>
+  </div>
+
+  <!-- Game Over -->
+  <div class="screen hidden" id="overScreen">
+    <div class="dog-face">😢</div>
+    <h2>Game Over</h2>
+    <p class="sub" id="overSub">The doge didn't make it...</p>
+    <div class="stats">
+      <div class="stat-item"><span class="num" id="finalLevel">1</span><span class="lbl">Level</span></div>
+      <div class="stat-item"><span class="num" id="finalScore">0</span><span class="lbl">Saves</span></div>
+    </div>
+    <button class="btn btn-primary" id="retryBtn">再来一局</button>
+  </div>
+
+  <script>
+  // ─── Setup ───
+  const canvas = document.getElementById('gameCanvas');
+  const ctx = canvas.getContext('2d');
+  let W, H;
+
+  function resize() {
+    W = canvas.width = window.innerWidth;
+    H = canvas.height = window.innerHeight;
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  // ─── Audio (Web Audio API beeps) ───
+  let audioCtx = null;
+  let muted = false;
+
+  function initAudio() {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+
+  function beep(freq, duration, vol = 0.15) {
+    if (muted || !audioCtx) return;
+    try {
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.frequency.value = freq;
+      osc.type = 'sine';
+      gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+      osc.start();
+      osc.stop(audioCtx.currentTime + duration);
+    } catch (e) { /* ignore */ }
+  }
+
+  function playHit() { beep(200, 0.15, 0.12); }
+  function playLine() { beep(600, 0.08, 0.1); }
+  function playWin() { beep(523, 0.12); setTimeout(() => beep(659, 0.12), 120); setTimeout(() => beep(784, 0.2), 240); }
+  function playLose() { beep(300, 0.15); setTimeout(() => beep(200, 0.3), 150); }
+  function playClear() { beep(880, 0.06); setTimeout(() => beep(1100, 0.06), 60); }
+
+  // ─── Game State ───
+  let game = {
+    state: 'start', // start | playing | won | lost
+    level: 1,
+    score: 0,
+    maxScore: 0,
+    lives: 3,
+    lines: [],       // drawn lines [{x1,y1,x2,y2}]
+    threats: [],     // active threats
+    particles: [],   // visual fx
+    dog: { x: W / 2, y: H - 80, r: 30 },
+    threatTimer: 0,
+    nextThreat: 2000,
+    linesLeft: 3,    // lines per level
+    waveTimer: 0,
+    screen: 'start',
+  };
+
+  // ─── Levels ───
+  const LEVELS = [
+    { threatInterval: 2500, threatSpeed: 1.5, maxThreats: 3, linesAllowed: 3, label: 'Warm Up' },
+    { threatInterval: 2000, threatSpeed: 2.0, maxThreats: 4, linesAllowed: 3, label: 'Getting Tough' },
+    { threatInterval: 1800, threatSpeed: 2.5, maxThreats: 5, linesAllowed: 3, label: 'Here They Come' },
+    { threatInterval: 1500, threatSpeed: 2.8, maxThreats: 6, linesAllowed: 3, label: 'Danger Zone' },
+    { threatInterval: 1200, threatSpeed: 3.2, maxThreats: 7, linesAllowed: 3, label: 'Chaos' },
+    { threatInterval: 1000, threatSpeed: 3.5, maxThreats: 8, linesAllowed: 3, label: 'Inferno' },
+    { threatInterval: 800, threatSpeed: 4.0, maxThreats: 10, linesAllowed: 4, label: 'Nightmare' },
+  ];
+
+  function getLevelConfig() {
+    const idx = Math.min(game.level - 1, LEVELS.length - 1);
+    return LEVELS[idx];
+  }
+
+  // ─── Doge ───
+  function getDog() {
+    return { x: W / 2, y: H - 80, r: 28 };
+  }
+
+  // ─── Threats ───
+  function spawnThreat() {
+    const cfg = getLevelConfig();
+    if (game.threats.length >= cfg.maxThreats) return;
+    const side = Math.floor(Math.random() * 3); // 0=top, 1=left, 2=right
+    let x, y, vx, vy;
+    const speed = cfg.threatSpeed * (0.8 + Math.random() * 0.4);
+    const dog = getDog();
+    switch (side) {
+      case 0: // top
+        x = 40 + Math.random() * (W - 80);
+        y = -20;
+        const a1 = Math.atan2(dog.y - y, dog.x - x);
+        vx = Math.cos(a1) * speed;
+        vy = Math.sin(a1) * speed;
+        break;
+      case 1: // left
+        x = -20;
+        y = 40 + Math.random() * (H * 0.5);
+        const a2 = Math.atan2(dog.y - y, dog.x - x);
+        vx = Math.cos(a2) * speed;
+        vy = Math.sin(a2) * speed;
+        break;
+      case 2: // right
+        x = W + 20;
+        y = 40 + Math.random() * (H * 0.5);
+        const a3 = Math.atan2(dog.y - y, dog.x - x);
+        vx = Math.cos(a3) * speed;
+        vy = Math.sin(a3) * speed;
+        break;
+    }
+    const types = ['ball', 'ball', 'ball', 'bird', 'spike'];
+    const type = types[Math.floor(Math.random() * types.length)];
+    game.threats.push({
+      x, y, vx, vy,
+      r: type === 'bird' ? 14 : type === 'spike' ? 16 : 12,
+      type,
+      hp: type === 'spike' ? 2 : 1,
+      angle: Math.random() * Math.PI * 2,
+      rotSpeed: (Math.random() - 0.5) * 0.1,
+    });
+  }
+
+  // ─── Line Drawing ───
+  let drawing = false;
+  let drawStart = null;
+  let currentLine = null;
+
+  // ─── Physics ───
+  let lastTime = 0;
+
+  function lineIntersectCircle(x1, y1, x2, y2, cx, cy, r) {
+    const dx = x2 - x1;
+    const dy = y2 - y1;
+    const fx = x1 - cx;
+    const fy = y1 - cy;
+    const a = dx * dx + dy * dy;
+    const b = 2 * (fx * dx + fy * dy);
+    const c = fx * fx + fy * fy - r * r;
+    let discriminant = b * b - 4 * a * c;
+    if (discriminant < 0) return false;
+    discriminant = Math.sqrt(discriminant);
+    const t1 = (-b - discriminant) / (2 * a);
+    const t2 = (-b + discriminant) / (2 * a);
+    if (t1 >= 0 && t1 <= 1) return true;
+    if (t2 >= 0 && t2 <= 1) return true;
+    return false;
+  }
+
+  function pointToSegmentDist(px, py, x1, y1, x2, y2) {
+    const dx = x2 - x1;
+    const dy = y2 - y1;
+    const len2 = dx * dx + dy * dy;
+    if (len2 === 0) return Math.hypot(px - x1, py - y1);
+    let t = ((px - x1) * dx + (py - y1) * dy) / len2;
+    t = Math.max(0, Math.min(1, t));
+    return Math.hypot(px - (x1 + t * dx), py - (y1 + t * dy));
+  }
+
+  function reflect(vx, vy, nx, ny) {
+    const dot = vx * nx + vy * ny;
+    return { vx: vx - 2 * dot * nx, vy: vy - 2 * dot * ny };
+  }
+
+  function updatePhysics(dt) {
+    const dog = getDog();
+    const lines = game.lines;
+
+    // Move threats
+    for (const t of game.threats) {
+      let nx = t.x + t.vx * dt;
+      let ny = t.y + t.vy * dt;
+      t.angle += t.rotSpeed * dt * 60;
+
+      // Collision with lines
+      for (const line of lines) {
+        const dist = pointToSegmentDist(nx, ny, line.x1, line.y1, line.x2, line.y2);
+        if (dist < t.r + 4) {
+          // Calculate line normal
+          const ldx = line.x2 - line.x1;
+          const ldy = line.y2 - line.y1;
+          const len = Math.hypot(ldx, ldy);
+          if (len < 1) continue;
+          const nx2 = -ldy / len;
+          const ny2 = ldx / len;
+          const ref = reflect(t.vx, t.vy, nx2, ny2);
+          t.vx = ref.vx * 0.9;
+          t.vy = ref.vy * 0.9;
+          // Push out of line
+          const overlap = t.r + 4 - dist;
+          nx += nx2 * overlap;
+          ny += ny2 * overlap;
+          playHit();
+          spawnParticles(nx, ny, '#e94560', 3);
+          // Reduce line durability
+          line.hp = (line.hp || 3) - 1;
+        }
+      }
+
+      // Wall bounce
+      if (nx < t.r) { nx = t.r; t.vx = Math.abs(t.vx) * 0.9; }
+      if (nx > W - t.r) { nx = W - t.r; t.vx = -Math.abs(t.vx) * 0.9; }
+      if (ny < t.r) { ny = t.r; t.vy = Math.abs(t.vy) * 0.9; }
+      if (ny > H + 40) { t.dead = true; continue; }
+
+      t.x = nx;
+      t.y = ny;
+
+      // Check dog collision
+      const ddx = t.x - dog.x;
+      const ddy = t.y - dog.y;
+      const ddist = Math.hypot(ddx, ddy);
+      if (ddist < t.r + dog.r) {
+        // Dog hit!
+        game.lives--;
+        t.dead = true;
+        spawnParticles(dog.x, dog.y, '#ff4757', 20);
+        if (game.lives <= 0) {
+          gameOver();
+          return;
+        } else {
+          playLose();
+          // Remove all threats briefly to give breather
+          game.threats = [];
+        }
+      }
+    }
+
+    // Remove dead threats and broken lines
+    game.threats = game.threats.filter(t => !t.dead);
+    game.lines = game.lines.filter(l => (l.hp || 3) > 0);
+
+    // Win check: all threats cleared and wave done
+    if (game.threats.length === 0 && game.waveDone) {
+      levelComplete();
+    }
+  }
+
+  // ─── Particles ───
+  function spawnParticles(x, y, color, count) {
+    for (let i = 0; i < count; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const speed = 50 + Math.random() * 150;
+      game.particles.push({
+        x, y,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        life: 0.6 + Math.random() * 0.4,
+        maxLife: 0.6 + Math.random() * 0.4,
+        r: 2 + Math.random() * 4,
+        color,
+      });
+    }
+  }
+
+  function updateParticles(dt) {
+    for (const p of game.particles) {
+      p.x += p.vx * dt;
+      p.y += p.vy * dt;
+      p.vy += 120 * dt; // gravity
+      p.life -= dt;
+    }
+    game.particles = game.particles.filter(p => p.life > 0);
+  }
+
+  // ─── Rendering ───
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+
+    // Background grid
+    ctx.strokeStyle = 'rgba(255,255,255,0.03)';
+    ctx.lineWidth = 1;
+    for (let x = 0; x < W; x += 40) {
+      ctx.beginPath();
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, H);
+      ctx.stroke();
+    }
+    for (let y = 0; y < H; y += 40) {
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(W, y);
+      ctx.stroke();
+    }
+
+    // Ground
+    const dog = getDog();
+    const grad = ctx.createLinearGradient(0, H - 20, 0, H);
+    grad.addColorStop(0, 'rgba(46,213,115,0.15)');
+    grad.addColorStop(1, 'rgba(46,213,115,0.05)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, H - 20, W, 20);
+    ctx.strokeStyle = 'rgba(46,213,115,0.3)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(0, H - 20);
+    ctx.lineTo(W, H - 20);
+    ctx.stroke();
+
+    // Draw lines
+    for (const line of game.lines) {
+      const hp = line.hp || 3;
+      const alpha = 0.3 + (hp / 3) * 0.7;
+      ctx.strokeStyle = `rgba(233,69,96,${alpha})`;
+      ctx.lineWidth = 6;
+      ctx.shadowColor = 'rgba(233,69,96,0.4)';
+      ctx.shadowBlur = 10;
+      ctx.beginPath();
+      ctx.moveTo(line.x1, line.y1);
+      ctx.lineTo(line.x2, line.y2);
+      ctx.stroke();
+      // Glow
+      ctx.shadowBlur = 0;
+      ctx.strokeStyle = `rgba(233,69,96,${alpha * 0.3})`;
+      ctx.lineWidth = 12;
+      ctx.beginPath();
+      ctx.moveTo(line.x1, line.y1);
+      ctx.lineTo(line.x2, line.y2);
+      ctx.stroke();
+    }
+    ctx.shadowBlur = 0;
+
+    // Drawing preview
+    if (drawing && currentLine) {
+      ctx.strokeStyle = 'rgba(255,215,0,0.7)';
+      ctx.lineWidth = 5;
+      ctx.setLineDash([8, 6]);
+      ctx.beginPath();
+      ctx.moveTo(currentLine.x1, currentLine.y1);
+      ctx.lineTo(currentLine.x2, currentLine.y2);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+
+    // Draw threats
+    for (const t of game.threats) {
+      ctx.save();
+      ctx.translate(t.x, t.y);
+      ctx.rotate(t.angle || 0);
+      if (t.type === 'bird') {
+        ctx.fillStyle = '#ff6348';
+        ctx.beginPath();
+        ctx.arc(0, 0, t.r, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#ffd700';
+        ctx.beginPath();
+        ctx.moveTo(-t.r - 4, -3);
+        ctx.lineTo(-t.r - 10, 0);
+        ctx.lineTo(-t.r - 4, 3);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.moveTo(t.r + 4, -3);
+        ctx.lineTo(t.r + 10, 0);
+        ctx.lineTo(t.r + 4, 3);
+        ctx.fill();
+        ctx.fillStyle = '#fff';
+        ctx.beginPath();
+        ctx.arc(-3, -2, 3, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(3, -2, 3, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#111';
+        ctx.beginPath();
+        ctx.arc(-3, -2, 1.5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(3, -2, 1.5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#ffd700';
+        ctx.beginPath();
+        ctx.moveTo(-3, 2);
+        ctx.lineTo(0, 6);
+        ctx.lineTo(3, 2);
+        ctx.fill();
+      } else if (t.type === 'spike') {
+        ctx.fillStyle = '#ff4757';
+        for (let i = 0; i < 6; i++) {
+          const a = (i / 6) * Math.PI * 2;
+          ctx.beginPath();
+          ctx.moveTo(0, 0);
+          ctx.lineTo(Math.cos(a) * t.r * 1.5, Math.sin(a) * t.r * 1.5);
+          ctx.lineTo(Math.cos(a + 0.3) * t.r * 0.8, Math.sin(a + 0.3) * t.r * 0.8);
+          ctx.closePath();
+          ctx.fill();
+        }
+        ctx.fillStyle = '#c0392b';
+        ctx.beginPath();
+        ctx.arc(0, 0, t.r * 0.6, 0, Math.PI * 2);
+        ctx.fill();
+      } else {
+        // Regular ball
+        const grad2 = ctx.createRadialGradient(-3, -3, 1, 0, 0, t.r);
+        grad2.addColorStop(0, '#ff6b81');
+        grad2.addColorStop(1, '#c0392b');
+        ctx.fillStyle = grad2;
+        ctx.beginPath();
+        ctx.arc(0, 0, t.r, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    // Draw doge
+    ctx.save();
+    ctx.translate(dog.x, dog.y);
+    // Body
+    ctx.fillStyle = '#d4a574';
+    ctx.beginPath();
+    ctx.ellipse(0, 8, 20, 16, 0, 0, Math.PI * 2);
+    ctx.fill();
+    // Head
+    ctx.fillStyle = '#c4956a';
+    ctx.beginPath();
+    ctx.arc(0, -10, 18, 0, Math.PI * 2);
+    ctx.fill();
+    // Ears
+    ctx.fillStyle = '#a07850';
+    ctx.beginPath();
+    ctx.ellipse(-14, -18, 6, 10, -0.3, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(14, -18, 6, 10, 0.3, 0, Math.PI * 2);
+    ctx.fill();
+    // Eyes
+    ctx.fillStyle = '#fff';
+    ctx.beginPath();
+    ctx.arc(-7, -14, 5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(7, -14, 5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#2d3436';
+    ctx.beginPath();
+    ctx.arc(-6, -13, 3, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(8, -13, 3, 0, Math.PI * 2);
+    ctx.fill();
+    // Nose
+    ctx.fillStyle = '#2d3436';
+    ctx.beginPath();
+    ctx.ellipse(0, -6, 4, 3, 0, 0, Math.PI * 2);
+    ctx.fill();
+    // Tongue
+    ctx.fillStyle = '#ff6b81';
+    ctx.beginPath();
+    ctx.ellipse(2, -1, 4, 5, 0.2, 0, Math.PI);
+    ctx.fill();
+    // Legs
+    ctx.fillStyle = '#c4956a';
+    const legPhase = (Date.now() / 200) % (Math.PI * 2);
+    for (let i = -1; i <= 1; i += 2) {
+      const off = Math.sin(legPhase + i * 2) * 3;
+      ctx.fillRect(i * 8 - 2, 18 + off, 4, 8);
+    }
+    // Tail
+    ctx.strokeStyle = '#c4956a';
+    ctx.lineWidth = 4;
+    ctx.lineCap = 'round';
+    const tailWag = Math.sin(Date.now() / 150) * 0.5;
+    ctx.beginPath();
+    ctx.moveTo(18, 0);
+    ctx.quadraticCurveTo(30 + Math.sin(tailWag) * 5, -10, 22 + Math.sin(tailWag) * 8, -20);
+    ctx.stroke();
+    // Heart over head
+    if (game.lives > 1) {
+      const pulse = 1 + Math.sin(Date.now() / 300) * 0.1;
+      ctx.fillStyle = `rgba(255,71,87,${0.4 + Math.sin(Date.now() / 300) * 0.2})`;
+      ctx.font = `${14 * pulse}px sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.fillText('❤️', 0, -30);
+    }
+    ctx.restore();
+
+    // Particles
+    for (const p of game.particles) {
+      ctx.globalAlpha = Math.max(0, p.life / p.maxLife);
+      ctx.fillStyle = p.color;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+
+    // HUD on canvas: lines left
+    const cfg = getLevelConfig();
+    ctx.fillStyle = 'rgba(255,255,255,0.6)';
+    ctx.font = '14px sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText(`✏️ x${game.linesLeft}  ❤️ ${'❤️'.repeat(game.lives)}  ⚔️ ${game.threats.length}`, 16, H - 44);
+  }
+
+  // ─── Level Management ───
+  function startLevel() {
+    const dog = getDog();
+    game.lines = [];
+    game.threats = [];
+    game.particles = [];
+    game.waveDone = false;
+    game.threatTimer = 0;
+    const cfg = getLevelConfig();
+    game.linesLeft = cfg.linesAllowed;
+    game.nextThreat = cfg.threatInterval;
+    game.state = 'playing';
+    game.screen = 'playing';
+    game.waveTimer = 0;
+    // Spawn initial threats
+    const initialCount = Math.min(2, cfg.maxThreats);
+    for (let i = 0; i < initialCount; i++) {
+      setTimeout(() => spawnThreat(), i * 400);
+    }
+    hideAllScreens();
+    document.getElementById('levelDisplay').textContent = game.level;
+    document.getElementById('drawTip').classList.remove('hidden');
+    document.getElementById('hiDisplay').textContent = game.maxScore;
+  }
+
+  function levelComplete() {
+    if (game.state === 'won') return;
+    game.state = 'won';
+    game.score += game.level * 100 + game.lives * 50;
+    if (game.score > game.maxScore) {
+      game.maxScore = game.score;
+      localStorage.setItem('saveTheDoge_hi', game.maxScore);
+    }
+    playWin();
+    document.getElementById('drawTip').classList.add('hidden');
+    showLevelScreen();
+  }
+
+  function gameOver() {
+    if (game.state === 'lost') return;
+    game.state = 'lost';
+    playLose();
+    if (game.screen !== 'playing') return;
+    if (game.score > game.maxScore) {
+      game.maxScore = game.score;
+      localStorage.setItem('saveTheDoge_hi', game.maxScore);
+    }
+    document.getElementById('drawTip').classList.add('hidden');
+    document.getElementById('finalLevel').textContent = game.level;
+    document.getElementById('finalScore').textContent = game.score;
+    showScreen('overScreen');
+    game.screen = 'over';
+  }
+
+  function nextLevel() {
+    game.level++;
+    game.lives = Math.min(game.lives + 1, 5);
+    startLevel();
+  }
+
+  function restart() {
+    game.level = 1;
+    game.score = 0;
+    game.lives = 3;
+    startLevel();
+  }
+
+  // ─── Screen Management ───
+  function hideAllScreens() {
+    ['startScreen', 'levelScreen', 'overScreen'].forEach(id => {
+      document.getElementById(id).classList.add('hidden');
+    });
+  }
+
+  function showScreen(id) {
+    hideAllScreens();
+    document.getElementById(id).classList.remove('hidden');
+  }
+
+  function showLevelScreen() {
+    document.getElementById('scoreDisplay').textContent = game.score;
+    document.getElementById('dogesSaved').textContent = game.level;
+    document.getElementById('levelTitle').textContent = game.level >= LEVELS.length ? '🏆 全部通关!' : `Level ${game.level} Clear!`;
+    const cfg = getLevelConfig();
+    document.getElementById('levelSub').textContent = game.level >= LEVELS.length
+      ? 'You saved all the doges! Legendary!'
+      : `${cfg.label} - Ready for more?`;
+    document.getElementById('nextBtn').textContent = game.level >= LEVELS.length ? '🎉 再来一次' : '下一关 →';
+    showScreen('levelScreen');
+    game.screen = 'level';
+  }
+
+  // ─── Input ───
+  function getPos(e) {
+    const rect = canvas.getBoundingClientRect();
+    if (e.touches) {
+      return { x: e.touches[0].clientX - rect.left, y: e.touches[0].clientY - rect.top };
+    }
+    return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+  }
+
+  function onPointerDown(e) {
+    if (game.state !== 'playing' || game.linesLeft <= 0) return;
+    e.preventDefault();
+    initAudio();
+    const pos = getPos(e);
+    drawing = true;
+    drawStart = pos;
+    currentLine = { x1: pos.x, y1: pos.y, x2: pos.x, y2: pos.y };
+  }
+
+  function onPointerMove(e) {
+    if (!drawing) return;
+    e.preventDefault();
+    const pos = getPos(e);
+    if (currentLine) {
+      currentLine.x2 = pos.x;
+      currentLine.y2 = pos.y;
+      // Vibration feedback for touch
+      if (navigator.vibrate && e.touches) {
+        navigator.vibrate(5);
+      }
+    }
+  }
+
+  function onPointerUp(e) {
+    if (!drawing || !currentLine) return;
+    e.preventDefault();
+    drawing = false;
+    const dx = currentLine.x2 - currentLine.x1;
+    const dy = currentLine.y2 - currentLine.y1;
+    const len = Math.hypot(dx, dy);
+    if (len > 30) {
+      game.lines.push({
+        x1: currentLine.x1, y1: currentLine.y1,
+        x2: currentLine.x2, y2: currentLine.y2,
+        hp: 3,
+      });
+      game.linesLeft--;
+      playLine();
+    }
+    currentLine = null;
+  }
+
+  // Mouse
+  canvas.addEventListener('mousedown', onPointerDown);
+  canvas.addEventListener('mousemove', onPointerMove);
+  canvas.addEventListener('mouseup', onPointerUp);
+  canvas.addEventListener('mouseleave', (e) => { if (drawing) onPointerUp(e); });
+
+  // Touch
+  canvas.addEventListener('touchstart', onPointerDown, { passive: false });
+  canvas.addEventListener('touchmove', onPointerMove, { passive: false });
+  canvas.addEventListener('touchend', onPointerUp, { passive: false });
+
+  // ─── Game Loop ───
+  function gameLoop(timestamp) {
+    if (!lastTime) lastTime = timestamp;
+    const dt = Math.min((timestamp - lastTime) / 1000, 0.05);
+    lastTime = timestamp;
+
+    if (game.state === 'playing') {
+      // Spawn threats
+      game.waveTimer += dt * 1000;
+      game.threatTimer += dt * 1000;
+      const cfg = getLevelConfig();
+
+      // Wave-based spawning: first wave, then pause, then victory
+      if (game.waveTimer < 15000) {
+        if (game.threatTimer >= game.nextThreat) {
+          spawnThreat();
+          game.threatTimer = 0;
+          game.nextThreat = cfg.threatInterval * (0.7 + Math.random() * 0.6);
+        }
+      } else if (game.threats.length === 0) {
+        game.waveDone = true;
+      }
+
+      updatePhysics(dt);
+      updateParticles(dt);
+    }
+
+    draw();
+    requestAnimationFrame(gameLoop);
+  }
+
+  // ─── UI Events ───
+  document.getElementById('startBtn').addEventListener('click', () => {
+    initAudio();
+    restart();
+  });
+
+  document.getElementById('nextBtn').addEventListener('click', nextLevel);
+  document.getElementById('retryBtn').addEventListener('click', restart);
+
+  document.getElementById('muteBtn').addEventListener('click', () => {
+    muted = !muted;
+    document.getElementById('muteBtn').textContent = muted ? '🔇' : '🔊';
+  });
+
+  document.getElementById('restartBtn').addEventListener('click', () => {
+    if (game.state === 'playing' || game.state === 'won' || game.state === 'lost') {
+      restart();
+    }
+  });
+
+  // ─── Keyboard shortcuts ───
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'r' || e.key === 'R') {
+      if (game.state === 'playing' || game.state === 'won' || game.state === 'lost') restart();
+    }
+    if (e.key === 'm' || e.key === 'M') {
+      document.getElementById('muteBtn').click();
+    }
+  });
+
+  // ─── Init ───
+  // Load high score
+  try {
+    const saved = localStorage.getItem('saveTheDoge_hi');
+    if (saved) game.maxScore = parseInt(saved, 10);
+    document.getElementById('hiDisplay').textContent = game.maxScore;
+  } catch (e) { /* localStorage not available */ }
+
+  // Record played
+  try {
+    const recent = JSON.parse(localStorage.getItem('recentlyPlayed') || '[]');
+    const filtered = recent.filter(p => p.id !== 'save-the-doge');
+    filtered.unshift({ id: 'save-the-doge', playedAt: Date.now() });
+    localStorage.setItem('recentlyPlayed', JSON.stringify(filtered.slice(0, 10)));
+  } catch {}
+
+  showScreen('startScreen');
+  requestAnimationFrame(gameLoop);
+  </script>
+</body>
+</html>
