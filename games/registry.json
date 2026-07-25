@@ -666,6 +666,27 @@
             "rating": 4.3
         },
         {
+            "id": "slime-ascent",
+            "name": "Slime Ascent",
+            "description": "绿色史莱姆向上跳跃、粘附墙壁、反弹攀升，到达云端获胜",
+            "category": "platformer",
+            "tags": [
+                "singleplayer",
+                "platformer",
+                "slime",
+                "wall-jump",
+                "neon",
+                "short-session"
+            ],
+            "thumbnail": "/games/046-slime-ascent/thumb.svg",
+            "path": "/games/046-slime-ascent/",
+            "hasServer": false,
+            "players": "1",
+            "version": "1.0.0",
+            "featured": true,
+            "rating": 4
+        },
+        {
             "id": "wheel-o-mon-showdown",
             "name": "Wheel-o-Mon Showdown",
             "description": "转轮盘决定技能进行回合制对战 — 宝可梦+轮盘融合",
@@ -884,6 +905,11 @@
             "id": "action",
             "name": "Action",
             "icon": "⚡"
+        },
+        {
+            "id": "platformer",
+            "name": "Platformer",
+            "icon": "🎯"
         },
         {
             "id": "strategy",
