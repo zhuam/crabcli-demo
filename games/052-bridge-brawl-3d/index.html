@@ -556,6 +556,179 @@ html, body {
   text-shadow: 0 0 60px var(--primary-glow);
 }
 
+/* ===== Map Selection Screen ===== */
+#map-select-screen {
+  flex-direction: column;
+  background: radial-gradient(ellipse at center, rgba(10,10,26,0.98) 0%, var(--bg-deep) 80%);
+  gap: 20px;
+  padding: 24px;
+  overflow-y: auto;
+}
+.map-select-title {
+  font-family: var(--font-display);
+  font-size: clamp(24px, 5vw, 36px);
+  font-weight: 900;
+  color: var(--surface);
+  text-align: center;
+  text-shadow: 0 0 20px var(--primary-glow);
+  margin-bottom: 8px;
+}
+.map-select-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+  width: 100%;
+  max-width: 900px;
+}
+.map-card {
+  position: relative;
+  background: var(--bg-mid);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: var(--radius);
+  padding: 20px;
+  cursor: pointer;
+  transition: transform var(--transition), border-color var(--transition), box-shadow var(--transition);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.map-card:hover:not(.locked) {
+  transform: translateY(-4px);
+  border-color: var(--primary);
+  box-shadow: 0 8px 30px rgba(187,243,81,0.15);
+}
+.map-card.selected {
+  border-color: var(--primary);
+  box-shadow: 0 0 20px var(--primary-glow);
+  background: linear-gradient(135deg, var(--bg-mid), rgba(187,243,81,0.08));
+}
+.map-card.locked {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.map-card .card-name {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--surface);
+}
+.map-card .card-desc {
+  font-family: var(--font-ui);
+  font-size: 12px;
+  color: rgba(255,255,255,0.4);
+  line-height: 1.4;
+}
+.map-card .card-preview {
+  width: 100%;
+  height: 60px;
+  border-radius: var(--radius-sm);
+  margin-top: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.15);
+  background: var(--bg-dark);
+  border: 1px solid rgba(255,255,255,0.05);
+}
+.map-card .card-lock {
+  position: absolute;
+  top: 12px; right: 12px;
+  width: 28px; height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  color: rgba(255,255,255,0.25);
+}
+.map-card .card-check {
+  position: absolute;
+  top: 12px; right: 12px;
+  width: 28px; height: 28px;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: var(--primary);
+  border-radius: 50%;
+  color: var(--bg-deep);
+  font-size: 14px;
+  font-weight: 700;
+}
+.map-card.selected .card-check { display: flex; }
+
+.map-select-start-btn {
+  margin-top: 8px;
+  padding: 14px 48px;
+  font-family: var(--font-display);
+  font-size: clamp(16px, 2.5vw, 20px);
+  font-weight: 700;
+  color: var(--bg-deep);
+  background: var(--primary);
+  border: none;
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: transform var(--transition), box-shadow var(--transition);
+  box-shadow: 0 0 20px var(--primary-glow);
+  opacity: 0.5;
+  pointer-events: none;
+}
+.map-select-start-btn.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+.map-select-start-btn.active:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 30px var(--primary-glow);
+}
+.map-select-start-btn.active:active { transform: scale(0.97); }
+
+.map-select-back-btn {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: rgba(255,255,255,0.35);
+  background: none;
+  border: none;
+  cursor: pointer;
+  letter-spacing: 0.5px;
+  padding: 8px;
+  transition: color var(--transition);
+}
+.map-select-back-btn:hover { color: var(--surface); }
+
+/* ===== Power-Up HUD ===== */
+.hud-powerups {
+  position: absolute;
+  bottom: 56px;
+  left: 16px;
+  display: flex;
+  gap: 8px;
+  z-index: 6;
+  pointer-events: none;
+}
+.hud-powerup-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-family: var(--font-mono);
+  font-weight: 600;
+  text-transform: uppercase;
+  border: 2px solid currentColor;
+  opacity: 0;
+  transform: scale(0.5);
+  transition: opacity 0.3s, transform 0.3s;
+}
+.hud-powerup-icon.active {
+  opacity: 1;
+  transform: scale(1);
+}
+
 /* ===== Reduced Motion ===== */
 @media (prefers-reduced-motion: reduce) {
   .splash-title { animation: none; }
@@ -586,6 +759,10 @@ html, body {
   .hud-dpad { grid-template-columns: 48px 48px; gap: 6px; }
   .hud-dpad-btn { width: 48px; height: 48px; font-size: 18px; }
   .hud-jump-btn { width: 56px; height: 56px; }
+  .map-select-grid { grid-template-columns: 1fr 1fr; gap: 12px; }
+  .map-card { padding: 14px; }
+  .hud-powerups { bottom: 48px; gap: 6px; }
+  .hud-powerup-icon { width: 28px; height: 28px; font-size: 8px; }
 }
 </style>
 </head>
@@ -633,6 +810,14 @@ html, body {
   </div>
 </div>
 
+<!-- ===== Map Selection Screen ===== -->
+<div id="map-select-screen" class="overlay hidden" data-comp-id="map-select-screen">
+  <h2 class="map-select-title">SELECT BRIDGE</h2>
+  <div class="map-select-grid" id="mapGrid"></div>
+  <button class="map-select-start-btn" id="mapStartBtn" data-comp-id="map-start-btn">FIGHT!</button>
+  <button class="map-select-back-btn" id="mapBackBtn">Back</button>
+</div>
+
 <!-- ===== HUD Overlay ===== -->
 <div id="hud-overlay" class="overlay hidden" data-comp-id="hud-overlay">
   <div class="hud-top">
@@ -656,6 +841,7 @@ html, body {
     </div>
   </div>
 
+  <div class="hud-powerups" data-comp-id="hud-powerups" id="hudPowerUps"></div>
   <div class="hud-player-area">
     <div class="hud-player-info">
       <span class="hud-player-name" data-comp-id="hud-player-name">YOU</span>
@@ -736,6 +922,110 @@ const GRAVITY = -12;
 const REDUCED_MOTION = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const STORAGE_KEY = 'bb3d_';
 
+// Map-dependent helpers
+function getMapConfig() {
+  return MAP_CONFIGS.find(m => m.id === state.selectedMap) || MAP_CONFIGS[0];
+}
+function getBL() { return getMapConfig().length; }
+function getBW() { return getMapConfig().width; }
+function getBHL() { return getBL() / 2; }
+function getBHW() { return getBW() / 2; }
+
+// ============================================================
+// Map Configurations
+// ============================================================
+const MAP_CONFIGS = [
+  {
+    id: 'bridge_01',
+    name: 'Standard Bridge',
+    description: 'Balanced bridge — classic brawl',
+    length: 10,
+    width: 4,
+    color: 0x1a1a3a,
+    edgeColor: 0xbbf351,
+    hasGap: false,
+    hasMovingPlatforms: false,
+    unlockWins: 0,
+  },
+  {
+    id: 'bridge_02',
+    name: 'Narrow Bridge',
+    description: 'Tighter space — every shove counts',
+    length: 10,
+    width: 2.5,
+    color: 0x2a1a3a,
+    edgeColor: 0xff6b6b,
+    hasGap: false,
+    hasMovingPlatforms: false,
+    unlockWins: 1,
+  },
+  {
+    id: 'bridge_03',
+    name: 'Gap Bridge',
+    description: 'Central gap — time your jumps',
+    length: 12,
+    width: 4,
+    color: 0x1a2a3a,
+    edgeColor: 0x4ecdc4,
+    hasGap: true,
+    gapStart: -1.5,
+    gapEnd: 1.5,
+    hasMovingPlatforms: false,
+    unlockWins: 3,
+  },
+  {
+    id: 'bridge_04',
+    name: 'Moving Bridge',
+    description: 'Platforms shift — stay alert!',
+    length: 14,
+    width: 4,
+    color: 0x3a1a2a,
+    edgeColor: 0xf7d794,
+    hasGap: false,
+    hasMovingPlatforms: true,
+    platformCount: 5,
+    unlockWins: 5,
+  },
+];
+
+// ============================================================
+// Power-Up Definitions
+// ============================================================
+const POWERUP_TYPES = [
+  {
+    id: 'speed',
+    name: 'Speed Boost',
+    color: 0xffd700,
+    duration: 3,
+    description: '+50% speed for 3s',
+    unlockWins: 1,
+  },
+  {
+    id: 'shield',
+    name: 'Shield',
+    color: 0x4488ff,
+    duration: 3,
+    description: 'Absorbs next hit',
+    unlockWins: 3,
+  },
+  {
+    id: 'power_punch',
+    name: 'Power Punch',
+    color: 0xff4444,
+    duration: 3,
+    description: 'Double knockback',
+    unlockWins: 5,
+  },
+  {
+    id: 'magnet',
+    name: 'Magnet',
+    color: 0x44ff88,
+    duration: 3,
+    description: 'Pull opponents toward you',
+    unlockWins: 5,
+  },
+];
+
 const OPPONENT_NAMES = ['NEXUS', 'BLITZ', 'SHARD'];
 const OPPONENT_COLORS = [0x00bcff, 0xdc2626, 0xd97706];
 
@@ -743,7 +1033,7 @@ const OPPONENT_COLORS = [0x00bcff, 0xdc2626, 0xd97706];
 // Game State
 // ============================================================
 const state = {
-  phase: 'splash', // splash | countdown | playing | result
+  phase: 'splash', // splash | mapSelect | countdown | playing | result
   timer: GAME_DURATION,
   timerInterval: null,
   autoStartCount: 3,
@@ -755,6 +1045,15 @@ const state = {
   cameraShake: 0,
   edgeWarnTimer: 0,
   characterData: [],
+  selectedMap: 'bridge_01',
+  activePowerUps: [], // {id, remaining, effect}
+  powerUpTimer: 0,    // time until next spawn
+  powerUpOrbs: [],    // active power-up orbs in scene
+  powerUpSfxCooldown: 0,
+  speedMult: 1,
+  shieldActive: false,
+  punchActive: false,
+  magnetActive: false,
 };
 
 // Save data
@@ -831,106 +1130,192 @@ const fillLight = new THREE.DirectionalLight(0x00bcff, 0.3);
 fillLight.position.set(10, 5, -10);
 scene.add(fillLight);
 
-// ===== Bridge =====
+// ===== Bridge (dynamic — rebuilt per map) =====
 const bridgeGroup = new THREE.Group();
 scene.add(bridgeGroup);
+const movingPlatforms = []; // for Bridge_04
+const arenaPillarRefs = []; // for cleanup on rebuild
 
-const bridgeMat = new THREE.MeshStandardMaterial({
-  color: 0x1a1a3a,
-  roughness: 0.7,
-  metalness: 0.2,
-});
-const bridgeGeo = new THREE.BoxGeometry(BRIDGE_LENGTH, 0.4, BRIDGE_WIDTH);
-const bridgeMesh = new THREE.Mesh(bridgeGeo, bridgeMat);
-bridgeMesh.position.y = -0.2;
-bridgeMesh.receiveShadow = true;
-bridgeMesh.castShadow = true;
-bridgeGroup.add(bridgeMesh);
+// Shared materials — recreated on rebuild
+let edgeMat, capMat, glowMat, pillarMat, pillarTallMat;
 
-// Neon edge strips
-const edgeMat = new THREE.MeshStandardMaterial({
-  color: 0xbbf351,
-  emissive: 0xbbf351,
-  emissiveIntensity: 0.8,
-  roughness: 0.2,
-});
-const edgeGeo = new THREE.BoxGeometry(BRIDGE_LENGTH, 0.05, 0.08);
-const edgeLeft = new THREE.Mesh(edgeGeo, edgeMat);
-edgeLeft.position.set(0, 0.05, -BRIDGE_HALF_W + 0.04);
-bridgeGroup.add(edgeLeft);
-const edgeRight = new THREE.Mesh(edgeGeo, edgeMat);
-edgeRight.position.set(0, 0.05, BRIDGE_HALF_W - 0.04);
-bridgeGroup.add(edgeRight);
+function getEdgeColor(cfg) { return new THREE.Color(cfg.edgeColor); }
 
-// Neon end caps
-const capMat = new THREE.MeshStandardMaterial({
-  color: 0x00bcff,
-  emissive: 0x00bcff,
-  emissiveIntensity: 0.6,
-});
-const capGeo = new THREE.BoxGeometry(0.08, 0.05, BRIDGE_WIDTH);
-const capLeft = new THREE.Mesh(capGeo, capMat);
-capLeft.position.set(-BRIDGE_HALF_L, 0.05, 0);
-bridgeGroup.add(capLeft);
-const capRight = new THREE.Mesh(capGeo, capMat);
-capRight.position.set(BRIDGE_HALF_L, 0.05, 0);
-bridgeGroup.add(capRight);
-
-// Neon glow under bridge
-const glowMat = new THREE.MeshBasicMaterial({
-  color: 0xbbf351,
-  transparent: true,
-  opacity: 0.08,
-});
-const glowGeo = new THREE.PlaneGeometry(BRIDGE_LENGTH + 2, BRIDGE_WIDTH + 2);
-const glowPlane = new THREE.Mesh(glowGeo, glowMat);
-glowPlane.rotation.x = -Math.PI / 2;
-glowPlane.position.y = -0.4;
-bridgeGroup.add(glowPlane);
-
-// Bridge pillars
-const pillarMat = new THREE.MeshStandardMaterial({
-  color: 0x222244,
-  roughness: 0.8,
-  metalness: 0.1,
-});
-for (let x = -4; x <= 4; x += 4) {
-  for (let z = -1.5; z <= 1.5; z += 3) {
-    const pillar = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.2, 1.5, 8), pillarMat);
-    pillar.position.set(x, -1, z);
-    pillar.castShadow = true;
-    bridgeGroup.add(pillar);
+function buildBridge(cfg) {
+  // Clear old bridge and arena pillars
+  while (bridgeGroup.children.length) {
+    const c = bridgeGroup.children[0];
+    c.geometry?.dispose();
+    c.material?.dispose();
+    bridgeGroup.remove(c);
   }
-}
+  movingPlatforms.length = 0;
+  // Clean up old arena pillars
+  arenaPillarRefs.forEach(ref => { ref.geometry?.dispose(); ref.material?.dispose(); scene.remove(ref); });
+  arenaPillarRefs.length = 0;
 
-// Arena pillars (decorative)
-const pillarTallMat = new THREE.MeshStandardMaterial({
-  color: 0x1a1a3a,
-  roughness: 0.6,
-  metalness: 0.3,
-  emissive: 0x00bcff,
-  emissiveIntensity: 0.05,
-});
-const pillarPositions = [
-  [-6, 0, -3], [6, 0, -3], [-6, 0, 3], [6, 0, 3],
-  [-6, 0, -1.5], [6, 0, 1.5],
-];
-pillarPositions.forEach(([x, y, z]) => {
-  const pillar = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.25, 3, 8), pillarTallMat);
-  pillar.position.set(x, 0.5, z);
-  pillar.castShadow = true;
-  scene.add(pillar);
+  const len = cfg.length;
+  const wid = cfg.width;
+  const halfL = len / 2;
+  const halfW = wid / 2;
+  const ec = getEdgeColor(cfg);
 
-  const ringMat = new THREE.MeshStandardMaterial({
+  // Bridge surface material
+  const bridgeMat = new THREE.MeshStandardMaterial({
+    color: cfg.color,
+    roughness: 0.7,
+    metalness: 0.2,
+  });
+
+  if (cfg.hasGap) {
+    // Two bridge halves with gap
+    const gapHalfW = (cfg.gapEnd - cfg.gapStart) / 2;
+    const halfLen = (len - gapHalfW * 2) / 2;
+    for (let side = -1; side <= 1; side += 2) {
+      const bm = new THREE.Mesh(new THREE.BoxGeometry(halfLen, 0.4, wid), bridgeMat);
+      bm.position.set(side * (halfLen / 2 + gapHalfW), -0.2, 0);
+      bm.receiveShadow = true;
+      bm.castShadow = true;
+      bridgeGroup.add(bm);
+    }
+  } else if (cfg.hasMovingPlatforms) {
+    // Individual platform segments
+    const segCount = cfg.platformCount;
+    const segLen = len / segCount;
+    for (let i = 0; i < segCount; i++) {
+      const seg = new THREE.Mesh(new THREE.BoxGeometry(segLen - 0.15, 0.4, wid - 0.3), bridgeMat);
+      seg.position.set(-halfL + segLen * i + segLen / 2, -0.2, 0);
+      seg.receiveShadow = true;
+      seg.castShadow = true;
+      bridgeGroup.add(seg);
+      movingPlatforms.push({
+        mesh: seg,
+        baseX: -halfL + segLen * i + segLen / 2,
+        speed: 0.3 + Math.random() * 0.4,
+        range: 0.4 + Math.random() * 0.3,
+        offset: Math.random() * Math.PI * 2,
+      });
+    }
+  } else {
+    // Standard single bridge
+    const bm = new THREE.Mesh(new THREE.BoxGeometry(len, 0.4, wid), bridgeMat);
+    bm.position.y = -0.2;
+    bm.receiveShadow = true;
+    bm.castShadow = true;
+    bridgeGroup.add(bm);
+  }
+
+  // Neon edge strips
+  edgeMat = new THREE.MeshStandardMaterial({
+    color: ec,
+    emissive: ec,
+    emissiveIntensity: 0.8,
+    roughness: 0.2,
+  });
+  const edgeGeo = new THREE.BoxGeometry(len, 0.05, 0.08);
+  const el = new THREE.Mesh(edgeGeo, edgeMat);
+  el.position.set(0, 0.05, -halfW + 0.04);
+  bridgeGroup.add(el);
+  const er = new THREE.Mesh(edgeGeo, edgeMat);
+  er.position.set(0, 0.05, halfW - 0.04);
+  bridgeGroup.add(er);
+
+  // Neon end caps
+  capMat = new THREE.MeshStandardMaterial({
     color: 0x00bcff,
     emissive: 0x00bcff,
-    emissiveIntensity: 0.4,
+    emissiveIntensity: 0.6,
   });
-  const ring = new THREE.Mesh(new THREE.TorusGeometry(0.3, 0.04, 8, 16), ringMat);
-  ring.position.set(x, 2, z);
-  ring.rotation.x = Math.PI / 2;
-  scene.add(ring);
-});
+  const capGeo = new THREE.BoxGeometry(0.08, 0.05, wid);
+  const cl = new THREE.Mesh(capGeo, capMat);
+  cl.position.set(-halfL, 0.05, 0);
+  bridgeGroup.add(cl);
+  const cr = new THREE.Mesh(capGeo, capMat);
+  cr.position.set(halfL, 0.05, 0);
+  bridgeGroup.add(cr);
+
+  // Neon glow
+  glowMat = new THREE.MeshBasicMaterial({
+    color: ec,
+    transparent: true,
+    opacity: 0.08,
+  });
+  const glowGeo = new THREE.PlaneGeometry(len + 2, wid + 2);
+  const gp = new THREE.Mesh(glowGeo, glowMat);
+  gp.rotation.x = -Math.PI / 2;
+  gp.position.y = -0.4;
+  bridgeGroup.add(gp);
+
+  // Bridge pillars (skip for moving platforms — pillars obstruct movement)
+  if (!cfg.hasMovingPlatforms) {
+    pillarMat = new THREE.MeshStandardMaterial({
+      color: 0x222244,
+      roughness: 0.8,
+      metalness: 0.1,
+    });
+    const step = Math.min(4, Math.max(2, Math.floor(len / 3)));
+    for (let x = -halfL + step; x <= halfL - step; x += step) {
+      for (let z = -1.5; z <= 1.5; z += 3) {
+        const p = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.2, 1.5, 8), pillarMat);
+        p.position.set(x, -1, z);
+        p.castShadow = true;
+        bridgeGroup.add(p);
+      }
+    }
+  }
+
+  // Arena edge markers (decorative pillars — scale with map length)
+  pillarTallMat = new THREE.MeshStandardMaterial({
+    color: 0x1a1a3a,
+    roughness: 0.6,
+    metalness: 0.3,
+    emissive: 0x00bcff,
+    emissiveIntensity: 0.05,
+  });
+  const edgeDist = halfL + 1.5;
+  const pillarPositions = [
+    [-edgeDist, 0, -halfW - 1], [edgeDist, 0, -halfW - 1],
+    [-edgeDist, 0, halfW + 1], [edgeDist, 0, halfW + 1],
+  ];
+  pillarPositions.forEach(([x, y, z]) => {
+    const p = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.25, 3, 8), pillarTallMat);
+    p.position.set(x, 0.5, z);
+    p.castShadow = true;
+    scene.add(p);
+    arenaPillarRefs.push(p);
+    const ringMat = new THREE.MeshStandardMaterial({
+      color: 0x00bcff,
+      emissive: 0x00bcff,
+      emissiveIntensity: 0.4,
+    });
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(0.3, 0.04, 8, 16), ringMat);
+    ring.position.set(x, 2, z);
+    ring.rotation.x = Math.PI / 2;
+    scene.add(ring);
+    arenaPillarRefs.push(ring);
+  });
+}
+
+// Build initial bridge (default map)
+// Also store cfg ref used by update loops
+let currentMapCfg = MAP_CONFIGS[0];
+buildBridge(MAP_CONFIGS[0]);
+
+// ===== Power-Up Orb Mesh =====
+const powerUpOrbGroup = new THREE.Group();
+scene.add(powerUpOrbGroup);
+const powerUpOrbMeshes = [];
+
+function createPowerUpOrb(color) {
+  const g = new THREE.Group();
+  const coreMat = new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.9 });
+  const core = new THREE.Mesh(new THREE.SphereGeometry(0.15, 8, 8), coreMat);
+  g.add(core);
+  const glowMat2 = new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.3, side: THREE.DoubleSide });
+  const glow2 = new THREE.Mesh(new THREE.SphereGeometry(0.25, 8, 8), glowMat2);
+  g.add(glow2);
+  return g;
+}
 
 // ===== Particles =====
 const particleCount = 800;
@@ -1129,30 +1514,198 @@ function loadSave() {
   } catch (e) { return defaultSave(); }
 }
 function defaultSave() {
-  return { highScore: 0, totalWins: 0, totalMatches: 0 };
+  return {
+    highScore: 0,
+    totalWins: 0,
+    totalMatches: 0,
+    unlockedMaps: ['bridge_01'],
+    unlockedItems: [],
+  };
 }
 function saveToDisk(data) {
   try { localStorage.setItem(STORAGE_KEY + 'save', JSON.stringify(data)); } catch (e) {}
+}
+
+// Progression helpers
+function getUnlockedMaps() {
+  const wins = saveData.totalWins;
+  return MAP_CONFIGS.filter(m => wins >= m.unlockWins).map(m => m.id);
+}
+function getUnlockedItems() {
+  const wins = saveData.totalWins;
+  return POWERUP_TYPES.filter(p => wins >= p.unlockWins).map(p => p.id);
+}
+function isMapUnlocked(mapId) {
+  return getUnlockedMaps().includes(mapId);
+}
+function isItemUnlocked(itemId) {
+  return getUnlockedItems().includes(itemId);
 }
 
 // ============================================================
 // Edge Detection
 // ============================================================
 function isOnBridge(x, z) {
-  return Math.abs(x) <= BRIDGE_HALF_L - 0.15 && Math.abs(z) <= BRIDGE_HALF_W - 0.15;
+  const hl = getBHL(), hw = getBHW();
+  // Gap map: check if within gap
+  const cfg = getMapConfig();
+  if (cfg.hasGap && Math.abs(x) > cfg.gapStart && Math.abs(x) < cfg.gapEnd) return false;
+  return Math.abs(x) <= hl - 0.15 && Math.abs(z) <= hw - 0.15;
 }
 
 function isNearEdge(x, z) {
-  const distX = BRIDGE_HALF_L - Math.abs(x);
-  const distZ = BRIDGE_HALF_W - Math.abs(z);
+  const hl = getBHL(), hw = getBHW();
+  const distX = hl - Math.abs(x);
+  const distZ = hw - Math.abs(z);
   return Math.min(distX, distZ) <= EDGE_SAFE_ZONE;
 }
 
 function clampToBridge(x, z) {
+  const hl = getBHL(), hw = getBHW();
   return {
-    x: Math.max(-BRIDGE_HALF_L + 0.15, Math.min(BRIDGE_HALF_L - 0.15, x)),
-    z: Math.max(-BRIDGE_HALF_W + 0.15, Math.min(BRIDGE_HALF_W - 0.15, z)),
+    x: Math.max(-hl + 0.15, Math.min(hl - 0.15, x)),
+    z: Math.max(-hw + 0.15, Math.min(hw - 0.15, z)),
   };
+}
+
+// ============================================================
+// Power-Up System
+// ============================================================
+function spawnPowerUp() {
+  const unlocked = getUnlockedItems();
+  if (unlocked.length === 0) return;
+  // Pick random unlocked type
+  const typeId = unlocked[Math.floor(Math.random() * unlocked.length)];
+  const type = POWERUP_TYPES.find(p => p.id === typeId);
+  if (!type) return;
+
+  const hl = getBHL(), hw = getBHW();
+  const x = (Math.random() - 0.5) * (hl - 1) * 1.5;
+  const z = (Math.random() - 0.5) * (hw - 0.5) * 1.5;
+
+  const orb = createPowerUpOrb(type.color);
+  orb.position.set(x, 0.4, z);
+  orb.userData = { typeId: type.id, lifetime: 0, bobPhase: Math.random() * Math.PI * 2 };
+  powerUpOrbGroup.add(orb);
+  powerUpOrbMeshes.push(orb);
+}
+
+function updatePowerUps(dt, time) {
+  // Spawn timer
+  state.powerUpTimer -= dt;
+  if (state.powerUpTimer <= 0) {
+    state.powerUpTimer = 5 + Math.random() * 3;
+    if (powerUpOrbMeshes.length < 3) spawnPowerUp();
+  }
+
+  // Update active power-up durations
+  for (let i = state.activePowerUps.length - 1; i >= 0; i--) {
+    const pu = state.activePowerUps[i];
+    pu.remaining -= dt;
+    if (pu.remaining <= 0) {
+      deactivatePowerUp(pu.id);
+      state.activePowerUps.splice(i, 1);
+    }
+  }
+
+  // Update orbs
+  for (let i = powerUpOrbMeshes.length - 1; i >= 0; i--) {
+    const orb = powerUpOrbMeshes[i];
+    orb.userData.lifetime += dt;
+    const bob = Math.sin(time * 0.005 + orb.userData.bobPhase) * 0.15;
+    orb.position.y = 0.4 + bob;
+    orb.rotation.y += dt * 1.5;
+
+    // Check collision with player
+    if (state.phase === 'playing') {
+      const playerPos = playerChar.group.position;
+      const dx = orb.position.x - playerPos.x;
+      const dz = orb.position.z - playerPos.z;
+      if (Math.sqrt(dx * dx + dz * dz) < 0.6 && orb.parent) {
+        collectPowerUp(orb.userData.typeId);
+        powerUpOrbGroup.remove(orb);
+        powerUpOrbMeshes.splice(i, 1);
+        continue;
+      }
+
+      // Check collision with AI
+      for (const opp of opponentChars) {
+        if (!opp.physics.alive) continue;
+        const oppPos = opp.group.position;
+        const odx = orb.position.x - oppPos.x;
+        const odz = orb.position.z - oppPos.z;
+        if (Math.sqrt(odx * odx + odz * odz) < 0.5 && orb.parent) {
+          // AI collects — brief random effect, less duration
+          powerUpOrbGroup.remove(orb);
+          powerUpOrbMeshes.splice(i, 1);
+          sfxHit();
+          break;
+        }
+      }
+
+      // Despawn if too old
+      if (orb.userData.lifetime > 15) {
+        powerUpOrbGroup.remove(orb);
+        powerUpOrbMeshes.splice(i, 1);
+      }
+    }
+  }
+
+  // Power-up sound cooldown
+  if (state.powerUpSfxCooldown > 0) state.powerUpSfxCooldown -= dt;
+}
+
+function collectPowerUp(typeId) {
+  // Check cooldown
+  if (state.powerUpSfxCooldown > 0) return;
+  state.powerUpSfxCooldown = 0.5;
+
+  // Already has this active? Refresh duration
+  const existing = state.activePowerUps.find(p => p.id === typeId);
+  if (existing) {
+    existing.remaining = POWERUP_TYPES.find(t => t.id === typeId).duration;
+  } else {
+    const typeDef = POWERUP_TYPES.find(t => t.id === typeId);
+    state.activePowerUps.push({ id: typeId, remaining: typeDef.duration });
+    activatePowerUp(typeId);
+  }
+
+  // Sound
+  playTone(600, 0.1, 'sine', 0.1);
+  setTimeout(() => playTone(900, 0.15, 'sine', 0.08), 100);
+  buzz(40);
+}
+
+function activatePowerUp(typeId) {
+  switch (typeId) {
+    case 'speed': state.speedMult = 1.5; break;
+    case 'shield': state.shieldActive = true; break;
+    case 'power_punch': state.punchActive = true; break;
+    case 'magnet': state.magnetActive = true; break;
+  }
+}
+
+function deactivatePowerUp(typeId) {
+  switch (typeId) {
+    case 'speed': state.speedMult = 1; break;
+    case 'shield': state.shieldActive = false; break;
+    case 'power_punch': state.punchActive = false; break;
+    case 'magnet': state.magnetActive = false; break;
+  }
+}
+
+function clearPowerUps() {
+  state.activePowerUps = [];
+  state.speedMult = 1;
+  state.shieldActive = false;
+  state.punchActive = false;
+  state.magnetActive = false;
+  state.powerUpTimer = 3 + Math.random() * 2;
+  state.powerUpSfxCooldown = 0;
+  while (powerUpOrbMeshes.length) {
+    const orb = powerUpOrbMeshes.pop();
+    powerUpOrbGroup.remove(orb);
+  }
 }
 
 // ============================================================
@@ -1193,6 +1746,13 @@ function updateAI(char, dt) {
     } else {
       p.aiState = 'chase';
     }
+  }
+
+  // Magnet effect: pull opponents toward player
+  if (state.magnetActive) {
+    const speed = p.speed * 1.2;
+    p.vx += (dx / Math.max(dist, 0.1)) * speed * dt * 4;
+    p.vz += (dz / Math.max(dist, 0.1)) * speed * dt * 4;
   }
 
   const lookY = Math.sin(Date.now() * 0.001 + p.bobOffset) * 0.05;
@@ -1287,18 +1847,41 @@ function handleCollisions() {
           b.physics.vx -= nx * knockback;
           b.physics.vz -= nz * knockback;
 
-          // Damage - asymmetric: only target loses HP (player collisions damage opponent only)
+          // Damage - with power-up modifiers
+          const playerHit = (a.physics.isPlayer && !b.physics.isPlayer) || (b.physics.isPlayer && !a.physics.isPlayer);
+
+          function applyDamage(target, source, damage, isPlayerTarget) {
+            if (isPlayerTarget && state.shieldActive) {
+              // Shield absorbs damage
+              state.shieldActive = false;
+              const idx = state.activePowerUps.findIndex(p => p.id === 'shield');
+              if (idx >= 0) state.activePowerUps.splice(idx, 1);
+              playTone(400, 0.15, 'sine', 0.12);
+              return; // no damage
+            }
+            target.hp -= damage;
+            target.flashTimer = 0.15;
+          }
+
           if (a.physics.isPlayer && !b.physics.isPlayer) {
-            b.physics.hp -= COLLISION_DAMAGE;
-            b.physics.flashTimer = 0.15;
+            const dmg = state.punchActive ? COLLISION_DAMAGE * 2 : COLLISION_DAMAGE;
+            applyDamage(b.physics, a.physics, dmg, false);
+            if (state.punchActive) {
+              state.punchActive = false;
+              const idx = state.activePowerUps.findIndex(p => p.id === 'power_punch');
+              if (idx >= 0) state.activePowerUps.splice(idx, 1);
+            }
           } else if (b.physics.isPlayer && !a.physics.isPlayer) {
-            a.physics.hp -= COLLISION_DAMAGE;
-            a.physics.flashTimer = 0.15;
+            const dmg = state.punchActive ? COLLISION_DAMAGE * 2 : COLLISION_DAMAGE;
+            applyDamage(a.physics, b.physics, dmg, false);
+            if (state.punchActive) {
+              state.punchActive = false;
+              const idx = state.activePowerUps.findIndex(p => p.id === 'power_punch');
+              if (idx >= 0) state.activePowerUps.splice(idx, 1);
+            }
           } else {
-            a.physics.hp -= COLLISION_DAMAGE;
-            b.physics.hp -= COLLISION_DAMAGE;
-            a.physics.flashTimer = 0.15;
-            b.physics.flashTimer = 0.15;
+            applyDamage(a.physics, b.physics, COLLISION_DAMAGE, a.physics.isPlayer);
+            applyDamage(b.physics, a.physics, COLLISION_DAMAGE, b.physics.isPlayer);
           }
 
           // Track who pushed whom for KO credit
@@ -1393,11 +1976,22 @@ function applyPhysics(char, dt) {
 }
 
 // ============================================================
+// Moving Platforms Update
+// ============================================================
+function updateMovingPlatforms(time) {
+  if (!getMapConfig().hasMovingPlatforms) return;
+  movingPlatforms.forEach((mp, i) => {
+    const offset = Math.sin(time * 0.002 * mp.speed + mp.offset) * mp.range;
+    mp.mesh.position.x = mp.baseX + offset;
+  });
+}
+
+// ============================================================
 // Game Logic
 // ============================================================
 
 function startGame() {
-  if (state.phase !== 'splash') return;
+  if (state.phase !== 'splash' && state.phase !== 'mapSelect') return;
   initAudio();
   state.phase = 'countdown';
   lastTime = 0;
@@ -1409,6 +2003,14 @@ function startGame() {
   }
 
   splash.classList.add('hidden');
+  document.getElementById('map-select-screen')?.classList.add('hidden');
+
+  // Rebuild bridge for selected map
+  const cfg = getMapConfig();
+  buildBridge(cfg);
+
+  // Reset positions for new map dimensions
+  resetMapPositions();
 
   // 3-2-1-GO countdown
   countdownOv.classList.add('show');
@@ -1510,10 +2112,10 @@ function endGame(won) {
   const score = state.kos * 500 + (won ? 1000 : 200) + Math.max(0, state.timer * 3);
   const timeStr = gameTimerEl.textContent;
 
-  // Update save
-  saveData.totalMatches++;
+  // Update save & check progression
+  const { newlyUnlockedMaps, newlyUnlockedItems } = checkProgressionUnlocks();
+
   if (won) {
-    saveData.totalWins++;
     sfxVictory();
     buzz([50, 30, 80]);
   } else {
@@ -1545,6 +2147,25 @@ function endGame(won) {
   resultTime.textContent = timeStr;
   resultBest.textContent = saveData.highScore;
 
+  // Show new unlocks
+  let unlockText = '';
+  if (newlyUnlockedMaps.length > 0) {
+    unlockText += 'NEW MAP: ' + newlyUnlockedMaps.map(m => m.name).join(', ');
+  }
+  if (newlyUnlockedItems.length > 0) {
+    if (unlockText) unlockText += ' | ';
+    unlockText += 'NEW ITEM: ' + newlyUnlockedItems.map(i => i.name).join(', ');
+  }
+  if (unlockText) {
+    const unlockEl = document.createElement('div');
+    unlockEl.className = 'result-stat';
+    unlockEl.style.color = 'var(--primary)';
+    unlockEl.style.animation = 'badgeGlow 2s ease-in-out infinite';
+    unlockEl.style.marginTop = '4px';
+    unlockEl.textContent = unlockText;
+    document.querySelector('.result-stats').appendChild(unlockEl);
+  }
+
   if (isNewHigh) {
     highscoreBadge.classList.add('show');
     buzz([30, 30, 30, 50]);
@@ -1560,7 +2181,29 @@ function endGame(won) {
   console.log('Bridge Brawl 3D — Score:', score, 'KOs:', state.kos, 'Won:', won);
 }
 
+function resetMapPositions() {
+  // Reset player to center
+  playerChar.group.position.set(0, 0, 0);
+  playerChar.group.rotation.y = 0;
+
+  // Reset opponents with map-appropriate positions
+  opponentChars.forEach((char, i) => {
+    const angle = (i / OPPONENT_COLORS.length) * Math.PI * 2;
+    const hl = getBHL(), hw = getBHW();
+    const r = Math.min(hl * 0.6, hw * 0.6, 2.5);
+    char.group.position.set(
+      Math.cos(angle) * r,
+      0,
+      Math.sin(angle) * r
+    );
+    char.group.rotation.y = 0;
+  });
+}
+
 function resetGame() {
+  // Clear power-ups
+  clearPowerUps();
+
   // Reset physics
   physicsBodies.forEach((char, i) => {
     const p = char.physics;
@@ -1577,19 +2220,8 @@ function resetGame() {
     p.aiTimer = 0;
   });
 
-  // Reset positions
-  playerChar.group.position.set(0, 0, 0);
-  playerChar.group.rotation.y = 0;
-
-  opponentChars.forEach((char, i) => {
-    const angle = (i / OPPONENT_COLORS.length) * Math.PI * 2;
-    char.group.position.set(
-      Math.cos(angle) * 2.5,
-      0,
-      Math.sin(angle) * 1.8
-    );
-    char.group.rotation.y = 0;
-  });
+  // Reset positions for current map
+  resetMapPositions();
 
   state.playerHP = MAX_HP;
   state.kos = 0;
@@ -1638,8 +2270,8 @@ function updateGame(dt) {
   }
 
   if (player.alive && !player.fallen) {
-    player.vx += moveX * player.speed * dt * 3;
-    player.vz += moveZ * player.speed * dt * 3;
+    player.vx += moveX * player.speed * state.speedMult * dt * 3;
+    player.vz += moveZ * player.speed * state.speedMult * dt * 3;
 
     // Friction
     const friction = 1 - 5 * dt;
@@ -1655,6 +2287,9 @@ function updateGame(dt) {
   // ===== Update AI =====
   opponentChars.forEach(c => updateAI(c, dt));
 
+  // ===== Update Moving Platforms =====
+  updateMovingPlatforms(gameTime * 1000);
+
   // ===== Apply Physics =====
   physicsBodies.forEach(c => applyPhysics(c, dt));
 
@@ -1663,6 +2298,9 @@ function updateGame(dt) {
 
   // ===== Handle Collisions =====
   handleCollisions();
+
+  // ===== Power-Up Updates =====
+  updatePowerUps(dt, gameTime * 1000);
 
   // ===== HP → Fall Linkage: auto-eliminate at 0 HP =====
   physicsBodies.forEach(c => {
@@ -1706,6 +2344,20 @@ function updateGame(dt) {
       ? (hpPct > 50 ? 'var(--secondary)' : hpPct > 25 ? 'var(--warning)' : 'var(--danger)')
       : 'rgba(255,255,255,0.1)';
   });
+
+  // Power-up HUD
+  updatePowerUpHUD();
+
+  // Shield visual: player glow
+  if (state.shieldActive && playerChar.physics.alive) {
+    const s = Math.sin(gameTime * 10) * 0.15;
+    playerChar.group.children.forEach(child => {
+      if (child.material && child.material.emissiveIntensity !== undefined) {
+        child.material.emissiveIntensity = 0.6 + s;
+        child.material.emissive?.setHex(0x4488ff);
+      }
+    });
+  }
 
   // Camera shake
   if (state.cameraShake > 0) {
@@ -1751,7 +2403,6 @@ function updateSplashScene(time) {
   if (!REDUCED_MOTION) {
     const pulse = Math.sin(time * 0.003) * 0.3 + 0.7;
     edgeMat.emissiveIntensity = pulse;
-    edgeMat.color.setHSL(0.22, 0.8, 0.5 + pulse * 0.2);
   }
 
   updateParticles(0.16);
@@ -1842,7 +2493,12 @@ function updateParticles(dt) {
 document.addEventListener('keydown', (e) => {
   if (state.phase === 'splash' && (e.key === 'Enter' || e.key === ' ')) {
     e.preventDefault();
-    startGame();
+    showMapSelection();
+    return;
+  }
+  if (state.phase === 'mapSelect' && (e.key === 'Enter')) {
+    e.preventDefault();
+    if (isMapUnlocked(state.selectedMap)) startGame();
     return;
   }
 
@@ -1915,14 +2571,145 @@ jumpBtn?.addEventListener('touchend', (e) => {
 });
 jumpBtn?.addEventListener('touchcancel', () => { input.jump = false; });
 
+// ============================================================
+// Map Selection UI
+// ============================================================
+const mapSelectScreen = document.getElementById('map-select-screen');
+const mapGrid = document.getElementById('mapGrid');
+const mapStartBtn = document.getElementById('mapStartBtn');
+const mapBackBtn = document.getElementById('mapBackBtn');
+const hudPowerUpsEl = document.getElementById('hudPowerUps');
+
+function buildMapSelection() {
+  mapGrid.innerHTML = '';
+  MAP_CONFIGS.forEach((cfg) => {
+    const card = document.createElement('div');
+    card.className = 'map-card';
+    card.dataset.mapId = cfg.id;
+
+    const unlocked = isMapUnlocked(cfg.id);
+
+    if (!unlocked) card.classList.add('locked');
+    if (cfg.id === state.selectedMap && unlocked) card.classList.add('selected');
+
+    const previewColor = '#' + new THREE.Color(cfg.edgeColor).getHexString();
+
+    // Lock icon
+    const lockEl = document.createElement('div');
+    lockEl.className = 'card-lock';
+    lockEl.textContent = unlocked ? '' : '\u{1F512}';
+
+    // Checkmark
+    const checkEl = document.createElement('div');
+    checkEl.className = 'card-check';
+    checkEl.textContent = '✓';
+
+    const nameEl = document.createElement('div');
+    nameEl.className = 'card-name';
+    nameEl.textContent = cfg.name;
+
+    const descEl = document.createElement('div');
+    descEl.className = 'card-desc';
+    if (unlocked) {
+      descEl.textContent = cfg.description;
+    } else {
+      descEl.textContent = `Unlock: Win ${cfg.unlockWins} match${cfg.unlockWins > 1 ? 'es' : ''}`;
+    }
+
+    const previewEl = document.createElement('div');
+    previewEl.className = 'card-preview';
+    previewEl.style.borderColor = unlocked ? previewColor : 'rgba(255,255,255,0.05)';
+    previewEl.style.boxShadow = unlocked ? `inset 0 0 20px ${previewColor}22` : 'none';
+    previewEl.textContent = cfg.hasGap ? '~ ~ gap ~ ~' : cfg.hasMovingPlatforms ? '< > < > <' : '| | | |';
+
+    card.appendChild(lockEl);
+    card.appendChild(checkEl);
+    card.appendChild(nameEl);
+    card.appendChild(descEl);
+    card.appendChild(previewEl);
+
+    if (unlocked) {
+      card.addEventListener('click', () => {
+        state.selectedMap = cfg.id;
+        document.querySelectorAll('.map-card').forEach(c => c.classList.remove('selected'));
+        card.classList.add('selected');
+        mapStartBtn.classList.add('active');
+      });
+    }
+
+    mapGrid.appendChild(card);
+  });
+
+  // Enable start if current selection is unlocked
+  mapStartBtn.classList.toggle('active', isMapUnlocked(state.selectedMap));
+}
+
+function showMapSelection() {
+  // Update save data progression
+  const unlockedMaps = getUnlockedMaps();
+  const unlockedItems = getUnlockedItems();
+  saveData.unlockedMaps = unlockedMaps;
+  saveData.unlockedItems = unlockedItems;
+  saveToDisk(saveData);
+
+  buildMapSelection();
+  mapSelectScreen.classList.remove('hidden');
+  splash.classList.add('hidden');
+  state.phase = 'mapSelect';
+}
+
+function updatePowerUpHUD() {
+  hudPowerUpsEl.innerHTML = '';
+  state.activePowerUps.forEach(pu => {
+    const def = POWERUP_TYPES.find(t => t.id === pu.id);
+    if (!def) return;
+    const icon = document.createElement('div');
+    icon.className = 'hud-powerup-icon active';
+    const color = '#' + new THREE.Color(def.color).getHexString();
+    icon.style.color = color;
+    icon.style.borderColor = color;
+    icon.style.background = color + '22';
+    icon.textContent = def.name.charAt(0);
+    icon.title = `${def.name} (${pu.remaining.toFixed(1)}s)`;
+    hudPowerUpsEl.appendChild(icon);
+  });
+}
+
+// Progression: update result screen with progression info
+function checkProgressionUnlocks() {
+  const beforeWins = saveData.totalWins;
+  if (state.won) saveData.totalWins++;
+  saveData.totalMatches++;
+  // Sync unlock arrays
+  saveData.unlockedMaps = getUnlockedMaps();
+  saveData.unlockedItems = getUnlockedItems();
+  saveToDisk(saveData);
+
+  // Check for newly unlocked content
+  const newlyUnlockedMaps = MAP_CONFIGS.filter(
+    m => m.unlockWins > 0 && m.unlockWins <= saveData.totalWins && m.unlockWins > beforeWins
+  );
+  const newlyUnlockedItems = POWERUP_TYPES.filter(
+    p => p.unlockWins > 0 && p.unlockWins <= saveData.totalWins && p.unlockWins > beforeWins
+  );
+
+  return { newlyUnlockedMaps, newlyUnlockedItems };
+}
+
 // Buttons
-startBtn.addEventListener('click', startGame);
+startBtn.addEventListener('click', showMapSelection);
+mapStartBtn.addEventListener('click', startGame);
+mapBackBtn.addEventListener('click', () => {
+  mapSelectScreen.classList.add('hidden');
+  splash.classList.remove('hidden');
+  state.phase = 'splash';
+  startAutoStartTimer();
+});
+
 playAgainBtn.addEventListener('click', () => {
   result.classList.add('hidden');
-  state.phase = 'splash';
   resetGame();
-  splash.classList.remove('hidden');
-  startAutoStartTimer();
+  showMapSelection();
 });
 
 document.querySelector('.result-back-btn')?.addEventListener('click', () => {
@@ -1948,7 +2735,7 @@ function startAutoStartTimer() {
     autoCountEl.textContent = String(state.autoStartCount);
     if (state.autoStartCount <= 0) {
       clearInterval(state.autoStartTimer);
-      startGame();
+      showMapSelection();
     }
   }, 1000);
 }
