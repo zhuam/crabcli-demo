@@ -630,7 +630,7 @@ function useSkill(entity, idx) {
         entity.y += dy * (dashDist / steps);
         // Damage enemies near path
         const enemies = entity.team === 'alpha' ? G.enemies : G.allies;
-        if (G.player && entity !== G.player) enemies.push(G.player);
+        if (G.player && entity.team === 'omega') enemies.push(G.player);
         enemies.forEach(e => {
           if (!e.alive) return;
           if (dist(entity, e) < 50) {
@@ -736,6 +736,10 @@ function useSkill(entity, idx) {
 // ---- Damage ----
 function damageEntity(target, dmg, source) {
   if (!target || !target.alive) return;
+  // Sudden death doubles damage to towers and cores
+  if (G.suddenDeath && (target.type === 'tower' || target.type === 'core')) {
+    dmg *= 2;
+  }
   // Shield absorbs first
   if (target.shield > 0) {
     const absorbed = Math.min(target.shield, dmg);
@@ -881,7 +885,9 @@ function updateAI(entity, dt) {
   let minDist = Infinity;
 
   // Order: enemy hero > enemy minion > tower > core
-  const enemies = entity.team === 'alpha' ? [...G.enemies, ...G.minions.filter(m => m.team === 'omega')] : [...G.allies, G.player, ...G.minions.filter(m => m.team === 'alpha')];
+  const enemies = entity.team === 'alpha'
+    ? [...G.enemies, ...G.minions.filter(m => m.team === 'omega'), ...G.towers.filter(t => t.team === 'omega'), ...G.cores.filter(c => c.team === 'omega')]
+    : [...G.allies, G.player, ...G.minions.filter(m => m.team === 'alpha'), ...G.towers.filter(t => t.team === 'alpha'), ...G.cores.filter(c => c.team === 'alpha')];
   const aliveEnemies = enemies.filter(e => e.alive);
 
   // Prioritize: nearby enemies first

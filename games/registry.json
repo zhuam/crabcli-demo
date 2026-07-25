@@ -743,6 +743,25 @@
       "version": "1.0.0",
       "featured": true,
       "rating": 4.3
+    },
+    {
+      "id": "arena-blitz",
+      "name": "Arena Blitz",
+      "description": "3v3 快节奏 MOBA-Lite — 走位·放技能·推塔，摧毁敌方核心获胜",
+      "category": "action",
+      "tags": [
+        "singleplayer",
+        "action",
+        "moba",
+        "short-session"
+      ],
+      "thumbnail": "/games/055-arena-blitz/thumb.svg",
+      "path": "/games/055-arena-blitz/",
+      "hasServer": false,
+      "players": "1",
+      "version": "1.0.0",
+      "featured": true,
+      "rating": 4.3
     }
   ],
   "categories": [
