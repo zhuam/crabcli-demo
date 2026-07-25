@@ -762,6 +762,27 @@
       "version": "1.0.0",
       "featured": true,
       "rating": 4.3
+    },
+    {
+      "id": "ricochet-rumble",
+      "name": "Ricochet Rumble",
+      "description": "子弹反弹回合制对战 — 拖拽瞄准，利用反弹击杀对手！5 个难度递增关卡",
+      "category": "action",
+      "tags": [
+        "singleplayer",
+        "action",
+        "turn-based",
+        "physics",
+        "shooter",
+        "short-session"
+      ],
+      "thumbnail": "/games/054-ricochet-rumble/thumb.svg",
+      "path": "/games/054-ricochet-rumble/",
+      "hasServer": false,
+      "players": "1",
+      "version": "1.0.0",
+      "featured": true,
+      "rating": 4
     }
   ],
   "categories": [
