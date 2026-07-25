@@ -556,6 +556,19 @@ html, body {
   text-shadow: 0 0 60px var(--primary-glow);
 }
 
+/* ===== Reduced Motion ===== */
+@media (prefers-reduced-motion: reduce) {
+  .splash-title { animation: none; }
+  .splash-start-btn { animation: none; }
+  .hud-timer.danger { animation: none; }
+  .countdown-number { animation: none; }
+  .result-icon svg { animation: none; }
+  .result-highscore-badge { animation: none; }
+  .hud-dpad-btn:active, .hud-jump-btn:active { transform: none; }
+  .splash-start-btn:hover { transform: none; }
+  .result-playagain-btn:hover { transform: none; }
+}
+
 /* ===== Responsive ===== */
 @media (max-width: 600px) {
   .splash-controls {
@@ -657,9 +670,10 @@ html, body {
 <!-- ===== Touch Controls ===== -->
 <div class="hud-touch-controls" data-comp-id="hud-touch-controls">
   <div class="hud-dpad" data-comp-id="hud-dpad">
+    <button class="hud-dpad-btn" data-dir="up" aria-label="Move forward" style="grid-column:1/3;justify-self:center">&uarr;</button>
     <button class="hud-dpad-btn" data-dir="left" aria-label="Move left">&larr;</button>
     <button class="hud-dpad-btn" data-dir="right" aria-label="Move right">&rarr;</button>
-    <button class="hud-dpad-btn" data-dir="up" aria-label="Move forward" style="grid-column:1/3;justify-self:center">&uarr;</button>
+    <button class="hud-dpad-btn" data-dir="down" aria-label="Move backward" style="grid-column:1/3;justify-self:center">&darr;</button>
   </div>
   <button class="hud-jump-btn" data-comp-id="hud-jump-btn" aria-label="Jump">Jump</button>
 </div>
@@ -719,6 +733,7 @@ const KNOCKBACK_FORCE = 6;
 const COLLISION_DAMAGE = 1;  // HP lost per collision
 const EDGE_SAFE_ZONE = 0.7;  // units from edge to start warning
 const GRAVITY = -12;
+const REDUCED_MOTION = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const STORAGE_KEY = 'bb3d_';
 
 const OPPONENT_NAMES = ['NEXUS', 'BLITZ', 'SHARD'];
@@ -1272,15 +1287,23 @@ function handleCollisions() {
           b.physics.vx -= nx * knockback;
           b.physics.vz -= nz * knockback;
 
-          // Damage - both lose HP on collision
-          a.physics.hp -= COLLISION_DAMAGE;
-          b.physics.hp -= COLLISION_DAMAGE;
-          a.physics.flashTimer = 0.15;
-          b.physics.flashTimer = 0.15;
+          // Damage - asymmetric: only target loses HP (player collisions damage opponent only)
+          if (a.physics.isPlayer && !b.physics.isPlayer) {
+            b.physics.hp -= COLLISION_DAMAGE;
+            b.physics.flashTimer = 0.15;
+          } else if (b.physics.isPlayer && !a.physics.isPlayer) {
+            a.physics.hp -= COLLISION_DAMAGE;
+            a.physics.flashTimer = 0.15;
+          } else {
+            a.physics.hp -= COLLISION_DAMAGE;
+            b.physics.hp -= COLLISION_DAMAGE;
+            a.physics.flashTimer = 0.15;
+            b.physics.flashTimer = 0.15;
+          }
 
           // Track who pushed whom for KO credit
-          if (a.physics.isPlayer) state.kos += (b.physics.hp <= 0 ? 1 : 0);
-          if (b.physics.isPlayer) state.kos += (a.physics.hp <= 0 ? 1 : 0);
+          if (a.physics.isPlayer && b.physics.hp <= 0) state.kos += 1;
+          if (b.physics.isPlayer && a.physics.hp <= 0) state.kos += 1;
 
           sfxHit();
           buzz(60);
@@ -1377,6 +1400,8 @@ function startGame() {
   if (state.phase !== 'splash') return;
   initAudio();
   state.phase = 'countdown';
+  lastTime = 0;
+  gameTime = 0;
 
   if (state.autoStartTimer) {
     clearInterval(state.autoStartTimer);
@@ -1447,16 +1472,22 @@ function determineWinner() {
   let won = false;
 
   if (playerChar.physics.alive && !playerChar.physics.fallen) {
-    // Player still alive
-    if (alive.length === 1) {
-      won = true; // Only player alive
-    } else if (state.kos > 0) {
-      won = true; // Player scored more KOs
+    // Player still alive — check who has most KOs
+    const aliveAlive = alive.filter(c => !c.physics.isPlayer);
+    if (aliveAlive.length === 0) {
+      won = true; // Last standing
     } else {
-      won = state.kos > 0;
+      // Compare KOs: player wins if they have the most KOs (or tie on HP)
+      const maxAIKOs = Math.max(...aliveAlive.map(c => 0));
+      if (state.kos > maxAIKOs) {
+        won = true;
+      } else if (state.kos === maxAIKOs) {
+        // Tie on KOs — compare HP
+        const playerHP = playerChar.physics.hp;
+        const maxAIHP = Math.max(...aliveAlive.map(c => c.physics.hp));
+        won = playerHP > maxAIHP;
+      }
     }
-  } else {
-    won = false;
   }
 
   endGame(won);
@@ -1565,10 +1596,16 @@ function resetGame() {
   state.score = 0;
   state.cameraShake = 0;
   state.edgeWarnTimer = 0;
+  lastTime = 0;
+  gameTime = 0;
 
   playerHpFill.style.width = '100%';
   playerHpFill.style.background = 'var(--success)';
-  oppHpEls.forEach(el => { el.style.width = '100%'; });
+  const oppColors = ['var(--secondary)', 'var(--danger)', 'var(--warning)'];
+  oppHpEls.forEach((el, i) => {
+    el.style.width = '100%';
+    el.style.background = oppColors[i] || 'var(--secondary)';
+  });
   hudKOs.textContent = 'KO: 0';
   edgeWarning.classList.remove('show');
 }
@@ -1577,6 +1614,7 @@ function resetGame() {
 // Game Loop Update
 // ============================================================
 let gameTime = 0;
+let lastTime = 0;
 
 function updateGame(dt) {
   if (state.phase !== 'playing') return;
@@ -1625,6 +1663,20 @@ function updateGame(dt) {
 
   // ===== Handle Collisions =====
   handleCollisions();
+
+  // ===== HP → Fall Linkage: auto-eliminate at 0 HP =====
+  physicsBodies.forEach(c => {
+    if (c.physics.alive && c.physics.hp <= 0 && !c.physics.fallen) {
+      c.physics.alive = false;
+      c.physics.fallen = true;
+      sfxKnockOff();
+      buzz(200);
+      if (c.physics.isPlayer) {
+        endGame(false);
+        return;
+      }
+    }
+  });
 
   // ===== Edge Warning =====
   if (player.alive) {
@@ -1683,10 +1735,12 @@ function updateSplashScene(time) {
   splashTime = time;
   bridgeGroup.rotation.y = Math.sin(time * 0.0001) * 0.15;
 
-  physicsBodies.forEach((char, i) => {
-    const bob = Math.sin(time * 0.002 + char.physics.bobOffset) * 0.03;
-    char.group.position.y = bob;
-  });
+  if (!REDUCED_MOTION) {
+    physicsBodies.forEach((char, i) => {
+      const bob = Math.sin(time * 0.002 + char.physics.bobOffset) * 0.03;
+      char.group.position.y = bob;
+    });
+  }
 
   cameraOrbit += 0.0003;
   const cx = Math.sin(cameraOrbit) * 14;
@@ -1694,15 +1748,19 @@ function updateSplashScene(time) {
   camera.position.set(cx, 9, cz);
   camera.lookAt(0, 1, 0);
 
-  const pulse = Math.sin(time * 0.003) * 0.3 + 0.7;
-  edgeMat.emissiveIntensity = pulse;
-  edgeMat.color.setHSL(0.22, 0.8, 0.5 + pulse * 0.2);
+  if (!REDUCED_MOTION) {
+    const pulse = Math.sin(time * 0.003) * 0.3 + 0.7;
+    edgeMat.emissiveIntensity = pulse;
+    edgeMat.color.setHSL(0.22, 0.8, 0.5 + pulse * 0.2);
+  }
 
   updateParticles(0.16);
 }
 
 function updateGameplayScene(time) {
-  const dt = Math.min(1 / 30, 0.016); // Cap delta time
+  if (lastTime === 0) lastTime = time;
+  const dt = Math.min((time - lastTime) / 1000, 1/15);
+  lastTime = time;
 
   // Update game logic
   updateGame(dt);
@@ -1718,8 +1776,10 @@ function updateGameplayScene(time) {
       }
       return;
     }
-    const bob = Math.sin(time * 0.003 + char.physics.bobOffset) * 0.025;
-    char.group.position.y += bob * 0.5; // subtle bob on top of physics Y
+    if (!REDUCED_MOTION) {
+      const bob = Math.sin(time * 0.003 + char.physics.bobOffset) * 0.025;
+      char.group.position.y += bob * 0.5; // subtle bob on top of physics Y
+    }
 
     // Flash on hit
     if (char.physics.flashTimer > 0) {
@@ -1739,7 +1799,7 @@ function updateGameplayScene(time) {
 
   // Gameplay camera
   const playerPos = playerChar.group.position;
-  const shake = state.cameraShake > 0
+  const shake = !REDUCED_MOTION && state.cameraShake > 0
     ? (Math.sin(time * 50) + Math.cos(time * 37)) * state.cameraShake * 0.5
     : 0;
   camera.position.set(
@@ -1750,8 +1810,10 @@ function updateGameplayScene(time) {
   camera.lookAt(playerPos.x, 1, playerPos.z);
 
   // Neon pulse
-  const pulse = Math.sin(time * 0.004) * 0.2 + 0.8;
-  edgeMat.emissiveIntensity = pulse;
+  if (!REDUCED_MOTION) {
+    const pulse = Math.sin(time * 0.004) * 0.2 + 0.8;
+    edgeMat.emissiveIntensity = pulse;
+  }
 
   // Particles
   updateParticles(dt);
@@ -1797,7 +1859,7 @@ document.addEventListener('keydown', (e) => {
     case 'a': case 'A': input.left = true; e.preventDefault(); break;
     case 'd': case 'D': input.right = true; e.preventDefault(); break;
     case ' ': input.jump = true; e.preventDefault(); break;
-    case 'Escape': endGame(false); break;
+    case 'Escape': if (confirm('Forfeit match?')) endGame(false); break;
   }
 });
 
@@ -1817,6 +1879,7 @@ document.querySelectorAll('.hud-dpad-btn').forEach(btn => {
   const startInside = () => {
     switch (dir) {
       case 'up': input.forward = true; break;
+      case 'down': input.backward = true; break;
       case 'left': input.left = true; break;
       case 'right': input.right = true; break;
     }
@@ -1825,6 +1888,7 @@ document.querySelectorAll('.hud-dpad-btn').forEach(btn => {
   const stopInside = () => {
     switch (dir) {
       case 'up': input.forward = false; break;
+      case 'down': input.backward = false; break;
       case 'left': input.left = false; break;
       case 'right': input.right = false; break;
     }
@@ -1899,14 +1963,16 @@ function animate(time) {
     updateGameplayScene(time);
   } else {
     // Result scene
-    bridgeGroup.rotation.y = Math.sin(time * 0.00005) * 0.1;
-    const pulse = Math.sin(time * 0.002) * 0.2 + 0.8;
-    edgeMat.emissiveIntensity = pulse;
-    physicsBodies.forEach((char, i) => {
-      if (char.physics.alive) {
-        char.group.position.y = Math.sin(time * 0.002 + char.physics.bobOffset) * 0.03;
-      }
-    });
+    if (!REDUCED_MOTION) {
+      bridgeGroup.rotation.y = Math.sin(time * 0.00005) * 0.1;
+      const pulse = Math.sin(time * 0.002) * 0.2 + 0.8;
+      edgeMat.emissiveIntensity = pulse;
+      physicsBodies.forEach((char, i) => {
+        if (char.physics.alive) {
+          char.group.position.y = Math.sin(time * 0.002 + char.physics.bobOffset) * 0.03;
+        }
+      });
+    }
 
     // Result camera orbit
     cameraOrbit += 0.0005;
