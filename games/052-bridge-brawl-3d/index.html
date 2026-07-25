@@ -1,0 +1,1990 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#0a0a1a">
+  <title>Bridge Brawl 3D</title>
+  <link rel="stylesheet" href="/fonts/design-fonts.css">
+<style>
+/* ===== Design Tokens (Neon) ===== */
+:root {
+  --primary: #BBF351;
+  --primary-glow: rgba(187, 243, 81, 0.6);
+  --primary-dim: rgba(187, 243, 81, 0.15);
+  --secondary: #00BCFF;
+  --secondary-glow: rgba(0, 188, 255, 0.5);
+  --success: #16A34A;
+  --danger: #DC2626;
+  --danger-glow: rgba(220, 38, 38, 0.5);
+  --warning: #D97706;
+  --surface: #FFFFFF;
+  --text: #111827;
+  --bg-deep: #0a0a1a;
+  --bg-dark: #0f0f2a;
+  --bg-mid: #1a1a3a;
+  --font-ui: 'Roboto', system-ui, sans-serif;
+  --font-display: 'STIX Two Text', Georgia, serif;
+  --font-mono: 'Source Code Pro', 'Courier New', monospace;
+  --radius: 12px;
+  --radius-sm: 8px;
+  --transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ===== Reset & Base ===== */
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+html, body {
+  width: 100%; height: 100%;
+  overflow: hidden;
+  background: var(--bg-deep);
+  font-family: var(--font-ui);
+  -webkit-tap-highlight-color: transparent;
+  touch-action: none;
+  user-select: none;
+}
+
+/* ===== Canvas ===== */
+#game-canvas {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100vw; height: 100vh;
+  display: block;
+  z-index: 0;
+}
+
+/* ===== Overlay Base ===== */
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity var(--transition), transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.overlay.hidden {
+  opacity: 0;
+  pointer-events: none;
+  transform: scale(0.96);
+}
+
+/* ===== Splash Screen ===== */
+#splash-screen {
+  flex-direction: column;
+  background: radial-gradient(ellipse at center bottom, rgba(15,15,42,0.95) 0%, var(--bg-deep) 70%);
+  gap: 0;
+}
+.splash-badge {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--primary);
+  opacity: 0.6;
+  margin-bottom: 16px;
+}
+.splash-title {
+  font-family: var(--font-display);
+  font-size: clamp(36px, 8vw, 72px);
+  font-weight: 900;
+  color: var(--surface);
+  text-align: center;
+  line-height: 1.1;
+  text-shadow:
+    0 0 20px var(--primary-glow),
+    0 0 60px var(--primary-glow),
+    0 0 120px rgba(187, 243, 81, 0.3);
+  animation: titlePulse 3s ease-in-out infinite;
+}
+.splash-title .neon {
+  color: var(--primary);
+}
+.splash-subtitle {
+  font-family: var(--font-ui);
+  font-size: clamp(14px, 2vw, 18px);
+  font-weight: 300;
+  color: rgba(255,255,255,0.5);
+  margin-top: 12px;
+  letter-spacing: 1px;
+}
+@keyframes titlePulse {
+  0%, 100% { text-shadow: 0 0 20px var(--primary-glow), 0 0 60px var(--primary-glow); }
+  50% { text-shadow: 0 0 30px var(--primary-glow), 0 0 90px var(--primary-glow), 0 0 150px rgba(187,243,81,0.4); }
+}
+
+/* Start Button */
+.splash-start-btn {
+  margin-top: 40px;
+  padding: 16px 56px;
+  font-family: var(--font-display);
+  font-size: clamp(18px, 3vw, 24px);
+  font-weight: 700;
+  color: var(--bg-deep);
+  background: var(--primary);
+  border: none;
+  border-radius: var(--radius);
+  cursor: pointer;
+  position: relative;
+  transition: transform var(--transition), box-shadow var(--transition);
+  box-shadow: 0 0 20px var(--primary-glow), 0 0 40px rgba(187,243,81,0.3);
+  animation: btnPulse 2s ease-in-out infinite;
+}
+.splash-start-btn:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 30px var(--primary-glow), 0 0 60px rgba(187,243,81,0.4);
+}
+.splash-start-btn:active {
+  transform: scale(0.97);
+}
+@keyframes btnPulse {
+  0%, 100% { box-shadow: 0 0 20px var(--primary-glow), 0 0 40px rgba(187,243,81,0.3); }
+  50% { box-shadow: 0 0 30px var(--primary-glow), 0 0 70px rgba(187,243,81,0.5); }
+}
+
+/* Auto-start Timer */
+.splash-auto-timer {
+  margin-top: 24px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: rgba(255,255,255,0.35);
+  letter-spacing: 1px;
+}
+.splash-auto-timer .count {
+  color: var(--primary);
+  font-weight: 600;
+}
+
+/* Control Hints */
+.splash-controls {
+  position: absolute;
+  bottom: 48px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 32px;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.control-hint {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  color: rgba(255,255,255,0.4);
+  font-size: 11px;
+  font-family: var(--font-mono);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+.control-hint .keys {
+  display: flex;
+  gap: 4px;
+}
+.control-hint kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  height: 28px;
+  padding: 0 6px;
+  font-family: var(--font-ui);
+  font-size: 11px;
+  font-weight: 500;
+  color: rgba(255,255,255,0.7);
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 4px;
+}
+.control-hint .icon-touch {
+  opacity: 0.6;
+}
+.control-hint.highlight kbd {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+/* ===== HUD ===== */
+#hud-overlay {
+  z-index: 5;
+  pointer-events: none;
+  background: none;
+}
+.hud-top {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 12px 16px;
+  background: linear-gradient(to bottom, rgba(0,0,0,0.5) 0%, transparent 100%);
+}
+.hud-back-btn {
+  pointer-events: auto;
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.5);
+  font-family: var(--font-ui);
+  font-size: 13px;
+  cursor: pointer;
+  padding: 8px;
+  transition: color var(--transition);
+}
+.hud-back-btn:hover { color: var(--surface); }
+
+.hud-timer {
+  font-family: var(--font-mono);
+  font-size: clamp(20px, 3vw, 28px);
+  font-weight: 700;
+  color: var(--surface);
+  text-shadow: 0 0 10px rgba(0,0,0,0.5);
+  transition: color var(--transition);
+}
+.hud-timer.warning { color: var(--warning); }
+.hud-timer.danger {
+  color: var(--danger);
+  animation: timerPulse 0.5s ease-in-out infinite;
+}
+@keyframes timerPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.hud-opponents {
+  position: absolute;
+  top: 56px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 40px;
+}
+.opponent-tag {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+.opponent-tag .name {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+.opponent-tag .hp-bar {
+  width: 60px;
+  height: 4px;
+  background: rgba(255,255,255,0.15);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.opponent-tag .hp-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.3s ease;
+}
+
+/* Player Health (bottom) */
+.hud-player-area {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  padding: 12px 16px 16px;
+  background: linear-gradient(to top, rgba(0,0,0,0.5) 0%, transparent 100%);
+}
+.hud-player-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 4px;
+}
+.hud-player-name {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--primary);
+  letter-spacing: 0.5px;
+}
+.hud-score {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: rgba(255,255,255,0.4);
+  margin-left: auto;
+}
+.hud-player-hp {
+  width: min(200px, 50vw);
+  height: 6px;
+  background: rgba(255,255,255,0.12);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.hud-player-hp .hp-fill {
+  height: 100%;
+  background: var(--success);
+  border-radius: 3px;
+  transition: width 0.3s ease, background 0.3s ease;
+}
+
+/* Touch Controls */
+.hud-touch-controls {
+  position: absolute;
+  bottom: 80px;
+  left: 0; right: 0;
+  display: none;
+  justify-content: space-between;
+  padding: 0 20px;
+  pointer-events: none;
+  z-index: 6;
+}
+@media (hover: none) and (pointer: coarse) {
+  .hud-touch-controls { display: flex; }
+}
+.hud-dpad {
+  display: grid;
+  grid-template-columns: 56px 56px;
+  gap: 8px;
+  pointer-events: auto;
+}
+.hud-dpad-btn {
+  width: 56px; height: 56px;
+  border: 1.5px solid rgba(255,255,255,0.15);
+  background: rgba(255,255,255,0.06);
+  backdrop-filter: blur(4px);
+  border-radius: 50%;
+  color: rgba(255,255,255,0.7);
+  font-size: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background var(--transition), transform 0.1s;
+}
+.hud-dpad-btn:active {
+  background: rgba(255,255,255,0.15);
+  transform: scale(0.9);
+}
+.hud-jump-btn {
+  width: 64px; height: 64px;
+  border: 1.5px solid var(--primary);
+  background: var(--primary-dim);
+  backdrop-filter: blur(4px);
+  border-radius: 50%;
+  color: var(--primary);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  pointer-events: auto;
+  transition: background var(--transition), transform 0.1s;
+}
+.hud-jump-btn:active {
+  background: rgba(187,243,81,0.25);
+  transform: scale(0.9);
+}
+
+/* Edge Warning */
+.hud-edge-warning {
+  position: absolute;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--danger);
+  text-shadow: 0 0 10px var(--danger-glow);
+  opacity: 0;
+  transition: opacity 0.2s;
+  pointer-events: none;
+  z-index: 7;
+}
+.hud-edge-warning.show {
+  opacity: 1;
+}
+
+/* ===== Result Screen ===== */
+#result-screen {
+  flex-direction: column;
+  gap: 16px;
+  background: radial-gradient(ellipse at center, rgba(15,15,42,0.97) 0%, var(--bg-deep) 80%);
+}
+.result-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: clamp(48px, 10vw, 80px);
+  height: clamp(48px, 10vw, 80px);
+  margin-bottom: 4px;
+  animation: resultIconIn 0.6s ease-out;
+}
+.result-icon svg {
+  width: 100%;
+  height: 100%;
+}
+@keyframes resultIconIn {
+  0% { transform: scale(0) rotate(-20deg); opacity: 0; }
+  100% { transform: scale(1) rotate(0); opacity: 1; }
+}
+.result-title {
+  font-family: var(--font-display);
+  font-size: clamp(32px, 7vw, 56px);
+  font-weight: 900;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+.result-title.victory { color: var(--primary); text-shadow: 0 0 30px var(--primary-glow); }
+.result-title.defeat { color: var(--danger); text-shadow: 0 0 30px var(--danger-glow); }
+
+.result-sub {
+  font-family: var(--font-ui);
+  font-size: clamp(14px, 2vw, 18px);
+  color: rgba(255,255,255,0.5);
+  text-align: center;
+}
+
+.result-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 16px;
+  text-align: center;
+}
+.result-stat {
+  font-family: var(--font-mono);
+  font-size: clamp(13px, 1.8vw, 16px);
+  color: rgba(255,255,255,0.6);
+}
+.result-stat .value {
+  color: var(--surface);
+  font-weight: 600;
+}
+
+.result-highscore-badge {
+  display: none;
+  margin-top: 12px;
+  padding: 4px 16px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--bg-deep);
+  background: linear-gradient(135deg, var(--warning), var(--primary));
+  border-radius: 20px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  animation: badgeGlow 2s ease-in-out infinite;
+}
+.result-highscore-badge.show { display: inline-block; }
+@keyframes badgeGlow {
+  0%, 100% { box-shadow: 0 0 10px rgba(187,243,81,0.4); }
+  50% { box-shadow: 0 0 20px rgba(187,243,81,0.7); }
+}
+
+.result-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  margin-top: 24px;
+}
+.result-playagain-btn {
+  padding: 14px 48px;
+  font-family: var(--font-display);
+  font-size: clamp(16px, 2.5vw, 20px);
+  font-weight: 700;
+  color: var(--bg-deep);
+  background: var(--primary);
+  border: none;
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: transform var(--transition), box-shadow var(--transition);
+  box-shadow: 0 0 20px var(--primary-glow);
+}
+.result-playagain-btn:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 30px var(--primary-glow);
+}
+.result-playagain-btn:active { transform: scale(0.97); }
+
+.result-back-btn {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: rgba(255,255,255,0.35);
+  background: none;
+  border: none;
+  cursor: pointer;
+  letter-spacing: 0.5px;
+  padding: 8px;
+  transition: color var(--transition);
+}
+.result-back-btn:hover { color: var(--surface); }
+
+/* ===== Transition Overlay ===== */
+#countdown-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(10,10,26,0.8);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+#countdown-overlay.show {
+  opacity: 1;
+  pointer-events: auto;
+}
+.countdown-number {
+  font-family: var(--font-display);
+  font-size: clamp(60px, 15vw, 120px);
+  font-weight: 900;
+  color: var(--surface);
+  text-shadow: 0 0 40px var(--primary-glow);
+  animation: countIn 0.6s ease-out;
+}
+@keyframes countIn {
+  0% { transform: scale(1.5); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+.countdown-number.go {
+  color: var(--primary);
+  text-shadow: 0 0 60px var(--primary-glow);
+}
+
+/* ===== Responsive ===== */
+@media (max-width: 600px) {
+  .splash-controls {
+    bottom: 24px;
+    gap: 16px;
+  }
+  .control-hint { font-size: 10px; }
+  .control-hint kbd {
+    min-width: 24px; height: 24px;
+    font-size: 10px;
+  }
+  .hud-opponents { top: 48px; gap: 24px; }
+  .opponent-tag .hp-bar { width: 44px; }
+  .hud-touch-controls { bottom: 64px; }
+  .hud-dpad { grid-template-columns: 48px 48px; gap: 6px; }
+  .hud-dpad-btn { width: 48px; height: 48px; font-size: 18px; }
+  .hud-jump-btn { width: 56px; height: 56px; }
+}
+</style>
+</head>
+<body>
+
+<!-- ===== Canvas Container ===== -->
+<div id="game-canvas" data-comp-id="game-canvas"></div>
+
+<!-- ===== Edge Warning ===== -->
+<div class="hud-edge-warning" id="edgeWarning" data-comp-id="edge-warning">⚠ EDGE</div>
+
+<!-- ===== Countdown Overlay ===== -->
+<div id="countdown-overlay" data-comp-id="countdown-overlay">
+  <div class="countdown-number" id="countdown-text">3</div>
+</div>
+
+<!-- ===== Splash Screen ===== -->
+<div id="splash-screen" class="overlay" data-comp-id="splash-screen">
+  <div class="splash-badge">Astrocade</div>
+  <h1 class="splash-title" data-comp-id="splash-title">
+    BRIDGE<br><span class="neon">BRAWL</span> 3D
+  </h1>
+  <p class="splash-subtitle">Knock them off the bridge!</p>
+
+  <button class="splash-start-btn" data-comp-id="splash-start-btn" id="startBtn">
+    START
+  </button>
+
+  <div class="splash-auto-timer" data-comp-id="splash-auto-timer">
+    Auto-start in <span class="count" id="autoCountdown">3</span>s
+  </div>
+
+  <div class="splash-controls" data-comp-id="splash-controls">
+    <div class="control-hint highlight">
+      <div class="keys">
+        <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd>
+        <kbd>Space</kbd>
+      </div>
+      <span>Keyboard</span>
+    </div>
+    <div class="control-hint">
+      <svg class="icon-touch" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 9V4.5a1.5 1.5 0 013 0V9"/><path d="M12 9V3a1.5 1.5 0 013 0v6"/><path d="M15 9V5.5a1.5 1.5 0 013 0V9"/><path d="M18 10V8a1.5 1.5 0 013 0v4a9 9 0 01-9 9h-2.5a4 4 0 01-3-1.38l-3.35-3.76a1.5 1.5 0 012.3-1.92L9 16.5V5.5a1.5 1.5 0 013 0V10"/></svg>
+      <span>Touch</span>
+    </div>
+  </div>
+</div>
+
+<!-- ===== HUD Overlay ===== -->
+<div id="hud-overlay" class="overlay hidden" data-comp-id="hud-overlay">
+  <div class="hud-top">
+    <button class="hud-back-btn" data-comp-id="hud-back-btn">&larr; Hub</button>
+    <div class="hud-timer" data-comp-id="hud-timer" id="gameTimer">1:30</div>
+    <div style="width:48px"></div>
+  </div>
+
+  <div class="hud-opponents" data-comp-id="hud-opponent-tags">
+    <div class="opponent-tag" data-opponent="0">
+      <span class="name" style="color:var(--secondary)">NEXUS</span>
+      <div class="hp-bar"><div class="hp-fill" id="oppHp0" style="width:100%;background:var(--secondary)"></div></div>
+    </div>
+    <div class="opponent-tag" data-opponent="1">
+      <span class="name" style="color:var(--danger)">BLITZ</span>
+      <div class="hp-bar"><div class="hp-fill" id="oppHp1" style="width:100%;background:var(--danger)"></div></div>
+    </div>
+    <div class="opponent-tag" data-opponent="2">
+      <span class="name" style="color:var(--warning)">SHARD</span>
+      <div class="hp-bar"><div class="hp-fill" id="oppHp2" style="width:100%;background:var(--warning)"></div></div>
+    </div>
+  </div>
+
+  <div class="hud-player-area">
+    <div class="hud-player-info">
+      <span class="hud-player-name" data-comp-id="hud-player-name">YOU</span>
+      <span class="hud-score" data-comp-id="hud-score" id="hudKOs">KO: 0</span>
+    </div>
+    <div class="hud-player-hp" data-comp-id="hud-player-health">
+      <div class="hp-fill" id="playerHpFill" style="width:100%"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Touch Controls ===== -->
+<div class="hud-touch-controls" data-comp-id="hud-touch-controls">
+  <div class="hud-dpad" data-comp-id="hud-dpad">
+    <button class="hud-dpad-btn" data-dir="left" aria-label="Move left">&larr;</button>
+    <button class="hud-dpad-btn" data-dir="right" aria-label="Move right">&rarr;</button>
+    <button class="hud-dpad-btn" data-dir="up" aria-label="Move forward" style="grid-column:1/3;justify-self:center">&uarr;</button>
+  </div>
+  <button class="hud-jump-btn" data-comp-id="hud-jump-btn" aria-label="Jump">Jump</button>
+</div>
+
+<!-- ===== Result Screen ===== -->
+<div id="result-screen" class="overlay hidden" data-comp-id="result-screen">
+  <div class="result-icon" data-comp-id="result-icon" id="resultIcon">
+    <svg class="icon-trophy" width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" color="var(--primary)"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>
+  </div>
+  <h2 class="result-title victory" data-comp-id="result-title" id="resultTitle">VICTORY</h2>
+  <p class="result-sub" data-comp-id="result-sub" id="resultSub">You knocked off all opponents!</p>
+
+  <div class="result-stats" data-comp-id="result-stats">
+    <div class="result-stat">Score <span class="value" id="resultScore">850</span></div>
+    <div class="result-stat">Opponents defeated <span class="value" id="resultKOs">0</span>/3</div>
+    <div class="result-stat">Time <span class="value" id="resultTime">1:24</span></div>
+    <div class="result-stat">Best <span class="value" id="resultBest">0</span></div>
+  </div>
+
+  <div class="result-highscore-badge" data-comp-id="result-highscore" id="highscoreBadge">
+    &#9733; New High Score &#9733;
+  </div>
+
+  <div class="result-actions">
+    <button class="result-playagain-btn" data-comp-id="result-playagain" id="playAgainBtn">
+      Play Again
+    </button>
+    <button class="result-back-btn" data-comp-id="result-back">Back to Hub</button>
+  </div>
+</div>
+
+<!-- ===== Three.js and Game Script ===== -->
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+
+// ============================================================
+// Constants
+// ============================================================
+const BRIDGE_LENGTH = 10;    // x-axis
+const BRIDGE_WIDTH = 4;      // z-axis
+const BRIDGE_HALF_L = BRIDGE_LENGTH / 2;
+const BRIDGE_HALF_W = BRIDGE_WIDTH / 2;
+const MAX_HP = 2;
+const GAME_DURATION = 90;    // seconds
+const PLAYER_SPEED = 4.5;
+const AI_SPEED = 3.2;
+const JUMP_VELOCITY = 5;
+const KNOCKBACK_FORCE = 6;
+const COLLISION_DAMAGE = 1;  // HP lost per collision
+const EDGE_SAFE_ZONE = 0.7;  // units from edge to start warning
+const GRAVITY = -12;
+const STORAGE_KEY = 'bb3d_';
+
+const OPPONENT_NAMES = ['NEXUS', 'BLITZ', 'SHARD'];
+const OPPONENT_COLORS = [0x00bcff, 0xdc2626, 0xd97706];
+
+// ============================================================
+// Game State
+// ============================================================
+const state = {
+  phase: 'splash', // splash | countdown | playing | result
+  timer: GAME_DURATION,
+  timerInterval: null,
+  autoStartCount: 3,
+  autoStartTimer: null,
+  playerHP: MAX_HP,
+  kos: 0,
+  score: 0,
+  won: false,
+  cameraShake: 0,
+  edgeWarnTimer: 0,
+  characterData: [],
+};
+
+// Save data
+const saveData = loadSave();
+
+// ============================================================
+// DOM refs
+// ============================================================
+const splash = document.getElementById('splash-screen');
+const hud = document.getElementById('hud-overlay');
+const result = document.getElementById('result-screen');
+const countdownOv = document.getElementById('countdown-overlay');
+const countdownText = document.getElementById('countdown-text');
+const startBtn = document.getElementById('startBtn');
+const playAgainBtn = document.getElementById('playAgainBtn');
+const gameTimerEl = document.getElementById('gameTimer');
+const autoCountEl = document.getElementById('autoCountdown');
+const playerHpFill = document.getElementById('playerHpFill');
+const resultTitle = document.getElementById('resultTitle');
+const resultIcon = document.getElementById('resultIcon');
+const resultSub = document.getElementById('resultSub');
+const resultScore = document.getElementById('resultScore');
+const resultKOs = document.getElementById('resultKOs');
+const resultTime = document.getElementById('resultTime');
+const resultBest = document.getElementById('resultBest');
+const highscoreBadge = document.getElementById('highscoreBadge');
+const hudKOs = document.getElementById('hudKOs');
+const edgeWarning = document.getElementById('edgeWarning');
+const oppHpEls = [
+  document.getElementById('oppHp0'),
+  document.getElementById('oppHp1'),
+  document.getElementById('oppHp2'),
+];
+
+// Input
+const input = { forward: false, backward: false, left: false, right: false, jump: false };
+
+// ============================================================
+// Three.js Scene
+// ============================================================
+const container = document.getElementById('game-canvas');
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x0a0a1a);
+scene.fog = new THREE.Fog(0x0a0a1a, 30, 80);
+
+const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 500);
+camera.position.set(12, 10, 16);
+camera.lookAt(0, 0, 0);
+
+const renderer = new THREE.WebGLRenderer({
+  antialias: true,
+  alpha: false,
+  powerPreference: "high-performance",
+});
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.2;
+container.appendChild(renderer.domElement);
+
+// ===== Lights =====
+const ambient = new THREE.AmbientLight(0x222244, 0.4);
+scene.add(ambient);
+
+const moonDir = new THREE.DirectionalLight(0x4444aa, 0.8);
+moonDir.position.set(-10, 20, 5);
+moonDir.castShadow = true;
+moonDir.shadow.mapSize.set(1024, 1024);
+scene.add(moonDir);
+
+const fillLight = new THREE.DirectionalLight(0x00bcff, 0.3);
+fillLight.position.set(10, 5, -10);
+scene.add(fillLight);
+
+// ===== Bridge =====
+const bridgeGroup = new THREE.Group();
+scene.add(bridgeGroup);
+
+const bridgeMat = new THREE.MeshStandardMaterial({
+  color: 0x1a1a3a,
+  roughness: 0.7,
+  metalness: 0.2,
+});
+const bridgeGeo = new THREE.BoxGeometry(BRIDGE_LENGTH, 0.4, BRIDGE_WIDTH);
+const bridgeMesh = new THREE.Mesh(bridgeGeo, bridgeMat);
+bridgeMesh.position.y = -0.2;
+bridgeMesh.receiveShadow = true;
+bridgeMesh.castShadow = true;
+bridgeGroup.add(bridgeMesh);
+
+// Neon edge strips
+const edgeMat = new THREE.MeshStandardMaterial({
+  color: 0xbbf351,
+  emissive: 0xbbf351,
+  emissiveIntensity: 0.8,
+  roughness: 0.2,
+});
+const edgeGeo = new THREE.BoxGeometry(BRIDGE_LENGTH, 0.05, 0.08);
+const edgeLeft = new THREE.Mesh(edgeGeo, edgeMat);
+edgeLeft.position.set(0, 0.05, -BRIDGE_HALF_W + 0.04);
+bridgeGroup.add(edgeLeft);
+const edgeRight = new THREE.Mesh(edgeGeo, edgeMat);
+edgeRight.position.set(0, 0.05, BRIDGE_HALF_W - 0.04);
+bridgeGroup.add(edgeRight);
+
+// Neon end caps
+const capMat = new THREE.MeshStandardMaterial({
+  color: 0x00bcff,
+  emissive: 0x00bcff,
+  emissiveIntensity: 0.6,
+});
+const capGeo = new THREE.BoxGeometry(0.08, 0.05, BRIDGE_WIDTH);
+const capLeft = new THREE.Mesh(capGeo, capMat);
+capLeft.position.set(-BRIDGE_HALF_L, 0.05, 0);
+bridgeGroup.add(capLeft);
+const capRight = new THREE.Mesh(capGeo, capMat);
+capRight.position.set(BRIDGE_HALF_L, 0.05, 0);
+bridgeGroup.add(capRight);
+
+// Neon glow under bridge
+const glowMat = new THREE.MeshBasicMaterial({
+  color: 0xbbf351,
+  transparent: true,
+  opacity: 0.08,
+});
+const glowGeo = new THREE.PlaneGeometry(BRIDGE_LENGTH + 2, BRIDGE_WIDTH + 2);
+const glowPlane = new THREE.Mesh(glowGeo, glowMat);
+glowPlane.rotation.x = -Math.PI / 2;
+glowPlane.position.y = -0.4;
+bridgeGroup.add(glowPlane);
+
+// Bridge pillars
+const pillarMat = new THREE.MeshStandardMaterial({
+  color: 0x222244,
+  roughness: 0.8,
+  metalness: 0.1,
+});
+for (let x = -4; x <= 4; x += 4) {
+  for (let z = -1.5; z <= 1.5; z += 3) {
+    const pillar = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.2, 1.5, 8), pillarMat);
+    pillar.position.set(x, -1, z);
+    pillar.castShadow = true;
+    bridgeGroup.add(pillar);
+  }
+}
+
+// Arena pillars (decorative)
+const pillarTallMat = new THREE.MeshStandardMaterial({
+  color: 0x1a1a3a,
+  roughness: 0.6,
+  metalness: 0.3,
+  emissive: 0x00bcff,
+  emissiveIntensity: 0.05,
+});
+const pillarPositions = [
+  [-6, 0, -3], [6, 0, -3], [-6, 0, 3], [6, 0, 3],
+  [-6, 0, -1.5], [6, 0, 1.5],
+];
+pillarPositions.forEach(([x, y, z]) => {
+  const pillar = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.25, 3, 8), pillarTallMat);
+  pillar.position.set(x, 0.5, z);
+  pillar.castShadow = true;
+  scene.add(pillar);
+
+  const ringMat = new THREE.MeshStandardMaterial({
+    color: 0x00bcff,
+    emissive: 0x00bcff,
+    emissiveIntensity: 0.4,
+  });
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(0.3, 0.04, 8, 16), ringMat);
+  ring.position.set(x, 2, z);
+  ring.rotation.x = Math.PI / 2;
+  scene.add(ring);
+});
+
+// ===== Particles =====
+const particleCount = 800;
+const particleGeo2 = new THREE.BufferGeometry();
+const positionsArray = new Float32Array(particleCount * 3);
+const sizes = new Float32Array(particleCount);
+for (let i = 0; i < particleCount; i++) {
+  positionsArray[i * 3] = (Math.random() - 0.5) * 80;
+  positionsArray[i * 3 + 1] = Math.random() * 20;
+  positionsArray[i * 3 + 2] = (Math.random() - 0.5) * 80;
+  sizes[i] = Math.random() * 2 + 0.5;
+}
+particleGeo2.setAttribute('position', new THREE.BufferAttribute(positionsArray, 3));
+particleGeo2.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
+
+const particleMat2 = new THREE.PointsMaterial({
+  color: 0x4466aa,
+  size: 0.08,
+  transparent: true,
+  opacity: 0.4,
+  blending: THREE.AdditiveBlending,
+  depthWrite: false,
+});
+const particles = new THREE.Points(particleGeo2, particleMat2);
+scene.add(particles);
+
+// ============================================================
+// Character System
+// ============================================================
+
+// Character physics data (separate from Three.js objects)
+const physicsBodies = [];
+
+function createCharacter(color, emissiveColor, name, isPlayer = false) {
+  const group = new THREE.Group();
+
+  // Body
+  const bodyMat = new THREE.MeshStandardMaterial({
+    color: color,
+    roughness: 0.3,
+    metalness: 0.4,
+    emissive: emissiveColor,
+    emissiveIntensity: isPlayer ? 0.3 : 0.15,
+  });
+  const body = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.4, 0.9, 8), bodyMat);
+  body.position.y = 0.45;
+  body.castShadow = true;
+  body.receiveShadow = true;
+  group.add(body);
+
+  // Head
+  const headMat = new THREE.MeshStandardMaterial({
+    color: color,
+    roughness: 0.3,
+    metalness: 0.3,
+    emissive: emissiveColor,
+    emissiveIntensity: isPlayer ? 0.25 : 0.1,
+  });
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.2, 8, 8), headMat);
+  head.position.y = 1.0;
+  head.castShadow = true;
+  group.add(head);
+
+  // Neon glow ring at feet
+  const ringMatChar = new THREE.MeshBasicMaterial({
+    color: emissiveColor,
+    transparent: true,
+    opacity: isPlayer ? 0.5 : 0.25,
+    side: THREE.DoubleSide,
+  });
+  const ringChar = new THREE.Mesh(new THREE.RingGeometry(0.3, 0.45, 16), ringMatChar);
+  ringChar.rotation.x = -Math.PI / 2;
+  ringChar.position.y = 0.02;
+  group.add(ringChar);
+
+  // Physics data
+  const physics = {
+    name,
+    isPlayer,
+    hp: MAX_HP,
+    maxHp: MAX_HP,
+    vx: 0,
+    vz: 0,
+    vy: 0,
+    onGround: true,
+    alive: true,
+    fallen: false,
+    speed: isPlayer ? PLAYER_SPEED : AI_SPEED,
+    bobOffset: Math.random() * Math.PI * 2,
+    flashTimer: 0,
+    aiState: 'chase',
+    aiTimer: 0,
+    knockbackTimer: 0,
+  };
+
+  return { group, physics, name, isPlayer };
+}
+
+// Create player
+const playerChar = createCharacter(0xbbf351, 0xbbf351, 'YOU', true);
+playerChar.group.position.set(0, 0, 0);
+scene.add(playerChar.group);
+physicsBodies.push(playerChar);
+
+// Create opponents
+const opponentChars = [];
+
+OPPONENT_COLORS.forEach((color, i) => {
+  const char = createCharacter(color, color, OPPONENT_NAMES[i], false);
+  const angle = (i / OPPONENT_COLORS.length) * Math.PI * 2;
+  char.group.position.set(
+    Math.cos(angle) * 2.5,
+    0,
+    Math.sin(angle) * 1.8
+  );
+  scene.add(char.group);
+  opponentChars.push(char);
+  physicsBodies.push(char);
+});
+
+// ============================================================
+// Sound System (Web Audio API)
+// ============================================================
+let audioCtx = null;
+
+function initAudio() {
+  if (audioCtx) return;
+  try {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  } catch (e) { /* silent fallback */ }
+}
+
+function playTone(freq, duration, type = 'square', volume = 0.15) {
+  if (!audioCtx) return;
+  try {
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+    gain.gain.setValueAtTime(volume, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start();
+    osc.stop(audioCtx.currentTime + duration);
+  } catch (e) { /* silent fallback */ }
+}
+
+function playNoise(duration, volume = 0.08) {
+  if (!audioCtx) return;
+  try {
+    const bufferSize = audioCtx.sampleRate * duration;
+    const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) {
+      data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / bufferSize, 2);
+    }
+    const source = audioCtx.createBufferSource();
+    source.buffer = buffer;
+    const gain = audioCtx.createGain();
+    gain.gain.setValueAtTime(volume, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+    source.connect(gain);
+    gain.connect(audioCtx.destination);
+    source.start();
+  } catch (e) { /* silent fallback */ }
+}
+
+function sfxJump() { playTone(400, 0.15, 'sine', 0.1); }
+function sfxHit() { playNoise(0.08, 0.12); playTone(120, 0.12, 'sawtooth', 0.12); }
+function sfxKnockOff() { playTone(80, 0.4, 'sawtooth', 0.15); playNoise(0.3, 0.1); }
+function sfxVictory() {
+  playTone(523, 0.15, 'square', 0.1);
+  setTimeout(() => playTone(659, 0.15, 'square', 0.1), 150);
+  setTimeout(() => playTone(784, 0.3, 'square', 0.12), 300);
+}
+function sfxDefeat() {
+  playTone(400, 0.2, 'sawtooth', 0.1);
+  setTimeout(() => playTone(300, 0.3, 'sawtooth', 0.1), 200);
+}
+function sfxCount() { playTone(600, 0.1, 'sine', 0.08); }
+function sfxGo() { playTone(800, 0.2, 'sine', 0.12); }
+function sfxEdge() { playTone(200, 0.15, 'sine', 0.06); }
+
+// Haptic feedback
+function buzz(duration = 50) {
+  try { navigator.vibrate(duration); } catch (e) { /* no-op */ }
+}
+
+// ============================================================
+// localStorage
+// ============================================================
+function loadSave() {
+  try {
+    return JSON.parse(localStorage.getItem(STORAGE_KEY + 'save')) || defaultSave();
+  } catch (e) { return defaultSave(); }
+}
+function defaultSave() {
+  return { highScore: 0, totalWins: 0, totalMatches: 0 };
+}
+function saveToDisk(data) {
+  try { localStorage.setItem(STORAGE_KEY + 'save', JSON.stringify(data)); } catch (e) {}
+}
+
+// ============================================================
+// Edge Detection
+// ============================================================
+function isOnBridge(x, z) {
+  return Math.abs(x) <= BRIDGE_HALF_L - 0.15 && Math.abs(z) <= BRIDGE_HALF_W - 0.15;
+}
+
+function isNearEdge(x, z) {
+  const distX = BRIDGE_HALF_L - Math.abs(x);
+  const distZ = BRIDGE_HALF_W - Math.abs(z);
+  return Math.min(distX, distZ) <= EDGE_SAFE_ZONE;
+}
+
+function clampToBridge(x, z) {
+  return {
+    x: Math.max(-BRIDGE_HALF_L + 0.15, Math.min(BRIDGE_HALF_L - 0.15, x)),
+    z: Math.max(-BRIDGE_HALF_W + 0.15, Math.min(BRIDGE_HALF_W - 0.15, z)),
+  };
+}
+
+// ============================================================
+// AI Logic
+// ============================================================
+function updateAI(char, dt) {
+  if (!char.physics.alive || char.physics.isPlayer) return;
+
+  const p = char.physics;
+  const player = playerChar.physics;
+
+  // If player is dead, AI becomes idle
+  if (!player.alive) {
+    p.vx *= 0.9;
+    p.vz *= 0.9;
+    return;
+  }
+
+  // Calculate direction to player
+  const dx = playerChar.group.position.x - char.group.position.x;
+  const dz = playerChar.group.position.z - char.group.position.z;
+  const dist = Math.sqrt(dx * dx + dz * dz);
+
+  // AI state machine
+  p.aiTimer -= dt;
+
+  if (p.aiTimer <= 0) {
+    p.aiTimer = 0.5 + Math.random() * 0.5;
+
+    // Check if we should retreat from edge
+    const { x, z } = char.group.position;
+    const nearEdge = isNearEdge(x, z);
+
+    if (nearEdge) {
+      p.aiState = 'fear'; // Move toward center
+    } else if (dist < 1.5) {
+      p.aiState = 'bump'; // Close enough to try knocking off
+    } else {
+      p.aiState = 'chase';
+    }
+  }
+
+  const lookY = Math.sin(Date.now() * 0.001 + p.bobOffset) * 0.05;
+
+  switch (p.aiState) {
+    case 'chase': {
+      const d = Math.max(dist, 0.1);
+      const speed = p.speed * 1.0;
+      p.vx += (dx / d) * speed * dt * 3;
+      p.vz += (dz / d) * speed * dt * 3;
+      break;
+    }
+    case 'bump': {
+      // Circle around and try to push player toward edge
+      const perpX = -dz / Math.max(dist, 0.1);
+      const perpZ = dx / Math.max(dist, 0.1);
+      // Mix toward + around
+      p.vx += (dx / Math.max(dist, 0.1)) * p.speed * dt * 2 + perpX * p.speed * dt * 2;
+      p.vz += (dz / Math.max(dist, 0.1)) * p.speed * dt * 2 + perpZ * p.speed * dt * 2;
+
+      // Try to push: if very close, apply knockback
+      if (dist < 1.2 && p.knockbackTimer <= 0) {
+        const pushDirX = dx / Math.max(dist, 0.1);
+        const pushDirZ = dz / Math.max(dist, 0.1);
+        p.vx += pushDirX * KNOCKBACK_FORCE * 0.5;
+        p.vz += pushDirZ * KNOCKBACK_FORCE * 0.5;
+        p.knockbackTimer = 0.3;
+      }
+      break;
+    }
+    case 'fear': {
+      // Move toward center
+      const cx = 0 - char.group.position.x;
+      const cz = 0 - char.group.position.z;
+      const cd = Math.max(Math.sqrt(cx * cx + cz * cz), 0.1);
+      p.vx += (cx / cd) * p.speed * dt * 4;
+      p.vz += (cz / cd) * p.speed * dt * 4;
+      break;
+    }
+  }
+
+  // Random jump when close to player
+  if (dist < 1.8 && p.onGround && Math.random() < 0.005) {
+    p.vy = JUMP_VELOCITY;
+    p.onGround = false;
+  }
+
+  // Friction
+  p.vx *= (1 - 3 * dt);
+  p.vz *= (1 - 3 * dt);
+
+  char.group.rotation.y = Math.atan2(p.vx, p.vz);
+}
+
+// ============================================================
+// Collision System
+// ============================================================
+function handleCollisions() {
+  const alive = physicsBodies.filter(c => c.physics.alive);
+
+  for (let i = 0; i < alive.length; i++) {
+    for (let j = i + 1; j < alive.length; j++) {
+      const a = alive[i];
+      const b = alive[j];
+
+      const dx = b.group.position.x - a.group.position.x;
+      const dz = b.group.position.z - a.group.position.z;
+      const dist = Math.sqrt(dx * dx + dz * dz);
+      const minDist = 0.75; // collision radius
+
+      if (dist < minDist && dist > 0.01) {
+        // Push apart
+        const overlap = (minDist - dist) / 2;
+        const nx = dx / dist;
+        const nz = dz / dist;
+
+        a.group.position.x -= nx * overlap;
+        a.group.position.z -= nz * overlap;
+        b.group.position.x += nx * overlap;
+        b.group.position.z += nz * overlap;
+
+        // Relative velocity along collision normal
+        const relVx = a.physics.vx - b.physics.vx;
+        const relVz = a.physics.vz - b.physics.vz;
+        const relVn = relVx * nx + relVz * nz;
+
+        if (relVn > 0.5) {
+          // Apply knockback based on relative velocity
+          const knockback = KNOCKBACK_FORCE * Math.min(relVn / 3, 1.5);
+          a.physics.vx += nx * knockback;
+          a.physics.vz += nz * knockback;
+          b.physics.vx -= nx * knockback;
+          b.physics.vz -= nz * knockback;
+
+          // Damage - both lose HP on collision
+          a.physics.hp -= COLLISION_DAMAGE;
+          b.physics.hp -= COLLISION_DAMAGE;
+          a.physics.flashTimer = 0.15;
+          b.physics.flashTimer = 0.15;
+
+          // Track who pushed whom for KO credit
+          if (a.physics.isPlayer) state.kos += (b.physics.hp <= 0 ? 1 : 0);
+          if (b.physics.isPlayer) state.kos += (a.physics.hp <= 0 ? 1 : 0);
+
+          sfxHit();
+          buzz(60);
+          state.cameraShake = 0.2;
+        }
+      }
+    }
+  }
+}
+
+// ============================================================
+// Check if character fell off
+// ============================================================
+function checkFallen(char, dt) {
+  const p = char.physics;
+  if (!p.alive) return;
+
+  const { x, y, z } = char.group.position;
+
+  // If below bridge (fell off)
+  if (y < -3) {
+    p.alive = false;
+    p.fallen = true;
+    sfxKnockOff();
+    buzz(200);
+    return;
+  }
+
+  // On bridge surface - clamp position
+  if (y <= 0.1) {
+    p.onGround = true;
+    p.vy = 0;
+    char.group.position.y = 0;
+
+    // Clamp to bridge bounds
+    const clamped = clampToBridge(x, z);
+    char.group.position.x = clamped.x;
+    char.group.position.z = clamped.z;
+  }
+}
+
+// ============================================================
+// Check for falling (apply velocity+y update)
+// ============================================================
+function applyPhysics(char, dt) {
+  const p = char.physics;
+  if (!p.alive) return;
+
+  // Knockback timer
+  if (p.knockbackTimer > 0) p.knockbackTimer -= dt;
+  if (p.flashTimer > 0) p.flashTimer -= dt;
+
+  // Jump input
+  if (p.onGround && p.isPlayer && input.jump) {
+    p.vy = JUMP_VELOCITY;
+    p.onGround = false;
+    sfxJump();
+    buzz(30);
+  }
+
+  // Gravity
+  p.vy += GRAVITY * dt;
+
+  // Apply velocity
+  char.group.position.x += p.vx * dt;
+  char.group.position.z += p.vz * dt;
+
+  // Vertical velocity
+  if (!p.onGround) {
+    char.group.position.y += p.vy * dt;
+  }
+
+  // Check if back on bridge surface
+  if (char.group.position.y <= 0 && p.vy <= 0) {
+    p.onGround = true;
+    p.vy = 0;
+    char.group.position.y = 0;
+  }
+
+  // Edge warning
+  if (p.isPlayer && isNearEdge(char.group.position.x, char.group.position.z) && p.onGround) {
+    if (state.edgeWarnTimer <= 0) {
+      state.edgeWarnTimer = 0.5;
+      sfxEdge();
+    }
+  }
+}
+
+// ============================================================
+// Game Logic
+// ============================================================
+
+function startGame() {
+  if (state.phase !== 'splash') return;
+  initAudio();
+  state.phase = 'countdown';
+
+  if (state.autoStartTimer) {
+    clearInterval(state.autoStartTimer);
+    state.autoStartTimer = null;
+  }
+
+  splash.classList.add('hidden');
+
+  // 3-2-1-GO countdown
+  countdownOv.classList.add('show');
+  let count = 3;
+  countdownText.textContent = '3';
+  countdownText.className = 'countdown-number';
+  sfxCount();
+
+  const countInterval = setInterval(() => {
+    count--;
+    if (count > 0) {
+      countdownText.textContent = String(count);
+      countdownText.style.animation = 'none';
+      requestAnimationFrame(() => {
+        countdownText.style.animation = 'countIn 0.6s ease-out';
+      });
+      sfxCount();
+    } else if (count === 0) {
+      countdownText.textContent = 'GO!';
+      countdownText.classList.add('go');
+      sfxGo();
+    } else {
+      clearInterval(countInterval);
+      countdownOv.classList.remove('show');
+      state.phase = 'playing';
+      hud.classList.remove('hidden');
+      startTimer();
+      buzz(80);
+    }
+  }, 800);
+}
+
+function startTimer() {
+  state.timer = GAME_DURATION;
+  updateTimerDisplay();
+  state.timerInterval = setInterval(() => {
+    state.timer--;
+    updateTimerDisplay();
+    if (state.timer <= 0) {
+      clearInterval(state.timerInterval);
+      determineWinner();
+    }
+  }, 1000);
+}
+
+function updateTimerDisplay() {
+  const mins = Math.floor(state.timer / 60);
+  const secs = state.timer % 60;
+  gameTimerEl.textContent = `${mins}:${secs.toString().padStart(2, '0')}`;
+  gameTimerEl.className = 'hud-timer';
+  if (state.timer < 10) {
+    gameTimerEl.classList.add('danger');
+  } else if (state.timer < 30) {
+    gameTimerEl.classList.add('warning');
+  }
+}
+
+function determineWinner() {
+  // Find alive characters
+  const alive = physicsBodies.filter(c => c.physics.alive && !c.physics.fallen);
+  let won = false;
+
+  if (playerChar.physics.alive && !playerChar.physics.fallen) {
+    // Player still alive
+    if (alive.length === 1) {
+      won = true; // Only player alive
+    } else if (state.kos > 0) {
+      won = true; // Player scored more KOs
+    } else {
+      won = state.kos > 0;
+    }
+  } else {
+    won = false;
+  }
+
+  endGame(won);
+}
+
+function endGame(won) {
+  if (state.phase !== 'playing') return;
+  state.phase = 'result';
+  state.won = won;
+
+  if (state.timerInterval) {
+    clearInterval(state.timerInterval);
+    state.timerInterval = null;
+  }
+
+  hud.classList.add('hidden');
+  edgeWarning.classList.remove('show');
+
+  // Calculate score
+  const score = state.kos * 500 + (won ? 1000 : 200) + Math.max(0, state.timer * 3);
+  const timeStr = gameTimerEl.textContent;
+
+  // Update save
+  saveData.totalMatches++;
+  if (won) {
+    saveData.totalWins++;
+    sfxVictory();
+    buzz([50, 30, 80]);
+  } else {
+    sfxDefeat();
+    buzz([80, 50]);
+  }
+
+  const isNewHigh = score > saveData.highScore;
+  if (isNewHigh) {
+    saveData.highScore = score;
+  }
+  saveToDisk(saveData);
+
+  // Update result screen
+  if (won) {
+    resultIcon.innerHTML = '<svg class="icon-trophy" width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" color="var(--primary)"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>';
+    resultTitle.textContent = 'VICTORY';
+    resultTitle.className = 'result-title victory';
+    resultSub.textContent = 'You knocked off all opponents!';
+  } else {
+    resultIcon.innerHTML = '<svg class="icon-defeat" width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" color="var(--danger)"><circle cx="12" cy="12" r="10"/><path d="M8 15s1.5-2 4-2 4 2 4 2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>';
+    resultTitle.textContent = 'DEFEAT';
+    resultTitle.className = 'result-title defeat';
+    resultSub.textContent = 'You were knocked off the bridge!';
+  }
+
+  resultScore.textContent = score;
+  resultKOs.textContent = state.kos;
+  resultTime.textContent = timeStr;
+  resultBest.textContent = saveData.highScore;
+
+  if (isNewHigh) {
+    highscoreBadge.classList.add('show');
+    buzz([30, 30, 30, 50]);
+  } else {
+    highscoreBadge.classList.remove('show');
+  }
+
+  setTimeout(() => {
+    result.classList.remove('hidden');
+  }, 400);
+
+  // Log score
+  console.log('Bridge Brawl 3D — Score:', score, 'KOs:', state.kos, 'Won:', won);
+}
+
+function resetGame() {
+  // Reset physics
+  physicsBodies.forEach((char, i) => {
+    const p = char.physics;
+    p.hp = MAX_HP;
+    p.vx = 0;
+    p.vz = 0;
+    p.vy = 0;
+    p.onGround = true;
+    p.alive = true;
+    p.fallen = false;
+    p.flashTimer = 0;
+    p.knockbackTimer = 0;
+    p.aiState = 'chase';
+    p.aiTimer = 0;
+  });
+
+  // Reset positions
+  playerChar.group.position.set(0, 0, 0);
+  playerChar.group.rotation.y = 0;
+
+  opponentChars.forEach((char, i) => {
+    const angle = (i / OPPONENT_COLORS.length) * Math.PI * 2;
+    char.group.position.set(
+      Math.cos(angle) * 2.5,
+      0,
+      Math.sin(angle) * 1.8
+    );
+    char.group.rotation.y = 0;
+  });
+
+  state.playerHP = MAX_HP;
+  state.kos = 0;
+  state.score = 0;
+  state.cameraShake = 0;
+  state.edgeWarnTimer = 0;
+
+  playerHpFill.style.width = '100%';
+  playerHpFill.style.background = 'var(--success)';
+  oppHpEls.forEach(el => { el.style.width = '100%'; });
+  hudKOs.textContent = 'KO: 0';
+  edgeWarning.classList.remove('show');
+}
+
+// ============================================================
+// Game Loop Update
+// ============================================================
+let gameTime = 0;
+
+function updateGame(dt) {
+  if (state.phase !== 'playing') return;
+
+  gameTime += dt;
+
+  const player = playerChar.physics;
+
+  // ===== Player Input =====
+  let moveX = 0, moveZ = 0;
+  if (input.forward) moveZ -= 1;
+  if (input.backward) moveZ += 1;
+  if (input.left) moveX -= 1;
+  if (input.right) moveX += 1;
+
+  // Normalize
+  const moveLen = Math.sqrt(moveX * moveX + moveZ * moveZ);
+  if (moveLen > 0.01) {
+    moveX /= moveLen;
+    moveZ /= moveLen;
+  }
+
+  if (player.alive && !player.fallen) {
+    player.vx += moveX * player.speed * dt * 3;
+    player.vz += moveZ * player.speed * dt * 3;
+
+    // Friction
+    const friction = 1 - 5 * dt;
+    player.vx *= friction;
+    player.vz *= friction;
+
+    // Rotate character to face movement direction
+    if (Math.abs(moveX) > 0.01 || Math.abs(moveZ) > 0.01) {
+      playerChar.group.rotation.y = Math.atan2(moveX, moveZ);
+    }
+  }
+
+  // ===== Update AI =====
+  opponentChars.forEach(c => updateAI(c, dt));
+
+  // ===== Apply Physics =====
+  physicsBodies.forEach(c => applyPhysics(c, dt));
+
+  // ===== Check Falls =====
+  physicsBodies.forEach(c => checkFallen(c, dt));
+
+  // ===== Handle Collisions =====
+  handleCollisions();
+
+  // ===== Edge Warning =====
+  if (player.alive) {
+    const { x, z } = playerChar.group.position;
+    if (isNearEdge(x, z) && player.onGround) {
+      edgeWarning.classList.add('show');
+    } else {
+      edgeWarning.classList.remove('show');
+    }
+  } else {
+    edgeWarning.classList.remove('show');
+  }
+
+  if (state.edgeWarnTimer > 0) state.edgeWarnTimer -= dt;
+
+  // ===== Update HUD =====
+  playerHpFill.style.width = `${(player.hp / MAX_HP) * 100}%`;
+  const hpRatio = player.hp / MAX_HP;
+  playerHpFill.style.background = hpRatio > 0.5 ? 'var(--success)' : hpRatio > 0.25 ? 'var(--warning)' : 'var(--danger)';
+  hudKOs.textContent = `KO: ${state.kos}`;
+
+  // Opponent HP bars
+  opponentChars.forEach((c, i) => {
+    const hpPct = (c.physics.hp / MAX_HP) * 100;
+    oppHpEls[i].style.width = `${Math.max(0, hpPct)}%`;
+    oppHpEls[i].style.background = c.physics.alive
+      ? (hpPct > 50 ? 'var(--secondary)' : hpPct > 25 ? 'var(--warning)' : 'var(--danger)')
+      : 'rgba(255,255,255,0.1)';
+  });
+
+  // Camera shake
+  if (state.cameraShake > 0) {
+    state.cameraShake -= dt;
+  }
+
+  // ===== Check for win/lose =====
+  if (player.fallen || !player.alive) {
+    endGame(false);
+    return;
+  }
+
+  const aliveOpponents = opponentChars.filter(c => c.physics.alive && !c.physics.fallen);
+  if (aliveOpponents.length === 0) {
+    endGame(true);
+    return;
+  }
+}
+
+// ============================================================
+// Three.js Rendering
+// ============================================================
+
+let splashTime = 0;
+
+function updateSplashScene(time) {
+  splashTime = time;
+  bridgeGroup.rotation.y = Math.sin(time * 0.0001) * 0.15;
+
+  physicsBodies.forEach((char, i) => {
+    const bob = Math.sin(time * 0.002 + char.physics.bobOffset) * 0.03;
+    char.group.position.y = bob;
+  });
+
+  cameraOrbit += 0.0003;
+  const cx = Math.sin(cameraOrbit) * 14;
+  const cz = Math.cos(cameraOrbit) * 14;
+  camera.position.set(cx, 9, cz);
+  camera.lookAt(0, 1, 0);
+
+  const pulse = Math.sin(time * 0.003) * 0.3 + 0.7;
+  edgeMat.emissiveIntensity = pulse;
+  edgeMat.color.setHSL(0.22, 0.8, 0.5 + pulse * 0.2);
+
+  updateParticles(0.16);
+}
+
+function updateGameplayScene(time) {
+  const dt = Math.min(1 / 30, 0.016); // Cap delta time
+
+  // Update game logic
+  updateGame(dt);
+
+  // Bob characters
+  physicsBodies.forEach((char) => {
+    if (!char.physics.alive) {
+      // Fall animation - sink below bridge
+      if (char.physics.fallen) {
+        char.group.position.y -= dt * 2;
+        char.group.rotation.x += dt * 3;
+        char.group.rotation.z += dt * 2;
+      }
+      return;
+    }
+    const bob = Math.sin(time * 0.003 + char.physics.bobOffset) * 0.025;
+    char.group.position.y += bob * 0.5; // subtle bob on top of physics Y
+
+    // Flash on hit
+    if (char.physics.flashTimer > 0) {
+      const flash = Math.sin(time * 0.1) > 0;
+      char.group.children.forEach(child => {
+        if (child.material) {
+          const origColor = child.material.color ? child.material.color.getHex() : null;
+          if (flash && origColor) {
+            child.material.color.setHex(0xffffff);
+          } else if (origColor) {
+            child.material.color.setHex(char.physics.isPlayer ? 0xbbf351 : (char.name === 'NEXUS' ? 0x00bcff : char.name === 'BLITZ' ? 0xdc2626 : 0xd97706));
+          }
+        }
+      });
+    }
+  });
+
+  // Gameplay camera
+  const playerPos = playerChar.group.position;
+  const shake = state.cameraShake > 0
+    ? (Math.sin(time * 50) + Math.cos(time * 37)) * state.cameraShake * 0.5
+    : 0;
+  camera.position.set(
+    playerPos.x + 8 + shake,
+    8,
+    playerPos.z + 12
+  );
+  camera.lookAt(playerPos.x, 1, playerPos.z);
+
+  // Neon pulse
+  const pulse = Math.sin(time * 0.004) * 0.2 + 0.8;
+  edgeMat.emissiveIntensity = pulse;
+
+  // Particles
+  updateParticles(dt);
+}
+
+let cameraOrbit = 0;
+
+function updateParticles(dt) {
+  const pos = particles.geometry.attributes.position.array;
+  for (let i = 0; i < particleCount; i++) {
+    pos[i * 3 + 1] -= 0.005;
+    if (pos[i * 3 + 1] < -2) {
+      pos[i * 3 + 1] = 18;
+      pos[i * 3] = (Math.random() - 0.5) * 80;
+      pos[i * 3 + 2] = (Math.random() - 0.5) * 80;
+    }
+  }
+  particles.geometry.attributes.position.needsUpdate = true;
+}
+
+// ============================================================
+// Event Handlers
+// ============================================================
+
+// Keyboard
+document.addEventListener('keydown', (e) => {
+  if (state.phase === 'splash' && (e.key === 'Enter' || e.key === ' ')) {
+    e.preventDefault();
+    startGame();
+    return;
+  }
+
+  if (state.phase === 'result' && e.key === 'Enter') {
+    playAgainBtn.click();
+    return;
+  }
+
+  if (state.phase !== 'playing') return;
+
+  switch (e.key) {
+    case 'w': case 'W': input.forward = true; e.preventDefault(); break;
+    case 's': case 'S': input.backward = true; e.preventDefault(); break;
+    case 'a': case 'A': input.left = true; e.preventDefault(); break;
+    case 'd': case 'D': input.right = true; e.preventDefault(); break;
+    case ' ': input.jump = true; e.preventDefault(); break;
+    case 'Escape': endGame(false); break;
+  }
+});
+
+document.addEventListener('keyup', (e) => {
+  switch (e.key) {
+    case 'w': case 'W': input.forward = false; break;
+    case 's': case 'S': input.backward = false; break;
+    case 'a': case 'A': input.left = false; break;
+    case 'd': case 'D': input.right = false; break;
+    case ' ': input.jump = false; break;
+  }
+});
+
+// Touch controls
+document.querySelectorAll('.hud-dpad-btn').forEach(btn => {
+  const dir = btn.dataset.dir;
+  const startInside = () => {
+    switch (dir) {
+      case 'up': input.forward = true; break;
+      case 'left': input.left = true; break;
+      case 'right': input.right = true; break;
+    }
+    btn.style.transform = 'scale(0.85)';
+  };
+  const stopInside = () => {
+    switch (dir) {
+      case 'up': input.forward = false; break;
+      case 'left': input.left = false; break;
+      case 'right': input.right = false; break;
+    }
+    btn.style.transform = '';
+  };
+
+  btn.addEventListener('touchstart', (e) => { e.preventDefault(); initAudio(); startInside(); });
+  btn.addEventListener('touchend', (e) => { e.preventDefault(); stopInside(); });
+  btn.addEventListener('touchcancel', stopInside);
+  btn.addEventListener('mousedown', startInside);
+  btn.addEventListener('mouseup', stopInside);
+});
+
+const jumpBtn = document.querySelector('.hud-jump-btn');
+jumpBtn?.addEventListener('touchstart', (e) => {
+  e.preventDefault();
+  initAudio();
+  input.jump = true;
+  jumpBtn.style.transform = 'scale(0.85)';
+});
+jumpBtn?.addEventListener('touchend', (e) => {
+  input.jump = false;
+  jumpBtn.style.transform = '';
+});
+jumpBtn?.addEventListener('touchcancel', () => { input.jump = false; });
+
+// Buttons
+startBtn.addEventListener('click', startGame);
+playAgainBtn.addEventListener('click', () => {
+  result.classList.add('hidden');
+  state.phase = 'splash';
+  resetGame();
+  splash.classList.remove('hidden');
+  startAutoStartTimer();
+});
+
+document.querySelector('.result-back-btn')?.addEventListener('click', () => {
+  // Reload the page to go back to hub
+  window.location.href = '/';
+});
+
+// Resize
+window.addEventListener('resize', () => {
+  const w = window.innerWidth;
+  const h = window.innerHeight;
+  camera.aspect = w / h;
+  camera.updateProjectionMatrix();
+  renderer.setSize(w, h);
+});
+
+// ===== Splash auto-start =====
+function startAutoStartTimer() {
+  state.autoStartCount = 3;
+  autoCountEl.textContent = '3';
+  state.autoStartTimer = setInterval(() => {
+    state.autoStartCount--;
+    autoCountEl.textContent = String(state.autoStartCount);
+    if (state.autoStartCount <= 0) {
+      clearInterval(state.autoStartTimer);
+      startGame();
+    }
+  }, 1000);
+}
+
+// ===== Render Loop =====
+function animate(time) {
+  requestAnimationFrame(animate);
+
+  if (state.phase === 'splash' || state.phase === 'countdown') {
+    updateSplashScene(time);
+  } else if (state.phase === 'playing') {
+    updateGameplayScene(time);
+  } else {
+    // Result scene
+    bridgeGroup.rotation.y = Math.sin(time * 0.00005) * 0.1;
+    const pulse = Math.sin(time * 0.002) * 0.2 + 0.8;
+    edgeMat.emissiveIntensity = pulse;
+    physicsBodies.forEach((char, i) => {
+      if (char.physics.alive) {
+        char.group.position.y = Math.sin(time * 0.002 + char.physics.bobOffset) * 0.03;
+      }
+    });
+
+    // Result camera orbit
+    cameraOrbit += 0.0005;
+    const cx = Math.sin(cameraOrbit) * 14;
+    const cz = Math.cos(cameraOrbit) * 14;
+    camera.position.set(cx, 9, cz);
+    camera.lookAt(0, 1, 0);
+
+    updateParticles(0.016);
+  }
+
+  renderer.render(scene, camera);
+}
+
+// ===== Init =====
+startAutoStartTimer();
+animate(0);
+
+console.log('Bridge Brawl 3D — Game loaded');
+</script>
+<script type="application/x-design-tweaks+json" id="design-preview-tweaks">
+[
+  {
+    "current":"#BBF351",
+    "compId":"splash-start-btn",
+    "param":"accent",
+    "cssProp":"background-color",
+    "label":"CTA accent",
+    "type":"color",
+    "target":"element"
+  },
+  {
+    "current":"60px",
+    "compId":"splash-title",
+    "param":"glow",
+    "cssProp":"text-shadow-blur",
+    "label":"Title glow",
+    "type":"range",
+    "prompt":"Change the title glow intensity to {value}. Adjust the text-shadow spread on .splash-title to match.",
+    "target":"agent"
+  },
+  {
+    "current":"700",
+    "compId":"hud-timer",
+    "param":"timerWeight",
+    "cssProp":"font-weight",
+    "options":[
+      {"label":"Medium","value":"500"},
+      {"label":"Semibold","value":"600"},
+      {"label":"Bold","value":"700"}
+    ],
+    "label":"Timer mono weight",
+    "type":"select",
+    "target":"element"
+  },
+  {
+    "current":"#16A34A",
+    "compId":"hud-player-health",
+    "param":"hpColor",
+    "cssProp":"background-color",
+    "label":"HP bar color",
+    "type":"color",
+    "target":"element"
+  },
+  {
+    "current":"12px",
+    "unit":"px",
+    "min":4,
+    "compId":"result-playagain",
+    "max":32,
+    "param":"btnRadius",
+    "cssProp":"border-radius",
+    "step":4,
+    "label":"Play Again button radius",
+    "type":"range",
+    "target":"element"
+  }
+]
+</script>
+</body>
+</html>
