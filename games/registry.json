@@ -451,6 +451,28 @@
             "rating": 4
         },
         {
+            "id": "spongebob-art-quest",
+            "name": "SpongeBob Art Quest",
+            "description": "Paint-by-number coloring game — fill numbered zones to complete SpongeBob character artworks",
+            "category": "casual",
+            "tags": [
+                "singleplayer",
+                "casual",
+                "coloring",
+                "spongebob",
+                "paint-by-number",
+                "cartoon",
+                "short-session"
+            ],
+            "thumbnail": "/games/048-spongebob-art-quest/thumb.svg",
+            "path": "/games/048-spongebob-art-quest/",
+            "hasServer": false,
+            "players": "1",
+            "version": "1.0.0",
+            "featured": true,
+            "rating": 4
+        },
+        {
             "id": "word-ladder-climb",
             "name": "Word Ladder Climb",
             "description": "改一个字母连成新词，沿词梯爬到顶层目标词",

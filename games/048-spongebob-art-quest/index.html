@@ -1,0 +1,1137 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="theme-color" content="#0D47A1">
+<title>SpongeBob Art Quest</title>
+<link rel="stylesheet" href="/games/shared/game-frame.css">
+<style>
+/* ─── SpongeBob Art Quest ─── Paint-by-Number Coloring Game */
+:root {
+  --ocean-dark: #0D47A1;
+  --ocean: #1565C0;
+  --ocean-light: #42A5F5;
+  --ocean-surface: #B3E5FC;
+  --sand: #FFE0B2;
+  --sand-dark: #FFCC80;
+  --coral: #FF7043;
+  --coral-light: #FF8A65;
+  --yellow: #FFE082;
+  --pink: #F48FB1;
+  --white: #F5F5F5;
+  --text-light: rgba(255,255,255,0.95);
+  --text-dim: rgba(255,255,255,0.7);
+  --card-bg: rgba(255,255,255,0.12);
+  --card-border: rgba(255,255,255,0.18);
+  --shadow: 0 4px 24px rgba(0,0,0,0.3);
+  --radius: 16px;
+  --radius-sm: 10px;
+  --font: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --safe-t: env(safe-area-inset-top,0px);
+  --safe-b: env(safe-area-inset-bottom,0px);
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:100%;height:100%;overflow:hidden;background:var(--ocean-dark);color:var(--text-light);font-family:var(--font);-webkit-font-smoothing:antialiased;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
+#app{position:fixed;inset:0;display:flex;align-items:center;justify-content:center}
+
+/* ─── Screens ─── */
+.screen{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity 0.4s ease,transform 0.4s ease;z-index:1;padding:var(--safe-t) 0 var(--safe-b)}
+.screen.hidden{opacity:0;pointer-events:none;transform:scale(0.96);z-index:0}
+.screen-title{font-size:clamp(1.6rem,4vw,2.6rem);font-weight:800;text-align:center;letter-spacing:0.02em}
+.screen-subtitle{font-size:clamp(0.85rem,2vw,1.1rem);color:var(--text-dim);margin-bottom:12px;text-align:center}
+
+/* ─── Splash Screen ─── */
+#screen-splash{background:linear-gradient(180deg,#0D47A1 0%,#1565C0 40%,#006064 100%);gap:6px;padding:32px 24px}
+#screen-splash::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 300px 250px at 50% 30%,rgba(255,224,130,0.1) 0%,transparent 60%),radial-gradient(ellipse 200px 200px at 20% 80%,rgba(79,195,247,0.08) 0%,transparent 50%)}
+.splash-title{font-size:clamp(1.8rem,5vw,3.2rem);font-weight:900;color:var(--yellow);text-shadow:0 3px 12px rgba(255,224,130,0.3);text-align:center;line-height:1.1;position:relative;z-index:1}
+.splash-subtitle{font-size:clamp(0.9rem,2.2vw,1.3rem);color:var(--white);opacity:0.85;margin:4px 0 18px;position:relative;z-index:1}
+.splash-bubbles{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:0}
+.bubble{position:absolute;border-radius:50%;background:rgba(255,255,255,0.08);animation:floatBubble linear infinite}
+@keyframes floatBubble{0%{transform:translateY(100vh) scale(0.8);opacity:0}10%{opacity:1}90%{opacity:0.6}100%{transform:translateY(-10vh) scale(1.2);opacity:0}}
+.splash-sponge{width:80px;height:80px;background:var(--yellow);border-radius:8px;position:relative;z-index:1;margin-bottom:10px;box-shadow:0 4px 20px rgba(255,224,130,0.3);border:2px solid rgba(0,0,0,0.1)}
+.splash-sponge::before{content:'';position:absolute;top:16px;left:16px;width:18px;height:18px;background:var(--white);border-radius:50%;border:1px solid #999}
+.splash-sponge::after{content:'';position:absolute;top:16px;right:16px;width:18px;height:18px;background:var(--white);border-radius:50%;border:1px solid #999}
+.splash-sponge-eye-l{position:absolute;top:20px;left:20px;width:8px;height:8px;background:#333;border-radius:50%;z-index:2}
+.splash-sponge-eye-r{position:absolute;top:20px;right:20px;width:8px;height:8px;background:#333;border-radius:50%;z-index:2}
+
+/* ─── Buttons ─── */
+.btn{display:inline-flex;align-items:center;justify-content:center;padding:12px 36px;border:none;border-radius:50px;font-size:clamp(0.95rem,2.5vw,1.15rem);font-weight:700;cursor:pointer;transition:all 0.2s ease;font-family:var(--font);position:relative;z-index:1}
+.btn-primary{background:linear-gradient(135deg,#FFE082,#FFD54F);color:#3E2723;box-shadow:0 4px 15px rgba(255,224,130,0.4)}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 6px 25px rgba(255,224,130,0.5)}
+.btn-primary:active{transform:translateY(0)}
+.btn-secondary{background:rgba(255,255,255,0.15);color:var(--text-light);border:1px solid rgba(255,255,255,0.2);backdrop-filter:blur(8px)}
+.btn-secondary:hover{background:rgba(255,255,255,0.22)}
+.btn-small{padding:8px 18px;font-size:0.85rem;margin:4px}
+
+/* ─── Level Select ─── */
+#screen-levels{background:linear-gradient(180deg,#0D47A1 0%,#1565C0 50%,#006064 100%);gap:10px;padding:60px 16px 24px}
+#screen-levels .screen-subtitle{margin-bottom:4px}
+#level-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;width:100%;max-width:520px;padding:0 4px;flex:1;align-content:center;overflow-y:auto}
+.level-card{background:var(--card-bg);border:1px solid var(--card-border);border-radius:var(--radius);padding:10px 8px 8px;display:flex;flex-direction:column;align-items:center;cursor:pointer;transition:all 0.2s ease;position:relative;min-height:120px;backdrop-filter:blur(4px)}
+.level-card:active{transform:scale(0.96)}
+.level-card.locked{opacity:0.5;cursor:not-allowed}
+.level-card .char-preview{border-radius:8px;background:rgba(0,0,0,0.15);width:100%;aspect-ratio:5/6;max-height:100px;overflow:hidden}
+.level-card canvas{display:block;width:100%;height:100%}
+.level-card-name{font-size:0.7rem;font-weight:600;margin-top:4px;text-align:center;line-height:1.2;color:var(--text-light)}
+.level-card-stars{display:flex;gap:2px;margin-top:2px}
+.star{color:var(--yellow);font-size:0.7rem}
+.star.empty{color:rgba(255,255,255,0.2)}
+.level-card-lock{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:1.8rem;opacity:0.5}
+
+/* ─── Game Screen ─── */
+#screen-game{background:linear-gradient(180deg,#1565C0 0%,#006064 100%);padding:0}
+.game-container{display:flex;flex-direction:column;width:100%;height:100%;max-width:600px}
+.game-header-bar{display:flex;align-items:center;padding:8px 12px;gap:8px;padding-top:calc(8px + var(--safe-t))}
+.game-header-bar .btn-small{padding:6px 12px;font-size:0.75rem;border-radius:20px;flex-shrink:0}
+.progress-wrap{flex:1;display:flex;align-items:center;gap:6px}
+.progress-track{flex:1;height:8px;background:rgba(0,0,0,0.2);border-radius:4px;overflow:hidden}
+.progress-fill{height:100%;width:0%;background:linear-gradient(90deg,#66BB6A,#FFE082);border-radius:4px;transition:width 0.3s ease}
+.progress-text{font-size:0.7rem;color:var(--text-dim);white-space:nowrap;min-width:48px;text-align:right}
+
+#game-canvas{flex:1;width:100%;touch-action:none;display:block;min-height:0}
+
+.palette-wrap{display:flex;justify-content:center;align-items:center;gap:clamp(4px,1.5vw,10px);padding:clamp(6px,1.5vh,12px) 10px;padding-bottom:calc(clamp(6px,1.5vh,12px) + var(--safe-b));background:rgba(0,0,0,0.15);backdrop-filter:blur(8px)}
+.palette-swatch{width:clamp(30px,7vw,42px);height:clamp(30px,7vw,42px);border-radius:50%;border:3px solid transparent;cursor:pointer;transition:all 0.15s ease;position:relative;flex-shrink:0;display:flex;align-items:center;justify-content:center}
+.palette-swatch.active{border-color:#fff;transform:scale(1.15);box-shadow:0 0 12px rgba(255,255,255,0.4)}
+.palette-swatch .swatch-num{position:absolute;bottom:-2px;right:-2px;font-size:0.6rem;font-weight:700;background:rgba(0,0,0,0.6);color:#fff;width:14px;height:14px;border-radius:50%;display:flex;align-items:center;justify-content:center}
+.palette-swatch:active{transform:scale(0.92)}
+
+/* ─── Win Screen ─── */
+#screen-win{background:linear-gradient(180deg,#1B5E20 0%,#2E7D32 40%,#006064 100%);gap:8px;padding:32px 20px}
+.win-artwork{border-radius:var(--radius);width:80%;max-width:280px;aspect-ratio:5/6;overflow:hidden;border:3px solid var(--yellow);box-shadow:0 0 30px rgba(255,224,130,0.3);position:relative;margin-bottom:8px}
+.win-artwork canvas{display:block;width:100%;height:100%}
+.win-title{font-size:clamp(1.4rem,4vw,2rem);font-weight:800;color:var(--yellow);text-shadow:0 2px 8px rgba(0,0,0,0.3)}
+.win-stars{display:flex;gap:6px;font-size:clamp(1.5rem,4vw,2.2rem);margin:4px 0}
+.win-btns{display:flex;gap:12px;margin-top:4px}
+.confetti{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.confetti-piece{position:absolute;width:8px;height:8px;border-radius:2px;animation:confettiFall linear forwards}
+@keyframes confettiFall{0%{transform:translateY(-10px) rotate(0deg);opacity:1}100%{transform:translateY(100vh) rotate(720deg);opacity:0}}
+
+/* ─── Responsive ─── */
+@media(max-width:420px){
+  #level-grid{grid-template-columns:repeat(2,1fr);max-width:340px;gap:10px}
+  .level-card{min-height:100px}
+  .level-card-name{font-size:0.65rem}
+  .palette-swatch{width:clamp(26px,8vw,36px);height:clamp(26px,8vw,36px)}
+}
+@media(min-width:768px){
+  .game-container{max-width:500px;margin:0 auto}
+  .level-card{min-height:140px}
+}
+</style>
+</head>
+<body>
+<a href="/hub/" class="back-to-hub" data-hub><span>&larr; <span>Back to Hub</span></span></a>
+<div id="app">
+
+<!-- Splash -->
+<div id="screen-splash" class="screen">
+  <div class="splash-bubbles" id="bubble-container"></div>
+  <div class="splash-sponge" id="splash-sponge">
+    <div class="splash-sponge-eye-l"></div>
+    <div class="splash-sponge-eye-r"></div>
+  </div>
+  <div class="splash-title">SpongeBob<br>Art Quest</div>
+  <div class="splash-subtitle">Paint by Number Coloring Game!</div>
+  <button class="btn btn-primary" id="btn-play">PLAY</button>
+</div>
+
+<!-- Level Select -->
+<div id="screen-levels" class="screen hidden">
+  <div class="screen-title" style="color:var(--yellow);font-size:clamp(1.2rem,3.5vw,1.8rem)">Choose Your Character</div>
+  <div class="screen-subtitle">Complete each artwork to unlock more!</div>
+  <div id="level-grid"></div>
+</div>
+
+<!-- Game -->
+<div id="screen-game" class="screen hidden" style="padding:0">
+  <div class="game-container">
+    <div class="game-header-bar">
+      <button class="btn btn-secondary btn-small" id="btn-back-levels">&larr;</button>
+      <span id="level-name" style="font-size:0.8rem;font-weight:600;flex-shrink:0;color:var(--white)">SpongeBob</span>
+      <div class="progress-wrap">
+        <div class="progress-track"><div class="progress-fill" id="progress-fill"></div></div>
+        <span class="progress-text" id="progress-text">0%</span>
+      </div>
+    </div>
+    <canvas id="game-canvas"></canvas>
+    <div class="palette-wrap" id="palette"></div>
+  </div>
+</div>
+
+<!-- Win -->
+<div id="screen-win" class="screen hidden">
+  <div class="win-title">Artwork Complete!</div>
+  <div class="win-artwork" id="win-artwork"><canvas id="win-canvas"></canvas></div>
+  <div class="win-stars" id="win-stars">&#9733; &#9733; &#9733;</div>
+  <div class="screen-subtitle" style="color:var(--yellow);font-size:0.9rem;margin-bottom:6px" id="win-char-name">SpongeBob</div>
+  <div class="win-btns">
+    <button class="btn btn-primary btn-small" id="btn-next">Next &rarr;</button>
+    <button class="btn btn-secondary btn-small" id="btn-menu">Menu</button>
+  </div>
+  <div class="confetti" id="confetti"></div>
+</div>
+
+</div>
+
+<script>
+'use strict';
+(function(){
+/* ===================================================================
+   SpongeBob Art Quest — Paint-by-Number Coloring Game
+   All code in single IIFE
+   =================================================================== */
+
+// ─── Colors ───
+var COLORS = [
+  '#FFE082', // 1 Yellow
+  '#4FC3F7', // 2 Blue
+  '#8D6E63', // 3 Brown
+  '#F5F5F5', // 4 White
+  '#EF5350', // 5 Red
+  '#F48FB1', // 6 Pink
+  '#66BB6A', // 7 Green
+  '#424242'  // 8 Black
+];
+var COLOR_NAMES = ['Yellow','Blue','Brown','White','Red','Pink','Green','Black'];
+
+// ─── Polygon Helpers ───
+function rect(x,y,w,h){return[{x:x,y:y},{x:x+w,y:y},{x:x+w,y:y+h},{x:x,y:y+h}]}
+function oval(cx,cy,rx,ry,n){var p=[],i,a;n=n||10;for(i=0;i<n;i++){a=(i/n)*Math.PI*2;p.push({x:cx+rx*Math.cos(a),y:cy+ry*Math.sin(a)})}return p}
+function tri(x1,y1,x2,y2,x3,y3){return[{x:x1,y:y1},{x:x2,y:y2},{x:x3,y:y3}]}
+function poly(pts){return pts.map(function(p){return Array.isArray(p)?{x:p[0],y:p[1]}:p})}
+
+// Shortcut: zone function
+function Z(points,num){return{points:points,number:num}}
+function R(x,y,w,h){return[{x:x,y:y},{x:x+w,y:y},{x:x+w,y:y+h},{x:x,y:y+h}]}
+function O(cx,cy,rx,ry,n){return oval(cx,cy,rx,ry,n||10)}
+function T(x1,y1,x2,y2,x3,y3){return[{x:x1,y:y1},{x:x2,y:y2},{x:x3,y:y3}]}
+
+// ─── Character Definitions (normalized 0-1 coords) ───
+var CHARACTERS = [];
+
+// Helper to add a character
+function addChar(name,zones){CHARACTERS.push({name:name,zones:zones})}
+
+/* ====================== 1. SPONGEBOB ====================== */
+addChar('SpongeBob',[
+  // Body (Yellow #1)
+  Z(R(0.23,0.10,0.22,0.22),1),
+  Z(R(0.55,0.10,0.22,0.22),1),
+  Z(R(0.23,0.32,0.22,0.18),1),
+  Z(R(0.55,0.32,0.22,0.18),1),
+  Z(R(0.28,0.50,0.18,0.14),1),
+  Z(R(0.54,0.50,0.18,0.14),1),
+  Z(R(0.42,0.30,0.16,0.34),1),
+  // Eyes (White #4)
+  Z(O(0.37,0.26,0.08,0.09),4),
+  Z(O(0.63,0.26,0.08,0.09),4),
+  // Pupils (Black #8)
+  Z(O(0.38,0.27,0.04,0.04),8),
+  Z(O(0.62,0.27,0.04,0.04),8),
+  // Nose (Yellow #1)
+  Z(O(0.50,0.38,0.03,0.07),1),
+  // Cheeks (Pink #6)
+  Z(O(0.25,0.42,0.04,0.04),6),
+  Z(O(0.75,0.42,0.04,0.04),6),
+  // Mouth (Red #5)
+  Z(T(0.30,0.45,0.70,0.45,0.50,0.55),5),
+  // Teeth (White #4)
+  Z(R(0.40,0.50,0.05,0.06),4),
+  Z(R(0.55,0.50,0.05,0.06),4),
+  // Tie (Red #5)
+  Z(T(0.47,0.52,0.53,0.52,0.50,0.60),5),
+  // Collar (White #4)
+  Z(R(0.37,0.51,0.08,0.04),4),
+  Z(R(0.55,0.51,0.08,0.04),4),
+  // Pants (Brown #3)
+  Z(R(0.25,0.64,0.22,0.06),3),
+  Z(R(0.53,0.64,0.22,0.06),3),
+  // Belt (Black #8)
+  Z(R(0.23,0.62,0.54,0.03),8),
+  // Legs (Brown #3)
+  Z(R(0.35,0.70,0.10,0.14),3),
+  Z(R(0.55,0.70,0.10,0.14),3),
+  // Shoes (Black #8)
+  Z(R(0.30,0.82,0.20,0.10),8),
+  Z(R(0.50,0.82,0.20,0.10),8),
+  // Body edge strips
+  Z(R(0.23,0.10,0.04,0.54),8),
+  Z(R(0.73,0.10,0.04,0.54),8)
+]);
+
+/* ====================== 2. PATRICK STAR ====================== */
+addChar('Patrick Star',[
+  // Body (Pink #6)
+  Z(O(0.50,0.45,0.28,0.28,12),6),
+  Z(R(0.16,0.26,0.14,0.12),6),
+  Z(R(0.70,0.26,0.14,0.12),6),
+  Z(R(0.26,0.60,0.14,0.14),6),
+  Z(R(0.60,0.60,0.14,0.14),6),
+  Z(R(0.22,0.18,0.56,0.08),6),
+  Z(R(0.40,0.66,0.20,0.12),6),
+  // Eyes (White #4)
+  Z(O(0.38,0.34,0.08,0.10),4),
+  Z(O(0.62,0.34,0.08,0.10),4),
+  // Pupils (Black #8)
+  Z(O(0.39,0.35,0.04,0.04),8),
+  Z(O(0.61,0.35,0.04,0.04),8),
+  // Eyebrows (Black #8)
+  Z(R(0.30,0.26,0.12,0.03),8),
+  Z(R(0.58,0.26,0.12,0.03),8),
+  // Nose (Pink #6)
+  Z(O(0.50,0.43,0.04,0.06),6),
+  // Mouth (Red #5)
+  Z(T(0.36,0.50,0.64,0.50,0.50,0.56),5),
+  // Cheeks (Pink #6)
+  Z(O(0.30,0.46,0.04,0.04),6),
+  Z(O(0.70,0.46,0.04,0.04),6),
+  // Belly (White #4)
+  Z(O(0.50,0.52,0.10,0.08),4),
+  // Belt (Brown #3)
+  Z(R(0.40,0.62,0.20,0.04),3),
+  // Legs
+  Z(R(0.38,0.66,0.08,0.14),3),
+  Z(R(0.54,0.66,0.08,0.14),3),
+  // Shoes (Black #8)
+  Z(R(0.34,0.78,0.16,0.10),8),
+  Z(R(0.50,0.78,0.16,0.10),8),
+  // Belly detail
+  Z(O(0.50,0.48,0.03,0.02),6)
+]);
+
+/* ====================== 3. SQUIDWARD ====================== */
+addChar('Squidward',[
+  // Head (Green #7)
+  Z(O(0.50,0.22,0.20,0.24,12),7),
+  Z(R(0.30,0.28,0.40,0.28),7),
+  Z(R(0.35,0.08,0.30,0.14),7),
+  // Forehead
+  Z(R(0.38,0.04,0.24,0.06),7),
+  // Eyes (White #4)
+  Z(O(0.40,0.30,0.07,0.07),4),
+  Z(O(0.60,0.30,0.07,0.07),4),
+  // Pupils (Black #8)
+  Z(O(0.40,0.30,0.03,0.03),8),
+  Z(O(0.60,0.30,0.03,0.03),8),
+  // Nose (Green #7)
+  Z(T(0.47,0.38,0.53,0.38,0.50,0.58),7),
+  // Cheeks (Pink #6)
+  Z(O(0.32,0.42,0.04,0.04),6),
+  Z(O(0.68,0.42,0.04,0.04),6),
+  // Mouth (Red #5)
+  Z(R(0.38,0.52,0.24,0.05),5),
+  // Collar (White #4)
+  Z(R(0.42,0.55,0.16,0.04),4),
+  // Shirt (Brown #3)
+  Z(R(0.34,0.58,0.32,0.14),3),
+  Z(R(0.38,0.72,0.24,0.08),3),
+  // Arms/Tentacles (Green #7)
+  Z(R(0.06,0.60,0.18,0.06),7),
+  Z(R(0.76,0.60,0.18,0.06),7),
+  Z(R(0.08,0.66,0.06,0.16),7),
+  Z(R(0.86,0.66,0.06,0.16),7),
+  // Legs (Green #7)
+  Z(R(0.38,0.80,0.10,0.10),7),
+  Z(R(0.52,0.80,0.10,0.10),7),
+  // Shoes (Black #8)
+  Z(R(0.34,0.88,0.16,0.08),8),
+  Z(R(0.50,0.88,0.16,0.08),8)
+]);
+
+/* ====================== 4. SANDY CHEEKS ====================== */
+addChar('Sandy Cheeks',[
+  // Helmet (White #4)
+  Z(O(0.50,0.20,0.22,0.22,12),4),
+  Z(R(0.36,0.02,0.28,0.08),4),
+  // Face (Green #7)
+  Z(O(0.50,0.22,0.14,0.16,10),7),
+  Z(R(0.38,0.24,0.24,0.08),7),
+  // Eyes (White #4)
+  Z(O(0.42,0.20,0.06,0.06),4),
+  Z(O(0.58,0.20,0.06,0.06),4),
+  // Pupils (Black #8)
+  Z(O(0.43,0.20,0.03,0.03),8),
+  Z(O(0.57,0.20,0.03,0.03),8),
+  // Nose (Green #7)
+  Z(O(0.50,0.26,0.03,0.05),7),
+  // Mouth (Red #5)
+  Z(R(0.42,0.30,0.16,0.04),5),
+  // Cheeks (Pink #6)
+  Z(O(0.35,0.25,0.04,0.04),6),
+  Z(O(0.65,0.25,0.04,0.04),6),
+  // Suit body (Brown #3)
+  Z(R(0.34,0.38,0.32,0.22),3),
+  Z(R(0.36,0.60,0.28,0.18),3),
+  Z(R(0.38,0.78,0.24,0.08),3),
+  // Arms (Brown #3)
+  Z(R(0.06,0.48,0.22,0.08),3),
+  Z(R(0.72,0.48,0.22,0.08),3),
+  // Gloves (White #4)
+  Z(O(0.08,0.54,0.08,0.06),4),
+  Z(O(0.92,0.54,0.08,0.06),4),
+  // Legs (Brown #3)
+  Z(R(0.40,0.86,0.08,0.08),3),
+  Z(R(0.52,0.86,0.08,0.08),3),
+  // Boots (White #4)
+  Z(R(0.36,0.92,0.14,0.06),4),
+  Z(R(0.50,0.92,0.14,0.06),4),
+  // Tail (Green #7)
+  Z(R(0.78,0.62,0.10,0.22),7),
+  // Belt (Black #8)
+  Z(R(0.36,0.66,0.28,0.03),8),
+  // Suit detail
+  Z(R(0.42,0.42,0.16,0.12),4)
+]);
+
+/* ====================== 5. MR. KRABS ====================== */
+addChar('Mr. Krabs',[
+  // Body (Red #5)
+  Z(O(0.50,0.42,0.26,0.24,12),5),
+  Z(R(0.26,0.28,0.48,0.18),5),
+  // Belly (White #4)
+  Z(O(0.50,0.46,0.14,0.12),4),
+  // Left claw (Red #5)
+  Z(R(0.04,0.34,0.18,0.12),5),
+  Z(T(0.02,0.30,0.22,0.34,0.08,0.46),5),
+  // Right claw (Red #5)
+  Z(R(0.78,0.34,0.18,0.12),5),
+  Z(T(0.78,0.34,0.98,0.30,0.92,0.46),5),
+  // Eye stalks (Red #5)
+  Z(R(0.36,0.08,0.08,0.18),5),
+  Z(R(0.56,0.08,0.08,0.18),5),
+  // Eyes (White #4)
+  Z(O(0.40,0.10,0.08,0.08),4),
+  Z(O(0.60,0.10,0.08,0.08),4),
+  // Pupils (Black #8)
+  Z(O(0.41,0.10,0.04,0.04),8),
+  Z(O(0.59,0.10,0.04,0.04),8),
+  // Brow (Black #8)
+  Z(R(0.36,0.20,0.28,0.04),8),
+  // Mouth (Red #5)
+  Z(R(0.38,0.50,0.24,0.06),5),
+  // Legs (Red #5)
+  Z(R(0.28,0.64,0.08,0.16),5),
+  Z(R(0.64,0.64,0.08,0.16),5),
+  Z(R(0.18,0.68,0.08,0.14),5),
+  Z(R(0.74,0.68,0.08,0.14),5),
+  Z(R(0.38,0.68,0.08,0.14),5),
+  Z(R(0.54,0.68,0.08,0.14),5),
+  // Shoes (Black #8)
+  Z(R(0.24,0.78,0.16,0.10),8),
+  Z(R(0.60,0.78,0.16,0.10),8)
+]);
+
+/* ====================== 6. PLANKTON ====================== */
+addChar('Plankton',[
+  // Body (Green #7)
+  Z(O(0.50,0.48,0.20,0.18,12),7),
+  Z(R(0.34,0.36,0.32,0.16),7),
+  // Eye stalk (Green #7)
+  Z(R(0.45,0.08,0.10,0.22),7),
+  // Eye (White #4)
+  Z(O(0.50,0.16,0.18,0.16,10),4),
+  // Pupil (Black #8)
+  Z(O(0.50,0.17,0.10,0.09,8),8),
+  // Brow (Black #8)
+  Z(R(0.34,0.08,0.32,0.05),8),
+  // Mouth (Red #5)
+  Z(R(0.38,0.48,0.24,0.06),5),
+  // Teeth (White #4)
+  Z(R(0.42,0.52,0.06,0.06),4),
+  Z(R(0.52,0.52,0.06,0.06),4),
+  // Arms (Green #7)
+  Z(R(0.06,0.46,0.24,0.06),7),
+  Z(R(0.70,0.46,0.24,0.06),7),
+  // Hands (Green #7)
+  Z(O(0.06,0.48,0.06,0.05),7),
+  Z(O(0.94,0.48,0.06,0.05),7),
+  // Lower body
+  Z(R(0.38,0.58,0.24,0.08),7),
+  // Legs (Green #7)
+  Z(R(0.40,0.66,0.08,0.10),7),
+  Z(R(0.52,0.66,0.08,0.10),7),
+  // Shoes (Black #8)
+  Z(R(0.36,0.74,0.14,0.08),8),
+  Z(R(0.50,0.74,0.14,0.08),8),
+  // Antennae (Green #7)
+  Z(R(0.42,0.04,0.08,0.06),7),
+  Z(R(0.50,0.04,0.08,0.06),7),
+  // Body stripe (Black #8)
+  Z(R(0.34,0.54,0.32,0.03),8)
+]);
+
+// ─── State ───
+var state = {
+  screen:'splash',
+  level:0,
+  selectedColor:1,
+  zones:[], // [{filled:bool}] for current level
+  unlocked:[0], // indices of unlocked levels
+  completed:{}, // {levelIndex: true}
+  levelFilledCount:0
+};
+
+// ─── DOM ───
+var canvas,ctx,winCanvas,winCtx,paletteEl,progressFill,progressText,levelName;
+var screenSplash,screenLevels,screenGame,screenWin;
+
+function cacheDom(){
+  canvas=document.getElementById('game-canvas');
+  ctx=canvas.getContext('2d');
+  winCanvas=document.getElementById('win-canvas');
+  winCtx=winCanvas.getContext('2d');
+  paletteEl=document.getElementById('palette');
+  progressFill=document.getElementById('progress-fill');
+  progressText=document.getElementById('progress-text');
+  levelName=document.getElementById('level-name');
+  screenSplash=document.getElementById('screen-splash');
+  screenLevels=document.getElementById('screen-levels');
+  screenGame=document.getElementById('screen-game');
+  screenWin=document.getElementById('screen-win');
+}
+
+// ─── Audio ───
+var audioCtx=null;
+function initAudio(){if(!audioCtx){try{audioCtx=new(window.AudioContext||window.webkitAudioContext)()}catch(e){}}}
+function playTone(freq,dur,type,vol){
+  try{
+    initAudio();
+    if(!audioCtx)return;
+    var osc=audioCtx.createOscillator();
+    var gain=audioCtx.createGain();
+    osc.type=type||'sine';
+    osc.frequency.setValueAtTime(freq,audioCtx.currentTime);
+    gain.gain.setValueAtTime(vol||0.2,audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001,audioCtx.currentTime+dur);
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start();
+    osc.stop(audioCtx.currentTime+dur);
+  }catch(e){}
+}
+function playClick(){playTone(660,0.06,'sine',0.15)}
+function playFill(){playTone(880,0.1,'sine',0.12)}
+function playComplete(){
+  playTone(523,0.2,'sine',0.2);
+  setTimeout(function(){playTone(659,0.2,'sine',0.2)},180);
+  setTimeout(function(){playTone(784,0.3,'sine',0.2)},360);
+}
+function playFanfare(){
+  var notes=[523,659,784,1047];
+  notes.forEach(function(n,i){setTimeout(function(){playTone(n,0.3,'sine',0.2)},i*200)});
+}
+
+// ─── Vibration ───
+function tryVibrate(ms){try{if(navigator.vibrate)navigator.vibrate(ms)}catch(e){}}
+
+// ─── Storage ───
+var STORAGE_KEY='crabcli-spongebob-art-quest';
+
+function loadProgress(){
+  try{
+    var d=JSON.parse(localStorage.getItem(STORAGE_KEY));
+    if(d&&d.unlocked)state.unlocked=d.unlocked;
+    if(d&&d.completed)state.completed=d.completed;
+  }catch(e){}
+}
+function saveProgress(){
+  try{
+    localStorage.setItem(STORAGE_KEY,JSON.stringify({
+      unlocked:state.unlocked,
+      completed:state.completed
+    }));
+  }catch(e){}
+}
+
+// ─── Point-in-Polygon (ray casting) ───
+function pointInPoly(px,py,poly){
+  var inside=false,i,j;
+  for(i=0,j=poly.length-1;i<poly.length;j=i++){
+    var xi=poly[i].x,yi=poly[i].y;
+    var xj=poly[j].x,yj=poly[j].y;
+    if(((yi>py)!==(yj>py))&&(px<(xj-xi)*(py-yi)/(yj-yi)+xi))inside=!inside;
+  }
+  return inside;
+}
+
+// ─── Polygon centroid ───
+function polyCentroid(poly){
+  var cx=0,cy=0,i;
+  for(i=0;i<poly.length;i++){cx+=poly[i].x;cy+=poly[i].y}
+  return{x:cx/poly.length,y:cy/poly.length};
+}
+
+// ─── Screen management ───
+var currentScreen=null;
+
+function showScreen(id){
+  var screens=[screenSplash,screenLevels,screenGame,screenWin];
+  screens.forEach(function(s){s.classList.add('hidden')});
+  var el=document.getElementById('screen-'+id);
+  if(el)el.classList.remove('hidden');
+  currentScreen=id;
+  if(id==='game'){resizeCanvas();renderGame()}
+  if(id==='win'){renderWinArtwork();spawnConfetti()}
+}
+
+// ─── Canvas sizing ───
+function resizeCanvas(){
+  if(currentScreen!=='game')return;
+  var container=canvas.parentElement;
+  var w=container.clientWidth;
+  var h=container.clientHeight;
+  if(w<1||h<1)return;
+  var dpr=window.devicePixelRatio||1;
+  canvas.width=w*dpr;
+  canvas.height=h*dpr;
+  canvas.style.width=w+'px';
+  canvas.style.height=h+'px';
+}
+
+// ─── Render Game ───
+function renderGame(){
+  if(currentScreen!=='game')return;
+  var w=canvas.width/(window.devicePixelRatio||1);
+  var h=canvas.height/(window.devicePixelRatio||1);
+  if(w<1||h<1)return;
+  ctx.setTransform(window.devicePixelRatio||1,0,0,window.devicePixelRatio||1,0,0);
+  ctx.clearRect(0,0,w,h);
+
+  // Background
+  var grad=ctx.createLinearGradient(0,0,0,h);
+  grad.addColorStop(0,'#1A237E');
+  grad.addColorStop(0.5,'#0D47A1');
+  grad.addColorStop(1,'#006064');
+  ctx.fillStyle=grad;
+  ctx.fillRect(0,0,w,h);
+
+  // Sand bottom
+  ctx.fillStyle='#FFE0B2';
+  ctx.fillRect(0,h-12,w,12);
+
+  // Bubbles
+  ctx.fillStyle='rgba(255,255,255,0.06)';
+  var t=Date.now()/3000;
+  ctx.beginPath();
+  ctx.arc(60+20*Math.sin(t*0.7),h-80+30*Math.sin(t*0.5),10,0,Math.PI*2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(w-70+15*Math.sin(t*0.9+1),h-120+25*Math.sin(t*0.6+2),7,0,Math.PI*2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(100+25*Math.sin(t*0.5+3),h-60+20*Math.sin(t*0.8+1),5,0,Math.PI*2);
+  ctx.fill();
+
+  // Calculate draw area
+  var char=CHARACTERS[state.level];
+  if(!char)return;
+  var aspect=0.7; // character aspect ratio (w/h)
+  var pad=w*0.08;
+  var drawW=w-pad*2;
+  var drawH=drawW/aspect;
+  if(drawH>h-pad*2){drawH=h-pad*2;drawW=drawH*aspect}
+  var offX=(w-drawW)/2;
+  var offY=(h-drawH)/2;
+
+  // Prepare zone points (scaled)
+  var scaledZones=char.zones.map(function(zone){
+    var pts=zone.points.map(function(p){return{x:p.x*drawW+offX,y:p.y*drawH+offY}});
+    return{points:pts,number:zone.number};
+  });
+
+  // First pass: fill zones
+  scaledZones.forEach(function(zone,i){
+    var pts=zone.points;
+    ctx.beginPath();
+    ctx.moveTo(pts[0].x,pts[0].y);
+    for(var j=1;j<pts.length;j++)ctx.lineTo(pts[j].x,pts[j].y);
+    ctx.closePath();
+    if(state.zones[i]&&state.zones[i].filled){
+      ctx.fillStyle=COLORS[zone.number-1];
+      ctx.fill();
+    }
+  });
+
+  // Second pass: outlines + numbers
+  scaledZones.forEach(function(zone,i){
+    var pts=zone.points;
+    ctx.beginPath();
+    ctx.moveTo(pts[0].x,pts[0].y);
+    for(var j=1;j<pts.length;j++)ctx.lineTo(pts[j].x,pts[j].y);
+    ctx.closePath();
+    ctx.strokeStyle='rgba(255,255,255,0.35)';
+    ctx.lineWidth=1.2;
+    ctx.stroke();
+
+    if(!state.zones[i]||!state.zones[i].filled){
+      var c=polyCentroid(pts);
+      var fontSize=Math.max(10,Math.min(drawW,drawH)*0.032);
+      ctx.fillStyle='rgba(255,255,255,0.6)';
+      ctx.font='bold '+fontSize+'px sans-serif';
+      ctx.textAlign='center';
+      ctx.textBaseline='middle';
+      ctx.fillText(zone.number,c.x,c.y);
+    }
+  });
+}
+
+// ─── Palette ───
+function buildPalette(){
+  paletteEl.innerHTML='';
+  for(var i=0;i<COLORS.length;i++){
+    (function(idx){
+      var swatch=document.createElement('div');
+      swatch.className='palette-swatch'+(idx+1===state.selectedColor?' active':'');
+      swatch.style.background=COLORS[idx];
+      var num=document.createElement('span');
+      num.className='swatch-num';
+      num.textContent=idx+1;
+      swatch.appendChild(num);
+      swatch.addEventListener('click',function(){selectColor(idx+1)});
+      swatch.addEventListener('touchend',function(e){e.preventDefault();selectColor(idx+1)});
+      paletteEl.appendChild(swatch);
+    })(i);
+  }
+}
+
+function updatePalette(){
+  var swatches=paletteEl.querySelectorAll('.palette-swatch');
+  swatches.forEach(function(s,i){s.classList.toggle('active',i+1===state.selectedColor)});
+}
+
+function selectColor(idx){
+  state.selectedColor=idx;
+  updatePalette();
+  playClick();
+}
+
+// ─── Game Logic ───
+function startLevel(levelIdx){
+  state.level=levelIdx;
+  var char=CHARACTERS[levelIdx];
+  if(!char)return;
+  state.zones=char.zones.map(function(){return{filled:false}});
+  state.selectedColor=1;
+  state.levelFilledCount=0;
+  levelName.textContent=char.name;
+  buildPalette();
+  updateProgress();
+  showScreen('game');
+  resetHintTimer();
+}
+
+function fillZoneAt(x,y){
+  var char=CHARACTERS[state.level];
+  if(!char)return false;
+  var w=canvas.width/(window.devicePixelRatio||1);
+  var h=canvas.height/(window.devicePixelRatio||1);
+  if(w<1||h<1)return false;
+  var aspect=0.7;
+  var pad=w*0.08;
+  var drawW=w-pad*2;
+  var drawH=drawW/aspect;
+  if(drawH>h-pad*2){drawH=h-pad*2;drawW=drawH*aspect}
+  var offX=(w-drawW)/2;
+  var offY=(h-drawH)/2;
+
+  // Check each zone
+  for(var i=0;i<char.zones.length;i++){
+    if(state.zones[i]&&state.zones[i].filled)continue;
+    // Scale points
+    var pts=char.zones[i].points.map(function(p){return{x:p.x*drawW+offX,y:p.y*drawH+offY}});
+    if(pointInPoly(x,y,pts)){
+      // Check number match
+      if(char.zones[i].number===state.selectedColor){
+        state.zones[i].filled=true;
+        state.levelFilledCount++;
+        playFill();
+        tryVibrate(30);
+        updateProgress();
+        renderGame();
+        resetHintTimer();
+        if(state.levelFilledCount===state.zones.length){
+          handleComplete();
+        }
+        return true;
+      }else{
+        // Wrong color - play error sound
+        playTone(300,0.12,'square',0.05);
+        tryVibrate(15);
+        return false;
+      }
+    }
+  }
+  return false;
+}
+
+function updateProgress(){
+  var total=state.zones.length||1;
+  var pct=Math.round(state.levelFilledCount/total*100);
+  progressFill.style.width=pct+'%';
+  progressText.textContent=pct+'%';
+}
+
+function handleComplete(){
+  playComplete();
+  setTimeout(function(){playFanfare()},400);
+  tryVibrate(200);
+  state.completed[state.level]=true;
+  // Unlock next level
+  if(state.level<CHARACTERS.length-1){
+    if(state.unlocked.indexOf(state.level+1)<0){
+      state.unlocked.push(state.level+1);
+    }
+  }
+  saveProgress();
+  // Show win after delay
+  setTimeout(function(){showWin()},800);
+}
+
+// ─── Win Screen ───
+function showWin(){
+  showScreen('win');
+}
+
+function renderWinArtwork(){
+  var char=CHARACTERS[state.level];
+  if(!char)return;
+  var w=winCanvas.parentElement.clientWidth;
+  var h=winCanvas.parentElement.clientHeight;
+  if(w<1||h<1){w=240;h=280}
+  var dpr=window.devicePixelRatio||1;
+  winCanvas.width=w*dpr;
+  winCanvas.height=h*dpr;
+  winCanvas.style.width=w+'px';
+  winCanvas.style.height=h+'px';
+  winCtx.setTransform(dpr,0,0,dpr,0,0);
+
+  // Background
+  winCtx.fillStyle='rgba(0,0,0,0.1)';
+  winCtx.fillRect(0,0,w,h);
+
+  // Draw all zones filled
+  var aspect=0.7;
+  var pad=w*0.08;
+  var drawW=w-pad*2;
+  var drawH=drawW/aspect;
+  if(drawH>h-pad*2){drawH=h-pad*2;drawW=drawH*aspect}
+  var offX=(w-drawW)/2;
+  var offY=(h-drawH)/2;
+
+  char.zones.forEach(function(zone){
+    var pts=zone.points.map(function(p){return{x:p.x*drawW+offX,y:p.y*drawH+offY}});
+    winCtx.beginPath();
+    winCtx.moveTo(pts[0].x,pts[0].y);
+    for(var j=1;j<pts.length;j++)winCtx.lineTo(pts[j].x,pts[j].y);
+    winCtx.closePath();
+    winCtx.fillStyle=COLORS[zone.number-1];
+    winCtx.fill();
+    winCtx.strokeStyle='rgba(255,255,255,0.2)';
+    winCtx.lineWidth=0.8;
+    winCtx.stroke();
+  });
+
+  // Name
+  document.getElementById('win-char-name').textContent=char.name;
+  // Stars (all 3 achieved for completing)
+  var starsEl=document.getElementById('win-stars');
+  starsEl.innerHTML='&#9733; &#9733; &#9733;';
+}
+
+function spawnConfetti(){
+  var container=document.getElementById('confetti');
+  container.innerHTML='';
+  var colors=['#FFE082','#4FC3F7','#F48FB1','#66BB6A','#EF5350','#E040FB','#FFD54F'];
+  for(var i=0;i<50;i++){
+    var piece=document.createElement('div');
+    piece.className='confetti-piece';
+    piece.style.left=Math.random()*100+'%';
+    piece.style.top='-10px';
+    piece.style.background=colors[i%colors.length];
+    piece.style.width=(4+Math.random()*8)+'px';
+    piece.style.height=(4+Math.random()*8)+'px';
+    piece.style.borderRadius=Math.random()>0.5?'50%':'2px';
+    piece.style.animationDuration=(2+Math.random()*3)+'s';
+    piece.style.animationDelay=(Math.random()*2)+'s';
+    container.appendChild(piece);
+  }
+}
+
+// ─── Level Select ───
+function buildLevelSelect(){
+  var grid=document.getElementById('level-grid');
+  grid.innerHTML='';
+  CHARACTERS.forEach(function(char,i){
+    var card=document.createElement('div');
+    card.className='level-card';
+    var isLocked=state.unlocked.indexOf(i)<0;
+    if(isLocked)card.classList.add('locked');
+
+    // Preview canvas
+    var previewWrap=document.createElement('div');
+    previewWrap.className='char-preview';
+    var cvs=document.createElement('canvas');
+    previewWrap.appendChild(cvs);
+    card.appendChild(previewWrap);
+
+    // Name
+    var nameEl=document.createElement('div');
+    nameEl.className='level-card-name';
+    nameEl.textContent=char.name;
+    card.appendChild(nameEl);
+
+    // Stars or lock
+    if(isLocked){
+      var lock=document.createElement('div');
+      lock.className='level-card-lock';
+      lock.textContent='🔒';
+      card.appendChild(lock);
+    }else{
+      var starsEl=document.createElement('div');
+      starsEl.className='level-card-stars';
+      var completed=state.completed[i];
+      for(var s=0;s<3;s++){
+        var star=document.createElement('span');
+        star.className='star'+(completed?'':' empty');
+        star.textContent='★';
+        starsEl.appendChild(star);
+      }
+      card.appendChild(starsEl);
+    }
+
+    // Click handler
+    card.addEventListener('click',function(idx,locked){return function(){
+      if(locked)return;
+      initAudio();
+      playClick();
+      startLevel(idx);
+    }}(i,isLocked));
+
+    grid.appendChild(card);
+
+    // Render tiny preview
+    setTimeout(function(idx){return function(){renderThumb(cvs,idx)}}(i),50);
+  });
+}
+
+function renderThumb(cvs,levelIdx){
+  var wrap=cvs.parentElement;
+  var w=wrap.clientWidth||80;
+  var h=wrap.clientHeight||100;
+  if(w<1||h<1){w=80;h=100}
+  var dpr=window.devicePixelRatio||1;
+  cvs.width=w*dpr;
+  cvs.height=h*dpr;
+  cvs.style.width=w+'px';
+  cvs.style.height=h+'px';
+  var tc=cvs.getContext('2d');
+  tc.setTransform(dpr,0,0,dpr,0,0);
+  tc.clearRect(0,0,w,h);
+
+  var char=CHARACTERS[levelIdx];
+  if(!char)return;
+  var aspect=0.7;
+  var pad=w*0.1;
+  var drawW=w-pad*2;
+  var drawH=drawW/aspect;
+  if(drawH>h-pad*2){drawH=h-pad*2;drawW=drawH*aspect}
+  var offX=(w-drawW)/2;
+  var offY=(h-drawH)/2;
+
+  char.zones.forEach(function(zone){
+    var pts=zone.points.map(function(p){return{x:p.x*drawW+offX,y:p.y*drawH+offY}});
+    tc.beginPath();
+    tc.moveTo(pts[0].x,pts[0].y);
+    for(var j=1;j<pts.length;j++)tc.lineTo(pts[j].x,pts[j].y);
+    tc.closePath();
+    var isCompleted=state.completed[levelIdx];
+    if(isCompleted){
+      tc.fillStyle=COLORS[zone.number-1];
+      tc.fill();
+    }else{
+      tc.fillStyle='rgba(255,255,255,0.08)';
+      tc.fill();
+    }
+    tc.strokeStyle='rgba(255,255,255,0.25)';
+    tc.lineWidth=0.8;
+    tc.stroke();
+  });
+}
+
+// ─── Canvas event handling ───
+var touchHandled=false;
+
+function getCanvasPos(e){
+  var rect=canvas.getBoundingClientRect();
+  var clientX,clientY;
+  if(e.touches){clientX=e.touches[0].clientX;clientY=e.touches[0].clientY}
+  else{clientX=e.clientX;clientY=e.clientY}
+  return{
+    x:clientX-rect.left,
+    y:clientY-rect.top
+  };
+}
+
+function onCanvasClick(e){
+  if(currentScreen!=='game')return;
+  if(touchHandled)return;
+  initAudio();
+  var pos=getCanvasPos(e);
+  fillZoneAt(pos.x,pos.y);
+}
+
+function onCanvasTouch(e){
+  if(currentScreen!=='game')return;
+  e.preventDefault();
+  touchHandled=true;
+  setTimeout(function(){touchHandled=false},400);
+  initAudio();
+  var pos=getCanvasPos(e);
+  fillZoneAt(pos.x,pos.y);
+}
+
+// ─── Hints ───
+var hintTimer=null;
+
+function resetHintTimer(){
+  if(hintTimer){clearTimeout(hintTimer);hintTimer=null}
+  hintTimer=setTimeout(flashHint,8000);
+}
+
+function flashHint(){
+  // Find first unfilled zone and flash its number
+  for(var i=0;i<state.zones.length;i++){
+    if(!state.zones[i].filled){
+      // Flash the zone number
+      var count=0;
+      var flashInterval=setInterval(function(){
+        count++;
+        renderGame();
+        // Flash overlay
+        if(count%2===1){
+          var char=CHARACTERS[state.level];
+          if(!char)return;
+          var w=canvas.width/(window.devicePixelRatio||1);
+          var h=canvas.height/(window.devicePixelRatio||1);
+          if(w<1||h<1)return;
+          var aspect=0.7;
+          var pad=w*0.08;
+          var drawW=w-pad*2;
+          var drawH=drawW/aspect;
+          if(drawH>h-pad*2){drawH=h-pad*2;drawW=drawH*aspect}
+          var offX=(w-drawW)/2;
+          var offY=(h-drawH)/2;
+          var zone=char.zones[i];
+          var pts=zone.points.map(function(p){return{x:p.x*drawW+offX,y:p.y*drawH+offY}});
+          ctx.save();
+          ctx.beginPath();
+          ctx.moveTo(pts[0].x,pts[0].y);
+          for(var j=1;j<pts.length;j++)ctx.lineTo(pts[j].x,pts[j].y);
+          ctx.closePath();
+          ctx.fillStyle='rgba(255,224,130,0.3)';
+          ctx.fill();
+          ctx.restore();
+        }
+        if(count>=6){clearInterval(flashInterval)}
+      },400);
+      break;
+    }
+  }
+}
+
+// ─── Keyboard ───
+function onKeyDown(e){
+  var key=e.key;
+  if(currentScreen==='game'){
+    var n=parseInt(key);
+    if(n>=1&&n<=8&&!isNaN(n)){
+      e.preventDefault();
+      selectColor(n);
+    }
+  }
+  if(key==='Enter'){
+    if(currentScreen==='win'){
+      e.preventDefault();
+      goNext();
+    }
+  }
+}
+
+// ─── Navigation ───
+function goNext(){
+  var next=state.level+1;
+  if(next<CHARACTERS.length&&state.unlocked.indexOf(next)>=0){
+    startLevel(next);
+  }else{
+    showScreen('levels');
+    buildLevelSelect();
+  }
+}
+
+// ─── Init ───
+function init(){
+  cacheDom();
+  loadProgress();
+
+  // Record play
+  if(window.recordPlayed)window.recordPlayed('spongebob-art-quest');
+
+  // Bubble generator
+  var bubbleContainer=document.getElementById('bubble-container');
+  if(bubbleContainer){
+    for(var i=0;i<12;i++){
+      var b=document.createElement('div');
+      b.className='bubble';
+      var size=10+Math.random()*30;
+      b.style.width=size+'px';
+      b.style.height=size+'px';
+      b.style.left=Math.random()*100+'%';
+      b.style.animationDuration=(6+Math.random()*8)+'s';
+      b.style.animationDelay=(Math.random()*10)+'s';
+      bubbleContainer.appendChild(b);
+    }
+  }
+
+  // Event binding
+  document.getElementById('btn-play').addEventListener('click',function(){
+    initAudio();
+    playClick();
+    showScreen('levels');
+    buildLevelSelect();
+  });
+
+  document.getElementById('btn-back-levels').addEventListener('click',function(){
+    playClick();
+    showScreen('levels');
+    buildLevelSelect();
+  });
+
+  document.getElementById('btn-next').addEventListener('click',function(){playClick();goNext()});
+  document.getElementById('btn-menu').addEventListener('click',function(){
+    playClick();
+    showScreen('levels');
+    buildLevelSelect();
+  });
+
+  canvas.addEventListener('click',onCanvasClick);
+  canvas.addEventListener('touchstart',onCanvasTouch,{passive:false});
+
+  window.addEventListener('keydown',onKeyDown);
+  window.addEventListener('resize',function(){
+    if(currentScreen==='game'){resizeCanvas();renderGame()}
+  });
+
+  // Show splash
+  showScreen('splash');
+}
+
+// Start
+init();
+
+})();
+</script>
+</body>
+</html>
