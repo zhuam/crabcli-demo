@@ -926,20 +926,20 @@ function animateBullet(){
     const o = state.obstacles[i];
     if(pointInRect(b.x, b.y, o)){
       // Determine bounce direction based on approach
-      const leftD = Math.abs(b.x - o[i].x);
-      const rightD = Math.abs(b.x - (o[i].x + o[i].w));
-      const topD = Math.abs(b.y - o[i].y);
-      const bottomD = Math.abs(b.y - (o[i].y + o[i].h));
+      const leftD = Math.abs(b.x - o.x);
+      const rightD = Math.abs(b.x - (o.x + o.w));
+      const topD = Math.abs(b.y - o.y);
+      const bottomD = Math.abs(b.y - (o.y + o.h));
       const minD = Math.min(leftD, rightD, topD, bottomD);
 
       if(minD === leftD || minD === rightD) b.vx = -b.vx;
       else b.vy = -b.vy;
 
       // Push out of obstacle
-      if(b.x < o[i].x) b.x = o[i].x - 2;
-      else if(b.x > o[i].x + o[i].w) b.x = o[i].x + o[i].w + 2;
-      if(b.y < o[i].y) b.y = o[i].y - 2;
-      else if(b.y > o[i].y + o[i].h) b.y = o[i].y + o[i].h + 2;
+      if(b.x < o.x) b.x = o.x - 2;
+      else if(b.x > o.x + o.w) b.x = o.x + o.w + 2;
+      if(b.y < o.y) b.y = o.y - 2;
+      else if(b.y > o.y + o.h) b.y = o.y + o.h + 2;
 
       b.bounces++;
       state.totalBounces++;
