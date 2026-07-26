@@ -1,0 +1,92 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" width="400" height="300">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0a0e23"/>
+      <stop offset="100%" stop-color="#12163a"/>
+    </linearGradient>
+    <linearGradient id="cyanGlow" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#00f0ff"/>
+      <stop offset="100%" stop-color="#0098db"/>
+    </linearGradient>
+    <linearGradient id="amberGlow" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#ff8c00"/>
+      <stop offset="100%" stop-color="#ff6600"/>
+    </linearGradient>
+    <filter id="glowCyan">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="glowAmber">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="400" height="300" fill="url(#bg)"/>
+
+  <!-- Stars -->
+  <circle cx="50" cy="30" r="1" fill="#fff" opacity="0.6"/>
+  <circle cx="150" cy="50" r="1.2" fill="#fff" opacity="0.4"/>
+  <circle cx="280" cy="25" r="0.8" fill="#fff" opacity="0.5"/>
+  <circle cx="350" cy="60" r="1" fill="#fff" opacity="0.3"/>
+  <circle cx="100" cy="80" r="0.8" fill="#fff" opacity="0.4"/>
+  <circle cx="320" cy="90" r="1" fill="#fff" opacity="0.5"/>
+
+  <!-- City silhouette -->
+  <rect x="0" y="230" width="60" height="70" fill="#0d0f2a" opacity="0.8"/>
+  <rect x="50" y="200" width="45" height="100" fill="#0d0f2a" opacity="0.7"/>
+  <rect x="85" y="215" width="35" height="85" fill="#0d0f2a" opacity="0.8"/>
+  <rect x="120" y="240" width="50" height="60" fill="#0d0f2a" opacity="0.9"/>
+  <rect x="180" y="220" width="40" height="80" fill="#0d0f2a" opacity="0.7"/>
+  <rect x="220" y="235" width="55" height="65" fill="#0d0f2a" opacity="0.8"/>
+  <rect x="270" y="210" width="35" height="90" fill="#0d0f2a" opacity="0.7"/>
+  <rect x="310" y="230" width="50" height="70" fill="#0d0f2a" opacity="0.8"/>
+  <rect x="350" y="245" width="50" height="55" fill="#0d0f2a" opacity="0.9"/>
+
+  <!-- Platform -->
+  <rect x="60" y="200" width="140" height="12" rx="3" fill="none" stroke="#00f0ff" stroke-width="2" filter="url(#glowCyan)"/>
+  <rect x="60" y="200" width="140" height="3" fill="#00f0ff" opacity="0.6"/>
+
+  <!-- Ceiling Platform (flipped) -->
+  <rect x="190" y="110" width="130" height="12" rx="3" fill="none" stroke="#ff8c00" stroke-width="2" filter="url(#glowAmber)"/>
+  <rect x="190" y="119" width="130" height="3" fill="#ff8c00" opacity="0.6"/>
+
+  <!-- Character (normal gravity) -->
+  <g>
+    <!-- Body -->
+    <rect x="103" y="178" width="14" height="18" rx="2" fill="#00bcd4"/>
+    <!-- Head -->
+    <circle cx="110" cy="175" r="7" fill="#ffd7b0"/>
+    <!-- Eyes -->
+    <circle cx="108" cy="174" r="1.2" fill="#222"/>
+    <circle cx="112" cy="174" r="1.2" fill="#222"/>
+    <!-- Legs -->
+    <line x1="106" y1="196" x2="104" y2="202" stroke="#008a9e" stroke-width="1.5" stroke-linecap="round"/>
+    <line x1="114" y1="196" x2="116" y2="202" stroke="#008a9e" stroke-width="1.5" stroke-linecap="round"/>
+  </g>
+
+  <!-- Character (flipped gravity on ceiling) -->
+  <g transform="rotate(180 250 120)">
+    <rect x="243" y="102" width="14" height="18" rx="2" fill="#ff8c00"/>
+    <circle cx="250" cy="99" r="7" fill="#ffe0b0"/>
+    <circle cx="248" cy="98" r="1.2" fill="#222"/>
+    <circle cx="252" cy="98" r="1.2" fill="#222"/>
+    <line x1="246" y1="120" x2="244" y2="126" stroke="#cc6600" stroke-width="1.5" stroke-linecap="round"/>
+    <line x1="254" y1="120" x2="256" y2="126" stroke="#cc6600" stroke-width="1.5" stroke-linecap="round"/>
+  </g>
+
+  <!-- Gravity arrows -->
+  <g filter="url(#glowCyan)">
+    <path d="M40 150 L40 170" stroke="#00f0ff" stroke-width="2.5" stroke-linecap="round"/>
+    <path d="M34 164 L40 174 L46 164" stroke="#00f0ff" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+  </g>
+
+  <g filter="url(#glowAmber)">
+    <path d="M365 150 L365 130" stroke="#ff8c00" stroke-width="2.5" stroke-linecap="round"/>
+    <path d="M359 136 L365 126 L371 136" stroke="#ff8c00" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+  </g>
+
+  <!-- Title text -->
+  <text x="200" y="285" text-anchor="middle" font-family="Outfit, system-ui, sans-serif" font-size="18" font-weight="800" fill="#00f0ff" letter-spacing="1">GRAVITY WARP</text>
+</svg>

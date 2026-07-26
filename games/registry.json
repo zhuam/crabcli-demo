@@ -1004,6 +1004,26 @@
             "version": "1.0.0",
             "featured": false,
             "rating": 3
+        },
+        {
+            "id": "gravity-warp-kingdom",
+            "name": "Gravity Warp Kingdom",
+            "description": "按按钮翻转重力，在墙壁和天花板行走抵达终点旗帜",
+            "category": "puzzle",
+            "tags": [
+                "singleplayer",
+                "puzzle",
+                "physics",
+                "platformer",
+                "short-session"
+            ],
+            "thumbnail": "/games/049-gravity-warp-kingdom/thumb.svg",
+            "path": "/games/049-gravity-warp-kingdom/",
+            "hasServer": false,
+            "players": "1",
+            "version": "1.0.0",
+            "featured": false,
+            "rating": 3
         }
     ],
     "categories": [
