@@ -1,0 +1,54 @@
+#!/usr/bin/env node
+'use strict';
+const fs=require('fs'),path=require('path');
+const ROOT=path.join(__dirname,'..');
+const html=fs.readFileSync(path.join(ROOT,'index.html'),'utf8');
+const js=[...html.matchAll(/<script[^>]*>([\s\S]*?)<\/script>/gi)].map(m=>m[1]).join('\n');
+let pass=0,fail=0;
+function ok(n,c,d){if(c){pass++;console.log('  ✅ '+n)}else{fail++;console.log('  ❌ '+n+(d?' — '+d:''))}}
+function g(t){console.log('\n=== '+t+' ===')}
+g('AC1 · DOM');
+['titleScreen','playScreen','gameoverScreen','arenaCanvas','startBtn','replayBtn','hudScore','hudCombo','hudHp','muteBtn','ariaLive','goScore','goCombo','goNewBest'].forEach(id=>ok(`#${id}`,new RegExp(`id=["']${id}["']`).test(html)));
+ok('viewport no zoom',/maximum-scale=1/.test(html));ok('game-frame.css',/game-frame\.css/.test(html));
+ok('aria-live',/aria-live=["']polite["']/.test(html));ok('back-to-hub',/back-to-hub/.test(html));
+g('AC2 · Canvas');
+ok('canvas 300x400',/width=["']300["'][^>]*height=["']400["']/.test(html)||/height=["']400["'][^>]*width=["']300["']/.test(html));
+ok('ctx.getContext("2d")',/getContext\(["']2d["']\)/.test(js));
+ok('requestAnimationFrame',/requestAnimationFrame/.test(js));
+ok('EMOJI_LIST array',/EMOJI_LIST/.test(js));
+g('AC3 · Gameplay');
+ok('spawnEmoji function',/function\s+spawnEmoji/.test(js));
+ok('handleTap function',/function\s+handleTap/.test(js));
+ok('gameOver function',/function\s+gameOver/.test(js));
+ok('combo tracking',/combo/.test(js));
+ok('hp/health system',/\bhp\b/.test(js));
+ok('particles system',/particles/.test(js));
+ok('difficulty progression',/difficulty/.test(js));
+ok('score tracking',/score/.test(js));
+g('AC4 · Input');
+ok('click handler',/addEventListener\(["']click["']/.test(js));
+ok('touchstart handler',/touchstart/.test(js));
+ok('keydown handler',/keydown/.test(js));
+ok('Space/Enter',/key\s*===?\s*["']\s["']|key\s*===?\s*["']Enter["']/.test(js));
+ok('preventDefault',/preventDefault/.test(js));
+g('AC5 · Audio');
+ok('AudioContext',/AudioContext/.test(js));
+ok('playSound function',/function\s+playSound/.test(js));
+ok('playSound smash',/playSound\(["']smash["']\)/.test(js));
+ok('playSound combo',/["']combo["']/.test(js)&&/playSound/.test(js));
+ok('playSound hit',/playSound\(["']hit["']\)/.test(js));
+ok('playSound gameover',/playSound\(["']gameover["']\)/.test(js));
+ok('mute toggle',/MUTED_KEY/.test(js)&&/localStorage\.setItem/.test(js));
+g('AC6 · localStorage');
+ok('STORAGE_KEY emoji-smash-best',/STORAGE_KEY\s*=\s*["']emoji-smash-best["']/.test(js));
+ok('loadBest try/catch',/loadBest[\s\S]*try/.test(js));
+ok('saveBest function',/function\s+saveBest/.test(js));
+g('AC7 · State');
+ok('TITLE/PLAYING/GAMEOVER constants',/TITLE\s*=/.test(js)&&/PLAYING\s*=/.test(js)&&/GAMEOVER\s*=/.test(js));
+ok('showScreen function',/function\s+showScreen/.test(js));
+ok('startGame function',/function\s+startGame/.test(js));
+ok('"use strict"',/["']use strict["']/.test(js));
+g('Registry');
+try{const reg=JSON.parse(fs.readFileSync(path.join(ROOT,'..','registry.json'),'utf8'));const g=(reg.games||[]).find(x=>x.id==='emoji-smash-arena');if(g){ok('registry entry',true);ok('players="1"',g.players==='1');ok('thumbnail set',!!g.thumbnail)}else ok('registry entry',false,'not found')}catch(e){ok('registry readable',false,e.message)}
+console.log(`\n${'='.repeat(56)}\n  Emoji Smash Arena · ${pass} passed · ${fail} failed\n${'='.repeat(56)}`);
+process.exit(fail>0?1:0);

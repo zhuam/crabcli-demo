@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <rect width="200" height="200" fill="#0a0e27"/>
+  <!-- Circuit grid -->
+  <g stroke-width="3" fill="none" opacity="0.8">
+    <!-- Cyan path -->
+    <path d="M30 30 L80 30 L80 100 L170 100" stroke="#00FFFF" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="30" cy="30" r="6" fill="#00FFFF"/>
+    <circle cx="170" cy="100" r="6" fill="#00FFFF"/>
+    <!-- Pink path -->
+    <path d="M170 30 L120 30 L120 170 L40 170" stroke="#FF00FF" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="170" cy="30" r="6" fill="#FF00FF"/>
+    <circle cx="40" cy="170" r="6" fill="#FF00FF"/>
+    <!-- Yellow path -->
+    <path d="M30 100 L80 100 L80 170" stroke="#FFD700" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="30" cy="100" r="6" fill="#FFD700"/>
+    <circle cx="80" cy="170" r="6" fill="#FFD700"/>
+  </g>
+  <!-- Grid lines -->
+  <g stroke="rgba(255,255,255,0.08)" stroke-width="0.5">
+    <line x1="60" y1="0" x2="60" y2="200"/>
+    <line x1="100" y1="0" x2="100" y2="200"/>
+    <line x1="140" y1="0" x2="140" y2="200"/>
+    <line x1="0" y1="60" x2="200" y2="60"/>
+    <line x1="0" y1="100" x2="200" y2="100"/>
+    <line x1="0" y1="140" x2="200" y2="140"/>
+  </g>
+  <!-- Title -->
+  <text x="100" y="195" text-anchor="middle" fill="white" font-family="sans-serif" font-size="7" opacity="0.7">Neon Circuit Connect</text>
+</svg>

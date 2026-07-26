@@ -1,0 +1,55 @@
+#!/usr/bin/env node
+'use strict';
+const fs=require('fs'),path=require('path');
+const ROOT=path.join(__dirname,'..');
+const html=fs.readFileSync(path.join(ROOT,'index.html'),'utf8');
+const js=[...html.matchAll(/<script[^>]*>([\s\S]*?)<\/script>/gi)].map(m=>m[1]).join('\n');
+let pass=0,fail=0;
+function ok(n,c,d){if(c){pass++;console.log('  ✅ '+n)}else{fail++;console.log('  ❌ '+n+(d?' — '+d:''))}}
+function g(t){console.log('\n=== '+t+' ===')}
+g('AC1 · DOM');
+['titleScreen','playScreen','gameoverScreen','startBtn','replayBtn','equation','options','feedback','hudLevel','hudProgress','hudScore','muteBtn','ariaLive','goStars','goCorrect','goTotal','goScore','goNewBest'].forEach(id=>ok(`#${id}`,new RegExp(`id=["']${id}["']`).test(html)));
+ok('viewport no zoom',/maximum-scale=1/.test(html));ok('game-frame.css',/game-frame\.css/.test(html));
+ok('aria-live',/aria-live/.test(html));ok('back-to-hub',/back-to-hub/.test(html));
+g('AC2 · Quiz');
+ok('generateQuestion function',/function\s+generateQuestion/.test(js));
+ok('Addition questions',/op===\s*["']\+["']/.test(js));
+ok('Subtraction questions',/op===\s*["']-["']/.test(js));
+ok('Multiplication questions',/["']\*["']/.test(js));
+ok('4 answer options',/opts\.size\s*<\s*4/.test(js));
+ok('answerQuestion function',/function\s+answerQuestion/.test(js));
+ok('gameComplete function',/function\s+gameComplete/.test(js));
+ok('score tracking',/\bscore\b/.test(js));
+ok('level progression',/\blevel\b/.test(js));
+ok('correct/total counters',/correct.*total|total.*correct/.test(js));
+g('AC3 · Hero');
+ok('hero position SVG',/heroPos/.test(js));
+ok('hero emoji',/heroEmoji/.test(js));
+ok('progress bar update',/progressBar/.test(js)&&/moveHero/.test(js));
+g('AC4 · Input');
+ok('startBtn click',/getElementById\(["']startBtn["']\)/.test(js));
+ok('replayBtn click',/getElementById\(["']replayBtn["']\)/.test(js));
+ok('keydown handler',/keydown/.test(js));
+ok('Space/Enter keys',/key\s*===?\s*["']\s["']|key\s*===?\s*["']Enter["']/.test(js));
+ok('Number key 1-4 for options',/n\s*>=\s*1\s*&&\s*n\s*<=\s*4/.test(js));
+ok('preventDefault',/preventDefault/.test(js));
+g('AC5 · Audio');
+ok('AudioContext',/AudioContext/.test(js));
+ok('playSound correct',/playSound\(["']correct["']\)/.test(js));
+ok('playSound wrong',/playSound\(["']wrong["']\)/.test(js));
+ok('playSound complete',/playSound\(["']complete["']\)/.test(js));
+ok('mute toggle',/MUTED_KEY/.test(js)&&/localStorage/.test(js));
+g('AC6 · localStorage');
+ok('STORAGE_KEY equation-quest-best',/STORAGE_KEY\s*=\s*["']equation-quest-best["']/.test(js));
+ok('loadBest try/catch',/loadBest[\s\S]*try/.test(js));
+g('AC7 · State');
+ok('TITLE/PLAYING/GAMEOVER',/TITLE\s*=/.test(js)&&/PLAYING\s*=/.test(js)&&/GAMEOVER\s*=/.test(js));
+ok('showScreen function',/function\s+showScreen/.test(js));
+ok('startGame function',/function\s+startGame/.test(js));
+ok('15 questions total',/TOTAL_QUESTIONS\s*=\s*15/.test(js));
+ok('3-star rating',/\?3\s*:.*\?2\s*:/.test(js));
+ok('"use strict"',/["']use strict["']/.test(js));
+g('Registry');
+try{const reg=JSON.parse(fs.readFileSync(path.join(ROOT,'..','registry.json'),'utf8'));const g=(reg.games||[]).find(x=>x.id==='equation-quest');if(g){ok('registry entry',true);ok('players="1"',g.players==='1');ok('thumbnail set',!!g.thumbnail)}else ok('registry entry',false,'not found')}catch(e){ok('registry readable',false,e.message)}
+console.log(`\n${'='.repeat(56)}\n  Equation Quest · ${pass} passed · ${fail} failed\n${'='.repeat(56)}`);
+process.exit(fail>0?1:0);

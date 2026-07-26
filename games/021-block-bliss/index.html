@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no">
+  <meta name="theme-color" content="#0a0e27">
+  <title>Block Bliss</title>
+  <link rel="stylesheet" href="/games/shared/game-frame.css">
+  <style>
+    :root {
+      --bg-deep: #0a0e27;
+      --neon-cyan: #00FFFF;
+      --neon-pink: #FF00FF;
+      --neon-yellow: #FFD700;
+      --neon-green: #39FF14;
+      --text-primary: #FFFFFF;
+      --text-muted: rgba(255,255,255,0.5);
+      --font-display: 'Audiowide', 'Orbitron', system-ui, sans-serif;
+      --font-body: system-ui, -apple-system, sans-serif;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg-deep);
+      color: var(--text-primary);
+      font-family: var(--font-body);
+      overflow: hidden;
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+
+    .screen { display: none; flex-direction: column; align-items: center; width: 100%; position: fixed; inset: 0; }
+    .screen.active { display: flex; }
+
+    /* ── Title Screen ── */
+    .title-screen { justify-content: center; gap: 20px; text-align: center; z-index: 10; }
+    .title-icon {
+      width: 88px; height: 88px; border-radius: 12px;
+      background: linear-gradient(135deg, #FF6B35, #FFD700);
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto; position: relative;
+    }
+    .title-icon::after {
+      content: ''; position: absolute; inset: -4px; border-radius: 16px;
+      background: linear-gradient(135deg, #FF6B35, #FFD700);
+      opacity: 0.3; z-index: -1; filter: blur(8px);
+    }
+    h1 {
+      font-family: var(--font-display);
+      font-size: 1.8rem;
+      background: linear-gradient(135deg, #FF6B35, #FFD700);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .subtitle { font-size: 0.85rem; color: var(--text-muted); max-width: 280px; line-height: 1.4; }
+    #startBtn {
+      padding: 14px 48px; border: none; border-radius: 8px;
+      font-family: var(--font-display); font-size: 1rem; font-weight: 700;
+      cursor: pointer; transition: all 0.15s ease;
+      background: linear-gradient(135deg, #FF6B35, #FFD700);
+      color: var(--bg-deep);
+    }
+    #startBtn:hover { transform: scale(1.05); box-shadow: 0 0 24px rgba(255,107,53,0.4); }
+    #startBtn:focus-visible { outline: 2px solid var(--neon-cyan); outline-offset: 3px; }
+    .title-stats { font-size: 0.8rem; color: var(--text-muted); display: flex; gap: 20px; }
+
+    /* ── Editor Screen ── */
+    .editor-screen { justify-content: flex-start; padding-top: 48px; }
+    .toolbar {
+      position: fixed; top: 48px; left: 0; right: 0;
+      height: 48px; display: flex; align-items: center;
+      padding: 0 8px; gap: 4px;
+      background: rgba(10,14,39,0.95);
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      z-index: 100; overflow-x: auto;
+    }
+    .toolbar::-webkit-scrollbar { display: none; }
+    .color-swatch {
+      width: 30px; height: 30px; border-radius: 6px; flex-shrink: 0;
+      border: 2px solid transparent; cursor: pointer;
+      transition: all 0.12s;
+    }
+    .color-swatch:hover { transform: scale(1.15); }
+    .color-swatch.active { border-color: white; box-shadow: 0 0 8px rgba(255,255,255,0.4); }
+    .toolbar-sep { width: 1px; height: 24px; background: rgba(255,255,255,0.1); margin: 0 4px; flex-shrink: 0; }
+    .tool-btn {
+      width: 30px; height: 30px; border-radius: 6px; flex-shrink: 0;
+      border: 1px solid rgba(255,255,255,0.12); background: rgba(255,255,255,0.05);
+      color: var(--text-muted); font-size: 1rem; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .tool-btn:hover { background: rgba(255,255,255,0.12); color: var(--text-primary); }
+    .tool-btn.active { background: var(--neon-yellow); color: #000; border-color: var(--neon-yellow); }
+
+    .canvas-wrapper {
+      flex: 1; display: flex; align-items: center; justify-content: center;
+      width: 100%; overflow: hidden; position: relative;
+      padding: 8px;
+    }
+    #pixelCanvas {
+      display: block; border-radius: 4px;
+      max-width: 100%; max-height: 100%;
+      image-rendering: pixelated;
+      touch-action: none;
+    }
+
+    /* ── Gallery Screen ── */
+    .gallery-screen { justify-content: flex-start; padding-top: 48px; z-index: 10; background: var(--bg-deep); }
+    .gallery-header {
+      position: fixed; top: 48px; left: 0; right: 0; height: 44px;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 16px;
+      background: rgba(10,14,39,0.9); border-bottom: 1px solid rgba(255,255,255,0.06);
+      z-index: 100;
+    }
+    .gallery-header h2 { font-family: var(--font-display); font-size: 0.9rem; color: var(--neon-yellow); }
+    .gallery-grid {
+      display: flex; flex-wrap: wrap; gap: 12px; padding: 60px 16px 80px;
+      justify-content: center; overflow-y: auto; width: 100%;
+    }
+    .gallery-item {
+      width: 120px; height: 140px; border-radius: 8px;
+      background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06);
+      overflow: hidden; cursor: pointer; transition: all 0.15s;
+      display: flex; flex-direction: column; align-items: center;
+    }
+    .gallery-item:hover { border-color: var(--neon-yellow); transform: scale(1.03); }
+    .gallery-item canvas { width: 100%; image-rendering: pixelated; }
+    .gallery-item .g-name { font-size: 0.65rem; color: var(--text-muted); padding: 4px; text-align: center; }
+
+    /* ── Mute ── */
+    #muteBtn {
+      position: fixed; bottom: 16px; right: 16px; z-index: 200;
+      width: 40px; height: 40px; border-radius: 50%;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(10,14,39,0.8); color: var(--text-muted);
+      font-size: 1.2rem; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      backdrop-filter: blur(8px);
+    }
+    #muteBtn:hover { color: var(--text-primary); }
+
+    .sr-only { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; }
+
+    @media (max-width: 480px) {
+      h1 { font-size: 1.4rem; }
+      #startBtn { padding: 12px 36px; font-size: 0.9rem; }
+      .color-swatch { width: 26px; height: 26px; }
+    }
+  </style>
+</head>
+<body>
+  <div id="ariaLive" class="sr-only" aria-live="polite" aria-atomic="true"></div>
+
+  <!-- ── Title Screen ── -->
+  <div id="titleScreen" class="screen title-screen active">
+    <div class="title-icon" aria-hidden="true">
+      <svg viewBox="0 0 56 56" fill="none">
+        <rect x="8" y="8" width="12" height="12" rx="2" fill="#FF6B35"/>
+        <rect x="24" y="8" width="12" height="12" rx="2" fill="#FFD700"/>
+        <rect x="40" y="8" width="12" height="12" rx="2" fill="#39FF14"/>
+        <rect x="8" y="24" width="12" height="12" rx="2" fill="#00FFFF"/>
+        <rect x="24" y="24" width="12" height="12" rx="2" fill="#FF00FF"/>
+        <rect x="40" y="24" width="12" height="12" rx="2" fill="#00BFFF"/>
+        <rect x="8" y="40" width="12" height="12" rx="2" fill="#FF3333"/>
+        <rect x="24" y="40" width="12" height="12" rx="2" fill="#8A2BE2"/>
+        <rect x="40" y="40" width="12" height="12" rx="2" fill="#FFFFFF"/>
+      </svg>
+    </div>
+    <h1>BLOCK BLISS</h1>
+    <p class="subtitle">像素艺术创作工坊。选色填格，自由创作你的像素作品！</p>
+    <button id="startBtn" autofocus>开始创作</button>
+    <div class="title-stats">
+      <span>🎨 作品 <span id="titleCount">0</span></span>
+    </div>
+  </div>
+
+  <!-- ── Editor Screen ── -->
+  <div id="editorScreen" class="screen editor-screen">
+    <div class="toolbar" id="toolbar" role="toolbar" aria-label="绘图工具">
+      <!-- Colors injected by JS -->
+    </div>
+    <div class="canvas-wrapper">
+      <canvas id="pixelCanvas" width="320" height="320"></canvas>
+    </div>
+  </div>
+
+  <!-- ── Gallery Screen ── -->
+  <div id="galleryScreen" class="screen gallery-screen">
+    <div class="gallery-header">
+      <h2>🎨 作品画廊</h2>
+      <button class="tool-btn" id="backToEditorBtn" aria-label="返回编辑器">✏️</button>
+    </div>
+    <div class="gallery-grid" id="galleryGrid"></div>
+  </div>
+
+  <button id="muteBtn" aria-label="切换音效" aria-pressed="false">🔊</button>
+
+  <a href="/" class="back-to-hub" aria-label="返回大厅">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
+    <span>返回</span>
+  </a>
+
+  <script>
+    'use strict';
+
+    /* =====================================================================
+     * Constants
+     * ===================================================================== */
+    const STORAGE_KEY = 'block-bliss-gallery';
+    const MUTED_KEY = 'block-bliss-muted';
+
+    const GRID_SIZE = 16;     // 16x16 pixel grid
+    const CANVAS_SIZE = 320;
+
+    const PALETTE = [
+      { name: '红', hex: '#FF3333' },    // red
+      { name: '橙', hex: '#FF6B35' },    // orange
+      { name: '黄', hex: '#FFD700' },    // yellow
+      { name: '绿', hex: '#39FF14' },    // green
+      { name: '青', hex: '#00FFFF' },    // cyan
+      { name: '蓝', hex: '#00BFFF' },    // blue
+      { name: '紫', hex: '#8A2BE2' },    // purple
+      { name: '粉', hex: '#FF00FF' },    // pink
+      { name: '白', hex: '#FFFFFF' },    // white
+      { name: '灰', hex: '#888888' },    // gray
+      { name: '棕', hex: '#8B4513' },    // brown
+      { name: '黑', hex: '#1a1a2e' },    // dark
+      { name: '肉', hex: '#FFDAB9' },    // peach
+      { name: '青柠', hex: '#ADFF2F' },   // lime
+      { name: '天蓝', hex: '#87CEEB' },   // sky
+      { name: '玫红', hex: '#FF1493' },   // deep pink
+    ];
+
+    const ERASER_INDEX = -1;
+    const CELL_SIZE = CANVAS_SIZE / GRID_SIZE;
+
+    /* =====================================================================
+     * State
+     * ===================================================================== */
+    let canvas, ctx;
+    let grid = [];          // grid[row][col] = hex color string or null (empty)
+    let selectedColor = PALETTE[0].hex;
+    let isErasing = false;
+    let isDrawing = false;
+
+    /* =====================================================================
+     * Audio
+     * ===================================================================== */
+    let audioCtx = null;
+    let muted = false;
+
+    function ensureAudioCtx() {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+    }
+    function loadMuted() {
+      try { muted = localStorage.getItem(MUTED_KEY) === '1'; } catch(e) {}
+      updateMuteBtn();
+    }
+    function toggleMute() {
+      muted = !muted;
+      try { localStorage.setItem(MUTED_KEY, muted ? '1' : '0'); } catch(e) {}
+      updateMuteBtn();
+    }
+    function updateMuteBtn() {
+      const btn = document.getElementById('muteBtn');
+      btn.textContent = muted ? '🔇' : '🔊';
+      btn.setAttribute('aria-pressed', String(muted));
+    }
+    function playSound(type) {
+      if (muted) return;
+      ensureAudioCtx();
+      try {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain); gain.connect(audioCtx.destination);
+        const t = audioCtx.currentTime;
+        switch (type) {
+          case 'place':
+            osc.frequency.setValueAtTime(600, t);
+            osc.frequency.exponentialRampToValueAtTime(900, t + 0.06);
+            gain.gain.setValueAtTime(0.06, t);
+            gain.gain.exponentialRampToValueAtTime(0.001, t + 0.08);
+            osc.start(t); osc.stop(t + 0.08);
+            break;
+          case 'erase':
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(400, t);
+            osc.frequency.exponentialRampToValueAtTime(200, t + 0.06);
+            gain.gain.setValueAtTime(0.04, t);
+            gain.gain.exponentialRampToValueAtTime(0.001, t + 0.08);
+            osc.start(t); osc.stop(t + 0.08);
+            break;
+          case 'save':
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(523, t);
+            osc.frequency.setValueAtTime(659, t + 0.1);
+            osc.frequency.setValueAtTime(784, t + 0.2);
+            gain.gain.setValueAtTime(0.1, t);
+            gain.gain.exponentialRampToValueAtTime(0.001, t + 0.3);
+            osc.start(t); osc.stop(t + 0.3);
+            break;
+          case 'clear':
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(300, t);
+            osc.frequency.exponentialRampToValueAtTime(100, t + 0.15);
+            gain.gain.setValueAtTime(0.06, t);
+            gain.gain.exponentialRampToValueAtTime(0.001, t + 0.2);
+            osc.start(t); osc.stop(t + 0.2);
+            break;
+        }
+      } catch(e) {}
+    }
+
+    /* =====================================================================
+     * Grid
+     * ===================================================================== */
+    function initGrid() {
+      grid = [];
+      for (let r = 0; r < GRID_SIZE; r++) {
+        grid[r] = [];
+        for (let c = 0; c < GRID_SIZE; c++) {
+          grid[r][c] = null;
+        }
+      }
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+      // Background
+      ctx.fillStyle = '#111';
+      ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+
+      // Cells
+      for (let r = 0; r < GRID_SIZE; r++) {
+        for (let c = 0; c < GRID_SIZE; c++) {
+          const x = c * CELL_SIZE, y = r * CELL_SIZE;
+          const color = grid[r][c];
+          if (color) {
+            ctx.fillStyle = color;
+            ctx.fillRect(x + 0.5, y + 0.5, CELL_SIZE - 1, CELL_SIZE - 1);
+          } else {
+            ctx.fillStyle = 'rgba(255,255,255,0.03)';
+            ctx.fillRect(x + 0.5, y + 0.5, CELL_SIZE - 1, CELL_SIZE - 1);
+          }
+          // Grid lines
+          ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+          ctx.lineWidth = 0.5;
+          ctx.strokeRect(x, y, CELL_SIZE, CELL_SIZE);
+        }
+      }
+    }
+
+    function getCell(clientX, clientY) {
+      const rect = canvas.getBoundingClientRect();
+      const scale = CANVAS_SIZE / rect.width;
+      const mx = (clientX - rect.left) * scale;
+      const my = (clientY - rect.top) * scale;
+      if (mx < 0 || mx >= CANVAS_SIZE || my < 0 || my >= CANVAS_SIZE) return null;
+      return { r: Math.floor(my / CELL_SIZE), c: Math.floor(mx / CELL_SIZE) };
+    }
+
+    function placeColor(r, c) {
+      if (r < 0 || r >= GRID_SIZE || c < 0 || c >= GRID_SIZE) return;
+      if (isErasing) {
+        if (grid[r][c] !== null) {
+          grid[r][c] = null;
+          playSound('erase');
+          draw();
+        }
+      } else {
+        if (grid[r][c] !== selectedColor) {
+          grid[r][c] = selectedColor;
+          playSound('place');
+          draw();
+        }
+      }
+    }
+
+    /* =====================================================================
+     * Input
+     * ===================================================================== */
+    function onPointerDown(pos) {
+      if (!pos) return;
+      isDrawing = true;
+      placeColor(pos.r, pos.c);
+    }
+    function onPointerMove(pos) {
+      if (!isDrawing || !pos) return;
+      placeColor(pos.r, pos.c);
+    }
+    function onPointerUp() { isDrawing = false; }
+
+    function setupEditorInput() {
+      // Mouse
+      canvas.addEventListener('mousedown', e => onPointerDown(getCell(e.clientX, e.clientY)));
+      canvas.addEventListener('mousemove', e => { if (isDrawing) onPointerMove(getCell(e.clientX, e.clientY)); });
+      canvas.addEventListener('mouseup', onPointerUp);
+      canvas.addEventListener('mouseleave', onPointerUp);
+
+      // Touch
+      canvas.addEventListener('touchstart', e => {
+        const t = e.touches[0];
+        onPointerDown(getCell(t.clientX, t.clientY));
+        e.preventDefault();
+      }, { passive: false });
+      canvas.addEventListener('touchmove', e => {
+        e.preventDefault();
+        const t = e.touches[0];
+        onPointerMove(getCell(t.clientX, t.clientY));
+      }, { passive: false });
+      canvas.addEventListener('touchend', onPointerUp);
+
+      // Keyboard: number keys 0-9 select palette colors
+      document.addEventListener('keydown', e => {
+        const n = parseInt(e.key);
+        if (n >= 0 && n <= 9 && n < PALETTE.length) {
+          selectPalette(n);
+          e.preventDefault();
+        }
+        if (e.key === 'e') { toggleEraser(); e.preventDefault(); }
+        if (e.key === 'c' && !e.ctrlKey) { clearCanvas(); e.preventDefault(); }
+      });
+    }
+
+    /* =====================================================================
+     * Palette & Tools
+     * ===================================================================== */
+    function buildToolbar() {
+      const toolbar = document.getElementById('toolbar');
+      toolbar.innerHTML = '';
+
+      // Color swatches
+      PALETTE.forEach((color, i) => {
+        const swatch = document.createElement('button');
+        swatch.className = 'color-swatch' + (color.hex === selectedColor ? ' active' : '');
+        swatch.style.background = color.hex;
+        swatch.style.borderColor = color.hex === '#FFFFFF' ? 'rgba(255,255,255,0.3)' : color.hex;
+        swatch.setAttribute('aria-label', color.name + ' (' + i + ')');
+        swatch.title = color.name + ' [' + i + ']';
+        swatch.dataset.index = i;
+        swatch.addEventListener('click', () => selectPalette(i));
+        toolbar.appendChild(swatch);
+      });
+
+      // Separator
+      const sep = document.createElement('div');
+      sep.className = 'toolbar-sep';
+      toolbar.appendChild(sep);
+
+      // Eraser
+      const eraserBtn = document.createElement('button');
+      eraserBtn.className = 'tool-btn' + (isErasing ? ' active' : '');
+      eraserBtn.textContent = '🧹';
+      eraserBtn.title = '橡皮擦 [E]';
+      eraserBtn.setAttribute('aria-label', '橡皮擦');
+      eraserBtn.id = 'eraserBtn';
+      eraserBtn.addEventListener('click', toggleEraser);
+      toolbar.appendChild(eraserBtn);
+
+      // Clear
+      const clearBtn = document.createElement('button');
+      clearBtn.className = 'tool-btn';
+      clearBtn.textContent = '🗑️';
+      clearBtn.title = '清空画布 [C]';
+      clearBtn.setAttribute('aria-label', '清空画布');
+      clearBtn.addEventListener('click', clearCanvas);
+      toolbar.appendChild(clearBtn);
+
+      // Separator
+      const sep2 = document.createElement('div');
+      sep2.className = 'toolbar-sep';
+      toolbar.appendChild(sep2);
+
+      // Save / Gallery
+      const saveBtn = document.createElement('button');
+      saveBtn.className = 'tool-btn';
+      saveBtn.textContent = '💾';
+      saveBtn.title = '保存作品';
+      saveBtn.setAttribute('aria-label', '保存作品');
+      saveBtn.addEventListener('click', saveArtwork);
+      toolbar.appendChild(saveBtn);
+
+      const galleryBtn = document.createElement('button');
+      galleryBtn.className = 'tool-btn';
+      galleryBtn.textContent = '🖼️';
+      galleryBtn.title = '作品画廊';
+      galleryBtn.setAttribute('aria-label', '作品画廊');
+      galleryBtn.addEventListener('click', showGallery);
+      toolbar.appendChild(galleryBtn);
+    }
+
+    function selectPalette(index) {
+      selectedColor = PALETTE[index].hex;
+      isErasing = false;
+      document.querySelectorAll('.color-swatch').forEach((s, i) => s.classList.toggle('active', i === index));
+      const eb = document.getElementById('eraserBtn');
+      if (eb) eb.classList.remove('active');
+    }
+
+    function toggleEraser() {
+      isErasing = !isErasing;
+      const eb = document.getElementById('eraserBtn');
+      if (eb) eb.classList.toggle('active', isErasing);
+      document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active'));
+    }
+
+    function clearCanvas() {
+      if (!confirm('确定清空画布？')) return;
+      initGrid();
+      draw();
+      playSound('clear');
+      ariaLive.textContent = '画布已清空';
+    }
+
+    /* =====================================================================
+     * Gallery (localStorage)
+     * ===================================================================== */
+    function loadGallery() {
+      try {
+        const data = localStorage.getItem(STORAGE_KEY);
+        return data ? JSON.parse(data) : [];
+      } catch(e) { return []; }
+    }
+
+    function saveGallery(gallery) {
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(gallery)); } catch(e) {}
+    }
+
+    function saveArtwork() {
+      // Prompt for name
+      const name = prompt('作品名称:', '作品 ' + (loadGallery().length + 1));
+      if (!name) return;
+
+      // Capture canvas data
+      const dataURL = canvas.toDataURL();
+      const timestamp = Date.now();
+      const gallery = loadGallery();
+      gallery.push({ name, data: dataURL, id: timestamp, date: new Date().toLocaleDateString() });
+      saveGallery(gallery);
+      playSound('save');
+
+      // Update count
+      updateTitleCount();
+      ariaLive.textContent = '作品已保存：' + name;
+    }
+
+    function updateTitleCount() {
+      document.getElementById('titleCount').textContent = loadGallery().length;
+    }
+
+    function showGallery() {
+      const gallery = loadGallery();
+      const grid = document.getElementById('galleryGrid');
+      grid.innerHTML = '';
+
+      if (gallery.length === 0) {
+        grid.innerHTML = '<p style="color:var(--text-muted);padding:40px;text-align:center;">还没有作品，先画一个吧！</p>';
+      } else {
+        // Show latest first
+        [...gallery].reverse().forEach(item => {
+          const div = document.createElement('div');
+          div.className = 'gallery-item';
+
+          const img = document.createElement('img');
+          img.src = item.data;
+          img.width = 120;
+          img.height = 120;
+          img.alt = item.name;
+          div.appendChild(img);
+
+          const name = document.createElement('div');
+          name.className = 'g-name';
+          name.textContent = item.name;
+          div.appendChild(name);
+
+          // Delete on long press / right click
+          div.addEventListener('contextmenu', e => {
+            e.preventDefault();
+            if (confirm('删除「' + item.name + '」？')) {
+              const g = loadGallery().filter(a => a.id !== item.id);
+              saveGallery(g);
+              showGallery();
+              updateTitleCount();
+            }
+          });
+
+          grid.appendChild(div);
+        });
+      }
+
+      showScreen('galleryScreen');
+    }
+
+    /* =====================================================================
+     * Screen management
+     * ===================================================================== */
+    function showScreen(id) {
+      ['titleScreen','editorScreen','galleryScreen'].forEach(s => document.getElementById(s).classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+    }
+
+    /* =====================================================================
+     * Init
+     * ===================================================================== */
+    function startEditor() {
+      showScreen('editorScreen');
+      ariaLive.textContent = '像素编辑器。选色后在网格上点击或拖拽作画。';
+    }
+
+    function init() {
+      canvas = document.getElementById('pixelCanvas');
+      ctx = canvas.getContext('2d');
+      loadMuted();
+      updateTitleCount();
+
+      initGrid();
+      draw();
+      buildToolbar();
+      setupEditorInput();
+
+      // Back to editor from gallery
+      document.getElementById('backToEditorBtn').addEventListener('click', () => startEditor());
+
+      // Title screen
+      document.getElementById('startBtn').addEventListener('click', () => {
+        startEditor();
+        playSound('place');
+      });
+      titleScreen.addEventListener('click', e => {
+        if (e.target === startBtn) return;
+        startEditor();
+        playSound('place');
+      });
+
+      document.getElementById('muteBtn').addEventListener('click', toggleMute);
+
+      // Keyboard shortcuts from any screen
+      document.addEventListener('keydown', e => {
+        if (e.key === ' ' || e.key === 'Enter') {
+          if (titleScreen.classList.contains('active')) {
+            e.preventDefault();
+            startEditor();
+          }
+        }
+        if (e.key === 'Escape') {
+          if (galleryScreen.classList.contains('active')) {
+            startEditor();
+          }
+        }
+      });
+
+      showScreen('titleScreen');
+    }
+
+    document.addEventListener('DOMContentLoaded', init);
+  </script>
+</body>
+</html>

@@ -1,0 +1,1145 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no">
+  <meta name="theme-color" content="#0a0e27">
+  <title>Neon Circuit Connect</title>
+  <link rel="stylesheet" href="/games/shared/game-frame.css">
+  <style>
+    :root {
+      --bg-deep: #0a0e27;
+      --neon-cyan: #00FFFF;
+      --neon-pink: #FF00FF;
+      --neon-yellow: #FFD700;
+      --neon-orange: #FF6B35;
+      --neon-green: #39FF14;
+      --neon-blue: #00BFFF;
+      --neon-purple: #8A2BE2;
+      --neon-red: #FF3333;
+      --text-primary: #FFFFFF;
+      --text-muted: rgba(255,255,255,0.5);
+      --success: #10B981;
+      --danger: #DC2626;
+      --focus-ring: #00FFFF;
+      --font-display: 'Audiowide', 'Orbitron', system-ui, sans-serif;
+      --font-body: system-ui, -apple-system, sans-serif;
+      --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg-deep);
+      color: var(--text-primary);
+      font-family: var(--font-body);
+      overflow: hidden;
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+
+    .screen { display: none; flex-direction: column; align-items: center; width: 100%; position: fixed; inset: 0; }
+    .screen.active { display: flex; }
+
+    /* ── Title Screen ── */
+    .title-screen { justify-content: center; gap: 20px; text-align: center; z-index: 1; }
+    .title-icon {
+      width: 88px; height: 88px; border-radius: 8px;
+      background: linear-gradient(135deg, var(--neon-cyan), var(--neon-purple));
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto;
+    }
+    .title-icon svg { width: 56px; height: 56px; }
+    .title-icon::after {
+      content: ''; position: absolute; inset: -4px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, var(--neon-cyan), var(--neon-purple));
+      opacity: 0.3; z-index: -1; filter: blur(8px);
+    }
+    h1 {
+      font-family: var(--font-display);
+      font-size: 1.8rem;
+      background: linear-gradient(135deg, var(--neon-cyan), var(--neon-purple));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .subtitle {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      max-width: 280px;
+      line-height: 1.4;
+    }
+    #startBtn, #replayBtn {
+      padding: 14px 48px; border: none; border-radius: 8px;
+      font-family: var(--font-display);
+      font-size: 1rem; font-weight: 700;
+      cursor: pointer; transition: all 0.15s ease;
+      background: linear-gradient(135deg, var(--neon-cyan), var(--neon-purple));
+      color: var(--bg-deep); width: auto;
+    }
+    #startBtn:hover, #replayBtn:hover {
+      transform: scale(1.05);
+      box-shadow: 0 0 24px rgba(0, 255, 255, 0.4);
+    }
+    #startBtn:focus-visible, #replayBtn:focus-visible {
+      outline: 2px solid var(--focus-ring); outline-offset: 3px;
+    }
+    .title-stats {
+      font-size: 0.8rem; color: var(--text-muted);
+      display: flex; gap: 20px;
+    }
+    .title-stats span { display: flex; align-items: center; gap: 4px; }
+
+    /* ── Play Screen ── */
+    .play-screen { justify-content: flex-start; padding-top: 55px; }
+    .hud {
+      position: fixed; top: 48px; left: 0; right: 0;
+      height: 44px;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 16px;
+      background: rgba(10, 14, 39, 0.9);
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      z-index: 100;
+    }
+    .hud-level {
+      font-family: var(--font-display);
+      font-size: 0.8rem;
+      color: var(--neon-cyan);
+    }
+    .hud-progress {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+    .hud-controls {
+      display: flex; gap: 8px; align-items: center;
+    }
+    .hud-btn {
+      width: 32px; height: 32px; border-radius: 6px;
+      border: 1px solid rgba(255,255,255,0.15);
+      background: rgba(255,255,255,0.05);
+      color: var(--text-primary);
+      font-size: 1rem;
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      transition: all 0.15s;
+    }
+    .hud-btn:hover { background: rgba(255,255,255,0.12); }
+    .hud-btn:active { transform: scale(0.9); }
+    .hud-btn.active { background: var(--neon-yellow); color: #000; }
+
+    #gameCanvas {
+      display: block;
+      touch-action: none;
+      width: 100%;
+      max-width: 400px;
+      aspect-ratio: 1 / 1;
+      margin-top: 4px;
+    }
+
+    /* ── Game Over Screen ── */
+    .gameover-screen {
+      justify-content: center; gap: 16px; text-align: center;
+      background: rgba(10, 14, 39, 0.92); z-index: 200;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+    .go-title {
+      font-family: var(--font-display);
+      font-size: 1.6rem;
+    }
+    .go-title.win { color: var(--success); }
+    .go-title.lose { color: var(--danger); }
+    .go-stats {
+      font-size: 0.9rem; color: var(--text-muted);
+      display: flex; flex-direction: column; gap: 4px;
+    }
+    .go-stars {
+      font-size: 2rem; letter-spacing: 4px;
+      margin: 8px 0;
+    }
+    #goNewBest {
+      color: var(--neon-yellow); font-weight: 700;
+      display: none;
+    }
+
+    /* ── Mute button ── */
+    #muteBtn {
+      position: fixed; bottom: 16px; right: 16px;
+      z-index: 300;
+      width: 40px; height: 40px; border-radius: 50%;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(10, 14, 39, 0.8);
+      color: var(--text-muted);
+      font-size: 1.2rem;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      backdrop-filter: blur(8px);
+    }
+    #muteBtn:hover { color: var(--text-primary); }
+
+    /* ── Misc ── */
+    .sr-only { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; }
+
+    @media (max-width: 480px) {
+      h1 { font-size: 1.4rem; }
+      .subtitle { font-size: 0.78rem; }
+      #startBtn, #replayBtn { padding: 12px 36px; font-size: 0.9rem; }
+    }
+  </style>
+</head>
+<body>
+  <!-- ARIA live region -->
+  <div id="ariaLive" class="sr-only" aria-live="polite" aria-atomic="true"></div>
+
+  <!-- ── Title Screen ── -->
+  <div id="titleScreen" class="screen title-screen active">
+    <div class="title-icon" aria-hidden="true">
+      <svg viewBox="0 0 56 56" fill="none">
+        <circle cx="10" cy="10" r="5" fill="#00FFFF"/>
+        <circle cx="46" cy="46" r="5" fill="#FF00FF"/>
+        <path d="M10 10 L25 25 L46 46" stroke="#00FFFF" stroke-width="3" opacity="0.6"/>
+        <circle cx="28" cy="18" r="5" fill="#FFD700"/>
+        <circle cx="38" cy="40" r="5" fill="#39FF14"/>
+        <path d="M28 18 L33 30 L38 40" stroke="#FFD700" stroke-width="3" opacity="0.6"/>
+      </svg>
+    </div>
+    <h1>NEON CIRCUIT</h1>
+    <p class="subtitle">连接同色电路节点，路径不能交叉。填满所有格子即可过关。</p>
+    <button id="startBtn" autofocus>开始游戏</button>
+    <div class="title-stats">
+      <span>🏆 最高关卡 <span id="titleBest">0</span></span>
+    </div>
+  </div>
+
+  <!-- ── Play Screen ── -->
+  <div id="playScreen" class="screen play-screen">
+    <div class="hud">
+      <span class="hud-level" id="hudLevel">Level 1</span>
+      <span class="hud-progress" id="hudProgress">0 / 0</span>
+      <div class="hud-controls">
+        <button class="hud-btn" id="undoBtn" aria-label="撤销">↩</button>
+        <button class="hud-btn" id="hintBtn" aria-label="提示">💡</button>
+      </div>
+    </div>
+    <canvas id="gameCanvas" width="360" height="360"></canvas>
+  </div>
+
+  <!-- ── Game Over / Level Complete Screen ── -->
+  <div id="gameoverScreen" class="screen gameover-screen">
+    <div class="go-title win" id="goTitle">🎉 电路接通！</div>
+    <div class="go-stars" id="goStars">⭐⭐⭐</div>
+    <div class="go-stats">
+      <span>关卡 <span id="goLevel">1</span></span>
+      <span>通关时间 <span id="goTime">0</span>s</span>
+      <span id="goNewBest">🏆 新纪录！</span>
+    </div>
+    <button id="replayBtn">下一关</button>
+    <div class="hint-next" style="font-size:0.75rem;color:var(--text-muted);margin-top:-8px">
+      或按 Space / Enter 继续
+    </div>
+  </div>
+
+  <!-- ── Mute Button ── -->
+  <button id="muteBtn" aria-label="切换音效" aria-pressed="false">🔊</button>
+
+  <a href="/" class="back-to-hub" aria-label="返回大厅">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
+    <span>返回</span>
+  </a>
+
+  <script>
+    'use strict';
+
+    /* =====================================================================
+     * Constants
+     * ===================================================================== */
+    const STORAGE_KEY = 'neon-circuit-best';
+    const MUTED_KEY = 'neon-circuit-muted';
+
+    const COLORS = [
+      { name: 'cyan',    hex: '#00FFFF', glow: 'rgba(0,255,255,0.5)' },
+      { name: 'pink',    hex: '#FF00FF', glow: 'rgba(255,0,255,0.5)' },
+      { name: 'yellow',  hex: '#FFD700', glow: 'rgba(255,215,0,0.5)' },
+      { name: 'green',   hex: '#39FF14', glow: 'rgba(57,255,20,0.5)' },
+      { name: 'orange',  hex: '#FF6B35', glow: 'rgba(255,107,53,0.5)' },
+      { name: 'blue',    hex: '#00BFFF', glow: 'rgba(0,191,255,0.5)' },
+      { name: 'purple',  hex: '#8A2BE2', glow: 'rgba(138,43,226,0.5)' },
+      { name: 'red',     hex: '#FF3333', glow: 'rgba(255,51,51,0.5)' },
+    ];
+
+    /* =====================================================================
+     * Levels: each defines gridSize + list of [r1,c1, r2,c2] pairs
+     * ===================================================================== */
+    const LEVELS = [
+      // Level 1: 5x5, 3 pairs
+      { size: 5, pairs: [[0,0, 0,4], [2,1, 4,3], [4,0, 2,4]] },
+      // Level 2: 5x5, 4 pairs
+      { size: 5, pairs: [[0,2, 4,2], [1,0, 3,4], [0,0, 4,4], [0,4, 2,0]] },
+      // Level 3: 6x5, 4 pairs
+      { size: 6, pairs: [[0,0, 5,5], [0,5, 3,4], [2,0, 5,2], [4,0, 1,5]] },
+      // Level 4: 6x6, 5 pairs
+      { size: 6, pairs: [[0,0, 5,5], [0,5, 5,0], [1,1, 4,4], [0,2, 5,3], [2,0, 3,5]] },
+      // Level 5: 7x6, 5 pairs
+      { size: 7, pairs: [[0,2, 6,4], [1,0, 5,6], [0,5, 6,1], [3,0, 4,5], [2,5, 5,1]] },
+      // Level 6: 7x7, 6 pairs
+      { size: 7, pairs: [[0,0, 6,6], [0,6, 6,0], [0,2, 6,4], [2,0, 4,6], [1,3, 5,3], [3,1, 3,5]] },
+      // Level 7: 8x7, 6 pairs
+      { size: 8, pairs: [[0,1, 7,6], [2,0, 6,6], [0,4, 7,2], [1,7, 6,0], [4,1, 5,5], [3,3, 7,4]] },
+      // Level 8: 8x8, 7 pairs
+      { size: 8, pairs: [[0,0, 7,7], [0,7, 7,0], [0,3, 7,4], [3,0, 4,7], [1,1, 6,6], [1,6, 6,1], [2,3, 5,4]] },
+      // Level 9: 9x8, 7 pairs
+      { size: 9, pairs: [[0,0, 8,8], [0,5, 8,3], [2,0, 7,8], [0,8, 8,0], [3,3, 6,5], [1,2, 7,6], [5,1, 4,7]] },
+      // Level 10: 9x9, 8 pairs
+      { size: 9, pairs: [[0,0, 8,8], [0,8, 8,0], [0,3, 8,5], [3,0, 5,8], [1,1, 7,7], [1,7, 7,1], [2,4, 6,4], [4,2, 4,6]] },
+      // Level 11: 10x10, 8 pairs
+      { size: 10, pairs: [[0,0, 9,9], [0,9, 9,0], [0,4, 9,6], [4,0, 6,9], [2,2, 7,7], [2,7, 7,2], [1,3, 8,5], [3,1, 5,8]] },
+      // Level 12: 10x10, 9 pairs
+      { size: 10, pairs: [[0,0, 9,9], [0,9, 9,0], [0,5, 9,5], [5,0, 5,9], [1,1, 8,8], [1,8, 8,1], [2,3, 7,6], [3,2, 6,7], [4,4, 4,4]] },
+    ];
+
+    /* =====================================================================
+     * Game State
+     * ===================================================================== */
+    const TITLE = 0, PLAYING = 1, GAMEOVER = 2;
+    let gameState = TITLE;
+    let canvas, ctx;
+    let levelIndex = 0;
+    let grid = [];          // grid[r][c] = { color: -1 (empty) | 0..pairs-1, pathId: -1 }
+    let pathGrid = [];      // pathGrid[r][c] = colorIndex or -1
+    let cellSize = 0;
+    let canvasSize = 360;
+    let gridOffsetX = 0, gridOffsetY = 0;
+    let dragging = false;
+    let dragColor = -1;
+    let dragPath = [];      // [{r, c}] cells in current drag
+    let completedPairs = 0;
+    let totalPairs = 0;
+    let timer = 0;
+    let timerInterval = null;
+    let hintsRemaining = 3;
+    let gameStartTime = 0;
+    let animationId = null;
+    let pulsePhase = 0;
+    let solvedColor = -1;    // recently solved color for animation
+    let solvedTimer = 0;
+
+    // Undo
+    let undoStack = [];
+
+    /* =====================================================================
+     * Audio
+     * ===================================================================== */
+    let audioCtx = null;
+    let muted = false;
+
+    function ensureAudioCtx() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+    }
+
+    function loadMuted() {
+      try { muted = localStorage.getItem(MUTED_KEY) === '1'; } catch(e) {}
+      updateMuteBtn();
+    }
+
+    function toggleMute() {
+      muted = !muted;
+      try { localStorage.setItem(MUTED_KEY, muted ? '1' : '0'); } catch(e) {}
+      updateMuteBtn();
+    }
+
+    function updateMuteBtn() {
+      const btn = document.getElementById('muteBtn');
+      btn.textContent = muted ? '🔇' : '🔊';
+      btn.setAttribute('aria-pressed', String(muted));
+    }
+
+    function playSound(type) {
+      if (muted) return;
+      ensureAudioCtx();
+      try {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        const t = audioCtx.currentTime;
+        switch (type) {
+          case 'connect':
+            osc.frequency.setValueAtTime(600, t);
+            osc.frequency.exponentialRampToValueAtTime(900, t + 0.08);
+            gain.gain.setValueAtTime(0.1, t);
+            gain.gain.exponentialRampToValueAtTime(0.001, t + 0.1);
+            osc.start(t); osc.stop(t + 0.1);
+            break;
+          case 'complete':
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(523, t);
+            osc.frequency.setValueAtTime(659, t + 0.1);
+            osc.frequency.setValueAtTime(784, t + 0.2);
+            gain.gain.setValueAtTime(0.12, t);
+            gain.gain.exponentialRampToValueAtTime(0.001, t + 0.35);
+            osc.start(t); osc.stop(t + 0.35);
+            break;
+          case 'wrong':
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(200, t);
+            osc.frequency.exponentialRampToValueAtTime(100, t + 0.15);
+            gain.gain.setValueAtTime(0.08, t);
+            gain.gain.exponentialRampToValueAtTime(0.001, t + 0.2);
+            osc.start(t); osc.stop(t + 0.2);
+            break;
+          case 'hint':
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(440, t);
+            osc.frequency.setValueAtTime(880, t + 0.1);
+            gain.gain.setValueAtTime(0.08, t);
+            gain.gain.exponentialRampToValueAtTime(0.001, t + 0.2);
+            osc.start(t); osc.stop(t + 0.2);
+            break;
+          case 'undo':
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(400, t);
+            osc.frequency.exponentialRampToValueAtTime(600, t + 0.06);
+            gain.gain.setValueAtTime(0.06, t);
+            gain.gain.exponentialRampToValueAtTime(0.001, t + 0.08);
+            osc.start(t); osc.stop(t + 0.08);
+            break;
+          case 'levelup':
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(523, t);
+            osc.frequency.setValueAtTime(659, t + 0.12);
+            osc.frequency.setValueAtTime(784, t + 0.24);
+            osc.frequency.setValueAtTime(1047, t + 0.36);
+            gain.gain.setValueAtTime(0.12, t);
+            gain.gain.exponentialRampToValueAtTime(0.001, t + 0.5);
+            osc.start(t); osc.stop(t + 0.5);
+            break;
+          default:
+            gain.gain.setValueAtTime(0.001, t);
+            osc.start(t); osc.stop(t + 0.01);
+        }
+      } catch(e) {}
+    }
+
+    /* =====================================================================
+     * localStorage
+     * ===================================================================== */
+    function loadHighScore() {
+      try {
+        const v = localStorage.getItem(STORAGE_KEY);
+        return v ? parseInt(v, 10) : 0;
+      } catch(e) { return 0; }
+    }
+    function saveHighScore(val) {
+      try { localStorage.setItem(STORAGE_KEY, String(val)); } catch(e) {}
+    }
+    let bestLevel = loadHighScore();
+    let isNewBest = false;
+
+    /* =====================================================================
+     * DOM refs
+     * ===================================================================== */
+    const $ = id => document.getElementById(id);
+    const titleScreen = $('titleScreen');
+    const playScreen = $('playScreen');
+    const gameoverScreen = $('gameoverScreen');
+    const gameCanvas = $('gameCanvas');
+    const startBtn = $('startBtn');
+    const replayBtn = $('replayBtn');
+    const titleBest = $('titleBest');
+    const hudLevel = $('hudLevel');
+    const hudProgress = $('hudProgress');
+    const goTitle = $('goTitle');
+    const goLevel = $('goLevel');
+    const goTime = $('goTime');
+    const goStars = $('goNewBest');
+    const goNewBest = $('goNewBest');
+    const ariaLive = $('ariaLive');
+    const undoBtn = $('undoBtn');
+    const hintBtn = $('hintBtn');
+
+    /* =====================================================================
+     * Screen management
+     * ===================================================================== */
+    function showScreen(id) {
+      [titleScreen, playScreen, gameoverScreen].forEach(s => s.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+    }
+
+    /* =====================================================================
+     * Level generation
+     * ===================================================================== */
+    function generateLevel(levelNum) {
+      const idx = levelNum % LEVELS.length;
+      const lv = LEVELS[idx];
+      const s = lv.size;
+      // Create empty grid
+      grid = [];
+      pathGrid = [];
+      for (let r = 0; r < s; r++) {
+        grid[r] = [];
+        pathGrid[r] = [];
+        for (let c = 0; c < s; c++) {
+          grid[r][c] = { color: -1, pathId: -1 };
+          pathGrid[r][c] = -1;
+        }
+      }
+      // Place terminal pairs
+      const colors = [0,1,2,3,4,5,6,7];
+      lv.pairs.forEach((pair, ci) => {
+        const [r1,c1, r2,c2] = pair;
+        const colorIdx = colors[ci % colors.length];
+        grid[r1][c1] = { color: colorIdx, pathId: -1, isTerminal: true };
+        grid[r2][c2] = { color: colorIdx, pathId: -1, isTerminal: true };
+        pathGrid[r1][c1] = colorIdx;
+        pathGrid[r2][c2] = colorIdx;
+      });
+      totalPairs = lv.pairs.length;
+      completedPairs = 0;
+      hintsRemaining = 3;
+      undoStack = [];
+      hintBtn.textContent = '💡' + hintsRemaining;
+      updateProgress();
+    }
+
+    function updateProgress() {
+      hudProgress.textContent = completedPairs + ' / ' + totalPairs;
+    }
+
+    /* =====================================================================
+     * Drawing
+     * ===================================================================== */
+    function draw() {
+      const s = grid.length;
+      if (s === 0) return;
+      ctx.clearRect(0, 0, canvasSize, canvasSize);
+      ctx.fillStyle = '#0a0e27';
+      ctx.fillRect(0, 0, canvasSize, canvasSize);
+
+      // Grid background
+      const available = canvasSize - 16;
+      cellSize = available / s;
+      gridOffsetX = (canvasSize - cellSize * s) / 2;
+      gridOffsetY = 8 + (canvasSize - 8 - cellSize * s) / 2;
+
+      // Draw grid cells
+      for (let r = 0; r < s; r++) {
+        for (let c = 0; c < s; c++) {
+          const x = gridOffsetX + c * cellSize;
+          const y = gridOffsetY + r * cellSize;
+          const pad = 1;
+          ctx.fillStyle = 'rgba(255,255,255,0.04)';
+          ctx.fillRect(x + pad, y + pad, cellSize - pad*2, cellSize - pad*2);
+
+          // Cell border
+          ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+          ctx.lineWidth = 0.5;
+          ctx.strokeRect(x, y, cellSize, cellSize);
+        }
+      }
+
+      // Draw paths
+      for (let r = 0; r < s; r++) {
+        for (let c = 0; c < s; c++) {
+          const colorIdx = pathGrid[r][c];
+          if (colorIdx < 0) continue;
+          const col = COLORS[colorIdx];
+          const x = gridOffsetX + c * cellSize;
+          const y = gridOffsetY + r * cellSize;
+          const cx = x + cellSize / 2;
+          const cy = y + cellSize / 2;
+          const w = cellSize * 0.5;
+
+          // Check neighbors to draw connections
+          const dirs = [[-1,0,'top'],[1,0,'bottom'],[0,-1,'left'],[0,1,'right']];
+          for (const [dr, dc] of dirs) {
+            const nr = r + dr, nc = c + dc;
+            if (nr >= 0 && nr < s && nc >= 0 && nc < s && pathGrid[nr][nc] === colorIdx) {
+              const nx = gridOffsetX + nc * cellSize + cellSize / 2;
+              const ny = gridOffsetY + nr * cellSize + cellSize / 2;
+              ctx.beginPath();
+              ctx.moveTo(cx, cy);
+              ctx.lineTo(nx, ny);
+              ctx.strokeStyle = col.hex;
+              ctx.lineWidth = w * 0.6;
+              ctx.lineCap = 'round';
+              ctx.shadowColor = col.glow;
+              ctx.shadowBlur = 6;
+              ctx.stroke();
+              ctx.shadowBlur = 0;
+            }
+          }
+
+          // Draw terminal or filled cell
+          const isTerminal = grid[r][c].isTerminal;
+          const isSolved = grid[r][c].color >= 0 && colorIdx >= 0;
+          if (isTerminal) {
+            // Draw terminal node
+            ctx.shadowColor = col.glow;
+            ctx.shadowBlur = 12;
+            ctx.beginPath();
+            ctx.arc(cx, cy, cellSize * 0.22, 0, Math.PI * 2);
+            ctx.fillStyle = col.hex;
+            ctx.fill();
+            ctx.shadowBlur = 0;
+
+            // Inner circle
+            ctx.beginPath();
+            ctx.arc(cx, cy, cellSize * 0.12, 0, Math.PI * 2);
+            ctx.fillStyle = '#0a0e27';
+            ctx.fill();
+
+            // Label (A, B, C...)
+            ctx.fillStyle = col.hex;
+            ctx.font = `bold ${cellSize * 0.3}px system-ui, sans-serif`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            // Find which pair number this is
+            ctx.fillText('●', cx, cy);
+          } else if (colorIdx >= 0) {
+            // Filled path cell
+            ctx.globalAlpha = 0.35;
+            ctx.fillStyle = col.hex;
+            ctx.fillRect(x + pad, y + pad, cellSize - pad*2, cellSize - pad*2);
+            ctx.globalAlpha = 1;
+          }
+
+          // Draw pair labels on terminals
+          if (isTerminal) {
+            // Color number label in corner
+            ctx.fillStyle = col.hex;
+            ctx.font = `bold ${cellSize * 0.28}px var(--font-mono)`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(colorIdx + 1, cx, cy);
+          }
+        }
+      }
+
+      // Draw hovering path while dragging
+      if (dragging && dragPath.length > 0 && dragColor >= 0) {
+        const col = COLORS[dragColor];
+        ctx.shadowColor = col.glow;
+        ctx.shadowBlur = 8;
+        for (let i = 0; i < dragPath.length - 1; i++) {
+          const a = dragPath[i], b = dragPath[i+1];
+          const ax = gridOffsetX + a.c * cellSize + cellSize / 2;
+          const ay = gridOffsetY + a.r * cellSize + cellSize / 2;
+          const bx = gridOffsetX + b.c * cellSize + cellSize / 2;
+          const by = gridOffsetY + b.r * cellSize + cellSize / 2;
+          ctx.beginPath();
+          ctx.moveTo(ax, ay);
+          ctx.lineTo(bx, by);
+          ctx.strokeStyle = col.hex;
+          ctx.lineWidth = cellSize * 0.4;
+          ctx.lineCap = 'round';
+          ctx.globalAlpha = 0.6;
+          ctx.stroke();
+          ctx.globalAlpha = 1;
+        }
+        ctx.shadowBlur = 0;
+      }
+    }
+
+    /* =====================================================================
+     * Game Logic
+     * ===================================================================== */
+    function initGame(level) {
+      levelIndex = level;
+      if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+      timer = 0;
+      solvedColor = -1;
+      completedPairs = 0;
+      generateLevel(level);
+      hudLevel.textContent = 'Level ' + (level + 1);
+      updateProgress();
+      undoing = false;
+      draw();
+      gameStartTime = Date.now();
+    }
+
+    function startGame() {
+      initGame(0);
+      showScreen('playScreen');
+      gameState = PLAYING;
+      ariaLive.textContent = '游戏开始。Level 1。拖动连接同色电路节点。';
+      // Start timer
+      timerInterval = setInterval(() => { timer++; }, 1000);
+      playSound('connect');
+    }
+
+    /* =====================================================================
+     * Input handling
+     * ===================================================================== */
+    function getGridPos(clientX, clientY) {
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = canvasSize / rect.width;
+      const scaleY = canvasSize / rect.height;
+      const mx = (clientX - rect.left) * scaleX;
+      const my = (clientY - rect.top) * scaleY;
+      if (mx < gridOffsetX || mx >= gridOffsetX + grid.length * cellSize) return null;
+      if (my < gridOffsetY || my >= gridOffsetY + grid.length * cellSize) return null;
+      const c = Math.floor((mx - gridOffsetX) / cellSize);
+      const r = Math.floor((my - gridOffsetY) / cellSize);
+      if (r < 0 || r >= grid.length || c < 0 || c >= grid.length) return null;
+      return { r, c };
+    }
+
+    function onPointerDown(pos) {
+      if (gameState !== PLAYING) return;
+      if (!pos) return;
+      const { r, c } = pos;
+      const cell = grid[r][c];
+      if (!cell.isTerminal) return;
+      if (pathGrid[r][c] < 0) return;
+      // Check if this terminal is already connected (both terminals of its color are on path)
+      const colorIdx = pathGrid[r][c];
+      if (isColorConnected(colorIdx)) return;
+
+      dragging = true;
+      dragColor = colorIdx;
+      // Clear existing path for this color
+      clearColorPath(colorIdx);
+      // Start at this terminal
+      dragPath = [{ r, c }];
+      pathGrid[r][c] = colorIdx;
+      draw();
+    }
+
+    function onPointerMove(pos) {
+      if (!dragging || !pos) return;
+      const { r, c } = pos;
+      if (r < 0 || r >= grid.length || c < 0 || c >= grid.length) return;
+
+      // Don't add same cell twice
+      const last = dragPath[dragPath.length - 1];
+      if (last.r === r && last.c === c) return;
+
+      // Must be adjacent (no diagonals)
+      const dr = r - last.r, dc = c - last.c;
+      if (Math.abs(dr) + Math.abs(dc) !== 1) return;
+
+      // Check if this cell is already in the path (backtrack)
+      const idx = dragPath.findIndex(p => p.r === r && p.c === c);
+      if (idx >= 0) {
+        // Backtrack: remove everything after this point
+        const removed = dragPath.splice(idx + 1);
+        for (const p of removed) {
+          if (!grid[p.r][p.c].isTerminal) {
+            pathGrid[p.r][p.c] = -1;
+          }
+        }
+        // Also clear pathGrid for the backtracked cells
+        for (let i = idx + 1; i < dragPath.length; i++) {
+          const p = dragPath[i];
+          if (!grid[p.r][p.c].isTerminal) {
+            pathGrid[p.r][p.c] = -1;
+          }
+        }
+        dragPath = dragPath.slice(0, idx + 1);
+        draw();
+        return;
+      }
+
+      // Cell must be empty or a terminal of the same color
+      if (pathGrid[r][c] >= 0 && pathGrid[r][c] !== dragColor) return; // block
+      if (pathGrid[r][c] === dragColor && !(r === last.r && c === last.c)) {
+        // Check if this is another terminal
+        if (grid[r][c].isTerminal) {
+          // Try to complete!
+          dragPath.push({ r, c });
+          if (checkCompletion()) {
+            // Don't auto-complete here, let checkCompletion handle it
+          }
+          draw();
+          playSound('connect');
+          return;
+        }
+        return; // Already has this color but not a terminal
+      }
+
+      // Add to path
+      pathGrid[r][c] = dragColor;
+      dragPath.push({ r, c });
+      playSound('connect');
+      draw();
+    }
+
+    function onPointerUp() {
+      if (!dragging) return;
+      dragging = false;
+      // Validate the path
+      if (dragPath.length < 2) {
+        // Single cell - clear
+        if (dragPath.length === 1) {
+          const p = dragPath[0];
+          if (!grid[p.r][p.c].isTerminal) {
+            pathGrid[p.r][p.c] = -1;
+          }
+        }
+        dragPath = [];
+        dragColor = -1;
+        draw();
+        return;
+      }
+
+      const first = dragPath[0];
+      const last = dragPath[dragPath.length - 1];
+      const startCell = grid[first.r][first.c];
+      const endCell = grid[last.r][last.c];
+
+      if (startCell.isTerminal && endCell.isTerminal &&
+          pathGrid[first.r][first.c] === pathGrid[last.r][last.c] &&
+          first.r !== last.r || first.c !== last.c) {
+        // Valid path between two terminals - save to undo stack
+        undoStack.push({ color: dragColor, path: dragPath.map(p => ({...p})) });
+        playSound('complete');
+        checkCompletion();
+      } else {
+        // Invalid endpoint - ghost path, clear it
+        for (const p of dragPath) {
+          if (!grid[p.r][p.c].isTerminal) {
+            pathGrid[p.r][p.c] = -1;
+          }
+        }
+        playSound('wrong');
+      }
+      dragPath = [];
+      dragColor = -1;
+      draw();
+    }
+
+    function isColorConnected(colorIdx) {
+      // Find both terminals of this color
+      const terminals = [];
+      for (let r = 0; r < grid.length; r++) {
+        for (let c = 0; c < grid.length; c++) {
+          if (grid[r][c].isTerminal && pathGrid[r][c] === colorIdx) {
+            terminals.push({ r, c });
+          }
+        }
+      }
+      if (terminals.length !== 2) return false;
+      // BFS to see if they're connected
+      const visited = new Set();
+      const queue = [terminals[0]];
+      visited.add(terminals[0].r + ',' + terminals[0].c);
+      while (queue.length > 0) {
+        const cur = queue.shift();
+        if (cur.r === terminals[1].r && cur.c === terminals[1].c) return true;
+        const dirs = [[-1,0],[1,0],[0,-1],[0,1]];
+        for (const [dr, dc] of dirs) {
+          const nr = cur.r + dr, nc = cur.c + dc;
+          if (nr < 0 || nr >= grid.length || nc < 0 || nc >= grid.length) continue;
+          if (pathGrid[nr][nc] !== colorIdx) continue;
+          const key = nr + ',' + nc;
+          if (visited.has(key)) continue;
+          visited.add(key);
+          queue.push({ r: nr, c: nc });
+        }
+      }
+      return false;
+    }
+
+    function clearColorPath(colorIdx) {
+      // Remove all path cells for this color except terminals
+      for (let r = 0; r < grid.length; r++) {
+        for (let c = 0; c < grid.length; c++) {
+          if (pathGrid[r][c] === colorIdx && !grid[r][c].isTerminal) {
+            pathGrid[r][c] = -1;
+          }
+        }
+      }
+    }
+
+    function checkCompletion() {
+      // Count how many colors are fully connected
+      completedPairs = 0;
+      for (let ci = 0; ci < totalPairs; ci++) {
+        if (isColorConnected(ci)) {
+          completedPairs++;
+        }
+      }
+      updateProgress();
+
+      // Check if level is complete (all pairs connected AND all cells filled)
+      const allFilled = isGridFullyFilled();
+      if (completedPairs === totalPairs && allFilled) {
+        onLevelComplete();
+        return true;
+      } else if (completedPairs === totalPairs && !allFilled) {
+        // Some cells still empty - that's expected, user can keep drawing
+      }
+      return false;
+    }
+
+    function isGridFullyFilled() {
+      for (let r = 0; r < grid.length; r++) {
+        for (let c = 0; c < grid.length; c++) {
+          if (pathGrid[r][c] < 0) return false;
+        }
+      }
+      return true;
+    }
+
+    function onLevelComplete() {
+      gameState = GAMEOVER;
+      if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+
+      const elapsed = Math.round((Date.now() - gameStartTime) / 1000);
+      const completedLevel = levelIndex + 1;
+
+      // Check high score
+      isNewBest = false;
+      if (completedLevel > bestLevel) {
+        bestLevel = completedLevel;
+        saveHighScore(bestLevel);
+        isNewBest = true;
+      }
+
+      // Show result
+      const nextLevel = levelIndex + 1;
+      const isLastLevel = nextLevel >= LEVELS.length;
+
+      goTitle.textContent = isLastLevel ? '🏆 全部通关！' : '🎉 电路接通！';
+      goTitle.className = 'go-title win';
+      goLevel.textContent = completedLevel;
+      goTime.textContent = elapsed;
+      goNewBest.style.display = isNewBest ? 'block' : 'none';
+      replayBtn.textContent = isLastLevel ? '再次挑战' : '下一关';
+
+      const stars = elapsed <= 30 ? 3 : elapsed <= 60 ? 2 : 1;
+      goStars.textContent = '⭐'.repeat(stars) + '☆'.repeat(3 - stars);
+
+      showScreen('gameoverScreen');
+      ariaLive.textContent = 'Level ' + completedLevel + ' 完成！用时 ' + elapsed + ' 秒。';
+      playSound('levelup');
+    }
+
+    function onReplay() {
+      const nextLevel = levelIndex + 1;
+      if (nextLevel >= LEVELS.length) {
+        // All levels done - restart from beginning
+        levelIndex = 0;
+      } else {
+        levelIndex = nextLevel;
+      }
+      gameState = PLAYING;
+      initGame(levelIndex);
+      showScreen('playScreen');
+      ariaLive.textContent = 'Level ' + (levelIndex + 1) + ' 开始。';
+      timerInterval = setInterval(() => { timer++; }, 1000);
+      playSound('connect');
+    }
+
+    /* =====================================================================
+     * Undo
+     * ===================================================================== */
+    let undoing = false;
+
+    function undo() {
+      if (gameState !== PLAYING) return;
+      if (undoStack.length === 0) return;
+      const last = undoStack.pop();
+      // Clear that color's path
+      clearColorPath(last.color);
+      // Reset terminals
+      for (let r = 0; r < grid.length; r++) {
+        for (let c = 0; c < grid.length; c++) {
+          if (grid[r][c].isTerminal && grid[r][c].color === last.color) {
+            pathGrid[r][c] = grid[r][c].color;
+          }
+        }
+      }
+      completedPairs = 0;
+      for (let ci = 0; ci < totalPairs; ci++) {
+        if (isColorConnected(ci)) completedPairs++;
+      }
+      updateProgress();
+      playSound('undo');
+      draw();
+    }
+
+    /* =====================================================================
+     * Hint: auto-solve one random color
+     * ===================================================================== */
+    function giveHint() {
+      if (gameState !== PLAYING) return;
+      if (hintsRemaining <= 0) return;
+      // Find an unsolved color
+      const unsolved = [];
+      for (let ci = 0; ci < totalPairs; ci++) {
+        if (!isColorConnected(ci)) unsolved.push(ci);
+      }
+      if (unsolved.length === 0) return;
+
+      hintsRemaining--;
+      hintBtn.textContent = '💡' + hintsRemaining;
+      playSound('hint');
+
+      // Highlight one terminal of the first unsolved pair
+      const ci = unsolved[0];
+      // Flash its terminal positions
+      const terminals = [];
+      for (let r = 0; r < grid.length; r++) {
+        for (let c = 0; c < grid.length; c++) {
+          if (grid[r][c].isTerminal && grid[r][c].color === ci) {
+            terminals.push({ r, c });
+          }
+        }
+      }
+      // Flash animation by re-drawing with highlight
+      let flash = 0;
+      const interval = setInterval(() => {
+        flash++;
+        // Highlight the terminals by re-drawing
+        draw();
+        const col = COLORS[ci];
+        for (const t of terminals) {
+          const x = gridOffsetX + t.c * cellSize;
+          const y = gridOffsetY + t.r * cellSize;
+          const cx = x + cellSize / 2;
+          const cy = y + cellSize / 2;
+          if (flash % 2 === 1) {
+            ctx.beginPath();
+            ctx.arc(cx, cy, cellSize * 0.35, 0, Math.PI * 2);
+            ctx.fillStyle = col.hex;
+            ctx.globalAlpha = 0.3;
+            ctx.fill();
+            ctx.globalAlpha = 1;
+            ctx.shadowColor = col.hex;
+            ctx.shadowBlur = 30;
+            ctx.beginPath();
+            ctx.arc(cx, cy, cellSize * 0.22, 0, Math.PI * 2);
+            ctx.fillStyle = col.hex;
+            ctx.fill();
+            ctx.shadowBlur = 0;
+          }
+        }
+        if (flash >= 6) {
+          clearInterval(interval);
+          draw();
+        }
+      }, 300);
+
+      ariaLive.textContent = '提示：关注编号 ' + (ci + 1) + ' 的节点。剩余 ' + hintsRemaining + ' 次提示。';
+    }
+
+    /* =====================================================================
+     * Event binding
+     * ===================================================================== */
+    function handlePointerDown(e) {
+      const pos = getGridPos(e.clientX, e.clientY);
+      if (pos) {
+        onPointerDown(pos);
+        e.preventDefault();
+      }
+    }
+    function handlePointerMove(e) {
+      const pos = getGridPos(e.clientX, e.clientY);
+      if (pos) onPointerMove(pos);
+    }
+    function handlePointerUp(e) {
+      onPointerUp();
+    }
+
+    function setupInput() {
+      // Mouse
+      canvas.addEventListener('mousedown', handlePointerDown);
+      canvas.addEventListener('mousemove', handlePointerMove);
+      canvas.addEventListener('mouseup', handlePointerUp);
+      canvas.addEventListener('mouseleave', handlePointerUp);
+
+      // Touch
+      canvas.addEventListener('touchstart', e => {
+        const t = e.touches[0];
+        handlePointerDown({ clientX: t.clientX, clientY: t.clientY, preventDefault: () => e.preventDefault() });
+      }, { passive: false });
+      canvas.addEventListener('touchmove', e => {
+        e.preventDefault();
+        const t = e.touches[0];
+        handlePointerMove({ clientX: t.clientX, clientY: t.clientY });
+      }, { passive: false });
+      canvas.addEventListener('touchend', handlePointerUp);
+
+      // Keyboard
+      document.addEventListener('keydown', e => {
+        if (e.key === ' ' || e.key === 'Enter') {
+          if (gameState === TITLE) {
+            e.preventDefault();
+            startGame();
+          } else if (gameState === GAMEOVER) {
+            e.preventDefault();
+            onReplay();
+          }
+        }
+        // Undo: Ctrl+Z or U
+        if ((e.ctrlKey && e.key === 'z') || e.key === 'u') {
+          if (gameState === PLAYING) {
+            e.preventDefault();
+            undo();
+          }
+        }
+        // Hint: H key
+        if (e.key === 'h') {
+          if (gameState === PLAYING) {
+            e.preventDefault();
+            giveHint();
+          }
+        }
+      });
+
+      // Title screen click anywhere
+      titleScreen.addEventListener('click', e => {
+        if (e.target === startBtn) return;
+        if (gameState === TITLE) startGame();
+      });
+
+      // Buttons
+      startBtn.addEventListener('click', startGame);
+      replayBtn.addEventListener('click', onReplay);
+      undoBtn.addEventListener('click', undo);
+      hintBtn.addEventListener('click', giveHint);
+      document.getElementById('muteBtn').addEventListener('click', toggleMute);
+    }
+
+    /* =====================================================================
+     * Animation loop (pulse effect)
+     * ===================================================================== */
+    function animate() {
+      pulsePhase += 0.02;
+      if (gameState === PLAYING) {
+        draw();
+      }
+      animationId = requestAnimationFrame(animate);
+    }
+
+    /* =====================================================================
+     * Init
+     * ===================================================================== */
+    function init() {
+      canvas = gameCanvas;
+      ctx = canvas.getContext('2d');
+      canvasSize = canvas.width;
+
+      loadMuted();
+      titleBest.textContent = bestLevel;
+
+      setupInput();
+      initGame(0);
+      showScreen('titleScreen');
+      gameState = TITLE;
+
+      animate();
+    }
+
+    document.addEventListener('DOMContentLoaded', init);
+  </script>
+</body>
+</html>
