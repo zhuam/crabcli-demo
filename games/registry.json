@@ -924,6 +924,26 @@
             "version": "1.0.0",
             "featured": false,
             "rating": 3
+        },
+        {
+            "id": "era-civilization",
+            "name": "Era Civilization.io",
+            "description": "实时占领格子扩张文明，与他人争霸",
+            "category": "strategy",
+            "tags": [
+                "singleplayer",
+                "strategy",
+                "io",
+                "territory",
+                "short-session"
+            ],
+            "thumbnail": "/games/012-era-civilization/thumb.png",
+            "path": "/games/012-era-civilization/",
+            "hasServer": false,
+            "players": "1",
+            "version": "1.0.0",
+            "featured": false,
+            "rating": 3
         }
     ],
     "categories": [

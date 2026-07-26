@@ -1,0 +1,966 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no">
+  <meta name="theme-color" content="#2c1810">
+  <title>Era Civilization.io</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../games/shared/game-frame.css">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg-deep: #2c1810;
+      --text-primary: #f0e6d3;
+      --text-muted: rgba(240,230,211,0.45);
+      --text-dim: rgba(240,230,211,0.25);
+      --focus-ring: #cd7f32;
+      --surface: rgba(240,230,211,0.08);
+      --surface-active: rgba(240,230,211,0.15);
+      --danger: #c0392b;
+      --success: #27ae60;
+      --font-display: 'Cinzel', 'Georgia', serif;
+      --font-body: 'Inter', system-ui, sans-serif;
+      --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+    }
+    html, body {
+      background: var(--bg-deep);
+      color: var(--text-primary);
+      font-family: var(--font-body);
+      overflow: hidden;
+      width: 100vw; height: 100vh;
+      display: flex; align-items: center; justify-content: center;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+
+    .screen { display: none; flex-direction: column; align-items: center; width: 100%; position: fixed; inset: 0; }
+    .screen.active { display: flex; }
+
+    /* ── Title Screen ── */
+    .title-screen { justify-content: center; gap: 20px; text-align: center; z-index: 1; }
+    .title-icon {
+      width: 96px; height: 96px; border-radius: 50%;
+      background: radial-gradient(circle at 40% 40%, #cd7f32, #5c3a1e);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 40px; position: relative; margin: 0 auto;
+      box-shadow: 0 0 40px rgba(205,127,50,0.3);
+    }
+    .title-icon .era-badge {
+      position: absolute; bottom: -4px; right: -4px;
+      width: 32px; height: 32px; border-radius: 50%;
+      background: #3a2210; border: 2px solid #cd7f32;
+      font-size: 14px; display: flex; align-items: center; justify-content: center;
+    }
+    @media (prefers-reduced-motion: no-preference) {
+      .title-icon { animation: glow-pulse 2s ease-in-out infinite alternate; }
+    }
+    @keyframes glow-pulse {
+      0% { box-shadow: 0 0 30px rgba(205,127,50,0.3); }
+      100% { box-shadow: 0 0 60px rgba(205,127,50,0.5); }
+    }
+    .title-text {
+      font-family: var(--font-display); font-size: 38px; font-weight: 700;
+      letter-spacing: 0.08em; color: #cd7f32; line-height: 1.15;
+      text-shadow: 0 0 20px rgba(205,127,50,0.3);
+    }
+    .title-subtitle { font-size: 12px; color: var(--text-muted); letter-spacing: 0.3em; text-transform: uppercase; margin-top: -8px; }
+    .title-best { font-family: var(--font-mono); font-size: 13px; color: var(--text-muted); }
+    .title-best span { color: #cd7f32; font-weight: 700; }
+
+    .btn-primary {
+      font-family: var(--font-display); font-size: 18px; letter-spacing: 0.12em; text-transform: uppercase;
+      background: linear-gradient(135deg, #cd7f32, #8B5E3C);
+      color: #1a0f08; border: none; border-radius: 9999px;
+      padding: 14px 48px; min-height: 52px; cursor: pointer;
+      box-shadow: 0 0 20px rgba(205,127,50,0.25), 0 4px 12px rgba(0,0,0,0.3);
+      transition: transform 150ms ease, box-shadow 150ms ease;
+    }
+    .btn-primary:hover { transform: scale(1.05); box-shadow: 0 0 32px rgba(205,127,50,0.4); }
+    .btn-primary:active { transform: scale(0.97); }
+    .btn-primary:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 4px; }
+
+    /* Era selector */
+    .era-selector { display: flex; gap: 10px; margin: 4px 0; }
+    .era-btn {
+      padding: 6px 14px; border-radius: 9999px; border: 1px solid var(--text-dim);
+      background: transparent; color: var(--text-muted); font-size: 11px;
+      font-family: var(--font-display); cursor: pointer; transition: all 150ms ease;
+      letter-spacing: 0.05em;
+    }
+    .era-btn:hover { border-color: var(--text-primary); color: var(--text-primary); }
+    .era-btn.selected { border-color: #cd7f32; background: rgba(205,127,50,0.15); color: #cd7f32; }
+    .era-btn:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
+
+    /* ── Play Screen ── */
+    .play-screen { justify-content: center; padding: 8px; z-index: 1; }
+    .canvas-wrapper {
+      position: relative; max-width: min(94vw, 520px); aspect-ratio: 4/3;
+      border-radius: 16px; overflow: hidden;
+      box-shadow: 0 0 60px rgba(0,0,0,0.3);
+      border: 1px solid rgba(255,255,255,0.06);
+    }
+    .canvas-wrapper canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+
+    /* HUD */
+    .hud {
+      position: absolute; top: 0; left: 0; right: 0;
+      padding: 8px 12px; display: flex; align-items: center; justify-content: space-between;
+      pointer-events: none; z-index: 2;
+    }
+    .hud-left, .hud-right { display: flex; align-items: center; gap: 8px; }
+    .hud-score {
+      font-family: var(--font-mono); font-size: 15px; font-weight: 700;
+      color: var(--text-primary);
+    }
+    .hud-era {
+      font-family: var(--font-display); font-size: 10px; letter-spacing: 0.06em;
+      padding: 2px 10px; border-radius: 9999px; border: 1px solid;
+    }
+    .hud-era.stone { border-color: #cd7f32; color: #cd7f32; background: rgba(205,127,50,0.12); }
+    .hud-era.industrial { border-color: #e8a87c; color: #e8a87c; background: rgba(232,168,124,0.12); }
+    .hud-era.future { border-color: #00e5ff; color: #00e5ff; background: rgba(0,229,255,0.1); }
+
+    /* Game Over Overlay */
+    .gameover-overlay {
+      position: absolute; inset: 0; background: rgba(0,0,0,0.75);
+      z-index: 10; display: none; flex-direction: column; align-items: center;
+      justify-content: center; gap: 10px; border-radius: 16px;
+      backdrop-filter: blur(6px);
+    }
+    .gameover-overlay.active { display: flex; }
+    .gameover-heading {
+      font-family: var(--font-display); font-size: 28px; letter-spacing: 0.08em;
+      color: var(--danger); text-shadow: 0 0 16px rgba(192,57,43,0.4);
+    }
+    .gameover-label { font-size: 12px; color: var(--text-muted); letter-spacing: 0.15em; text-transform: uppercase; }
+    .gameover-value { font-family: var(--font-mono); font-size: 48px; font-weight: 700; line-height: 1; }
+    .gameover-new-best {
+      font-family: var(--font-display); font-size: 14px; color: #cd7f32;
+      letter-spacing: 0.08em; text-shadow: 0 0 12px rgba(205,127,50,0.4);
+    }
+    @media (prefers-reduced-motion: no-preference) {
+      .gameover-new-best { animation: celebrate 0.6s ease-in-out infinite alternate; }
+    }
+    @keyframes celebrate { 0% { transform: scale(1); } 100% { transform: scale(1.1); } }
+    .gameover-best { font-family: var(--font-mono); font-size: 13px; color: var(--text-muted); }
+    .gameover-details { font-size: 11px; color: var(--text-dim); }
+    .btn-replay {
+      font-family: var(--font-display); font-size: 15px; letter-spacing: 0.1em; text-transform: uppercase;
+      background: linear-gradient(135deg, #cd7f32, #8B5E3C);
+      color: #1a0f08; border: none; border-radius: 9999px;
+      padding: 12px 40px; min-height: 44px; cursor: pointer;
+      box-shadow: 0 0 16px rgba(205,127,50,0.25); transition: transform 150ms ease;
+      margin-top: 4px;
+    }
+    .btn-replay:hover { transform: scale(1.05); }
+    .btn-replay:active { transform: scale(0.97); }
+    .btn-replay:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 4px; }
+
+    /* Mute */
+    .mute-btn {
+      width: 40px; height: 40px; border: none; background: var(--surface);
+      border-radius: 50%; font-size: 18px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      position: fixed; top: 12px; right: 12px; z-index: 10001;
+      transition: background 150ms ease; color: var(--text-primary);
+    }
+    .mute-btn:hover { background: var(--surface-active); }
+    .mute-btn:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
+
+    .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+
+    /* Era transition flash */
+    .era-flash {
+      position: absolute; inset: 0; z-index: 5; pointer-events: none;
+      border-radius: 16px; opacity: 0;
+    }
+    .era-flash.active { animation: flash-anim 0.6s ease-out forwards; }
+    @keyframes flash-anim {
+      0% { opacity: 0.7; }
+      100% { opacity: 0; }
+    }
+  </style>
+</head>
+<body>
+
+<button class="mute-btn" id="muteBtn" aria-label="Toggle sound" aria-pressed="false">&#x1F50A;</button>
+
+<a href="/" class="back-to-hub" onclick="window.recordPlayed&&window.recordPlayed('era-civilization')" aria-label="Back to hub">&larr; Hub</a>
+
+<!-- ═══ TITLE SCREEN ═══ -->
+<div class="screen title-screen active" id="titleScreen" role="region" aria-label="Title screen">
+  <div class="title-icon" id="titleIcon" aria-hidden="true">
+    &#x1F3F0;
+    <span class="era-badge" id="eraBadgeIcon">&#x26CF;</span>
+  </div>
+  <h1 class="title-text">ERA<br>CIVILIZATION</h1>
+  <p class="title-subtitle">占领领土 扩张文明</p>
+  <div class="era-selector" role="radiogroup" aria-label="Select era">
+    <button class="era-btn selected" data-era="0" role="radio" aria-checked="true" tabindex="0">&#x26CF; 石器</button>
+    <button class="era-btn" data-era="1" role="radio" aria-checked="false" tabindex="-1">&#x2699; 工业</button>
+    <button class="era-btn" data-era="2" role="radio" aria-checked="false" tabindex="-1">&#x1F680; 未来</button>
+  </div>
+  <button class="btn-primary" id="startBtn" autofocus>开始征战</button>
+  <p class="title-best" id="titleBest">最高领土: <span>0%</span></p>
+</div>
+
+<!-- ═══ PLAYING SCREEN ═══ -->
+<div class="screen play-screen" id="playScreen" role="region" aria-label="Game screen">
+  <div class="canvas-wrapper" id="canvasWrapper">
+    <canvas id="gameCanvas" width="400" height="300"></canvas>
+    <!-- HUD -->
+    <div class="hud">
+      <div class="hud-left">
+        <span class="hud-score" id="scoreDisplay">0%</span>
+      </div>
+      <div class="hud-right">
+        <span class="hud-era stone" id="eraDisplay">&#x26CF; 石器</span>
+      </div>
+    </div>
+    <div class="era-flash" id="eraFlash"></div>
+    <!-- Game Over Overlay -->
+    <div class="gameover-overlay" id="gameoverOverlay" role="dialog" aria-label="Game over">
+      <h2 class="gameover-heading">文明陷落</h2>
+      <p class="gameover-label">领土占有率</p>
+      <p class="gameover-value" id="goScore">0%</p>
+      <p class="gameover-new-best" id="goNewBest" style="display:none">&#x1F3C6; 新纪录!</p>
+      <p class="gameover-best" id="goBest">最高: 0%</p>
+      <p class="gameover-details" id="goDetails">占领 0 格 / 总计 0 格</p>
+      <button class="btn-replay" id="replayBtn" aria-label="Play again">再来一局</button>
+    </div>
+  </div>
+</div>
+
+<div class="sr-only" role="status" aria-live="polite" id="ariaLive">领土 0%</div>
+
+<script>
+(function() {
+  'use strict';
+
+  // ═══════════════════════════════════════════════════
+  //  CONSTANTS
+  // ═══════════════════════════════════════════════════
+
+  var COLS = 40;
+  var ROWS = 30;
+  var TOTAL = COLS * ROWS;
+  var STORAGE_KEY = 'era-civilization-best';
+  var STORAGE_KEY_MUTED = 'era-civilization-muted';
+  var GAME_MAX_MS = 180000; // 3 minutes
+
+  var ERAS = [
+    { name:'\u{1F3AF} 石器', threshold:0,  playerColor:'#cd7f32', playerFill:'rgba(205,127,50,0.28)',
+      aiColor:'#8B4513', aiFill:'rgba(139,69,19,0.22)', bg:'#2c1810',
+      grid:'rgba(205,127,50,0.07)', trailP:'rgba(205,127,50,0.55)', trailA:'rgba(139,69,19,0.45)',
+      flash:'rgba(205,127,50,0.3)', speed:6, cssClass:'stone' },
+    { name:'\u{2699} 工业', threshold:15, playerColor:'#e8a87c', playerFill:'rgba(232,168,124,0.25)',
+      aiColor:'#8c6a56', aiFill:'rgba(140,106,86,0.2)', bg:'#1a1410',
+      grid:'rgba(232,168,124,0.07)', trailP:'rgba(232,168,124,0.5)', trailA:'rgba(140,106,86,0.4)',
+      flash:'rgba(232,168,124,0.3)', speed:8, cssClass:'industrial' },
+    { name:'\u{1F680} 未来', threshold:35, playerColor:'#00e5ff', playerFill:'rgba(0,229,255,0.22)',
+      aiColor:'#ff6ec7', aiFill:'rgba(255,110,199,0.18)', bg:'#0a0a1a',
+      grid:'rgba(0,229,255,0.06)', trailP:'rgba(0,229,255,0.5)', trailA:'rgba(255,110,199,0.4)',
+      flash:'rgba(0,229,255,0.3)', speed:10, cssClass:'future' }
+  ];
+
+  var DIRS = { UP:{dx:0,dy:-1}, DOWN:{dx:0,dy:1}, LEFT:{dx:-1,dy:0}, RIGHT:{dx:1,dy:0} };
+  var OPPOSITE = { UP:'DOWN', DOWN:'UP', LEFT:'RIGHT', RIGHT:'LEFT' };
+
+  // ═══════════════════════════════════════════════════
+  //  DOM
+  // ═══════════════════════════════════════════════════
+
+  var $ = function(id) { return document.getElementById(id); };
+  var titleScreen = $('titleScreen');
+  var playScreen = $('playScreen');
+  var canvas = $('gameCanvas');
+  var ctx = canvas.getContext('2d');
+  var scoreDisplay = $('scoreDisplay');
+  var eraDisplay = $('eraDisplay');
+  var goScore = $('goScore');
+  var goBest = $('goBest');
+  var goNewBest = $('goNewBest');
+  var goDetails = $('goDetails');
+  var gameoverOverlay = $('gameoverOverlay');
+  var titleBest = $('titleBest');
+  var eraFlash = $('eraFlash');
+  var ariaLive = $('ariaLive');
+  var startBtn = $('startBtn');
+  var replayBtn = $('replayBtn');
+  var muteBtn = $('muteBtn');
+  var eraBtns = document.querySelectorAll('.era-btn');
+
+  // ═══════════════════════════════════════════════════
+  //  STATE
+  // ═══════════════════════════════════════════════════
+
+  var gameState = 'TITLE';
+  var muted = localStorage.getItem(STORAGE_KEY_MUTED) === 'true';
+  var audioCtx = null;
+  var rafId = null;
+  var lastTime = 0;
+  var acc = 0;
+  var gameStart = 0;
+  var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // Map: 0=empty, 1=player, 2=ai
+  var map = [];
+  // Trail: 0=none, 1=player, 2=ai
+  var trail = [];
+
+  var selEra = 0;
+  var curEra = 0;
+  var pl = { x:0, y:0, dir:'UP', alive:true };
+  var ai = { x:0, y:0, dir:'UP', alive:true, cd:0 };
+  var pTrail = [];
+  var aTrail = [];
+  var pScore = 0;
+  var highScore = loadHighScore();
+
+  var inpDir = null;
+
+  updateMuteBtn();
+  updateTitleBest();
+
+  // ═══════════════════════════════════════════════════
+  //  AUDIO
+  // ═══════════════════════════════════════════════════
+
+  function ac() {
+    if (!audioCtx) audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+  }
+
+  function sfx(kind) {
+    if (muted || !audioCtx) return;
+    var now = audioCtx.currentTime;
+    var o = audioCtx.createOscillator();
+    var g = audioCtx.createGain();
+    o.connect(g); g.connect(audioCtx.destination);
+
+    switch (kind) {
+      case 'claim':
+        o.frequency.setValueAtTime(880, now);
+        o.frequency.linearRampToValueAtTime(660, now+0.08);
+        g.gain.setValueAtTime(0.10, now);
+        g.gain.linearRampToValueAtTime(0, now+0.1);
+        o.start(now); o.stop(now+0.1);
+        break;
+      case 'era':
+        for (var i=0,N=[523,659,784];i<3;i++) {
+          var o2 = audioCtx.createOscillator();
+          var g2 = audioCtx.createGain();
+          o2.connect(g2); g2.connect(audioCtx.destination);
+          o2.frequency.setValueAtTime(N[i], now+i*0.12);
+          g2.gain.setValueAtTime(0.13, now+i*0.12);
+          g2.gain.linearRampToValueAtTime(0, now+i*0.12+0.2);
+          o2.start(now+i*0.12); o2.stop(now+i*0.12+0.2);
+        }
+        break;
+      case 'die':
+        o.type='sawtooth';
+        o.frequency.setValueAtTime(400, now);
+        o.frequency.linearRampToValueAtTime(60, now+0.3);
+        g.gain.setValueAtTime(0.18, now);
+        g.gain.linearRampToValueAtTime(0, now+0.35);
+        o.start(now); o.stop(now+0.35);
+        break;
+      case 'cut':
+        o.type='square';
+        o.frequency.setValueAtTime(300, now);
+        o.frequency.linearRampToValueAtTime(600, now+0.1);
+        g.gain.setValueAtTime(0.08, now);
+        g.gain.linearRampToValueAtTime(0, now+0.12);
+        o.start(now); o.stop(now+0.12);
+        break;
+      case 'high':
+        for (var j=0,M=[523,659,784,1047];j<4;j++) {
+          var o3 = audioCtx.createOscillator();
+          var g3 = audioCtx.createGain();
+          o3.connect(g3); g3.connect(audioCtx.destination);
+          o3.frequency.setValueAtTime(M[j], now+j*0.1);
+          g3.gain.setValueAtTime(0.14, now+j*0.1);
+          g3.gain.linearRampToValueAtTime(0, now+j*0.1+0.15);
+          o3.start(now+j*0.1); o3.stop(now+j*0.1+0.15);
+        }
+        break;
+    }
+  }
+
+  function vibe(p) { if (navigator.vibrate) navigator.vibrate(p); }
+
+  // ═══════════════════════════════════════════════════
+  //  STORAGE
+  // ═══════════════════════════════════════════════════
+
+  function loadHighScore() {
+    try { return parseInt(localStorage.getItem(STORAGE_KEY))||0; } catch(e) { return 0; }
+  }
+  function saveHighScore(v) {
+    try {
+      var c=loadHighScore(); if (v>c) { localStorage.setItem(STORAGE_KEY,String(v)); return true; }
+      return false;
+    } catch(e) { return false; }
+  }
+  function updateTitleBest() {
+    titleBest.querySelector('span').textContent = loadHighScore()+'%';
+  }
+  function updateMuteBtn() {
+    muteBtn.innerHTML = muted ? '\u{1F507}' : '\u{1F50A}';
+    muteBtn.setAttribute('aria-pressed',String(muted));
+  }
+  muteBtn.addEventListener('click',function() {
+    muted=!muted; localStorage.setItem(STORAGE_KEY_MUTED,String(muted)); updateMuteBtn();
+    if(!muted) ac();
+  });
+
+  // ═══════════════════════════════════════════════════
+  //  SCREENS
+  // ═══════════════════════════════════════════════════
+
+  function show(name) {
+    titleScreen.classList.remove('active');
+    playScreen.classList.remove('active');
+    gameoverOverlay.classList.remove('active');
+    if (name==='TITLE') {
+      titleScreen.classList.add('active');
+      updateTitleBest();
+      document.title='Era Civilization';
+    } else if (name==='PLAYING') {
+      playScreen.classList.add('active');
+    } else if (name==='GAMEOVER') {
+      playScreen.classList.add('active');
+      gameoverOverlay.classList.add('active');
+    }
+    gameState=name;
+  }
+
+  // ═══════════════════════════════════════════════════
+  //  MAP
+  // ═══════════════════════════════════════════════════
+
+  function initMap() {
+    map=[]; trail=[];
+    for (var y=0;y<ROWS;y++) {
+      map[y]=[]; trail[y]=[];
+      for (var x=0;x<COLS;x++) { map[y][x]=0; trail[y][x]=0; }
+    }
+    // Player start territory (upper-left quadrant near center)
+    var psx=Math.floor(COLS*0.25), psy=Math.floor(ROWS*0.4), sr=3;
+    for (var dy=-sr;dy<=sr;dy++) for (var dx=-sr;dx<=sr;dx++) {
+      var px=psx+dx, py=psy+dy;
+      if (px>=0&&px<COLS&&py>=0&&py<ROWS) map[py][px]=1;
+    }
+    // AI start territory (lower-right quadrant near center)
+    var asx=Math.floor(COLS*0.75), asy=Math.floor(ROWS*0.6);
+    for (var dy2=-sr;dy2<=sr;dy2++) for (var dx2=-sr;dx2<=sr;dx2++) {
+      var ax=asx+dx2, ay=asy+dy2;
+      if (ax>=0&&ax<COLS&&ay>=0&&ay<ROWS) map[ay][ax]=2;
+    }
+    pl={x:psx, y:psy, dir:'UP', alive:true};
+    ai={x:asx, y:asy, dir:'LEFT', alive:true, cd:0};
+    pTrail=[]; aTrail=[];
+    pScore=0; curEra=selEra;
+  }
+
+  function inb(x,y) { return x>=0&&x<COLS&&y>=0&&y<ROWS; }
+  function own(x,y,o) { return inb(x,y)&&map[y][x]===o; }
+
+  // ═══════════════════════════════════════════════════
+  //  FLOOD FILL
+  // ═══════════════════════════════════════════════════
+
+  function floodFill(sx,sy,owner,trailSet) {
+    var visited={}, queue=[{x:sx,y:sy}], cells=[], hitEdge=false, hitEnemy=false;
+    while (queue.length) {
+      var c=queue.shift(), k=c.x+','+c.y;
+      if (visited[k]) continue;
+      visited[k]=true;
+      if (!inb(c.x,c.y)) { hitEdge=true; continue; }
+      var t = map[c.y][c.x];
+      // Own territory or trail: wall
+      if (t===owner && !trailSet[k]) continue;
+      if (trailSet[k]) continue;
+      // Enemy territory: boundary
+      if (t!==0 && t!==owner) { hitEnemy=true; continue; }
+      cells.push(c);
+      queue.push({x:c.x+1,y:c.y},{x:c.x-1,y:c.y},{x:c.x,y:c.y+1},{x:c.x,y:c.y-1});
+    }
+    if (hitEdge||hitEnemy) return [];
+    // Must have at least one adjacent owned cell
+    var touches=false;
+    for (var i=0;i<cells.length;i++) {
+      var cx=cells[i].x, cy=cells[i].y;
+      if (map[cy][cx]===owner) { touches=true; break; }
+      var nb=[{x:cx+1,y:cy},{x:cx-1,y:cy},{x:cx,y:cy+1},{x:cx,y:cy-1}];
+      for (var n=0;n<4;n++) {
+        var nx=nb[n].x, ny=nb[n].y;
+        if (inb(nx,ny)&&map[ny][nx]===owner) { touches=true; break; }
+      }
+      if (touches) break;
+    }
+    if (!touches) return [];
+    return cells;
+  }
+
+  // ═══════════════════════════════════════════════════
+  //  CLAIM TERRITORY
+  // ═══════════════════════════════════════════════════
+
+  function claimTerritory(owner,tr) {
+    if (!tr.length) return 0;
+    var tSet={};
+    for (var i=0;i<tr.length;i++) tSet[tr[i].x+','+tr[i].y]=true;
+    // Also block the "exit" position: the player position at start of trail
+    // (which is owned territory). But it's already in map, so flood fill treats it as wall.
+
+    var all={};
+    for (var j=0;j<tr.length;j++) {
+      var tx=tr[j].x, ty=tr[j].y;
+      var nb=[{x:tx+1,y:ty},{x:tx-1,y:ty},{x:tx,y:ty+1},{x:tx,y:ty-1}];
+      for (var n=0;n<4;n++) {
+        var nx=nb[n].x, ny=nb[n].y, nk=nx+','+ny;
+        if (!inb(nx,ny)||all[nk]) continue;
+        if (map[ny][nx]===0||map[ny][nx]===3-owner) {
+          var fill=floodFill(nx,ny,owner,tSet);
+          for (var f=0;f<fill.length;f++) all[fill[f].x+','+fill[f].y]=true;
+        }
+      }
+    }
+    // Add trail cells themselves
+    for (var k=0;k<tr.length;k++) all[tr[k].x+','+tr[k].y]=true;
+
+    var count=0, keys=Object.keys(all);
+    for (var m=0;m<keys.length;m++) {
+      var p=keys[m].split(','), fx=parseInt(p[0]), fy=parseInt(p[1]);
+      if (inb(fx,fy)) { map[fy][fx]=owner; count++; }
+    }
+    return count;
+  }
+
+  function clearTrail(tr,arr) {
+    for (var i=0;i<arr.length;i++) {
+      var t=arr[i];
+      if (trail[t.y]) trail[t.y][t.x]=0;
+    }
+  }
+
+  // ═══════════════════════════════════════════════════
+  //  UPDATE
+  // ═══════════════════════════════════════════════════
+
+  function updatePlayer() {
+    if (!pl.alive) return;
+    if (inpDir && OPPOSITE[inpDir]!==pl.dir) pl.dir=inpDir;
+    inpDir=null; // consume
+
+    var d=DIRS[pl.dir], nx=pl.x+d.dx, ny=pl.y+d.dy;
+    if (!inb(nx,ny)) { killPlayer(); return; }
+
+    // Re-entering own territory with trail → claim
+    if (own(nx,ny,1) && pTrail.length>0) {
+      var c=claimTerritory(1,pTrail);
+      if (c>0) { sfx('claim'); vibe(20); }
+      clearTrail(1,pTrail);
+      pTrail=[];
+      pl.x=nx; pl.y=ny;
+      pScore=Math.round(countT(1)/TOTAL*100);
+      hud();
+      return;
+    }
+
+    // If we're on trail and touch opponent territory → die
+    if (pTrail.length>0 && own(nx,ny,2)) { killPlayer(); return; }
+    // Hit opponent trail → die
+    if (trail[ny]&&trail[ny][nx]===2) { killPlayer(); return; }
+
+    // Hit own trail (allow crossing, just skip adding duplicate)
+    // Actually in paper.io you can cross your own trail and it just continues.
+    // We'll add the cell to trail (if not already there)
+
+    pl.x=nx; pl.y=ny;
+    // Add to trail
+    var tKey=nx+','+ny;
+    var dup=false;
+    for (var i=0;i<pTrail.length;i++) { if (pTrail[i].x===nx&&pTrail[i].y===ny) { dup=true; break; } }
+    if (!dup) {
+      pTrail.push({x:nx,y:ny});
+      if (trail[ny]) trail[ny][nx]=1;
+    }
+
+    // Era progress based on score
+    progEra();
+  }
+
+  function updateAI() {
+    if (!ai.alive) return;
+    ai.cd--;
+    if (ai.cd<=0) {
+      var dirs=['UP','DOWN','LEFT','RIGHT'], bestScore=-999, bestDir=ai.dir;
+      for (var i=0;i<4;i++) {
+        var dd=DIRS[dirs[i]], tx=ai.x+dd.dx, ty=ai.y+dd.dy;
+        if (!inb(tx,ty)||dirs[i]===OPPOSITE[ai.dir]) continue;
+        var s=Math.random()*10;
+        if (map[ty]&&map[ty][tx]===0) s+=20;
+        if (trail[ty]&&trail[ty][tx]===2) s-=50;
+        if (trail[ty]&&trail[ty][tx]===1) s-=30;
+        // Slight bias toward player's territory direction
+        var dx=pl.x-ai.x, dy=pl.y-ai.y;
+        if ((dirs[i]==='RIGHT'&&dx>0)||(dirs[i]==='LEFT'&&dx<0)) s+=2;
+        if ((dirs[i]==='DOWN'&&dy>0)||(dirs[i]==='UP'&&dy<0)) s+=2;
+        if (s>bestScore) { bestScore=s; bestDir=dirs[i]; }
+      }
+      ai.dir=bestDir;
+      ai.cd=3+Math.floor(Math.random()*5);
+    }
+
+    var d=DIRS[ai.dir], nx=ai.x+d.dx, ny=ai.y+d.dy;
+    if (!inb(nx,ny)) { ai.dir=OPPOSITE[ai.dir]; ai.cd=2; return; }
+
+    // Re-enter own territory → claim
+    if (own(nx,ny,2) && aTrail.length>0) {
+      var c=claimTerritory(2,aTrail);
+      if (c>0) sfx('claim');
+      clearTrail(2,aTrail);
+      aTrail=[];
+      ai.x=nx; ai.y=ny;
+      return;
+    }
+
+    // Enter player territory while on trail → die
+    if (aTrail.length>0 && own(nx,ny,1)) { killAI(); return; }
+    // Hit player trail → die
+    if (trail[ny]&&trail[ny][nx]===1) { killAI(); return; }
+
+    ai.x=nx; ai.y=ny;
+    var dup=false;
+    for (var j=0;j<aTrail.length;j++) { if (aTrail[j].x===nx&&aTrail[j].y===ny) { dup=true; break; } }
+    if (!dup) {
+      aTrail.push({x:nx,y:ny});
+      if (trail[ny]) trail[ny][nx]=2;
+    }
+  }
+
+  function killPlayer() {
+    pl.alive=false; sfx('die'); vibe([80,40,80]);
+    clearTrail(1,pTrail); pTrail=[];
+    endGame(false);
+  }
+
+  function killAI() {
+    ai.alive=false; sfx('cut'); vibe(60);
+    clearTrail(2,aTrail); aTrail=[];
+  }
+
+  function progEra() {
+    var pct=pScore, ne=0;
+    for (var i=ERAS.length-1;i>=0;i--) { if (pct>=ERAS[i].threshold) { ne=i; break; } }
+    if (ne>curEra) {
+      curEra=ne; sfx('era'); vibe([30,20,30,20,50]);
+      if (!reduced) {
+        var e=ERAS[curEra];
+        eraFlash.style.background='radial-gradient(circle,'+e.flash+',transparent)';
+        eraFlash.classList.remove('active');
+        void eraFlash.offsetWidth;
+        eraFlash.classList.add('active');
+      }
+      hud();
+    }
+  }
+
+  function countT(o) { var c=0; for (var y=0;y<ROWS;y++) for (var x=0;x<COLS;x++) if (map[y][x]===o) c++; return c; }
+
+  function eCfg() { return ERAS[curEra]; }
+
+  function hud() {
+    scoreDisplay.textContent = pScore+'%';
+    var e=eCfg();
+    eraDisplay.textContent=e.name;
+    eraDisplay.className='hud-era '+ERAS[curEra].cssClass;
+    document.title='Era Civilization — '+pScore+'%';
+    ariaLive.textContent='领土 '+pScore+'%, '+ERAS[curEra].name;
+  }
+
+  // ═══════════════════════════════════════════════════
+  //  GAME LOOP
+  // ═══════════════════════════════════════════════════
+
+  function startGame() {
+    initMap(); show('PLAYING');
+    resizeCanvas();
+    pScore=Math.round(countT(1)/TOTAL*100);
+    hud();
+    document.title='Era Civilization — '+pScore+'%';
+    sfx('claim');
+    gameStart=performance.now();
+    lastTime=performance.now(); acc=0;
+    if (rafId) cancelAnimationFrame(rafId);
+    rafId=requestAnimationFrame(loop);
+  }
+
+  function loop(ts) {
+    var dt=ts-lastTime; lastTime=ts;
+    if (dt>200) dt=200;
+    if (gameState==='PLAYING') {
+      if (ts-gameStart>=GAME_MAX_MS) { endGame(true); return; }
+      acc+=dt;
+      var tick=1000/eCfg().speed;
+      while (acc>=tick) {
+        if (gameState==='GAMEOVER') break;
+        updatePlayer();
+        if (ai.alive) updateAI();
+        acc-=tick;
+      }
+    }
+    render();
+    if (gameState==='PLAYING') rafId=requestAnimationFrame(loop);
+  }
+
+  function endGame(tup) {
+    gameState='GAMEOVER';
+    if (pl.alive) pScore=Math.round(countT(1)/TOTAL*100);
+    hud();
+    var nb=saveHighScore(pScore);
+    if (nb) { sfx('high'); vibe([50,30,50,30,100]); }
+    goScore.textContent=pScore+'%';
+    goBest.textContent='最高: '+loadHighScore()+'%';
+    goNewBest.style.display=nb?'block':'none';
+    goDetails.textContent='占领 '+countT(1)+' 格 / 总计 '+TOTAL+' 格'+(tup?' (时间到)':'');
+    setTimeout(function() {
+      show('GAMEOVER');
+      replayBtn.focus();
+      ariaLive.textContent='游戏结束! 领土 '+pScore+'%';
+    }, reduced?50:400);
+  }
+
+  // ═══════════════════════════════════════════════════
+  //  RENDER
+  // ═══════════════════════════════════════════════════
+
+  function resizeCanvas() {
+    var rect=canvas.getBoundingClientRect();
+    var cell=Math.floor(rect.width/COLS);
+    var w=cell*COLS, h=cell*ROWS;
+    canvas.width=w; canvas.height=h;
+    canvas.style.width=w+'px'; canvas.style.height=h+'px';
+  }
+
+  function render() {
+    if (!ctx) return;
+    var e=eCfg();
+    var cw=canvas.width, ch=canvas.height;
+    var cell=Math.floor(cw/COLS);
+    if (cell<1) cell=1;
+
+    // BG
+    ctx.fillStyle=e.bg; ctx.fillRect(0,0,cw,ch);
+
+    // Grid
+    ctx.strokeStyle=e.grid; ctx.lineWidth=0.5;
+    for (var x=0;x<=COLS;x++) { ctx.beginPath();ctx.moveTo(x*cell,0);ctx.lineTo(x*cell,ch);ctx.stroke(); }
+    for (var y=0;y<=ROWS;y++) { ctx.beginPath();ctx.moveTo(0,y*cell);ctx.lineTo(cw,y*cell);ctx.stroke(); }
+
+    // Territory fills
+    for (var my=0;my<ROWS;my++) for (var mx=0;mx<COLS;mx++) {
+      var t=map[my][mx];
+      if (t===1) { ctx.fillStyle=e.playerFill; ctx.fillRect(mx*cell,my*cell,cell,cell); }
+      else if (t===2) { ctx.fillStyle=e.aiFill; ctx.fillRect(mx*cell,my*cell,cell,cell); }
+    }
+
+    // Border lines for territory edges
+    ctx.lineWidth=1;
+    for (var by=0;by<ROWS;by++) for (var bx=0;bx<COLS;bx++) {
+      var tt=map[by][bx];
+      if (tt===0) continue;
+      var clr = tt===1 ? e.playerColor : e.aiColor;
+      ctx.strokeStyle=clr;
+      // Right edge
+      if (bx===COLS-1||map[by][bx+1]!==tt) { ctx.beginPath();ctx.moveTo((bx+1)*cell,by*cell);ctx.lineTo((bx+1)*cell,(by+1)*cell);ctx.stroke(); }
+      // Bottom edge
+      if (by===ROWS-1||map[by+1]&&map[by+1][bx]!==tt) { ctx.beginPath();ctx.moveTo(bx*cell,(by+1)*cell);ctx.lineTo((bx+1)*cell,(by+1)*cell);ctx.stroke(); }
+    }
+
+    // Trails
+    ctx.lineCap='round'; ctx.lineJoin='round';
+    if (pTrail.length>0) {
+      ctx.strokeStyle=e.trailP; ctx.lineWidth=Math.max(3,cell*0.35);
+      ctx.beginPath();
+      ctx.moveTo(pTrail[0].x*cell+cell/2,pTrail[0].y*cell+cell/2);
+      for (var pi=1;pi<pTrail.length;pi++) ctx.lineTo(pTrail[pi].x*cell+cell/2,pTrail[pi].y*cell+cell/2);
+      ctx.stroke();
+    }
+    if (aTrail.length>0) {
+      ctx.strokeStyle=e.trailA; ctx.lineWidth=Math.max(3,cell*0.35);
+      ctx.beginPath();
+      ctx.moveTo(aTrail[0].x*cell+cell/2,aTrail[0].y*cell+cell/2);
+      for (var ai2=1;ai2<aTrail.length;ai2++) ctx.lineTo(aTrail[ai2].x*cell+cell/2,aTrail[ai2].y*cell+cell/2);
+      ctx.stroke();
+    }
+
+    // Player head
+    if (pl.alive) {
+      ctx.save();
+      if (!reduced) { ctx.shadowBlur=10; ctx.shadowColor=e.playerColor; }
+      ctx.fillStyle=e.playerColor;
+      ctx.beginPath(); ctx.arc(pl.x*cell+cell/2,pl.y*cell+cell/2,cell*0.42,0,Math.PI*2); ctx.fill();
+      ctx.restore();
+      // Eyes
+      ctx.fillStyle='#fff';
+      var ex1,ey1,ex2,ey2;
+      switch (pl.dir) {
+        case 'UP': ex1=pl.x*cell+cell*0.33; ey1=pl.y*cell+cell*0.33; ex2=pl.x*cell+cell*0.67; ey2=pl.y*cell+cell*0.33; break;
+        case 'DOWN': ex1=pl.x*cell+cell*0.33; ey1=pl.y*cell+cell*0.67; ex2=pl.x*cell+cell*0.67; ey2=pl.y*cell+cell*0.67; break;
+        case 'LEFT': ex1=pl.x*cell+cell*0.33; ey1=pl.y*cell+cell*0.33; ex2=pl.x*cell+cell*0.33; ey2=pl.y*cell+cell*0.67; break;
+        case 'RIGHT': ex1=pl.x*cell+cell*0.67; ey1=pl.y*cell+cell*0.33; ex2=pl.x*cell+cell*0.67; ey2=pl.y*cell+cell*0.67; break;
+      }
+      ctx.beginPath();ctx.arc(ex1,ey1,Math.max(1.5,cell*0.1),0,Math.PI*2);ctx.fill();
+      ctx.beginPath();ctx.arc(ex2,ey2,Math.max(1.5,cell*0.1),0,Math.PI*2);ctx.fill();
+      // Pupils
+      ctx.fillStyle='#111';
+      var po=cell*0.04;
+      ctx.beginPath();ctx.arc(ex1+(pl.dir==='RIGHT'?po:pl.dir==='LEFT'?-po:0),ey1+(pl.dir==='DOWN'?po:pl.dir==='UP'?-po:0),Math.max(0.8,cell*0.05),0,Math.PI*2);ctx.fill();
+      ctx.beginPath();ctx.arc(ex2+(pl.dir==='RIGHT'?po:pl.dir==='LEFT'?-po:0),ey2+(pl.dir==='DOWN'?po:pl.dir==='UP'?-po:0),Math.max(0.8,cell*0.05),0,Math.PI*2);ctx.fill();
+    }
+
+    // AI head
+    if (ai.alive) {
+      ctx.save();
+      if (!reduced) { ctx.shadowBlur=8; ctx.shadowColor=e.aiColor; }
+      ctx.fillStyle=e.aiColor;
+      ctx.beginPath(); ctx.arc(ai.x*cell+cell/2,ai.y*cell+cell/2,cell*0.38,0,Math.PI*2); ctx.fill();
+      ctx.restore();
+      ctx.fillStyle='#fff';
+      var eax1,eay1,eax2,eay2;
+      switch (ai.dir) {
+        case 'UP': eax1=ai.x*cell+cell*0.33; eay1=ai.y*cell+cell*0.33; eax2=ai.x*cell+cell*0.67; eay2=ai.y*cell+cell*0.33; break;
+        case 'DOWN': eax1=ai.x*cell+cell*0.33; eay1=ai.y*cell+cell*0.67; eax2=ai.x*cell+cell*0.67; eay2=ai.y*cell+cell*0.67; break;
+        case 'LEFT': eax1=ai.x*cell+cell*0.33; eay1=ai.y*cell+cell*0.33; eax2=ai.x*cell+cell*0.33; eay2=ai.y*cell+cell*0.67; break;
+        case 'RIGHT': eax1=ai.x*cell+cell*0.67; eay1=ai.y*cell+cell*0.33; eax2=ai.x*cell+cell*0.67; eay2=ai.y*cell+cell*0.67; break;
+      }
+      ctx.beginPath();ctx.arc(eax1,eay1,Math.max(1.2,cell*0.08),0,Math.PI*2);ctx.fill();
+      ctx.beginPath();ctx.arc(eax2,eay2,Math.max(1.2,cell*0.08),0,Math.PI*2);ctx.fill();
+    }
+
+    // Time bar
+    if (gameState==='PLAYING') {
+      var elp=Math.min(performance.now()-gameStart,GAME_MAX_MS);
+      var pr=1-elp/GAME_MAX_MS;
+      var bh=4, by=ch-bh-2;
+      ctx.fillStyle='rgba(255,255,255,0.1)';
+      ctx.fillRect(2,by,cw-4,bh);
+      ctx.fillStyle=pr>0.3?'rgba(205,127,50,0.6)':'rgba(192,57,43,0.6)';
+      ctx.fillRect(2,by,(cw-4)*pr,bh);
+    }
+  }
+
+  // ═══════════════════════════════════════════════════
+  //  INPUT
+  // ═══════════════════════════════════════════════════
+
+  function setDir(d) {
+    if (gameState!=='PLAYING') return;
+    inpDir=d;
+  }
+
+  document.addEventListener('keydown',function(e) {
+    var tag=(e.target&&e.target.tagName||'').toLowerCase();
+    if (tag==='input'||tag==='textarea') return;
+    var k=e.key;
+    if ((gameState==='TITLE'||gameState==='GAMEOVER')&&(k==='Enter'||k===' ')) {
+      e.preventDefault(); ac(); startGame(); return;
+    }
+    if (gameState!=='PLAYING') return;
+    switch (k) {
+      case 'ArrowUp': case 'w': case 'W': e.preventDefault(); setDir('UP'); break;
+      case 'ArrowDown': case 's': case 'S': e.preventDefault(); setDir('DOWN'); break;
+      case 'ArrowLeft': case 'a': case 'A': e.preventDefault(); setDir('LEFT'); break;
+      case 'ArrowRight': case 'd': case 'D': e.preventDefault(); setDir('RIGHT'); break;
+    }
+  });
+
+  // Mouse drag
+  var mx=0, my=0, dragging=false;
+  canvas.addEventListener('mousedown',function(e) {
+    e.preventDefault(); mx=e.clientX; my=e.clientY; dragging=true;
+  });
+  document.addEventListener('mousemove',function(e) {
+    if (!dragging||gameState!=='PLAYING') return;
+    var dx=e.clientX-mx, dy=e.clientY-my;
+    if (Math.max(Math.abs(dx),Math.abs(dy))<20) return;
+    if (Math.abs(dx)>Math.abs(dy)) setDir(dx>0?'RIGHT':'LEFT');
+    else setDir(dy>0?'DOWN':'UP');
+    mx=e.clientX; my=e.clientY;
+  });
+  document.addEventListener('mouseup',function() { dragging=false; });
+
+  // Touch drag
+  var tx=0, ty=0;
+  canvas.addEventListener('touchstart',function(e) {
+    e.preventDefault(); var t=e.touches[0]; tx=t.clientX; ty=t.clientY;
+  },{passive:false});
+  canvas.addEventListener('touchmove',function(e) {
+    e.preventDefault();
+    if (gameState!=='PLAYING') return;
+    var t=e.touches[0], dx=t.clientX-tx, dy=t.clientY-ty;
+    if (Math.max(Math.abs(dx),Math.abs(dy))<15) return;
+    if (Math.abs(dx)>Math.abs(dy)) setDir(dx>0?'RIGHT':'LEFT');
+    else setDir(dy>0?'DOWN':'UP');
+    tx=t.clientX; ty=t.clientY;
+  },{passive:false});
+
+  // ═══════════════════════════════════════════════════
+  //  BUTTONS & ERA SELECT
+  // ═══════════════════════════════════════════════════
+
+  startBtn.addEventListener('click',function(){ac();startGame();});
+  replayBtn.addEventListener('click',function(){ac();startGame();});
+
+  for (var eb=0;eb<eraBtns.length;eb++) {
+    eraBtns[eb].addEventListener('click',function(){
+      if (gameState!=='TITLE') return;
+      selectEra(parseInt(this.getAttribute('data-era')));
+    });
+  }
+
+  function selectEra(idx) {
+    if (idx<0||idx>=ERAS.length) return;
+    selEra=idx;
+    for (var i=0;i<eraBtns.length;i++) {
+      var b=eraBtns[i], eIdx=parseInt(b.getAttribute('data-era'));
+      if (eIdx===idx) {
+        b.classList.add('selected'); b.setAttribute('aria-checked','true'); b.tabIndex=0;
+      } else {
+        b.classList.remove('selected'); b.setAttribute('aria-checked','false'); b.tabIndex=-1;
+      }
+    }
+    var icons=['\u{2694}','\u{2699}','\u{1F680}'];
+    $('eraBadgeIcon').textContent=icons[idx];
+    var e=ERAS[idx];
+    document.documentElement.style.setProperty('--bg-deep',e.bg);
+    var ti=$('titleIcon');
+    ti.style.background='radial-gradient(circle at 40% 40%,'+e.playerColor+','+e.bg+')';
+    ti.style.boxShadow='0 0 40px '+(idx===0?'rgba(205,127,50,0.3)':idx===1?'rgba(232,168,124,0.3)':'rgba(0,229,255,0.3)');
+  }
+
+  // ═══════════════════════════════════════════════════
+  //  RESIZE
+  // ═══════════════════════════════════════════════════
+
+  window.addEventListener('resize',function() {
+    if (gameState==='PLAYING'||gameState==='GAMEOVER') resizeCanvas();
+  });
+
+  // ═══════════════════════════════════════════════════
+  //  INIT
+  // ═══════════════════════════════════════════════════
+
+  show('TITLE');
+
+})();
+</script>
+</body>
+</html>
