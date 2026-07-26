@@ -1,6 +1,26 @@
 {
     "games": [
         {
+            "id": "chaos-race",
+            "name": "Chaos Race",
+            "description": "Side-scrolling race against AI opponents with chaotic obstacles",
+            "category": "racing",
+            "tags": [
+                "racing",
+                "chaos",
+                "multiplayer",
+                "platformer",
+                "retro"
+            ],
+            "thumbnail": "/games/047-chaos-race/thumb.svg",
+            "path": "/games/047-chaos-race/",
+            "hasServer": false,
+            "players": "1",
+            "version": "1.0.0",
+            "featured": true,
+            "rating": 4
+        },
+        {
             "id": "bridge-brawl-3d",
             "name": "Bridge Brawl 3D",
             "description": "对抗式抢桥战，把对手撞下桥",
