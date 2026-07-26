@@ -926,6 +926,20 @@
             "rating": 3
         },
         {
+            "id": "magic-bubble-shooter",
+            "name": "Magic Bubble Shooter",
+            "description": "经典泡泡龙：发射同色泡泡形成3连消除",
+            "category": "puzzle",
+            "tags": ["singleplayer", "puzzle", "matching", "bubble-shooter", "short-session"],
+            "thumbnail": "/games/013-magic-bubble-shooter/thumb.png",
+            "path": "/games/013-magic-bubble-shooter/",
+            "hasServer": false,
+            "players": "1",
+            "version": "1.0.0",
+            "featured": false,
+            "rating": 3
+        },
+        {
             "id": "era-civilization",
             "name": "Era Civilization.io",
             "description": "实时占领格子扩张文明，与他人争霸",
