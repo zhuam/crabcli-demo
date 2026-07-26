@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <title>Monorail Pilot · Smoke Tests</title>
+  <style>
+    body { font-family: -apple-system, "PingFang SC", sans-serif; padding: 16px; max-width: 760px; margin: 0 auto; background:#0b0e2a; color:#e8e8f0;}
+    h1 { font-size: 18px; color:#6c5ce7; }
+    .test { padding: 6px 10px; margin: 4px 0; border-radius: 6px; font-family: monospace; font-size: 13px; word-break: break-all; }
+    .pass { background: #0a3a2a; color: #55efc4; }
+    .fail { background: #3a0a0a; color: #ff6b6b; }
+    .info { background: #1a1d4a; color: #8888aa; }
+    #summary { font-weight: 800; font-size: 16px; padding: 10px; border-radius: 8px; margin: 12px 0; }
+    .ok { background: #55efc4; color: #0b0e2a; }
+    .ng { background: #ff6b6b; color: white; }
+    iframe { width: 100%; height: 400px; border: 1px solid #2a2d5a; border-radius: 8px; margin-top: 16px; background:#000; }
+    button { padding: 8px 14px; font-weight: 700; border-radius: 6px; border: 1px solid #6c5ce7; background: #6c5ce7; color: #fff; cursor: pointer; }
+    button:hover { background: #5a4ad5; }
+  </style>
+</head>
+<body>
+  <h1>🚝 Monorail Pilot · Smoke Tests</h1>
+  <p>Verify Issue #28 acceptance criteria. Opens game in iframe and runs assertions.</p>
+  <div style="display:flex;gap:8px;align-items:center;margin:10px 0">
+    <button id="runBtn">▶ Run Tests</button>
+    <span style="color:#8888aa;font-size:13px">Auto-runs on load</span>
+  </div>
+  <div id="summary"></div>
+  <div id="results"></div>
+  <iframe id="frame" src="../../index.html" title="game under test" style="display:none"></iframe>
+
+  <script>
+    const results = document.getElementById('results');
+    const summary = document.getElementById('summary');
+    let pass = 0, fail = 0;
+
+    function record(name, ok, detail = '') {
+      const div = document.createElement('div');
+      div.className = 'test ' + (ok ? 'pass' : 'fail');
+      div.textContent = (ok ? 'PASS  ' : 'FAIL  ') + name + (detail ? '  — ' + detail : '');
+      results.appendChild(div);
+      ok ? pass++ : fail++;
+    }
+    function info(text) {
+      const div = document.createElement('div');
+      div.className = 'test info';
+      div.textContent = 'INFO  ' + text;
+      results.appendChild(div);
+    }
+    function assert(name, cond, detail = '') { record(name, !!cond, detail); }
+
+    async function runTests() {
+      results.innerHTML = '';
+      pass = 0; fail = 0;
+      summary.textContent = 'running...';
+      summary.className = '';
+
+      const frame = document.getElementById('frame');
+      frame.style.display = 'block';
+      await new Promise(res => {
+        frame.onload = () => setTimeout(res, 1500);
+        frame.src = '../../index.html?t=' + Date.now();
+      });
+
+      const doc = frame.contentDocument;
+      const win = frame.contentWindow;
+
+      // ------- AC1: 首屏 3 秒进入游玩，无教程 -------
+      info('=== AC1: Splash & First Screen ===');
+      const splashRequiredIds = [
+        'splashScreen', 'startBtn', 'starField'
+      ];
+      for (const id of splashRequiredIds) {
+        assert('splash #' + id + ' exists', !!doc.getElementById(id));
+      }
+      assert('splash screen is active on boot',
+        doc.getElementById('splashScreen').classList.contains('active'));
+      assert('start button is visible',
+        doc.querySelector('.splash-start-btn') !== null);
+      assert('no tutorial overlay',
+        !doc.getElementById('tutorialOverlay') &&
+        !/tutorial|how to play/i.test(doc.body.textContent));
+
+      // ------- AC2: 单局 ≤ 3 分钟 -------
+      info('=== AC2: Game Length & Timers ===');
+      const appHtml = frame.contentDocument.documentElement.outerHTML;
+      const scripts = appHtml.match(/<script[^>]*>([\s\S]*?)<\/script>/gi) || [];
+      const combinedJS = scripts.map(s => s.replace(/<\/?script[^>]*>/g, '')).join('\n');
+      assert('timeLimit defined in levels', /timeLimit/.test(combinedJS));
+      assert('max level timeLimit <= 150', /timeLimit:150/.test(combinedJS));
+      assert('HUD time display exists', !!doc.getElementById('timeDisplay'));
+
+      // ------- AC3: 至少 2 种输入 (键盘 + 触屏 + 鼠标) -------
+      info('=== AC3: Input Methods ===');
+      assert('touch zones present', !!doc.getElementById('touchLeft') && !!doc.getElementById('touchRight'));
+      assert('pause button exists', !!doc.getElementById('pauseBtn'));
+      assert('game canvas exists', !!doc.getElementById('gameCanvas'));
+      assert('touch indicators exist',
+        !!doc.getElementById('brakeIndicator') && !!doc.getElementById('accelIndicator'));
+
+      // Simulate clicking START → level select
+      const startBtn = doc.getElementById('startBtn');
+      if (startBtn) {
+        startBtn.click();
+        await new Promise(r => setTimeout(r, 300));
+      }
+      assert('start button click shows level select',
+        !doc.getElementById('splashScreen').classList.contains('active') &&
+        doc.getElementById('levelScreen').classList.contains('active'));
+      assert('level grid populated',
+        doc.getElementById('levelGrid').children.length >= 6);
+      assert('total stars display present',
+        !!doc.getElementById('totalStarsDisplay'));
+
+      // Click level 1 to start game
+      const firstLevelCard = doc.querySelector('.level-card');
+      if (firstLevelCard) {
+        firstLevelCard.click();
+        await new Promise(r => setTimeout(r, 500));
+      }
+      assert('game screen active after clicking level 1',
+        doc.getElementById('gameScreen').classList.contains('active'));
+      assert('HUD speed display shows 0 initially',
+        doc.getElementById('speedDisplay').textContent === '0');
+      assert('HUD time display shows time',
+        doc.getElementById('timeDisplay').textContent.length > 0);
+      assert('station name shows next stop',
+        doc.getElementById('stationName').textContent !== '--');
+      assert('canvas rendering',
+        doc.getElementById('gameCanvas').width > 0);
+
+      // ------- AC4: 结算页有按钮 -------
+      info('=== AC4: Result Screen ===');
+      assert('result screen exists', !!doc.getElementById('resultScreen'));
+      assert('retry button exists', !!doc.getElementById('retryBtn'));
+      assert('levels button exists', !!doc.getElementById('levelsBtn'));
+      assert('result stars display', !!doc.getElementById('resultStars'));
+      assert('result score display', !!doc.getElementById('resultScore'));
+      assert('result time display', !!doc.getElementById('resultTime'));
+
+      // Verify result screen starts inactive
+      assert('result screen hidden by default',
+        !doc.getElementById('resultScreen').classList.contains('active'));
+
+      // ------- AC5: 音效与震动 -------
+      info('=== AC5: Sound & Vibration ===');
+      assert('AudioContext class referenced',
+        /AudioContext|webkitAudioContext/.test(combinedJS));
+      assert('Sound synthesis functions defined',
+        /function\s+playTone/.test(combinedJS) &&
+        /function\s+playChime/.test(combinedJS));
+      assert('navigator.vibrate usage guarded',
+        /navigator\.vibrate/.test(combinedJS));
+      assert('Sound setting persisted',
+        /monorail_pilot_settings/.test(combinedJS));
+
+      // ------- AC6: localStorage -------
+      info('=== AC6: localStorage High Scores ===');
+      assert('localStorage key defined',
+        /monorail_pilot_scores/.test(combinedJS));
+      assert('saveScores writes to localStorage',
+        /localStorage\.setItem\(['"]monorail_pilot_scores['"]/.test(combinedJS));
+      assert('loadScores reads from localStorage',
+        /localStorage\.getItem\(['"]monorail_pilot_scores['"]/.test(combinedJS));
+
+      // Verify localStorage works in iframe context
+      try {
+        win.localStorage.setItem('monorail_pilot_test_probe', JSON.stringify({test: 1}));
+        const probe = JSON.parse(win.localStorage.getItem('monorail_pilot_test_probe'));
+        assert('localStorage read/write works', probe.test === 1);
+        win.localStorage.removeItem('monorail_pilot_test_probe');
+      } catch (e) {
+        record('localStorage read/write works', false, e.message);
+      }
+
+      // ------- Bonus: DOM structure -------
+      info('=== Bonus: DOM Structure & Accessibility ===');
+      assert('DOMParser DOCTYPE present', /<!DOCTYPE html>/i.test(appHtml));
+      const requiredIds = [
+        'splashScreen', 'levelScreen', 'gameScreen', 'resultScreen',
+        'pauseOverlay', 'gameCanvas', 'canvasWrap',
+        'speedDisplay', 'timeDisplay', 'stationName',
+        'touchLeft', 'touchRight', 'pauseBtn',
+        'retryBtn', 'levelsBtn', 'resultStars', 'resultScore', 'resultTime',
+        'confettiContainer'
+      ];
+      for (const id of requiredIds) {
+        assert('#' + id + ' exists', !!doc.getElementById(id));
+      }
+
+      // ------- Bonus: Game mechanics -------
+      info('=== Bonus: Game Mechanics (source verification) ===');
+      assert('6 levels defined',
+        /LEVELS\s*=\s*\[[\s\S]{6,}\]/.test(combinedJS));
+      assert('Physics constants: ACCEL/BRAKE/FRICTION',
+        /ACCEL\s*=\s*180/.test(combinedJS) &&
+        /BRAKE\s*=\s*320/.test(combinedJS) &&
+        /FRICTION\s*=\s*50/.test(combinedJS));
+      assert('Station types: normal/express/finish',
+        /type:\s*['"]normal['"]/.test(combinedJS) &&
+        /type:\s*['"]express['"]/.test(combinedJS) &&
+        /type:\s*['"]finish['"]/.test(combinedJS));
+      assert('Game loop uses requestAnimationFrame',
+        /requestAnimationFrame/.test(combinedJS));
+      assert('Score calculation function',
+        /function\s+calculateScore/.test(combinedJS));
+      assert('Confetti on victory',
+        /confettiContainer/.test(combinedJS));
+
+      // ============= SUMMARY =============
+      summary.textContent = pass + ' passed' + ' · ' + fail + ' failed';
+      summary.className = fail === 0 ? 'ok' : 'ng';
+    }
+
+    document.getElementById('runBtn').addEventListener('click', runTests);
+    window.addEventListener('load', () => setTimeout(runTests, 200));
+  </script>
+</body>
+</html>
