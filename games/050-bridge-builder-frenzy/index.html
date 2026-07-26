@@ -1,0 +1,1690 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#1a1a2e">
+<title>Bridge Builder Frenzy</title>
+<link rel="stylesheet" href="/games/shared/game-frame.css">
+<style>
+/* ============================================================
+   BRIDGE BUILDER FRENZY — Game Styles
+   ============================================================ */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{width:100%;height:100%;overflow:hidden}
+body{
+  font-family:'Inter','Roboto',system-ui,-apple-system,sans-serif;
+  background:#1a1a2e;color:#e0e0f0;
+  display:flex;align-items:center;justify-content:center;
+  touch-action:none;-webkit-tap-highlight-color:transparent;
+  user-select:none;-webkit-user-select:none;
+}
+
+.screen{position:fixed;inset:0;display:none;flex-direction:column;z-index:1}
+.screen.active{display:flex}
+
+/* ============================================================
+   TITLE SCREEN
+   ============================================================ */
+.splash{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  height:100%;text-align:center;position:relative;overflow:hidden;
+  background:radial-gradient(ellipse 80% 50% at 50% 30%,rgba(66,133,244,0.08) 0%,transparent 70%),
+             radial-gradient(ellipse 60% 40% at 50% 70%,rgba(234,134,63,0.04) 0%,transparent 60%),
+             #1a1a2e;
+}
+.splash::before{content:'';position:absolute;inset:0;background:url("data:image/svg+xml,%3Csvg width='30' height='30' xmlns='http://www.w3.org/2000/svg'%3E%3Cdefs%3E%3Cpattern id='g' width='30' height='30' patternUnits='userSpaceOnUse'%3E%3Cpath d='M 30 0 L 0 0 0 30' fill='none' stroke='rgba(255,255,255,0.02)' stroke-width='0.5'/%3E%3C/pattern%3E%3C/defs%3E%3Crect width='100%25' height='100%25' fill='url(%23g)'/%3E%3C/svg%3E");opacity:0.5;pointer-events:none}
+
+.title-logo{font-size:clamp(28px,5vw,48px);font-weight:800;letter-spacing:6px;text-transform:uppercase;margin-bottom:4px;position:relative;z-index:1}
+.title-logo .accent{color:#4285F4;text-shadow:0 0 20px rgba(66,133,244,0.4),0 0 60px rgba(66,133,244,0.15)}
+.title-logo .sub{color:#EA863F}
+.title-sub{font-size:12px;color:#6b6b82;letter-spacing:8px;text-transform:uppercase;font-weight:500;margin-bottom:8px;position:relative;z-index:1}
+.title-tagline{font-size:10px;color:#4a4a62;font-family:'JetBrains Mono','Courier New',monospace;margin-bottom:32px;position:relative;z-index:1}
+
+.preview-canvas-wrap{
+  width:280px;height:158px;border-radius:12px;border:1px solid rgba(255,255,255,0.08);
+  background:#12121e;margin-bottom:24px;position:relative;z-index:1;overflow:hidden
+}
+.preview-canvas-wrap canvas{display:block;width:100%;height:100%}
+
+.best-score{margin-bottom:24px;font-family:'JetBrains Mono',monospace;font-size:11px;color:#6b6b82;position:relative;z-index:1}
+.best-score .num{color:#FFB800;font-size:15px;font-weight:700}
+.best-score .label{font-size:9px;letter-spacing:2px;text-transform:uppercase}
+
+.btn-play{
+  display:inline-flex;align-items:center;gap:8px;
+  padding:14px 48px;border-radius:10px;border:1px solid #4285F4;
+  background:transparent;color:#4285F4;font-size:16px;font-weight:700;
+  letter-spacing:4px;text-transform:uppercase;cursor:pointer;
+  position:relative;z-index:1;transition:all 0.2s
+}
+.btn-play:hover{background:#4285F4;color:#1a1a2e;box-shadow:0 0 30px rgba(66,133,244,0.25);transform:scale(1.03)}
+.btn-play:active{transform:scale(0.97)}
+
+.title-controls{position:relative;z-index:1;margin-top:20px;display:flex;gap:16px;flex-wrap:wrap;justify-content:center}
+.title-controls kbd{font-size:10px;padding:2px 6px;border-radius:4px;background:#1a1a2e;border:1px solid rgba(255,255,255,0.08);color:#6b6b82;font-family:'JetBrains Mono',monospace}
+
+.sound-toggle{
+  position:fixed;top:12px;right:12px;z-index:100;
+  width:36px;height:36px;border-radius:50%;border:1px solid rgba(255,255,255,0.1);
+  background:rgba(18,18,30,0.8);color:#6b6b82;
+  cursor:pointer;display:flex;align-items:center;justify-content:center;
+  font-size:16px;transition:all 0.2s
+}
+.sound-toggle:hover{border-color:rgba(255,255,255,0.3);color:#e0e0f0}
+
+/* ============================================================
+   GAME SCREEN
+   ============================================================ */
+.game-screen{
+  height:100%;display:flex;flex-direction:column;
+  background:radial-gradient(ellipse at 50% 60%,rgba(20,20,40,0.8) 0%,#1a1a2e 80%)
+}
+
+.hud{
+  padding:6px 16px;display:flex;align-items:center;justify-content:space-between;
+  border-bottom:1px solid rgba(255,255,255,0.06);background:#12121e;flex-shrink:0;height:40px
+}
+.hud-level{font-family:'JetBrains Mono',monospace;font-size:11px;color:#6b6b82}
+.hud-level span{color:#e0e0f0;font-weight:600}
+.hud-budget{font-family:'JetBrains Mono',monospace;font-size:11px;color:#6b6b82}
+.hud-budget span{color:#FFB800;font-weight:600}
+
+/* Status bar */
+.status-bar{
+  padding:4px 16px;display:flex;justify-content:space-between;align-items:center;
+  border-bottom:1px solid rgba(255,255,255,0.06);background:#12121e;flex-shrink:0;height:28px
+}
+.status-msg{font-family:'JetBrains Mono',monospace;font-size:10px;color:#6b6b82;letter-spacing:1px}
+.status-score{font-family:'JetBrains Mono',monospace;font-size:10px;color:#6b6b82}
+.status-score span{color:#e0e0f0;font-weight:600}
+
+/* Arena */
+.arena-wrap{flex:1;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;flex-direction:column}
+.arena{
+  position:relative;width:calc(100% - 32px);max-width:700px;
+  aspect-ratio:16/10;border:1px solid rgba(255,255,255,0.1);
+  border-radius:8px;background:#12121e;overflow:hidden
+}
+.arena canvas{display:block;width:100%;height:100%}
+
+/* Material palette */
+.material-palette{
+  display:flex;gap:8px;padding:6px 16px;
+  background:#12121e;border-top:1px solid rgba(255,255,255,0.06);flex-shrink:0;
+  justify-content:center;flex-wrap:wrap
+}
+.mat-btn{
+  display:flex;align-items:center;gap:6px;
+  padding:5px 12px;border-radius:6px;border:1px solid rgba(255,255,255,0.12);
+  background:transparent;color:#e0e0f0;font-size:11px;font-family:'JetBrains Mono',monospace;
+  cursor:pointer;transition:all 0.15s;white-space:nowrap
+}
+.mat-btn:hover{border-color:rgba(255,255,255,0.3)}
+.mat-btn.active{border-color:#4285F4;background:rgba(66,133,244,0.15);color:#4285F4;box-shadow:0 0 12px rgba(66,133,244,0.15)}
+.mat-btn .dot{width:10px;height:10px;border-radius:2px;display:inline-block}
+.mat-btn .cost{color:#6b6b82;font-size:9px}
+.mat-btn.locked{opacity:0.3;cursor:not-allowed}
+
+/* Action buttons */
+.action-bar{
+  display:flex;gap:8px;padding:6px 16px;
+  background:#12121e;border-top:1px solid rgba(255,255,255,0.06);flex-shrink:0;
+  justify-content:center
+}
+.action-btn{
+  padding:6px 18px;border-radius:6px;border:1px solid rgba(255,255,255,0.12);
+  background:transparent;color:#e0e0f0;font-size:11px;font-family:'JetBrains Mono',monospace;
+  cursor:pointer;transition:all 0.15s;letter-spacing:1px;text-transform:uppercase
+}
+.action-btn:hover{border-color:rgba(255,255,255,0.3)}
+.action-btn.primary{border-color:#4285F4;color:#4285F4}
+.action-btn.primary:hover{background:#4285F4;color:#1a1a2e}
+.action-btn.danger{border-color:#EA4335;color:#EA4335}
+.action-btn.danger:hover{background:#EA4335;color:#1a1a2e}
+.action-btn.warning{border-color:#FBBC04;color:#FBBC04}
+.action-btn.warning:hover{background:#FBBC04;color:#1a1a2e}
+.action-btn:disabled{opacity:0.3;cursor:not-allowed;pointer-events:none}
+
+/* ============================================================
+   RESULT SCREEN
+   ============================================================ */
+.result{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  height:100%;text-align:center;
+  background:radial-gradient(ellipse 60% 50% at 50% 40%,#12121e 0%,#1a1a2e 80%)
+}
+.result-icon{font-size:48px;margin-bottom:12px}
+.result-title{font-family:'JetBrains Mono',monospace;font-size:clamp(24px,4vw,36px);font-weight:700;letter-spacing:6px;text-transform:uppercase;margin-bottom:8px}
+.result-title.win{color:#34A853;text-shadow:0 0 30px rgba(52,168,83,0.3)}
+.result-title.lose{color:#EA4335;text-shadow:0 0 30px rgba(234,67,53,0.3)}
+.result-title.collapse{color:#FBBC04;text-shadow:0 0 30px rgba(251,188,4,0.3)}
+.result-stats{font-family:'JetBrains Mono',monospace;font-size:12px;color:#6b6b82;margin-bottom:24px;line-height:2}
+.result-stats .val{color:#e0e0f0;font-weight:600}
+.result-actions{display:flex;gap:12px;align-items:center}
+.btn-rematch,.btn-next,.btn-menu{
+  display:inline-flex;align-items:center;gap:8px;padding:10px 28px;border-radius:6px;
+  font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:500;
+  letter-spacing:3px;text-transform:uppercase;cursor:pointer;transition:all 0.2s
+}
+.btn-rematch{background:transparent;border:1px solid #EA4335;color:#EA4335}
+.btn-rematch:hover{background:#EA4335;color:#1a1a2e;box-shadow:0 0 20px rgba(234,67,53,0.2)}
+.btn-next{background:transparent;border:1px solid #34A853;color:#34A853}
+.btn-next:hover{background:#34A853;color:#1a1a2e;box-shadow:0 0 20px rgba(52,168,83,0.2)}
+.btn-menu{background:transparent;border:1px solid rgba(255,255,255,0.15);color:#6b6b82}
+.btn-menu:hover{border-color:#e0e0f0;color:#e0e0f0}
+.result-newbest{font-size:9px;color:#FFB800;letter-spacing:2px;text-transform:uppercase;margin-top:16px;animation:blink 1s step-end infinite}
+@keyframes blink{50%{opacity:0}}
+.best-update{font-size:9px;color:#6b6b82;margin-top:8px;font-family:'JetBrains Mono',monospace}
+
+.stars{display:flex;gap:8px;margin-bottom:16px;font-size:28px}
+
+/* ============================================================
+   LEVEL TRANSITION OVERLAY
+   ============================================================ */
+.level-up{
+  position:absolute;inset:0;z-index:50;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  background:rgba(0,0,0,0.7);opacity:0;pointer-events:none;transition:opacity 0.3s
+}
+.level-up.show{opacity:1}
+.level-up h2{font-family:'JetBrains Mono',monospace;font-size:28px;font-weight:700;color:#34A853;text-shadow:0 0 20px rgba(52,168,83,0.3);letter-spacing:4px;margin-bottom:8px}
+.level-up p{color:#6b6b82;font-size:13px}
+.level-up .btn-continue{
+  margin-top:24px;padding:10px 36px;border-radius:6px;border:1px solid #34A853;
+  background:transparent;color:#34A853;font-family:'JetBrains Mono',monospace;
+  font-size:12px;text-transform:uppercase;letter-spacing:3px;cursor:pointer;transition:all 0.2s
+}
+.level-up .btn-continue:hover{background:#34A853;color:#1a1a2e}
+
+/* ============================================================
+   BUILDING MODE: snap indicator
+   ============================================================ */
+.snap-indicator{
+  position:absolute;width:30px;height:30px;border-radius:50%;
+  border:2px solid rgba(66,133,244,0.6);pointer-events:none;
+  transform:translate(-50%,-50%);display:none;z-index:10;
+  animation:pulseSnap 0.8s ease-in-out infinite
+}
+@keyframes pulseSnap{0%,100%{transform:translate(-50%,-50%) scale(1);opacity:0.6}50%{transform:translate(-50%,-50%) scale(1.2);opacity:1}}
+
+/* Responsive */
+@media(max-width:480px){
+  .hud{height:34px;padding:4px 10px}
+  .hud-level,.hud-budget{font-size:10px}
+  .status-bar{height:24px;padding:2px 10px}
+  .status-msg,.status-score{font-size:9px}
+  .material-palette{padding:4px 8px;gap:4px}
+  .mat-btn{padding:4px 8px;font-size:10px}
+  .action-bar{padding:4px 8px;gap:4px}
+  .action-btn{padding:4px 12px;font-size:10px}
+  .preview-canvas-wrap{width:220px;height:124px}
+  .result-actions{flex-direction:column;gap:8px}
+}
+</style>
+</head>
+<body>
+<div id="ariaLive" class="sr-only" aria-live="polite" aria-atomic="true"></div>
+
+<!-- ============================================================
+     SCREEN 1: TITLE
+     ============================================================ -->
+<div id="screen-title" class="screen active">
+  <button class="sound-toggle" id="sound-toggle" onclick="toggleSound()">&#x1F50A;</button>
+  <div class="splash">
+    <div class="title-logo">
+      BRIDGE<br>
+      <span class="accent">BUILDER</span>
+      <span class="sub">FRENZY</span>
+    </div>
+    <div class="title-sub">Physics Bridge Building Game</div>
+    <div class="title-tagline">Click & Drag to build &bull; Test your bridge &bull; Survive the truck</div>
+
+    <div class="preview-canvas-wrap">
+      <canvas id="preview-canvas"></canvas>
+    </div>
+
+    <div class="best-score">
+      <span class="label">Best Level &nbsp;&middot;&nbsp;</span>
+      <span class="num" id="best-score-display">0</span>
+      <span class="label"> &nbsp;/ 5</span>
+    </div>
+
+    <button class="btn-play" onclick="startGame()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+      BUILD
+    </button>
+
+    <div class="title-controls">
+      <kbd>Click</kbd> node + <kbd>Drag</kbd> to place beam
+      <kbd>Del</kbd> remove beam
+      <kbd>T</kbd> test
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     SCREEN 2: GAME
+     ============================================================ -->
+<div id="screen-game" class="screen">
+  <div class="game-screen">
+    <div class="hud">
+      <div class="hud-level">LVL <span id="level-display">1</span> &mdash; <span id="level-name">Training Ground</span></div>
+      <div class="hud-budget">$<span id="budget-display">1000</span> / <span id="budget-total">1000</span></div>
+    </div>
+    <div class="status-bar">
+      <div class="status-msg" id="status-msg">Place beams to build a bridge</div>
+      <div class="status-score">Levels <span id="levels-completed">0</span></div>
+    </div>
+    <div class="arena-wrap">
+      <div class="arena" id="arena">
+        <canvas id="game-canvas"></canvas>
+        <!-- Level transition overlay -->
+        <div class="level-up" id="level-up">
+          <h2 id="level-up-title">LEVEL CLEAR!</h2>
+          <p id="level-up-sub">Get ready for the next level</p>
+          <button class="btn-continue" onclick="nextLevel()">Continue</button>
+        </div>
+      </div>
+    </div>
+    <!-- Material palette -->
+    <div class="material-palette" id="material-palette"></div>
+    <!-- Action buttons -->
+    <div class="action-bar">
+      <button class="action-btn primary" id="testBtn" onclick="startTest()">Test</button>
+      <button class="action-btn danger" id="resetBtn" onclick="resetLevel()">Reset</button>
+      <button class="action-btn warning" id="undoBtn" onclick="undoBeam()">Undo</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     SCREEN 3: RESULT
+     ============================================================ -->
+<div id="screen-result" class="screen">
+  <div class="result">
+    <div class="stars" id="result-stars">&#x2B50; &#x2B50; &#x2B50;</div>
+    <div class="result-icon" id="result-icon">&#x1F3C6;</div>
+    <div class="result-title win" id="result-title">VICTORY</div>
+    <div class="result-stats" id="result-stats">
+      LEVEL <span class="val" id="res-level">1</span> &mdash; <span id="res-level-name" class="val">Training Ground</span><br>
+      BUDGET LEFT <span class="val" id="res-budget">$0</span><br>
+      BEAMS <span class="val" id="res-beams">0</span><br>
+      RATING <span class="val" id="res-rating">-</span>
+    </div>
+    <div class="result-actions">
+      <button class="btn-next" id="nextLvlBtn" onclick="continueNextLevel()">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        NEXT LEVEL
+      </button>
+      <button class="btn-rematch" onclick="retryLevel()">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 4v6h6"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>
+        RETRY
+      </button>
+      <button class="btn-menu" onclick="menu()">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        MENU
+      </button>
+    </div>
+    <div class="result-newbest" id="result-newbest" style="display:none">&#x2B50; NEW BEST LEVEL!</div>
+    <div class="best-update" id="best-update"></div>
+  </div>
+</div>
+
+<a href="/" class="back-to-hub"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg><span>Back</span></a>
+
+<script>
+(function(){
+'use strict';
+
+/* ============================================================
+   CONSTANTS
+   ============================================================ */
+const TITLE = 0, BUILDING = 1, TESTING = 2, RESULT = 3, GAMEOVER = 4;
+const STORAGE_KEY = 'bridge-builder-best';
+const SNAP_RADIUS = 18;
+const GRAVITY = 0.15;
+const DAMPING = 0.99;
+const SUB_STEPS = 8;
+const TRUCK_SPEED = 1.2;
+const MAX_BEAM_LENGTH = 180;
+
+/* ============================================================
+   MATERIAL DEFINITIONS
+   ============================================================ */
+const MATERIALS = {
+  wood:  { id:'wood',  name:'Wood',  cost:3,  strength:8,  maxLen:120, color:'#C4A35A', unlockedAt:1 },
+  steel: { id:'steel', name:'Steel', cost:6,  strength:18, maxLen:150, color:'#7B8FA1', unlockedAt:3 },
+  cable: { id:'cable', name:'Cable', cost:4,  strength:10, maxLen:200, color:'#A0A0A0', unlockedAt:5, tensionOnly:true },
+};
+
+/* ============================================================
+   LEVEL DEFINITIONS (5 levels)
+   ============================================================ */
+const LEVELS = [
+  { // Level 1
+    name:'Training Ground',
+    gapLeft:0.12, gapRight:0.48,
+    anchors:[
+      {x:0.12,y:0.48},{x:0.12,y:0.56},
+      {x:0.48,y:0.48},{x:0.48,y:0.56}
+    ],
+    budget:600,
+    materials:['wood'],
+    truckWeight:200,
+    starThresholds:[0.4, 0.25, 0.1],
+  },
+  { // Level 2
+    name:'Creek Crossing',
+    gapLeft:0.10, gapRight:0.50,
+    anchors:[
+      {x:0.10,y:0.46},{x:0.10,y:0.56},
+      {x:0.50,y:0.46},{x:0.50,y:0.56}
+    ],
+    budget:500,
+    materials:['wood'],
+    truckWeight:300,
+    starThresholds:[0.4, 0.2, 0.05],
+  },
+  { // Level 3 - steel unlocked
+    name:'River Pass',
+    gapLeft:0.08, gapRight:0.55,
+    anchors:[
+      {x:0.08,y:0.44},{x:0.08,y:0.56},
+      {x:0.55,y:0.44},{x:0.55,y:0.56}
+    ],
+    budget:800,
+    materials:['wood','steel'],
+    truckWeight:350,
+    starThresholds:[0.4, 0.2, 0.05],
+  },
+  { // Level 4
+    name:'Canyon Run',
+    gapLeft:0.06, gapRight:0.58,
+    anchors:[
+      {x:0.06,y:0.42},{x:0.06,y:0.56},
+      {x:0.58,y:0.42},{x:0.58,y:0.56}
+    ],
+    budget:700,
+    materials:['wood','steel'],
+    truckWeight:450,
+    starThresholds:[0.35, 0.15, 0],
+  },
+  { // Level 5 - cable unlocked
+    name:'Ravine Dash',
+    gapLeft:0.05, gapRight:0.62,
+    anchors:[
+      {x:0.05,y:0.40},{x:0.05,y:0.56},
+      {x:0.62,y:0.40},{x:0.62,y:0.56}
+    ],
+    budget:1000,
+    materials:['wood','steel','cable'],
+    truckWeight:500,
+    starThresholds:[0.3, 0.1, 0],
+  },
+];
+
+/* ============================================================
+   SOUND SYSTEM
+   ============================================================ */
+let audioCtx = null;
+let soundEnabled = true;
+
+window.toggleSound = function(){
+  soundEnabled = !soundEnabled;
+  document.getElementById('sound-toggle').textContent = soundEnabled ? '\u{1F50A}' : '\u{1F507}';
+};
+
+function initAudio(){
+  if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+}
+
+function playTone(freq,dur,type,vol){
+  if(!soundEnabled||!audioCtx) return;
+  try{
+    const osc=audioCtx.createOscillator(); const gain=audioCtx.createGain();
+    osc.type=type||'square'; osc.frequency.value=freq;
+    gain.gain.setValueAtTime(vol||0.1,audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001,audioCtx.currentTime+dur);
+    osc.connect(gain); gain.connect(audioCtx.destination);
+    osc.start(); osc.stop(audioCtx.currentTime+dur);
+  }catch(e){}
+}
+
+function sfxPlace(){playTone(660,0.08,'sine',0.06);}
+function sfxTestStart(){playTone(220,0.15,'sawtooth',0.08);setTimeout(function(){playTone(330,0.1,'square',0.06)},80);}
+function sfxCrack(){playTone(300,0.12,'sawtooth',0.1);setTimeout(function(){playTone(150,0.2,'sawtooth',0.08)},100);}
+function sfxCollapse(){for(var i=0;i<4;i++)setTimeout(function(){playTone(100+Math.random()*200,0.15,'sawtooth',0.08)},i*80);}
+function sfxWin(){playTone(523,0.12,'sine',0.06);setTimeout(function(){playTone(659,0.12,'sine',0.06)},100);setTimeout(function(){playTone(784,0.18,'sine',0.08)},200);}
+function sfxLose(){playTone(400,0.2,'sawtooth',0.08);setTimeout(function(){playTone(300,0.3,'sawtooth',0.06)},150);}
+function sfxLevelUp(){playTone(440,0.1,'sine',0.06);setTimeout(function(){playTone(554,0.1,'sine',0.06)},80);setTimeout(function(){playTone(659,0.15,'sine',0.08)},160);}
+
+/* ============================================================
+   STATE
+   ============================================================ */
+let state = {};
+let gameLoopId = null;
+let previewLoopId = null;
+
+function initState(){
+  state = {
+    phase: TITLE,
+    level: 0,
+    budget: 0,
+    totalBudget: 0,
+    nodes: [],
+    beams: [],
+    selectedMat: 'wood',
+    dragNode: null,
+    dragX: 0,
+    dragY: 0,
+    isDragging: false,
+    // Test state
+    testing: false,
+    truckX: 0,
+    truckY: 0,
+    truckSpeed: TRUCK_SPEED,
+    truckWheels: [0.2, 0.5, 0.8],
+    truckFalling: false,
+    truckFinished: false,
+    // Break/particles
+    particles: [],
+    brokenBeams: [],
+    // Stats
+    beamsBuilt: 0,
+    levelsCompleted: 0,
+    maxLevel: 0,
+    // History
+    undoStack: [],
+    // Anim
+    settleTimer: 0,
+  };
+}
+
+/* ============================================================
+   LEVEL DATA
+   ============================================================ */
+function loadLevel(idx){
+  const lv = LEVELS[idx];
+  state.level = idx;
+  state.nodes = [];
+  state.beams = [];
+  state.particles = [];
+  state.brokenBeams = [];
+  state.undoStack = [];
+  state.beamsBuilt = 0;
+  state.testing = false;
+  state.truckFalling = false;
+  state.truckFinished = false;
+  state.isDragging = false;
+  state.dragNode = null;
+  state.settleTimer = 0;
+  state.budget = lv.budget;
+  state.totalBudget = lv.budget;
+
+  // Create anchor nodes (fixed)
+  lv.anchors.forEach(function(a){
+    state.nodes.push({x:a.x, y:a.y, fixed:true, vx:0, vy:0});
+  });
+
+  // Set available materials
+  const available = lv.materials;
+  state.selectedMat = available[0];
+
+  updateHUD();
+  updateMaterialPalette();
+  document.getElementById('status-msg').textContent = 'Place beams to build a bridge';
+  document.getElementById('testBtn').disabled = false;
+  document.getElementById('resetBtn').disabled = false;
+  document.getElementById('undoBtn').disabled = true;
+}
+
+/* ============================================================
+   PHYSICS ENGINE
+   ============================================================ */
+function physicsStep(){
+  // Apply gravity
+  for(var i=0;i<state.nodes.length;i++){
+    var n = state.nodes[i];
+    if(!n.fixed){
+      n.vy += GRAVITY;
+      n.vx *= DAMPING;
+      n.vy *= DAMPING;
+    }
+  }
+
+  // Apply beam forces
+  for(var i=0;i<state.beams.length;i++){
+    var b = state.beams[i];
+    if(b.broken) continue;
+    var nA = state.nodes[b.nodeA];
+    var nB = state.nodes[b.nodeB];
+    if(!nA || !nB) continue;
+
+    var dx = nB.x - nA.x;
+    var dy = nB.y - nA.y;
+    var dist = Math.sqrt(dx*dx + dy*dy);
+    if(dist < 0.001) continue;
+
+    var restLen = b.restLen || dist;
+    var deformation = dist - restLen;
+    var forceMag = deformation * b.stiffness;
+
+    // Check stress
+    var stress = Math.abs(forceMag);
+    if(stress > b.strength){
+      b.broken = true;
+      state.brokenBeams.push(b);
+      sfxCrack();
+      spawnParticles((nA.x+nB.x)/2, (nA.y+nB.y)/2, '#FFD700', 6);
+      continue;
+    }
+
+    // Apply force along beam axis
+    var fx = (dx/dist) * forceMag;
+    var fy = (dy/dist) * forceMag;
+
+    if(!nA.fixed){ nA.vx += fx; nA.vy += fy; }
+    if(!nB.fixed){ nB.vx -= fx; nB.vy -= fy; }
+  }
+
+  // Update positions
+  for(var i=0;i<state.nodes.length;i++){
+    var n = state.nodes[i];
+    if(!n.fixed){
+      n.x += n.vx;
+      n.y += n.vy;
+      // Clamp to arena
+      if(n.x < 0.01) { n.x = 0.01; n.vx = 0; }
+      if(n.x > 0.99) { n.x = 0.99; n.vx = 0; }
+      if(n.y < 0.02) { n.y = 0.02; n.vy = 0; }
+      if(n.y > 0.98) { n.y = 0.98; n.vy = 0; }
+    }
+  }
+}
+
+/* ============================================================
+   TRUCK PHYSICS
+   ============================================================ */
+function updateTruck(){
+  if(!state.testing || state.truckFalling || state.truckFinished) return;
+
+  var truckW = 0.1; // truck width in normalized coords
+  state.truckX += state.truckSpeed * 0.004;
+
+  // Check if truck reached right side
+  if(state.truckX > 0.92){
+    state.truckFinished = true;
+    state.testing = false;
+    sfxWin();
+    setTimeout(function(){ levelComplete(); }, 400);
+    return;
+  }
+
+  // Find y position for each wheel based on beams below
+  var anyWheelOnBridge = false;
+  var totalY = 0;
+  var count = 0;
+
+  for(var w=0; w<state.truckWheels.length; w++){
+    var wx = state.truckX + (state.truckWheels[w] - 0.5) * truckW;
+    var landed = false;
+
+    // Find the beam just below this wheel
+    var bestBeam = null;
+    var bestY = Infinity;
+
+    for(var i=0;i<state.beams.length;i++){
+      var b = state.beams[i];
+      if(b.broken) continue;
+      var nA = state.nodes[b.nodeA];
+      var nB = state.nodes[b.nodeB];
+      if(!nA || !nB) continue;
+
+      // Check if wheel x is between beam endpoints
+      var minX = Math.min(nA.x, nB.x) - 0.01;
+      var maxX = Math.max(nA.x, nB.x) + 0.01;
+      if(wx < minX || wx > maxX) continue;
+
+      // Calculate y on beam at this x
+      var t = (wx - nA.x) / (nB.x - nA.x + 0.001);
+      var by = nA.y + t * (nB.y - nA.y);
+
+      // Only consider beams below the wheel
+      if(by < state.truckY + 0.02) continue;
+
+      if(by < bestY){
+        bestY = by;
+        bestBeam = b;
+      }
+    }
+
+    if(bestBeam){
+      totalY += bestY;
+      count++;
+      anyWheelOnBridge = true;
+
+      // Apply truck weight to the beam nodes
+      var b = bestBeam;
+      var nA = state.nodes[b.nodeA];
+      var nB = state.nodes[b.nodeB];
+      var wx2 = wx;
+      var t2 = (wx2 - nA.x) / (nB.x - nA.x + 0.001);
+      var truckForce = LEVELS[state.level].truckWeight * 0.0001;
+      var fT = truckForce * (1 - t2);
+      var fB = truckForce * t2;
+      if(!nA.fixed){ nA.vy += fT; }
+      if(!nB.fixed){ nB.vy += fB; }
+    }
+  }
+
+  if(count > 0){
+    state.truckY = totalY / count;
+  } else {
+    state.truckY += 0.005; // fall
+  }
+
+  // Check if bridge collapsed or truck fell off
+  if(!anyWheelOnBridge && state.truckY > 0.7){
+    state.truckFalling = true;
+    state.testing = false;
+    sfxCollapse();
+    document.getElementById('status-msg').textContent = 'Collapsed!';
+    setTimeout(function(){ gameOver(false); }, 800);
+  }
+
+  // Check if any critical beam broke during test
+  if(!state.truckFalling && state.brokenBeams.length > 0){
+    // Check if any remaining beam still supports the truck path
+    var hasPath = checkPathExists();
+    if(!hasPath){
+      state.truckFalling = true;
+      state.testing = false;
+      sfxCollapse();
+      document.getElementById('status-msg').textContent = 'Bridge collapsed!';
+      setTimeout(function(){ gameOver(false); }, 800);
+    }
+  }
+}
+
+function checkPathExists(){
+  // Check connectivity from left anchors to right anchors through unbroken beams
+  var leftAnchors = [], rightAnchors = [];
+  var lv = LEVELS[state.level];
+  var anchorCount = lv.anchors.length;
+  for(var i=0;i<anchorCount/2;i++){
+    leftAnchors.push(i);
+  }
+  for(var i=anchorCount/2;i<anchorCount;i++){
+    rightAnchors.push(i);
+  }
+
+  // BFS from left anchors through unbroken beams
+  var visited = {};
+  var queue = leftAnchors.slice();
+  queue.forEach(function(id){ visited[id] = true; });
+
+  while(queue.length > 0){
+    var nid = queue.shift();
+    for(var i=0;i<state.beams.length;i++){
+      var b = state.beams[i];
+      if(b.broken) continue;
+      var other = -1;
+      if(b.nodeA === nid) other = b.nodeB;
+      else if(b.nodeB === nid) other = b.nodeA;
+      if(other >= 0 && !visited[other]){
+        visited[other] = true;
+        queue.push(other);
+      }
+    }
+  }
+
+  // Check if any right anchor is reachable
+  for(var i=0;i<rightAnchors.length;i++){
+    if(visited[rightAnchors[i]]) return true;
+  }
+  return false;
+}
+
+/* ============================================================
+   PARTICLES
+   ============================================================ */
+function spawnParticles(x,y,color,count){
+  for(var i=0;i<count;i++){
+    state.particles.push({
+      x:x, y:y,
+      vx:(Math.random()-0.5)*0.02, vy:(Math.random()-0.5)*0.02 - 0.01,
+      life:1, maxLife:1, color:color, size:2+Math.random()*3,
+    });
+  }
+}
+
+function updateParticles(){
+  for(var i=state.particles.length-1;i>=0;i--){
+    var p = state.particles[i];
+    p.x += p.vx;
+    p.y += p.vy;
+    p.vy += 0.0005;
+    p.life -= 0.02;
+    if(p.life <= 0) state.particles.splice(i,1);
+  }
+}
+
+/* ============================================================
+   BUILDING INTERACTION
+   ============================================================ */
+function getCanvasPos(clientX, clientY){
+  var rect = canvas.getBoundingClientRect();
+  return {
+    x: (clientX - rect.left) / rect.width,
+    y: (clientY - rect.top) / rect.height,
+  };
+}
+
+function getNodeAt(pos, exclude){
+  for(var i=0;i<state.nodes.length;i++){
+    if(i === exclude) continue;
+    var dx = state.nodes[i].x - pos.x;
+    var dy = state.nodes[i].y - pos.y;
+    var dist = Math.sqrt(dx*dx + dy*dy);
+    if(dist < SNAP_RADIUS / canvas.width){
+      return i;
+    }
+  }
+  return -1;
+}
+
+function handleBuildStart(clientX, clientY){
+  if(state.testing) return;
+  initAudio();
+  var pos = getCanvasPos(clientX, clientY);
+  var nodeIdx = getNodeAt(pos, -1);
+
+  if(nodeIdx >= 0){
+    state.dragNode = nodeIdx;
+    state.isDragging = true;
+    state.dragX = pos.x;
+    state.dragY = pos.y;
+  } else {
+    // Click on empty space - deselect
+    state.dragNode = null;
+  }
+}
+
+function handleBuildMove(clientX, clientY){
+  if(!state.isDragging) return;
+  var pos = getCanvasPos(clientX, clientY);
+  state.dragX = pos.x;
+  state.dragY = pos.y;
+}
+
+function handleBuildEnd(clientX, clientY){
+  if(!state.isDragging || state.dragNode === null){
+    state.isDragging = false;
+    return;
+  }
+
+  var pos = getCanvasPos(clientX, clientY);
+  var lv = LEVELS[state.level];
+  var mat = MATERIALS[state.selectedMat];
+
+  // Check if unlocked
+  if(lv.materials.indexOf(mat.id) < 0){
+    document.getElementById('status-msg').textContent = mat.name + ' not unlocked yet!';
+    state.isDragging = false;
+    state.dragNode = null;
+    return;
+  }
+
+  // Check if within bridge bounds
+  if(pos.x < lv.gapLeft - 0.02 || pos.x > lv.gapRight + 0.02){
+    document.getElementById('status-msg').textContent = 'Beam out of bounds!';
+    state.isDragging = false;
+    state.dragNode = null;
+    return;
+  }
+
+  // Snap to existing node or create new
+  var targetNode = getNodeAt(pos, state.dragNode);
+  var createdNewNode = false;
+
+  if(targetNode < 0){
+    // Create new node
+    state.nodes.push({x:pos.x, y:pos.y, fixed:false, vx:0, vy:0});
+    targetNode = state.nodes.length - 1;
+    createdNewNode = true;
+  }
+
+  // Calculate beam cost
+  var nA = state.nodes[state.dragNode];
+  var nB = state.nodes[targetNode];
+  var dx = nB.x - nA.x;
+  var dy = nB.y - nA.y;
+  var len = Math.sqrt(dx*dx + dy*dy);
+  var pixelLen = len * canvas.width;
+
+  if(pixelLen > MAX_BEAM_LENGTH){
+    document.getElementById('status-msg').textContent = 'Beam too long! Max ' + MAX_BEAM_LENGTH + 'px';
+    state.isDragging = false;
+    state.dragNode = null;
+    if(createdNewNode) state.nodes.pop();
+    return;
+  }
+
+  // Check for duplicate beam
+  for(var i=0;i<state.beams.length;i++){
+    var b = state.beams[i];
+    if((b.nodeA === state.dragNode && b.nodeB === targetNode) ||
+       (b.nodeA === targetNode && b.nodeB === state.dragNode)){
+      document.getElementById('status-msg').textContent = 'Beam already exists!';
+      state.isDragging = false;
+      state.dragNode = null;
+      if(createdNewNode) state.nodes.pop();
+      return;
+    }
+  }
+
+  var cost = Math.ceil(pixelLen * mat.cost);
+  if(cost > state.budget){
+    document.getElementById('status-msg').textContent = 'Not enough budget! Need $' + cost;
+    state.isDragging = false;
+    state.dragNode = null;
+    if(createdNewNode) state.nodes.pop();
+    return;
+  }
+
+  // Place beam
+  state.budget -= cost;
+  state.beams.push({
+    nodeA: state.dragNode,
+    nodeB: targetNode,
+    material: mat.id,
+    cost: cost,
+    length: pixelLen,
+    restLen: len,
+    stiffness: mat.strength * 2,
+    strength: mat.strength * 100,
+    broken: false,
+    tensionOnly: mat.tensionOnly || false,
+  });
+  state.beamsBuilt++;
+  state.undoStack.push(state.beams.length - 1);
+
+  updateHUD();
+  sfxPlace();
+  document.getElementById('status-msg').textContent = 'Placed ' + mat.name + ' beam ($' + cost + ')';
+  document.getElementById('undoBtn').disabled = false;
+
+  state.isDragging = false;
+  state.dragNode = null;
+}
+
+/* ============================================================
+   GAME ACTIONS
+   ============================================================ */
+function startTest(){
+  if(state.testing) return;
+  if(state.beams.length === 0){
+    document.getElementById('status-msg').textContent = 'Build a bridge first!';
+    return;
+  }
+
+  // Check connectivity
+  if(!checkPathExists()){
+    document.getElementById('status-msg').textContent = 'Bridge must connect both sides!';
+    return;
+  }
+
+  initAudio();
+  state.testing = true;
+  state.truckX = LEVELS[state.level].gapLeft + 0.02;
+  state.truckY = 0.35;
+  state.truckFalling = false;
+  state.truckFinished = false;
+  state.brokenBeams = [];
+  document.getElementById('status-msg').textContent = 'Testing bridge...';
+  document.getElementById('testBtn').disabled = true;
+  sfxTestStart();
+}
+
+function resetLevel(){
+  loadLevel(state.level);
+  updateHUD();
+  document.getElementById('status-msg').textContent = 'Level reset';
+}
+
+function undoBeam(){
+  if(state.undoStack.length === 0) return;
+  var idx = state.undoStack.pop();
+  var beam = state.beams[idx];
+  if(beam){
+    state.budget += beam.cost;
+    state.beamsBuilt--;
+    state.beams.splice(idx, 1);
+    // Clean up orphan nodes (non-anchor)
+    var usedNodes = {};
+    for(var i=0;i<state.beams.length;i++){
+      usedNodes[state.beams[i].nodeA] = true;
+      usedNodes[state.beams[i].nodeB] = true;
+    }
+    var lv = LEVELS[state.level];
+    for(var i=lv.anchors.length;i<state.nodes.length;i++){
+      if(!usedNodes[i]){
+        state.nodes.splice(i,1);
+        // Remap beam indices
+        for(var j=0;j<state.beams.length;j++){
+          if(state.beams[j].nodeA > i) state.beams[j].nodeA--;
+          if(state.beams[j].nodeB > i) state.beams[j].nodeB--;
+        }
+        i--;
+      }
+    }
+    // Rebuild undo stack to match new indices
+    state.undoStack = state.undoStack.filter(function(u){ return u < idx; });
+    // Remap remaining undo indices
+    state.undoStack = state.undoStack.map(function(u){ return u >= idx ? u-1 : u; });
+    for(var i=idx;i<state.beams.length;i++){
+      state.undoStack.push(i);
+    }
+    updateHUD();
+    sfxPlace();
+    document.getElementById('status-msg').textContent = 'Undo last beam';
+    if(state.undoStack.length === 0) document.getElementById('undoBtn').disabled = true;
+  }
+}
+
+function levelComplete(){
+  var lv = LEVELS[state.level];
+  var budgetLeft = state.budget;
+  var total = state.totalBudget;
+  var ratio = budgetLeft / total;
+
+  var stars = 0;
+  if(ratio >= lv.starThresholds[0]) stars = 3;
+  else if(ratio >= lv.starThresholds[1]) stars = 2;
+  else stars = 1;
+
+  // Save progress
+  var nextLvl = state.level + 1;
+  if(nextLvl > state.maxLevel){
+    state.maxLevel = nextLvl;
+    saveBestLevel(state.maxLevel);
+  }
+
+  // Show level up overlay
+  var lvUp = document.getElementById('level-up');
+  document.getElementById('level-up-title').textContent = 'LEVEL CLEAR!';
+  document.getElementById('level-up-sub').textContent = stars + '/3 stars &middot; Budget saved: $' + budgetLeft;
+  lvUp.classList.add('show');
+  sfxLevelUp();
+
+  state.phase = GAMEOVER;
+
+  // Navigate after continue
+}
+
+function gameOver(won){
+  var lv = LEVELS[state.level];
+  var budgetLeft = state.budget;
+  var total = state.totalBudget;
+  var ratio = total > 0 ? budgetLeft / total : 0;
+  var stars = 0;
+  if(won){
+    if(ratio >= lv.starThresholds[0]) stars = 3;
+    else if(ratio >= lv.starThresholds[1]) stars = 2;
+    else stars = 1;
+  }
+
+  showResult(won, stars, budgetLeft);
+}
+
+/* ============================================================
+   UI UPDATES
+   ============================================================ */
+function updateHUD(){
+  document.getElementById('level-display').textContent = state.level + 1;
+  document.getElementById('level-name').textContent = LEVELS[state.level].name;
+  document.getElementById('budget-display').textContent = state.budget;
+  document.getElementById('budget-total').textContent = state.totalBudget;
+  document.getElementById('levels-completed').textContent = state.maxLevel;
+}
+
+function updateMaterialPalette(){
+  var container = document.getElementById('material-palette');
+  container.innerHTML = '';
+  var lv = LEVELS[state.level];
+  var keys = ['wood','steel','cable'];
+
+  keys.forEach(function(k){
+    var mat = MATERIALS[k];
+    var btn = document.createElement('button');
+    var available = lv.materials.indexOf(k) >= 0;
+    btn.className = 'mat-btn' + (k === state.selectedMat ? ' active' : '') + (!available ? ' locked' : '');
+    btn.innerHTML = '<span class="dot" style="background:' + mat.color + '"></span>' +
+      mat.name + ' <span class="cost">$' + mat.cost + '/px</span>';
+    btn.disabled = !available;
+    if(available){
+      btn.onclick = function(m){ return function(){ selectMaterial(m); }; }(k);
+    }
+    container.appendChild(btn);
+  });
+}
+
+function selectMaterial(matId){
+  state.selectedMat = matId;
+  updateMaterialPalette();
+  document.getElementById('status-msg').textContent = 'Selected: ' + MATERIALS[matId].name;
+}
+
+/* ============================================================
+   CANVAS RENDERING
+   ============================================================ */
+let canvas, ctx;
+let arenaW, arenaH;
+let dpr = 1;
+
+function setupCanvas(){
+  canvas = document.getElementById('game-canvas');
+  ctx = canvas.getContext('2d');
+  resizeCanvas();
+}
+
+function resizeCanvas(){
+  var rect = document.querySelector('.arena').getBoundingClientRect();
+  dpr = window.devicePixelRatio || 1;
+  var maxW = rect.width;
+  var maxH = rect.height;
+  var aspect = 16/10;
+  var w = maxW, h = maxH;
+  if(w/h > aspect) w = h * aspect;
+  else h = w / aspect;
+
+  canvas.style.width = w + 'px';
+  canvas.style.height = h + 'px';
+  canvas.width = w * dpr;
+  canvas.height = h * dpr;
+  arenaW = w;
+  arenaH = h;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+
+function drawArena(){
+  var W = arenaW, H = arenaH;
+
+  // Background
+  var grad = ctx.createLinearGradient(0, 0, 0, H);
+  grad.addColorStop(0, '#1a1a3e');
+  grad.addColorStop(0.4, '#1e1e3a');
+  grad.addColorStop(0.7, '#2a1e2e');
+  grad.addColorStop(1, '#1a1a2e');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, W, H);
+
+  // Grid
+  ctx.strokeStyle = 'rgba(255,255,255,0.03)';
+  ctx.lineWidth = 0.5;
+  for(var x=0;x<W;x+=24){ ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,H); ctx.stroke(); }
+  for(var y=0;y<H;y+=24){ ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke(); }
+
+  var lv = LEVELS[state.level];
+
+  // Draw canyon / gap
+  var gL = lv.gapLeft * W;
+  var gR = lv.gapRight * W;
+
+  // Canyon background
+  ctx.fillStyle = 'rgba(0,0,0,0.3)';
+  ctx.fillRect(gL, 0, gR - gL, H);
+
+  // Cliff walls
+  ctx.fillStyle = '#2a2a4a';
+  ctx.fillRect(0, 0, gL, H); // left cliff
+  ctx.fillRect(gR, 0, W - gR, H); // right cliff
+
+  // Cliff top detail
+  ctx.fillStyle = '#3a3a5a';
+  ctx.fillRect(0, 0, gL, 4);
+  ctx.fillRect(gR, 0, W - gR, 4);
+
+  // Cliff edge line
+  ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(gL, 0); ctx.lineTo(gL, H);
+  ctx.moveTo(gR, 0); ctx.lineTo(gR, H);
+  ctx.stroke();
+
+  // Draw ground / bottom
+  ctx.fillStyle = '#2a2a3a';
+  ctx.fillRect(0, H - 8, W, 8);
+  ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+  ctx.lineWidth = 0.5;
+  ctx.beginPath();
+  ctx.moveTo(0, H - 8); ctx.lineTo(W, H - 8);
+  ctx.stroke();
+
+  // Draw anchors
+  for(var i=0;i<state.nodes.length;i++){
+    var n = state.nodes[i];
+    if(n.fixed){
+      var nx = n.x * W;
+      var ny = n.y * H;
+      ctx.beginPath();
+      ctx.arc(nx, ny, 6, 0, Math.PI * 2);
+      ctx.fillStyle = '#4285F4';
+      ctx.shadowColor = 'rgba(66,133,244,0.4)';
+      ctx.shadowBlur = 10;
+      ctx.fill();
+      ctx.shadowBlur = 0;
+      // Anchor X pattern
+      ctx.strokeStyle = '#1a1a2e';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(nx-3, ny-3); ctx.lineTo(nx+3, ny+3);
+      ctx.moveTo(nx+3, ny-3); ctx.lineTo(nx-3, ny+3);
+      ctx.stroke();
+    }
+  }
+
+  // Draw beams
+  for(var i=0;i<state.beams.length;i++){
+    var b = state.beams[i];
+    var nA = state.nodes[b.nodeA];
+    var nB = state.nodes[b.nodeB];
+    if(!nA || !nB) continue;
+
+    var ax = nA.x * W, ay = nA.y * H;
+    var bx = nB.x * W, by = nB.y * H;
+
+    var mat = MATERIALS[b.material] || MATERIALS.wood;
+    ctx.strokeStyle = b.broken ? 'rgba(255,0,0,0.3)' : mat.color;
+    ctx.lineWidth = b.broken ? 1 : 3;
+    ctx.shadowColor = b.broken ? 'transparent' : 'rgba(255,255,255,0.05)';
+    ctx.shadowBlur = b.broken ? 0 : 4;
+
+    if(b.tensionOnly){
+      // Draw cable as dashed line
+      ctx.setLineDash([4,4]);
+    }
+
+    ctx.beginPath();
+    ctx.moveTo(ax, ay);
+    ctx.lineTo(bx, by);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.shadowBlur = 0;
+
+    // Draw nodes (non-anchor)
+    // Only draw at endpoints
+  }
+
+  // Draw non-anchor nodes
+  var anchorCount = LEVELS[state.level].anchors.length;
+  for(var i=anchorCount;i<state.nodes.length;i++){
+    var n = state.nodes[i];
+    var nx = n.x * W, ny = n.y * H;
+    ctx.beginPath();
+    ctx.arc(nx, ny, 3, 0, Math.PI * 2);
+    ctx.fillStyle = '#e0e0f0';
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+    ctx.lineWidth = 0.5;
+    ctx.stroke();
+  }
+
+  // Draw drag preview
+  if(state.isDragging && state.dragNode !== null){
+    var sn = state.nodes[state.dragNode];
+    var sx = sn.x * W, sy = sn.y * H;
+    var ex = state.dragX * W, ey = state.dragY * H;
+
+    // Snap indicator
+    var snapPos = {x: state.dragX, y: state.dragY};
+    var snapIdx = getNodeAt(snapPos, state.dragNode);
+    if(snapIdx >= 0){
+      var snapN = state.nodes[snapIdx];
+      ex = snapN.x * W;
+      ey = snapN.y * H;
+      // Draw snap circle
+      ctx.beginPath();
+      ctx.arc(ex, ey, SNAP_RADIUS, 0, Math.PI * 2);
+      ctx.strokeStyle = 'rgba(66,133,244,0.3)';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([4,2]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+
+    // Preview line
+    ctx.strokeStyle = 'rgba(66,133,244,0.5)';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([6,4]);
+    ctx.beginPath();
+    ctx.moveTo(sx, sy);
+    ctx.lineTo(ex, ey);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Source node highlight
+    ctx.beginPath();
+    ctx.arc(sx, sy, 8, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(66,133,244,0.4)';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+  }
+
+  // Draw truck during test
+  if(state.testing || state.truckFalling || state.truckFinished){
+    drawTruck();
+  }
+
+  // Draw particles
+  for(var i=0;i<state.particles.length;i++){
+    var p = state.particles[i];
+    ctx.globalAlpha = p.life / p.maxLife;
+    ctx.fillStyle = p.color;
+    ctx.beginPath();
+    ctx.arc(p.x * W, p.y * H, p.size, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+
+  // Broken beam render (secondary pass for overlay)
+  for(var i=0;i<state.brokenBeams.length;i++){
+    var b = state.brokenBeams[i];
+    var nA = state.nodes[b.nodeA];
+    var nB = state.nodes[b.nodeB];
+    if(!nA || !nB) continue;
+    var ax = nA.x * W, ay = nA.y * H;
+    var bx = nB.x * W, by = nB.y * H;
+    ctx.strokeStyle = 'rgba(255,50,50,0.6)';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([3,5]);
+    ctx.beginPath();
+    ctx.moveTo(ax, ay);
+    ctx.lineTo((ax+bx)/2, (ay+by)/2);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo((ax+bx)/2, (ay+by)/2);
+    ctx.lineTo(bx, by);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+}
+
+function drawTruck(){
+  var W = arenaW, H = arenaH;
+  var tx = state.truckX * W;
+  var ty = state.truckY * H;
+  var tw = 0.1 * W;
+  var th = 0.04 * H;
+
+  // Truck body
+  ctx.fillStyle = '#E05050';
+  ctx.shadowColor = 'rgba(224,80,80,0.3)';
+  ctx.shadowBlur = 8;
+  ctx.fillRect(tx - tw/2, ty - th*1.5, tw, th * 1.2);
+
+  // Cabin
+  ctx.fillStyle = '#C04040';
+  ctx.fillRect(tx + tw*0.15, ty - th*2, tw*0.3, th*1.8);
+
+  // Cargo
+  ctx.fillStyle = '#D08050';
+  ctx.fillRect(tx - tw*0.45, ty - th*1.8, tw*0.55, th*1.2);
+  ctx.shadowBlur = 0;
+
+  // Wheels
+  for(var w=0; w<state.truckWheels.length; w++){
+    var wx = tx + (state.truckWheels[w] - 0.5) * tw;
+    ctx.beginPath();
+    ctx.arc(wx, ty - th*0.3, 4, 0, Math.PI * 2);
+    ctx.fillStyle = '#222';
+    ctx.fill();
+    ctx.strokeStyle = '#555';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  }
+
+  // If falling, draw angled
+  if(state.truckFalling){
+    ctx.save();
+    ctx.translate(tx, ty);
+    ctx.rotate(0.3);
+    ctx.globalAlpha = 0.5;
+    ctx.fillStyle = '#E05050';
+    ctx.fillRect(-tw/2, -th*1.5, tw, th*1.2);
+    ctx.restore();
+  }
+}
+
+/* ============================================================
+   RESULT SCREEN
+   ============================================================ */
+function showResult(won, stars, budgetLeft){
+  state.phase = RESULT;
+  var lv = LEVELS[state.level];
+
+  // Stars
+  var starHtml = '';
+  for(var i=0;i<3;i++){
+    starHtml += i < stars ? '&#x2B50;' : '&#x2606;';
+  }
+  document.getElementById('result-stars').innerHTML = starHtml;
+
+  document.getElementById('result-icon').textContent = won ? '\u{1F3C6}' : '\u{1F4A5}';
+  var titleEl = document.getElementById('result-title');
+  if(won){
+    titleEl.textContent = 'BRIDGE COMPLETE!';
+    titleEl.className = 'result-title win';
+  } else {
+    titleEl.textContent = 'BRIDGE COLLAPSED!';
+    titleEl.className = 'result-title collapse';
+  }
+
+  document.getElementById('res-level').textContent = state.level + 1;
+  document.getElementById('res-level-name').textContent = lv.name;
+  document.getElementById('res-budget').textContent = '$' + budgetLeft;
+  document.getElementById('res-beams').textContent = state.beamsBuilt;
+
+  var rating = won ? (stars + '/3 stars') : 'Failed';
+  document.getElementById('res-rating').textContent = rating;
+
+  // Show/hide next level button
+  var nextBtn = document.getElementById('nextLvlBtn');
+  if(won && state.level < LEVELS.length - 1){
+    nextBtn.style.display = 'inline-flex';
+  } else {
+    nextBtn.style.display = 'none';
+  }
+
+  var isNew = state.maxLevel > loadBestLevel();
+  document.getElementById('result-newbest').style.display = (won && isNew) ? 'block' : 'none';
+
+  var ub = document.getElementById('best-update');
+  ub.textContent = won ? 'Best Level: Level ' + state.maxLevel : '';
+
+  showScreen('screen-result');
+}
+
+window.nextLevel = function(){
+  document.getElementById('level-up').classList.remove('show');
+  state.level++;
+  state.phase = BUILDING;
+  loadLevel(state.level);
+  updateHUD();
+};
+
+window.continueNextLevel = function(){
+  state.level++;
+  state.phase = BUILDING;
+  loadLevel(state.level);
+  updateHUD();
+  showScreen('screen-game');
+};
+
+window.retryLevel = function(){
+  state.phase = BUILDING;
+  loadLevel(state.level);
+  updateHUD();
+  showScreen('screen-game');
+};
+
+window.menu = function(){
+  document.getElementById('best-score-display').textContent = state.maxLevel;
+  showScreen('screen-title');
+};
+
+/* ============================================================
+   SCREEN MANAGEMENT
+   ============================================================ */
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
+  document.getElementById(id).classList.add('active');
+}
+
+window.startGame = function(){
+  initState();
+  showScreen('screen-game');
+  resizeCanvas();
+  loadLevel(0);
+  state.phase = BUILDING;
+  state.maxLevel = loadBestLevel();
+
+  if(gameLoopId) cancelAnimationFrame(gameLoopId);
+  gameLoopId = requestAnimationFrame(gameLoop);
+};
+
+function gameLoop(){
+  // Physics
+  if(state.phase === BUILDING || state.phase === TESTING){
+    for(var s=0; s<SUB_STEPS; s++){
+      physicsStep();
+    }
+    updateParticles();
+  }
+
+  // Truck
+  if(state.testing){
+    updateTruck();
+  }
+
+  // Render
+  drawArena();
+  gameLoopId = requestAnimationFrame(gameLoop);
+}
+
+/* ============================================================
+   BEST SCORE (localStorage)
+   ============================================================ */
+function loadBestLevel(){
+  try{ return parseInt(localStorage.getItem(STORAGE_KEY)||'0',10); } catch(e){ return 0; }
+}
+function saveBestLevel(val){
+  try{ localStorage.setItem(STORAGE_KEY,String(val)); } catch(e){}
+}
+
+/* ============================================================
+   INPUT EVENTS
+   ============================================================ */
+var arenaEl = document.getElementById('arena');
+
+// Mouse
+arenaEl.addEventListener('mousedown', function(e){
+  if(state.phase !== BUILDING) return;
+  handleBuildStart(e.clientX, e.clientY);
+});
+
+window.addEventListener('mousemove', function(e){
+  handleBuildMove(e.clientX, e.clientY);
+});
+
+window.addEventListener('mouseup', function(e){
+  handleBuildEnd(e.clientX, e.clientY);
+});
+
+// Touch
+arenaEl.addEventListener('touchstart', function(e){
+  if(state.phase !== BUILDING) return;
+  var t = e.touches[0];
+  handleBuildStart(t.clientX, t.clientY);
+  e.preventDefault();
+}, { passive: false });
+
+arenaEl.addEventListener('touchmove', function(e){
+  var t = e.touches[0];
+  handleBuildMove(t.clientX, t.clientY);
+  e.preventDefault();
+}, { passive: false });
+
+arenaEl.addEventListener('touchend', function(e){
+  handleBuildEnd(0, 0);
+  e.preventDefault();
+}, { passive: false });
+
+// Keyboard
+document.addEventListener('keydown', function(e){
+  if(e.key === 'Escape'){
+    if(document.getElementById('screen-game').classList.contains('active')){
+      if(!state.testing){
+        menu();
+        showScreen('screen-title');
+        return;
+      }
+    }
+  }
+
+  if(e.key === ' ' || e.key === 'Enter'){
+    e.preventDefault();
+    var active = document.querySelector('.screen.active');
+    if(active && active.id === 'screen-title'){
+      startGame();
+      return;
+    }
+    if(active && active.id === 'screen-game' && !state.testing && state.phase === BUILDING){
+      startTest();
+    }
+  }
+
+  // Delete/Backspace to remove last beam
+  if((e.key === 'Delete' || e.key === 'Backspace') &&
+     document.getElementById('screen-game').classList.contains('active') &&
+     !state.testing && state.phase === BUILDING){
+    undoBeam();
+  }
+
+  // 'T' key for test
+  if((e.key === 't' || e.key === 'T') &&
+     document.getElementById('screen-game').classList.contains('active') &&
+     !state.testing && state.phase === BUILDING){
+    startTest();
+  }
+
+  // 'R' key for reset
+  if((e.key === 'r' || e.key === 'R') &&
+     document.getElementById('screen-game').classList.contains('active') &&
+     !state.testing && state.phase === BUILDING){
+    resetLevel();
+  }
+
+  // Number keys for material selection (1,2,3)
+  if(e.key === '1' && document.getElementById('screen-game').classList.contains('active')){
+    selectMaterial('wood');
+  }
+  if(e.key === '2' && document.getElementById('screen-game').classList.contains('active')){
+    selectMaterial('steel');
+  }
+  if(e.key === '3' && document.getElementById('screen-game').classList.contains('active')){
+    selectMaterial('cable');
+  }
+});
+
+/* ============================================================
+   WINDOW EVENTS
+   ============================================================ */
+window.addEventListener('resize', function(){
+  if(canvas) resizeCanvas();
+});
+
+/* ============================================================
+   PREVIEW CANVAS (Title screen)
+   ============================================================ */
+var previewCanvas = document.getElementById('preview-canvas');
+var previewCtx = previewCanvas.getContext('2d');
+
+function drawPreview(){
+  if(!previewCanvas) return;
+  var rect = previewCanvas.parentElement.getBoundingClientRect();
+  previewCanvas.width = rect.width * 2;
+  previewCanvas.height = rect.height * 2;
+  previewCtx.scale(2, 2);
+  var w = previewCanvas.width / 2;
+  var h = previewCanvas.height / 2;
+
+  // Background
+  previewCtx.fillStyle = '#12121e';
+  previewCtx.fillRect(0, 0, w, h);
+
+  // Grid
+  previewCtx.strokeStyle = 'rgba(255,255,255,0.04)';
+  previewCtx.lineWidth = 0.5;
+  for(var x=0;x<w;x+=16){ previewCtx.beginPath(); previewCtx.moveTo(x,0); previewCtx.lineTo(x,h); previewCtx.stroke(); }
+  for(var y=0;y<h;y+=16){ previewCtx.beginPath(); previewCtx.moveTo(0,y); previewCtx.lineTo(w,y); previewCtx.stroke(); }
+
+  // Canyon
+  var gL = 0.25*w, gR = 0.65*w;
+  previewCtx.fillStyle = 'rgba(0,0,0,0.3)';
+  previewCtx.fillRect(gL, 0, gR-gL, h);
+  previewCtx.fillStyle = '#2a2a4a';
+  previewCtx.fillRect(0, 0, gL, h);
+  previewCtx.fillRect(gR, 0, w-gR, h);
+  previewCtx.strokeStyle = 'rgba(255,255,255,0.06)';
+  previewCtx.lineWidth = 0.5;
+  previewCtx.beginPath();
+  previewCtx.moveTo(gL, 0); previewCtx.lineTo(gL, h);
+  previewCtx.moveTo(gR, 0); previewCtx.lineTo(gR, h);
+  previewCtx.stroke();
+
+  // Bridge (simple arc)
+  previewCtx.strokeStyle = '#C4A35A';
+  previewCtx.lineWidth = 2;
+  previewCtx.beginPath();
+  previewCtx.moveTo(gL, 0.5*h);
+  previewCtx.quadraticCurveTo((gL+gR)/2, 0.3*h, gR, 0.5*h);
+  previewCtx.stroke();
+
+  // Truss lines
+  previewCtx.strokeStyle = 'rgba(196,163,90,0.3)';
+  previewCtx.lineWidth = 0.5;
+  for(var i=1;i<6;i++){
+    var t = i/6;
+    var px = gL + (gR-gL)*t;
+    var py = 0.5*h - 0.2*h*Math.sin(t*Math.PI)*0.8;
+    // Vertical strut
+    previewCtx.beginPath();
+    previewCtx.moveTo(px, 0.5*h - 0.2*h*Math.sin(t*Math.PI));
+    previewCtx.lineTo(px, 0.5*h - 0.2*h*Math.sin(t*Math.PI) - 15);
+    previewCtx.stroke();
+  }
+
+  // Anchors
+  var anchors = [[gL, 0.5*h], [gL, 0.56*h], [gR, 0.5*h], [gR, 0.56*h]];
+  anchors.forEach(function(a){
+    previewCtx.beginPath();
+    previewCtx.arc(a[0], a[1], 3, 0, Math.PI*2);
+    previewCtx.fillStyle = '#4285F4';
+    previewCtx.fill();
+  });
+
+  // Animated truck
+  var t = Date.now() / 2000;
+  var truckX = gL + (gR-gL) * (0.5 + 0.5*Math.sin(t*0.5));
+  previewCtx.fillStyle = '#E05050';
+  previewCtx.fillRect(truckX-8, 0.5*h-6, 16, 8);
+  previewCtx.fillStyle = '#C04040';
+  previewCtx.fillRect(truckX+4, 0.5*h-10, 8, 12);
+
+  // Wheels
+  [-5, 5].forEach(function(off){
+    previewCtx.beginPath();
+    previewCtx.arc(truckX+off, 0.5*h+2, 2, 0, Math.PI*2);
+    previewCtx.fillStyle = '#222';
+    previewCtx.fill();
+  });
+
+  previewLoopId = requestAnimationFrame(drawPreview);
+}
+
+/* ============================================================
+   INIT
+   ============================================================ */
+initState();
+state.maxLevel = loadBestLevel();
+document.getElementById('best-score-display').textContent = state.maxLevel;
+setupCanvas();
+drawPreview();
+
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" fill="none">
+  <rect width="240" height="240" rx="16" fill="#1a1a2e"/>
+  <!-- Canyon -->
+  <rect x="75" y="0" width="90" height="240" fill="rgba(0,0,0,0.3)"/>
+  <rect x="0" y="0" width="75" height="240" fill="#2a2a4a"/>
+  <rect x="165" y="0" width="75" height="240" fill="#2a2a4a"/>
+  <!-- Bridge arch -->
+  <path d="M75 140 Q120 80 165 140" stroke="#C4A35A" stroke-width="4" fill="none"/>
+  <path d="M75 140 Q120 80 165 140" stroke="#4285F4" stroke-width="1.5" fill="none" stroke-dasharray="4 3"/>
+  <!-- Truss beams -->
+  <line x1="90" y1="120" x2="90" y2="105" stroke="#C4A35A" stroke-width="1.5"/>
+  <line x1="105" y1="107" x2="105" y2="92" stroke="#C4A35A" stroke-width="1.5"/>
+  <line x1="120" y1="100" x2="120" y2="85" stroke="#C4A35A" stroke-width="1.5"/>
+  <line x1="135" y1="107" x2="135" y2="92" stroke="#C4A35A" stroke-width="1.5"/>
+  <line x1="150" y1="120" x2="150" y2="105" stroke="#C4A35A" stroke-width="1.5"/>
+  <!-- Diagonal trusses -->
+  <line x1="90" y1="105" x2="105" y2="107" stroke="#7B8FA1" stroke-width="1"/>
+  <line x1="105" y1="92" x2="120" y2="100" stroke="#7B8FA1" stroke-width="1"/>
+  <line x1="120" y1="85" x2="135" y2="107" stroke="#7B8FA1" stroke-width="1"/>
+  <line x1="135" y1="92" x2="150" y2="120" stroke="#7B8FA1" stroke-width="1"/>
+  <!-- Anchor nodes -->
+  <circle cx="75" cy="140" r="5" fill="#4285F4"/>
+  <circle cx="75" cy="155" r="5" fill="#4285F4"/>
+  <circle cx="165" cy="140" r="5" fill="#4285F4"/>
+  <circle cx="165" cy="155" r="5" fill="#4285F4"/>
+  <!-- Truck on bridge -->
+  <rect x="110" y="93" width="24" height="10" rx="2" fill="#E05050"/>
+  <rect x="125" y="88" width="12" height="12" rx="1.5" fill="#C04040"/>
+  <!-- Truck wheels -->
+  <circle cx="114" cy="103" r="3" fill="#222"/>
+  <circle cx="122" cy="103" r="3" fill="#222"/>
+  <circle cx="130" cy="103" r="3" fill="#222"/>
+  <!-- Sparks from test -->
+  <circle cx="108" cy="90" r="2" fill="#FFD700" opacity="0.8"/>
+  <circle cx="136" cy="86" r="1.5" fill="#FFD700" opacity="0.6"/>
+  <circle cx="100" cy="95" r="1" fill="#FFD700" opacity="0.5"/>
+  <!-- Title text -->
+  <text x="120" y="195" text-anchor="middle" fill="#4285F4" font-family="system-ui,sans-serif" font-size="12" font-weight="700" letter-spacing="2">BRIDGE BUILDER</text>
+  <text x="120" y="212" text-anchor="middle" fill="#EA863F" font-family="system-ui,sans-serif" font-size="10" font-weight="600" letter-spacing="3">FRENZY</text>
+  <!-- Stars -->
+  <text x="120" y="228" text-anchor="middle" fill="#FFB800" font-family="system-ui,sans-serif" font-size="8">&#x2605; &#x2605; &#x2605;</text>
+</svg>
