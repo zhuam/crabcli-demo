@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no">
+  <meta name="theme-color" content="#0a0e27">
+  <title>Emoji Smash Arena</title>
+  <link rel="stylesheet" href="/games/shared/game-frame.css">
+  <style>
+    :root {
+      --bg-deep: #0a0e27;
+      --neon-cyan: #00FFFF;
+      --neon-pink: #FF00FF;
+      --neon-yellow: #FFD700;
+      --neon-green: #39FF14;
+      --text-primary: #FFFFFF;
+      --text-muted: rgba(255,255,255,0.5);
+      --font-display: 'Audiowide', 'Orbitron', system-ui, sans-serif;
+      --font-body: system-ui, -apple-system, sans-serif;
+    }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    body {
+      background:var(--bg-deep); color:var(--text-primary);
+      font-family:var(--font-body); overflow:hidden;
+      width:100vw; height:100vh; display:flex; align-items:center; justify-content:center;
+      touch-action:manipulation; -webkit-tap-highlight-color:transparent; user-select:none;
+    }
+    .screen{display:none;flex-direction:column;align-items:center;width:100%;position:fixed;inset:0}
+    .screen.active{display:flex}
+    .title-screen{justify-content:center;gap:20px;text-align:center;z-index:1}
+    .title-icon{width:88px;height:88px;border-radius:12px;background:linear-gradient(135deg,var(--neon-pink),var(--neon-yellow));display:flex;align-items:center;justify-content:center;margin:0 auto;font-size:3rem}
+    h1{font-family:var(--font-display);font-size:1.8rem;background:linear-gradient(135deg,var(--neon-pink),var(--neon-yellow));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+    .subtitle{font-size:0.85rem;color:var(--text-muted);max-width:280px;line-height:1.4}
+    #startBtn,#replayBtn{padding:14px 48px;border:none;border-radius:8px;font-family:var(--font-display);font-size:1rem;font-weight:700;cursor:pointer;transition:all 0.15s ease;background:linear-gradient(135deg,var(--neon-pink),var(--neon-yellow));color:var(--bg-deep)}
+    #startBtn:hover,#replayBtn:hover{transform:scale(1.05);box-shadow:0 0 24px rgba(255,0,255,0.4)}
+    #startBtn:focus-visible{outline:2px solid var(--neon-cyan);outline-offset:3px}
+    .play-screen{justify-content:flex-start;padding-top:55px}
+    .hud{position:fixed;top:48px;left:0;right:0;height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 16px;background:rgba(10,14,39,0.9);border-bottom:1px solid rgba(255,255,255,0.06);z-index:100}
+    .hud-score{font-family:var(--font-display);font-size:0.9rem;color:var(--neon-yellow)}
+    .hud-hp{font-size:0.8rem;color:var(--neon-green)}
+    .hud-combo{font-size:0.75rem;color:var(--neon-pink)}
+    #arenaCanvas{display:block;width:100%;max-width:400px;aspect-ratio:3/4;touch-action:none;margin-top:4px}
+    .gameover-screen{justify-content:center;gap:16px;text-align:center;background:rgba(10,14,39,0.92);z-index:200;backdrop-filter:blur(12px)}
+    .go-title{font-family:var(--font-display);font-size:1.6rem}
+    .go-title.win{color:var(--neon-green)}.go-title.lose{color:var(--neon-pink)}
+    .go-stats{font-size:0.9rem;color:var(--text-muted);display:flex;flex-direction:column;gap:4px}
+    #goNewBest{color:var(--neon-yellow);font-weight:700;display:none}
+    #muteBtn{position:fixed;bottom:16px;right:16px;z-index:300;width:40px;height:40px;border-radius:50%;border:1px solid rgba(255,255,255,0.12);background:rgba(10,14,39,0.8);color:var(--text-muted);font-size:1.2rem;cursor:pointer;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(8px)}
+    #muteBtn:hover{color:var(--text-primary)}
+    .sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap}
+    .swipe-indicator{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);font-size:0.75rem;color:var(--text-muted);z-index:50;pointer-events:none;animation:fadeOut 2s forwards}
+    @keyframes fadeOut{0%{opacity:1}100%{opacity:0}}
+    @media(max-width:480px){h1{font-size:1.4rem}#startBtn,#replayBtn{padding:12px 36px;font-size:0.9rem}}
+  </style>
+</head>
+<body>
+<div id="ariaLive" class="sr-only" aria-live="polite" aria-atomic="true"></div>
+<div id="titleScreen" class="screen title-screen active">
+  <div class="title-icon" aria-hidden="true">🤬</div>
+  <h1>EMOJI SMASH</h1>
+  <p class="subtitle">拍打出现的表情包对手，连击加分！</p>
+  <button id="startBtn" autofocus>开始战斗</button>
+  <div class="subtitle" style="font-size:0.75rem;margin-top:4px">🏆 最高分 <span id="titleBest">0</span></div>
+</div>
+<div id="playScreen" class="screen play-screen">
+  <div class="hud">
+    <span class="hud-score" id="hudScore">得分: 0</span>
+    <span class="hud-combo" id="hudCombo"></span>
+    <span class="hud-hp" id="hudHp">❤️❤️❤️❤️❤️</span>
+  </div>
+  <canvas id="arenaCanvas" width="300" height="400"></canvas>
+  <div class="swipe-indicator" id="swipeHint">👆 点击/拍打出现的表情包</div>
+</div>
+<div id="gameoverScreen" class="screen gameover-screen">
+  <div class="go-title lose" id="goTitle">💥 战斗结束</div>
+  <div class="go-stats"><span>得分 <span id="goScore">0</span></span>
+    <span>最高连击 <span id="goCombo">0</span></span>
+    <span id="goNewBest">🏆 新纪录！</span></div>
+  <button id="replayBtn">再来一局</button>
+  <div style="font-size:0.75rem;color:var(--text-muted);margin-top:-8px">Space / Enter 继续</div>
+</div>
+<button id="muteBtn" aria-label="切换音效" aria-pressed="false">🔊</button>
+<a href="/" class="back-to-hub"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg><span>返回</span></a>
+<script>
+'use strict';
+const TITLE=0,PLAYING=1,GAMEOVER=2;
+let gameState=TITLE,canvas,ctx,score=0,hp=5,combo=0,maxCombo=0,timer=0,interval,animId,spawnTimer,attackTimer;
+let emojis=[],particles=[],best=0,difficulty=1,stageTimer=0;
+const STORAGE_KEY='emoji-smash-best',MUTED_KEY='emoji-smash-muted',W=300,H=400;
+const EMOJI_LIST=['😠','😡','🤬','👿','💀','👻','🤡','🕷️','🦂','🧟','🧛','🐉'];
+
+let audioCtx=null,muted=false;
+function ensureAudioCtx(){if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)();if(audioCtx.state==='suspended')audioCtx.resume()}
+function loadMuted(){try{muted=localStorage.getItem(MUTED_KEY)==='1'}catch(e){}updateMuteBtn()}
+function toggleMute(){muted=!muted;try{localStorage.setItem(MUTED_KEY,muted?'1':'0')}catch(e){}updateMuteBtn()}
+function updateMuteBtn(){const b=document.getElementById('muteBtn');b.textContent=muted?'🔇':'🔊';b.setAttribute('aria-pressed',String(muted))}
+function playSound(t){if(muted)return;ensureAudioCtx();try{const o=audioCtx.createOscillator(),g=audioCtx.createGain();o.connect(g);g.connect(audioCtx.destination);const n=audioCtx.currentTime;switch(t){case'smash':o.type='sine';o.frequency.setValueAtTime(800,n);o.frequency.exponentialRampToValueAtTime(1200,n+.08);g.gain.setValueAtTime(.1,n);g.gain.exponentialRampToValueAtTime(.001,n+.1);o.start(n);o.stop(n+.1);break;case'combo':o.type='sine';o.frequency.setValueAtTime(523,n);o.frequency.setValueAtTime(659,n+.08);o.frequency.setValueAtTime(784,n+.16);g.gain.setValueAtTime(.1,n);g.gain.exponentialRampToValueAtTime(.001,n+.25);o.start(n);o.stop(n+.25);break;case'hit':o.type='sawtooth';o.frequency.setValueAtTime(200,n);o.frequency.exponentialRampToValueAtTime(80,n+.1);g.gain.setValueAtTime(.08,n);g.gain.exponentialRampToValueAtTime(.001,n+.12);o.start(n);o.stop(n+.12);break;case'gameover':o.type='sine';o.frequency.setValueAtTime(400,n);o.frequency.exponentialRampToValueAtTime(100,n+.3);g.gain.setValueAtTime(.1,n);g.gain.exponentialRampToValueAtTime(.001,n+.35);o.start(n);o.stop(n+.35)}}catch(e){}}
+
+function loadBest(){try{const v=localStorage.getItem(STORAGE_KEY);return v?parseInt(v,10):0}catch(e){return 0}}
+function saveBest(v){try{localStorage.setItem(STORAGE_KEY,String(v))}catch(e){}}
+best=loadBest();document.getElementById('titleBest').textContent=best;
+
+function showScreen(id){['titleScreen','playScreen','gameoverScreen'].forEach(s=>document.getElementById(s).classList.remove('active'));document.getElementById(id).classList.add('active')}
+
+function initGame(){
+  score=0;hp=5;combo=0;maxCombo=0;difficulty=1;stageTimer=0;emojis=[];particles=[];
+  if(interval)clearInterval(interval);if(spawnTimer)clearInterval(spawnTimer);if(attackTimer)clearInterval(attackTimer);
+  timer=0;document.getElementById('hudScore').textContent='得分: 0';document.getElementById('hudCombo').textContent='';updateHP();
+}
+function updateHP(){document.getElementById('hudHp').textContent='❤️'.repeat(Math.max(0,hp))+'🖤'.repeat(Math.max(0,5-hp))}
+
+function spawnEmoji(){
+  if(gameState!==PLAYING)return;
+  const emoji=EMOJI_LIST[Math.floor(Math.random()*EMOJI_LIST.length)];
+  const size=36+Math.random()*20;const x=30+Math.random()*(W-60);const y=-40;
+  const speed=0.5+difficulty*0.3+Math.random()*0.5;
+  const ttl=Math.floor(1500/difficulty+Math.random()*500);
+  emojis.push({emoji,size,x,y,speed,ttl,endurance:Math.ceil(difficulty/3+Math.random()*difficulty/2),lifetime:0,opacity:1});
+}
+function spawnParticles(x,y,color,count){
+  for(let i=0;i<count;i++)particles.push({x,y,vx:(Math.random()-.5)*4,vy:(Math.random()-.5)*4-2,life:1,size:2+Math.random()*4,color});
+}
+
+function update(dt){
+  if(gameState!==PLAYING)return;
+  stageTimer+=dt;difficulty=1+Math.floor(stageTimer/10)*0.5;
+  if(emojis.length<5+difficulty*2&&Math.random()<.03+difficulty*.005)spawnEmoji();
+  for(let i=emojis.length-1;i>=0;i--){
+    const e=emojis[i];e.y+=e.speed;e.lifetime+=dt;e.ttl-=dt*60;
+    if(e.y>H+20||e.ttl<=0){emojis.splice(i,1);continue}
+    if(e.y>H-80&&e.y<H-60){hp--;updateHP();spawnParticles(e.x,e.y,'#FF3333',5);playSound('hit');emojis.splice(i,1);
+      if(hp<=0){gameOver();return}}
+  }
+  for(let i=particles.length-1;i>=0;i--){const p=particles[i];p.x+=p.vx;p.y+=p.vy;p.vy+=.1;p.life-=.03;if(p.life<=0)particles.splice(i,1)}
+}
+
+function draw(){
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle='#0a0e27';ctx.fillRect(0,0,W,H);
+  // Grid
+  ctx.strokeStyle='rgba(255,255,255,0.03)';ctx.lineWidth=.5;
+  for(let i=0;i<W;i+=20){ctx.beginPath();ctx.moveTo(i,0);ctx.lineTo(i,H);ctx.stroke()}
+  for(let i=0;i<H;i+=20){ctx.beginPath();ctx.moveTo(0,i);ctx.lineTo(W,i);ctx.stroke()}
+  // Danger zone
+  ctx.fillStyle='rgba(255,0,0,0.05)';ctx.fillRect(0,H-80,W,80);
+  ctx.fillStyle='rgba(255,0,0,0.08)';ctx.fillRect(0,H-60,W,4);
+  // Emojis
+  for(const e of emojis){
+    ctx.font=`${e.size}px system-ui,sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.shadowColor='rgba(255,0,255,0.4)';ctx.shadowBlur=12;
+    ctx.fillText(e.emoji,e.x,e.y);
+    ctx.shadowBlur=0;
+    // HP bar for tough enemies
+    if(e.endurance>1){
+      ctx.fillStyle='rgba(255,255,255,0.3)';ctx.fillRect(e.x-12,e.y+e.size/2+2,24,3);
+      ctx.fillStyle='#FF3333';ctx.fillRect(e.x-12,e.y+e.size/2+2,24/e.endurance,3);
+    }
+  }
+  // Particles
+  for(const p of particles){
+    ctx.globalAlpha=p.life;ctx.fillStyle=p.color;
+    ctx.beginPath();ctx.arc(p.x,p.y,p.size,0,Math.PI*2);ctx.fill();
+  }
+  ctx.globalAlpha=1;
+}
+
+function gameLoop(timestamp){
+  const dt=timestamp?Math.min((timestamp-(lastTime||timestamp))/16.67,3):1;lastTime=timestamp;
+  update(dt);draw();
+  animId=requestAnimationFrame(gameLoop);
+}
+let lastTime=0;
+
+function startGame(){
+  showScreen('playScreen');gameState=PLAYING;initGame();
+  document.getElementById('swipeHint').style.display='block';setTimeout(()=>{const h=document.getElementById('swipeHint');if(h)h.style.display='none'},3000);
+  spawnTimer=setInterval(()=>{if(gameState===PLAYING)spawnEmoji()},Math.max(400,2000-difficulty*150));
+  interval=setInterval(()=>timer++,1000);
+  playSound('smash');
+}
+function gameOver(){
+  gameState=GAMEOVER;if(interval)clearInterval(interval);if(spawnTimer)clearInterval(spawnTimer);
+  const isNew=score>best;if(isNew){best=score;saveBest(best)}
+  document.getElementById('goScore').textContent=score;
+  document.getElementById('goCombo').textContent=maxCombo;
+  document.getElementById('goNewBest').style.display=isNew?'block':'none';
+  showScreen('gameoverScreen');playSound('gameover');
+}
+
+function handleTap(clientX,clientY){
+  if(gameState!==PLAYING)return;
+  const rect=canvas.getBoundingClientRect();
+  const sx=W/rect.width,sy=H/rect.height;
+  const mx=(clientX-rect.left)*sx,my=(clientY-rect.top)*sy;
+  for(let i=emojis.length-1;i>=0;i--){
+    const e=emojis[i];
+    const dist=Math.sqrt((mx-e.x)**2+(my-e.y)**2);
+    if(dist<e.size){
+      e.endurance--;
+      if(e.endurance<=0){
+        const points=10+combo*2+difficulty*5;
+        score+=points;combo++;if(combo>maxCombo)maxCombo=combo;
+        document.getElementById('hudScore').textContent='得分: '+score;
+        document.getElementById('hudCombo').textContent=combo>=3?`🔥 ${combo}连击!`:'';
+        spawnParticles(e.x,e.y,'#FFD700',8);
+        playSound(combo>=5?'combo':'smash');
+        emojis.splice(i,1);
+      }
+      playSound('smash');spawnParticles(e.x,e.y,'#00FFFF',4);
+      return;
+    }
+  }
+  // Miss
+  combo=0;document.getElementById('hudCombo').textContent='💔';
+  spawnParticles(mx,my,'#FF3333',3);
+}
+
+function setupInput(){
+  canvas.addEventListener('click',e=>handleTap(e.clientX,e.clientY));
+  canvas.addEventListener('touchstart',e=>{const t=e.touches[0];handleTap(t.clientX,t.clientY);e.preventDefault()},{passive:false});
+  document.getElementById('startBtn').addEventListener('click',startGame);
+  document.getElementById('replayBtn').addEventListener('click',startGame);
+  document.getElementById('muteBtn').addEventListener('click',toggleMute);
+  document.addEventListener('keydown',e=>{
+    if(e.key===' '||e.key==='Enter'){e.preventDefault()
+      if(gameState===TITLE)startGame();else if(gameState===GAMEOVER)startGame()}
+    if(e.key===' '&&gameState===PLAYING){
+      const mx=W/2,my=H/2;let found=false;
+      for(let i=emojis.length-1;i>=0;i--){const e=emojis[i];if(Math.sqrt((mx-e.x)**2+(my-e.y)**2)<e.size){handleTap(canvas.getBoundingClientRect().left+canvas.width/2,canvas.getBoundingClientRect().top+canvas.height/2);found=true;break}}
+      if(!found){combo=0;document.getElementById('hudCombo').textContent='💔';playSound('hit')}}
+  });
+}
+
+function init(){
+  canvas=document.getElementById('arenaCanvas');ctx=canvas.getContext('2d');
+  loadMuted();setupInput();gameLoop(0);showScreen('titleScreen');
+}
+document.addEventListener('DOMContentLoaded',init);
+</script>
+</body>
+</html>

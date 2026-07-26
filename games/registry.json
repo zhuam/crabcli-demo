@@ -984,6 +984,26 @@
             "version": "1.0.0",
             "featured": false,
             "rating": 3
+        },
+        {
+            "id": "emoji-smash-arena",
+            "name": "Emoji Smash Arena",
+            "description": "拍打出现的表情包对手，连击加分",
+            "category": "action",
+            "tags": [
+                "singleplayer",
+                "action",
+                "casual",
+                "emoji",
+                "short-session"
+            ],
+            "thumbnail": "/games/024-emoji-smash-arena/thumb.svg",
+            "path": "/games/024-emoji-smash-arena/",
+            "hasServer": false,
+            "players": "1",
+            "version": "1.0.0",
+            "featured": false,
+            "rating": 3
         }
     ],
     "categories": [
