@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no">
+  <meta name="theme-color" content="#2d3a1f">
+  <title>Tank Rumble - 坦克大乱斗</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700;800;900&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../games/shared/game-frame.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ═══ TITLE SCREEN ═══ -->
+<a class="back-to-hub" href="../../">&#x2190; Back</a>
+<section class="screen title-screen active" id="titleScreen">
+  <div class="title-icon">&#x1F4A5;</div>
+  <h1 class="title-text">TANK<br>RUMBLE</h1>
+  <p class="title-subtitle">Destroy the enemy tank 3 times to win the match!</p>
+  <button class="btn btn-primary" id="playBtn">&#x25B6; BATTLE</button>
+  <div class="title-info">
+    <span>&#x2328; WASD / Arrows = Move</span>
+    <span>&#x23CE; Space = Shoot</span>
+    <span>&#x2694; Best of 3</span>
+  </div>
+  <p class="title-best" id="titleBest">Best: <span id="titleBestScore">0</span></p>
+</section>
+
+<!-- ═══ GAME SCREEN ═══ -->
+<section class="screen game-screen" id="gameScreen">
+  <div class="game-header">
+    <button class="back-btn" id="pauseBtn" aria-label="Pause">&#x23F8;</button>
+    <div class="game-stats">
+      <span class="stat-badge round" id="roundDisplay">Round 1</span>
+      <span class="stat-badge score-player" id="playerScoreDisplay">&#x1F9BE; <span id="playerScore">0</span></span>
+      <span class="stat-badge score-enemy" id="enemyScoreDisplay"><span id="enemyScore">0</span> &#x1F525;</span>
+    </div>
+  </div>
+  <div class="canvas-wrap">
+    <canvas id="gameCanvas"></canvas>
+  </div>
+  <div class="controls-bar" id="controlsBar">
+    <div class="dpad">
+      <button class="dpad-btn" data-dir="up">&#x25B2;</button>
+      <button class="dpad-btn" data-dir="left">&#x25C0;</button>
+      <button class="dpad-btn" data-dir="down">&#x25BC;</button>
+      <button class="dpad-btn" data-dir="right">&#x25B6;</button>
+    </div>
+    <div class="action-btns">
+      <button class="action-btn fire-btn" id="fireBtn">&#x1F4A5; FIRE</button>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ PAUSE OVERLAY ═══ -->
+<div class="pause-overlay" id="pauseOverlay">
+  <h2>&#x23F8; PAUSED</h2>
+  <button class="btn btn-primary" id="resumeBtn">&#x25B6; RESUME</button>
+  <button class="btn btn-secondary" id="quitBtn">&#x1F3E0; QUIT</button>
+</div>
+
+<!-- ═══ ROUND OVERLAY ═══ -->
+<div class="round-overlay" id="roundOverlay">
+  <div class="round-announce" id="roundAnnounce"></div>
+</div>
+
+<!-- ═══ RESULT SCREEN ═══ -->
+<section class="screen result-screen" id="resultScreen">
+  <div class="result-icon" id="resultIcon">&#x1F3C6;</div>
+  <h2 class="result-title" id="resultTitle">BATTLE OVER</h2>
+  <div class="result-score-wrap">
+    <div class="result-rounds">
+      <div class="result-round-item">
+        <div class="result-round-label">You</div>
+        <div class="result-round-score player-score" id="resultMyScore">0</div>
+      </div>
+      <div class="result-round-vs">&#x2694;</div>
+      <div class="result-round-item">
+        <div class="result-round-label">Enemy</div>
+        <div class="result-round-score enemy-score" id="resultEnemyScore">0</div>
+      </div>
+    </div>
+    <div class="result-detail" id="resultDetail">Total Kills: <span id="resultKills">0</span></div>
+  </div>
+  <p class="result-best-label" id="resultBestLabel">&#x1F3C6; Best Streak: <b id="resultBest">0</b></p>
+  <div class="result-btns">
+    <button class="btn btn-primary" id="retryBtn">&#x1F504; REMATCH</button>
+    <button class="btn btn-secondary" id="homeBtn">&#x1F3E0; HOME</button>
+  </div>
+</section>
+
+<script src="app.js"></script>
+<script>
+(function () {
+  'use strict';
+  // recordPlayed sentinel
+  try {
+    var played = localStorage.getItem('tank_rumble_played');
+    if (!played) {
+      localStorage.setItem('tank_rumble_played', '1');
+    }
+  } catch (e) {}
+})();
+</script>
+</body>
+</html>

@@ -1109,6 +1109,7 @@ const GAMES = [
   {id:"beach-babes-volleyball",name:"Beach Babes Volleyball",desc:"沙滩排球跳扣救球 — 移动·跳跃·扣杀，3 局 2 胜，贝壳解锁角色与场地",cat:"action",icon:"🏐",players:"1",rating:4.3,featured:true},
 	  {id:"monorail-pilot",name:"Monorail Pilot",desc:"驾驶单轨列车按时停靠，精准控速到站获星评级",cat:"action",icon:"🚝",players:"1",rating:4.0},
 	  {id:"gravity-warp-kingdom",name:"Gravity Warp Kingdom",desc:"按按钮翻转重力，在墙壁和天花板行走抵达终点旗帜",cat:"puzzle",icon:"🔄",players:"1",rating:4.0},
+  {id:"tank-rumble",name:"Tank Rumble",desc:"网格地图坦克对战，移动瞄准射击击败AI",cat:"action",icon:"0001F5E1️",PLAYERS:"1",RATING:4.0},
 ];
 
 const CATEGORIES = [
@@ -1118,6 +1119,7 @@ const CATEGORIES = [
   {id:"action",name:"Action",icon:"⚡"},
   {id:"strategy",name:"Strategy",icon:"♟️"},
   {id:"casual",name:"Casual",icon:"🎯"}
+  {id:"tank-rumble",name:"Tank Rumble",desc:"网格地图坦克对战，移动瞄准射击击败AI",cat:"action",icon:"0001F5E1️",PLAYERS:"1",RATING:4.0},
 ];
 
 const CAT_GRADIENTS = {
@@ -1165,7 +1167,8 @@ function getCatGradient(cat) {
 }
 
 function getGamesByCategory(cat) {
-  if (cat === 'all') return [...GAMES];
+  if (cat === 'all') return [...GAMES  {id:"tank-rumble",name:"Tank Rumble",desc:"网格地图坦克对战，移动瞄准射击击败AI",cat:"action",icon:"0001F5E1️",PLAYERS:"1",RATING:4.0},
+];
   if (cat === 'favorites') return GAMES.filter(g => state.favorites.has(g.id));
   return GAMES.filter(g => g.cat === cat);
 }
@@ -1181,7 +1184,8 @@ function searchGames(games, query) {
 }
 
 function sortGames(games, sort) {
-  const sorted = [...games];
+  const sorted = [...games  {id:"tank-rumble",name:"Tank Rumble",desc:"网格地图坦克对战，移动瞄准射击击败AI",cat:"action",icon:"0001F5E1️",PLAYERS:"1",RATING:4.0},
+];
   switch (sort) {
     case 'popular': return sorted;
     case 'newest': return sorted.reverse();

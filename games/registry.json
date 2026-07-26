@@ -1024,6 +1024,26 @@
             "version": "1.0.0",
             "featured": false,
             "rating": 3
+        },
+        {
+            "id": "tank-rumble",
+            "name": "Tank Rumble",
+            "description": "网格地图坦克对战，移动瞄准射击击败对手",
+            "category": "action",
+            "tags": [
+                "singleplayer",
+                "action",
+                "tank",
+                "combat",
+                "short-session"
+            ],
+            "thumbnail": "/games/034-tank-rumble/thumb.svg",
+            "path": "/games/034-tank-rumble/",
+            "hasServer": false,
+            "players": "1",
+            "version": "1.0.0",
+            "featured": false,
+            "rating": 3
         }
     ],
     "categories": [

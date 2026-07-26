@@ -1,0 +1,77 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 200" width="320" height="200">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#2d3a1f"/>
+      <stop offset="100%" stop-color="#1a2312"/>
+    </linearGradient>
+    <linearGradient id="tankGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#43a047"/>
+      <stop offset="100%" stop-color="#2e7d32"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="320" height="200" fill="url(#bg)"/>
+
+  <!-- Grid ground tiles -->
+  <rect x="0" y="0" width="320" height="200" fill="url(#bg)"/>
+  <rect x="10" y="10" width="50" height="50" fill="#bcaaa4" rx="2"/>
+  <rect x="62" y="10" width="50" height="50" fill="#a1887f" rx="2"/>
+  <rect x="114" y="10" width="50" height="50" fill="#bcaaa4" rx="2"/>
+  <rect x="166" y="10" width="50" height="50" fill="#a1887f" rx="2"/>
+  <rect x="218" y="10" width="50" height="50" fill="#bcaaa4" rx="2"/>
+  <rect x="270" y="10" width="50" height="50" fill="#a1887f" rx="2"/>
+  <rect x="10" y="62" width="50" height="50" fill="#a1887f" rx="2"/>
+  <rect x="114" y="62" width="50" height="50" fill="#a1887f" rx="2"/>
+  <rect x="218" y="62" width="50" height="50" fill="#a1887f" rx="2"/>
+
+  <!-- Walls -->
+  <rect x="62" y="62" width="50" height="50" fill="#4e342e" rx="3"/>
+  <rect x="166" y="62" width="50" height="50" fill="#4e342e" rx="3"/>
+  <rect x="270" y="62" width="50" height="50" fill="#4e342e" rx="3"/>
+
+  <!-- Destructible walls -->
+  <rect x="62" y="114" width="50" height="50" fill="#795548" rx="3"/>
+  <rect x="166" y="114" width="50" height="50" fill="#795548" rx="3"/>
+  <rect x="218" y="114" width="50" height="50" fill="#795548" rx="3"/>
+
+  <!-- Player Tank (green, bottom-left area) -->
+  <g transform="translate(120, 155)">
+    <!-- Tank body -->
+    <rect x="-28" y="-22" width="56" height="40" fill="#388e3c" rx="4"/>
+    <rect x="-28" y="-22" width="56" height="40" fill="none" stroke="#1b5e20" stroke-width="2" rx="4"/>
+    <!-- Tracks -->
+    <rect x="-30" y="-22" width="4" height="40" fill="#37474f" rx="1"/>
+    <rect x="26" y="-22" width="4" height="40" fill="#37474f" rx="1"/>
+    <!-- Turret -->
+    <circle cx="0" cy="-2" r="14" fill="#43a047"/>
+    <circle cx="0" cy="-2" r="14" fill="none" stroke="#1b5e20" stroke-width="1.5"/>
+    <!-- Barrel -->
+    <rect x="0" y="-4" width="28" height="6" fill="#2e7d32" rx="1"/>
+    <rect x="24" y="-5" width="4" height="8" fill="#555" rx="1"/>
+    <!-- Direction dot -->
+    <circle cx="0" cy="-2" r="4" fill="#66bb6a"/>
+  </g>
+
+  <!-- Enemy Tank (red, top-right area) -->
+  <g transform="translate(200, 35)">
+    <rect x="-28" y="-22" width="56" height="40" fill="#d32f2f" rx="4"/>
+    <rect x="-28" y="-22" width="56" height="40" fill="none" stroke="#b71c1c" stroke-width="2" rx="4"/>
+    <rect x="-30" y="-22" width="4" height="40" fill="#37474f" rx="1"/>
+    <rect x="26" y="-22" width="4" height="40" fill="#37474f" rx="1"/>
+    <circle cx="0" cy="-2" r="14" fill="#e53935"/>
+    <circle cx="0" cy="-2" r="14" fill="none" stroke="#b71c1c" stroke-width="1.5"/>
+    <!-- Barrel pointing left -->
+    <rect x="-28" y="-4" width="28" height="6" fill="#c62828" rx="1"/>
+    <rect x="-28" y="-5" width="4" height="8" fill="#555" rx="1"/>
+    <circle cx="0" cy="-2" r="4" fill="#ef5350"/>
+  </g>
+
+  <!-- Shell flying between them -->
+  <circle cx="160" cy="85" r="5" fill="#ff6d00"/>
+  <circle cx="160" cy="85" r="7" fill="rgba(255,109,0,0.3)"/>
+
+  <!-- Title text overlay -->
+  <rect x="0" y="170" width="320" height="30" fill="rgba(0,0,0,0.6)"/>
+  <text x="160" y="190" font-family="system-ui,sans-serif" font-size="15" font-weight="700" fill="#ff9800" text-anchor="middle">&#x2694; TANK RUMBLE &#x1F4A5;</text>
+</svg>
