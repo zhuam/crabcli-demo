@@ -1044,6 +1044,26 @@
             "version": "1.0.0",
             "featured": false,
             "rating": 3
+        },
+        {
+            "id": "pet-hair-panic",
+            "name": "Pet Hair Panic",
+            "description": "宠物美容店剪毛染色，多客同时服务时间管理",
+            "category": "casual",
+            "tags": [
+                "singleplayer",
+                "casual",
+                "time-management",
+                "pets",
+                "short-session"
+            ],
+            "thumbnail": "/games/029-pet-hair-panic/thumb.svg",
+            "path": "/games/029-pet-hair-panic/",
+            "hasServer": false,
+            "players": "1",
+            "version": "1.0.0",
+            "featured": false,
+            "rating": 3
         }
     ],
     "categories": [

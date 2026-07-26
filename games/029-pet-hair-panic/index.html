@@ -1,0 +1,1509 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#f0e6f6" />
+  <title>Pet Hair Panic</title>
+  <link rel="stylesheet" href="/games/shared/game-frame.css" />
+  <style>
+    /* ─── Reset & Base ─── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      width: 100%; height: 100%; overflow: hidden;
+      background: #f0e6f6;
+      color: #3d2c4e;
+      font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none; -webkit-user-select: none;
+      touch-action: none;
+    }
+    body { display: flex; align-items: center; justify-content: center; }
+
+    #game {
+      position: relative;
+      width: 100%; height: 100%;
+      max-width: 500px; max-height: 100dvh;
+      overflow: hidden;
+      background: linear-gradient(180deg, #fdf6ff 0%, #f0e6f6 40%, #e8d5f0 100%);
+    }
+
+    .screen { position: absolute; inset: 0; display: none; flex-direction: column; z-index: 1; }
+    .screen.active { display: flex; }
+    .hidden { display: none !important; }
+
+    /* ─── Shared ─── */
+    .primary-btn {
+      padding: 14px 40px; border-radius: 50px;
+      border: none; cursor: pointer;
+      font-family: inherit; font-size: 1.1rem; font-weight: 700;
+      color: #fff;
+      background: linear-gradient(135deg, #ff7eb3, #ff5e97);
+      box-shadow: 0 4px 20px rgba(255, 94, 151, 0.4);
+      transition: all 0.2s ease; letter-spacing: 0.03em;
+    }
+    .primary-btn:hover { transform: scale(1.04); box-shadow: 0 6px 28px rgba(255, 94, 151, 0.5); }
+    .primary-btn:active { transform: scale(0.97); }
+    .primary-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+    .secondary-btn {
+      padding: 10px 24px; border-radius: 50px;
+      border: 2px solid #c9b0d9; cursor: pointer;
+      font-family: inherit; font-size: 0.9rem; font-weight: 600;
+      background: rgba(255,255,255,0.6); color: #5a4270;
+      transition: all 0.2s ease;
+    }
+    .secondary-btn:hover { background: rgba(255,255,255,0.9); border-color: #b392cc; }
+
+    .game-title {
+      font-size: clamp(2.4rem, 11vw, 3.6rem);
+      font-weight: 900; line-height: 1.05;
+      background: linear-gradient(135deg, #ff7eb3, #b392cc, #7ec8e3);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .game-subtitle {
+      font-size: 1rem; color: #8a75a0;
+      margin-top: -4px; font-weight: 500;
+    }
+
+    /* ─── Animations ─── */
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes slideUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes bounceIn { 0% { opacity: 0; transform: scale(0.3); } 50% { transform: scale(1.08); } 70% { transform: scale(0.95); } 100% { opacity: 1; transform: scale(1); } }
+    @keyframes shake { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
+    @keyframes wiggle { 0%,100% { transform: rotate(0deg); } 25% { transform: rotate(-5deg); } 75% { transform: rotate(5deg); } }
+    @keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+    @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.6; } }
+    @keyframes popIn { 0% { transform: scale(0); opacity: 0; } 80% { transform: scale(1.1); } 100% { transform: scale(1); opacity: 1; } }
+    @keyframes confetti-fall { 0% { transform: translateY(-20px) rotate(0deg); opacity: 1; } 100% { transform: translateY(100vh) rotate(720deg); opacity: 0; } }
+    @keyframes slideDown { from { opacity: 0; transform: translateY(-40px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes angryBounce { 0%,100% { transform: translateX(0) scale(1); } 20% { transform: translateX(10px) scale(1.05); } 40% { transform: translateX(-10px) scale(1.05); } 60% { transform: translateX(6px) scale(1.03); } 80% { transform: translateX(-6px) scale(1.03); } }
+
+    /* ─── Title Screen ─── */
+    #title-screen {
+      align-items: center; justify-content: center;
+      background: linear-gradient(180deg, #fdf6ff 0%, #f0e6f6 40%, #e8d5f0 100%);
+      gap: 12px; padding: 24px;
+    }
+    #title-screen .title-icon {
+      font-size: 4.5rem; margin-bottom: 4px;
+      animation: float 3s ease-in-out infinite;
+    }
+    .title-content { text-align: center; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+
+    .level-grid {
+      display: flex; flex-direction: column; gap: 8px;
+      width: 100%; max-width: 320px; margin: 8px 0;
+    }
+    .level-btn {
+      display: flex; align-items: center; justify-content: space-between;
+      width: 100%; padding: 12px 16px; border-radius: 14px;
+      border: 2px solid #e0d0ec;
+      background: rgba(255,255,255,0.7);
+      cursor: pointer; transition: all 0.2s ease;
+      font-family: inherit; font-size: 0.95rem; color: #3d2c4e;
+    }
+    .level-btn:hover, .level-btn:focus-visible {
+      border-color: #b392cc; background: rgba(255,255,255,0.95);
+      outline: none;
+    }
+    .level-btn.locked { opacity: 0.4; cursor: not-allowed; pointer-events: none; }
+    .level-btn.selected { border-color: #ff7eb3; background: rgba(255,126,179,0.12); }
+    .level-btn-left { display: flex; align-items: center; gap: 10px; }
+    .level-btn-num { font-weight: 800; color: #b392cc; min-width: 28px; }
+    .level-btn-name { font-weight: 600; }
+    .level-btn-detail { font-size: 0.75rem; color: #8a75a0; }
+    .level-btn-stars { color: #ffd700; font-size: 0.85rem; min-width: 50px; text-align: right; }
+
+    .title-stats { display: flex; gap: 16px; font-size: 0.8rem; color: #8a75a0; margin-top: 2px; }
+
+    /* ─── Game Screen ─── */
+    #game-screen { background: linear-gradient(180deg, #fdf6ff 0%, #f5edf7 100%); }
+
+    /* HUD */
+    #hud {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 8px 12px; padding-top: 52px; /* room for back-to-hub */
+      background: linear-gradient(180deg, rgba(240,230,246,0.95) 0%, transparent 100%);
+      z-index: 10; flex-shrink: 0;
+      flex-wrap: wrap; gap: 4px;
+    }
+    .hud-group { display: flex; align-items: center; gap: 10px; }
+    .hud-item { display: flex; flex-direction: column; align-items: center; min-width: 52px; }
+    .hud-label { font-size: 0.55rem; color: #8a75a0; letter-spacing: 0.08em; text-transform: uppercase; font-weight: 600; }
+    .hud-value { font-size: 0.9rem; font-weight: 700; color: #3d2c4e; }
+    .hud-value.time-warn { color: #e74c3c; animation: pulse 0.8s ease infinite; }
+    #comboDisplay { font-size: 0.75rem; font-weight: 800; color: #ff7eb3; }
+
+    /* Pet Queue Indicator */
+    #queueIndicator {
+      display: flex; align-items: center; gap: 4px;
+      padding: 4px 10px; background: rgba(255,255,255,0.6);
+      border-radius: 20px; border: 1px solid #e0d0ec;
+      font-size: 0.75rem; color: #5a4270;
+    }
+    .queue-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+    .queue-dot.waiting { background: #d5c6e0; }
+    .queue-dot.arrived { background: #ff7eb3; }
+
+    /* Pet Area */
+    #pet-area {
+      flex: 1; position: relative;
+      overflow: hidden; margin: 4px;
+      display: flex; align-items: center; justify-content: center;
+      gap: 12px; padding: 8px;
+    }
+
+    /* Pet Card */
+    .pet-card {
+      position: relative; width: 130px; height: 180px;
+      background: rgba(255,255,255,0.85);
+      border-radius: 20px; border: 2px solid #e0d0ec;
+      display: flex; flex-direction: column; align-items: center;
+      padding: 10px 6px 8px;
+      box-shadow: 0 4px 16px rgba(179,146,204,0.18);
+      transition: all 0.2s ease;
+      animation: bounceIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+    .pet-card:active { transform: scale(0.97); }
+    .pet-card.done { border-color: #7ec8e3; background: rgba(126,200,227,0.12); }
+    .pet-card.angry { animation: angryBounce 0.6s ease; border-color: #e74c3c; }
+
+    /* Pet Happiness Bar */
+    .pet-happiness {
+      width: 100%; height: 8px;
+      background: #eee; border-radius: 4px;
+      overflow: hidden; margin-bottom: 4px;
+    }
+    .pet-happiness-fill {
+      height: 100%; border-radius: 4px;
+      transition: width 0.3s ease, background 0.4s ease;
+      width: 100%;
+    }
+    .pet-happiness-fill.green { background: #2ecc71; }
+    .pet-happiness-fill.yellow { background: #f1c40f; }
+    .pet-happiness-fill.red { background: #e74c3c; }
+
+    /* Pet Body */
+    .pet-body {
+      position: relative; width: 70px; height: 70px;
+      margin: 4px 0; flex-shrink: 0;
+    }
+
+    /* Dog */
+    .pet-dog .pet-head {
+      width: 50px; height: 44px; border-radius: 25px 25px 15px 15px;
+      position: absolute; top: 6px; left: 10px;
+      background: #d4a574;
+    }
+    .pet-dog .pet-ear { position: absolute; width: 16px; height: 22px; border-radius: 50%; background: #c49464; top: 0; }
+    .pet-dog .pet-ear-l { left: 4px; transform: rotate(-15deg); }
+    .pet-dog .pet-ear-r { right: 4px; transform: rotate(15deg); }
+    .pet-dog .pet-eye { position: absolute; width: 6px; height: 6px; border-radius: 50%; background: #3d2c4e; top: 18px; }
+    .pet-dog .pet-eye-l { left: 20px; }
+    .pet-dog .pet-eye-r { right: 20px; }
+    .pet-dog .pet-nose { position: absolute; width: 8px; height: 6px; border-radius: 50%; background: #5a4270; top: 26px; left: 50%; margin-left: -4px; }
+    .pet-dog .pet-mouth { position: absolute; width: 10px; height: 5px; border-bottom: 2px solid #5a4270; border-radius: 0 0 10px 10px; top: 32px; left: 50%; margin-left: -5px; }
+    .pet-dog .pet-tongue { position: absolute; width: 4px; height: 5px; border-radius: 0 0 4px 4px; background: #ff7eb3; top: 35px; left: 50%; margin-left: -2px; }
+    /* Cat */
+    .pet-cat .pet-head {
+      width: 46px; height: 40px; border-radius: 50%;
+      position: absolute; top: 8px; left: 12px;
+      background: #f0c0a0;
+    }
+    .pet-cat .pet-ear { position: absolute; width: 0; height: 0; border-left: 10px solid transparent; border-right: 10px solid transparent; border-bottom: 18px solid #e8b090; top: -4px; }
+    .pet-cat .pet-ear-l { left: 6px; }
+    .pet-cat .pet-ear-r { right: 6px; }
+    .pet-cat .pet-eye { position: absolute; width: 6px; height: 6px; border-radius: 50%; background: #3d2c4e; top: 18px; }
+    .pet-cat .pet-eye-l { left: 18px; }
+    .pet-cat .pet-eye-r { right: 18px; }
+    .pet-cat .pet-nose { position: absolute; width: 4px; height: 3px; border-radius: 50%; background: #ff7eb3; top: 24px; left: 50%; margin-left: -2px; }
+    .pet-cat .pet-whisker { position: absolute; height: 1px; background: #8a75a0; top: 24px; width: 12px; }
+    .pet-cat .pet-whisker-l { left: -4px; transform: rotate(5deg); }
+    .pet-cat .pet-whisker-r { right: -4px; transform: rotate(-5deg); }
+
+    /* Pet Fur Display */
+    .pet-fur {
+      position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+      border-radius: 50%; opacity: 0.15; pointer-events: none;
+    }
+    .pet-fur.fluff { opacity: 0.4; box-shadow: 0 0 0 4px rgba(255,255,255,0.6); }
+    .pet-fur.shaved { opacity: 0; }
+    .pet-fur.dyed-blue { opacity: 0.3; background: #3498db; }
+    .pet-fur.dyed-pink { opacity: 0.3; background: #e91e8a; }
+    .pet-fur.dyed-green { opacity: 0.3; background: #2ecc71; }
+
+    /* Pet Info */
+    .pet-info { text-align: center; margin-top: 2px; }
+    .pet-name { font-size: 0.7rem; font-weight: 700; color: #3d2c4e; }
+    .pet-step-label { font-size: 0.55rem; color: #8a75a0; margin-top: 1px; min-height: 14px; }
+
+    /* Pet Request Badge */
+    .pet-request {
+      display: flex; gap: 3px; align-items: center; justify-content: center;
+      margin-top: 2px; padding: 2px 8px;
+      background: rgba(255,126,179,0.12);
+      border-radius: 10px; font-size: 0.6rem;
+    }
+    .pet-request-icon { font-size: 0.75rem; }
+
+    /* Toolbar */
+    #toolbar {
+      display: flex; align-items: center; justify-content: center;
+      gap: 6px; padding: 8px 10px;
+      background: linear-gradient(0deg, rgba(232,213,240,0.95) 0%, rgba(240,230,246,0.9) 100%);
+      border-top: 2px solid #e0d0ec;
+      flex-shrink: 0; z-index: 10;
+      flex-wrap: wrap;
+    }
+    .tool {
+      width: 52px; height: 52px; border-radius: 14px;
+      border: 2px solid #d5c6e0;
+      background: rgba(255,255,255,0.8);
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      cursor: grab; transition: all 0.15s ease;
+      font-size: 1.4rem; position: relative;
+      touch-action: none;
+    }
+    .tool:hover, .tool:focus-visible { border-color: #b392cc; background: rgba(255,255,255,0.95); outline: none; }
+    .tool:active { cursor: grabbing; }
+    .tool.active { border-color: #ff7eb3; background: rgba(255,126,179,0.15); box-shadow: 0 0 12px rgba(255,126,179,0.3); }
+    .tool-key { position: absolute; top: 2px; right: 4px; font-size: 0.5rem; color: #b8a0c8; font-weight: 700; }
+    .tool-label { font-size: 0.45rem; color: #5a4270; font-weight: 600; line-height: 1; margin-top: 1px; }
+    .tool-dye-color {
+      width: 10px; height: 10px; border-radius: 50%;
+      position: absolute; bottom: 4px; right: 6px;
+      border: 1px solid rgba(0,0,0,0.1);
+    }
+    #registerTool {
+      border-color: #7ec8e3; background: rgba(126,200,227,0.15);
+    }
+    #registerTool:hover { border-color: #5ab0d0; }
+
+    /* Drag Ghost */
+    #dragGhost {
+      position: fixed; pointer-events: none; z-index: 1000;
+      width: 52px; height: 52px; border-radius: 14px;
+      background: rgba(255,255,255,0.9);
+      border: 2px solid #ff7eb3;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.4rem;
+      box-shadow: 0 8px 24px rgba(179,146,204,0.3);
+      transform: translate(-50%, -50%);
+      transition: none;
+    }
+
+    /* Combo Toast */
+    #comboToast {
+      position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+      z-index: 20; pointer-events: none;
+      font-size: 1.8rem; font-weight: 900;
+      color: #ff7eb3; text-shadow: 0 2px 8px rgba(255,126,179,0.4);
+      animation: bounceIn 0.5s ease forwards;
+      opacity: 0; transition: opacity 0.3s;
+    }
+
+    /* Register Zone */
+    #registerZone {
+      position: absolute; bottom: 8px; right: 8px;
+      width: 60px; height: 60px; border-radius: 16px;
+      background: rgba(126,200,227,0.2);
+      border: 2px dashed #7ec8e3;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      font-size: 1.6rem; opacity: 0.7;
+      transition: all 0.2s ease;
+      z-index: 5;
+    }
+    #registerZone.highlight { opacity: 1; background: rgba(126,200,227,0.35); border-color: #5ab0d0; transform: scale(1.08); }
+
+    /* ─── Result Screen ─── */
+    #result-screen {
+      align-items: center; justify-content: center;
+      background: linear-gradient(180deg, #fdf6ff 0%, #f0e6f6 40%, #e8d5f0 100%);
+      padding: 24px; gap: 12px;
+    }
+    #result-screen .result-icon { font-size: 4rem; animation: bounceIn 0.6s ease; }
+    .result-heading { font-size: 2rem; font-weight: 900; }
+    .result-heading.win { background: linear-gradient(135deg, #ff7eb3, #b392cc); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .result-heading.lose { color: #e74c3c; }
+    .result-sub { font-size: 0.9rem; color: #8a75a0; }
+
+    .result-stats {
+      display: flex; gap: 24px; margin: 8px 0;
+    }
+    .result-stat { text-align: center; }
+    .result-stat-value { font-size: 1.8rem; font-weight: 800; color: #3d2c4e; }
+    .result-stat-label { font-size: 0.65rem; color: #8a75a0; text-transform: uppercase; letter-spacing: 0.08em; }
+
+    .result-buttons { display: flex; gap: 12px; margin-top: 8px; flex-wrap: wrap; justify-content: center; }
+
+    /* ─── Confetti ─── */
+    .confetti-piece {
+      position: fixed; width: 10px; height: 10px;
+      border-radius: 2px; pointer-events: none; z-index: 9999;
+      animation: confetti-fall 2s ease forwards;
+    }
+
+    /* ─── Responsive ─── */
+    @media (max-height: 600px) {
+      .pet-card { width: 110px; height: 150px; padding: 6px; }
+      .pet-body { width: 56px; height: 56px; }
+      .tool { width: 44px; height: 44px; font-size: 1.2rem; }
+      #hud { padding-top: 44px; padding-bottom: 4px; }
+      .hud-item { min-width: 40px; }
+      .hud-value { font-size: 0.78rem; }
+    }
+    @media (min-width: 500px) {
+      #game { border-radius: 16px; border: 1px solid #e0d0ec; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+    }
+  </style>
+</head>
+<body>
+  <a href="/" class="back-to-hub" onclick="window.recordPlayed && window.recordPlayed('pet-hair-panic')">&#8592; Arcade</a>
+  <script>
+    window.recordPlayed = function recordPlayed(gameId) {
+      try {
+        var recent = JSON.parse(localStorage.getItem('recentlyPlayed') || '[]');
+        var filtered = recent.filter(function(p) { return p.id !== gameId; });
+        filtered.unshift({ id: gameId, playedAt: Date.now() });
+        localStorage.setItem('recentlyPlayed', JSON.stringify(filtered.slice(0, 10)));
+      } catch(e) {}
+    };
+    window.recordPlayed('pet-hair-panic');
+  </script>
+
+  <div id="game">
+    <!-- ─── Title Screen ─── -->
+    <div id="title-screen" class="screen active">
+      <div class="title-icon">🐾</div>
+      <div class="title-content">
+        <h1 class="game-title">Pet Hair<br/>Panic</h1>
+        <p class="game-subtitle">Groom pets fast, make 'em happy!</p>
+
+        <div class="level-grid" id="levelList"></div>
+
+        <button id="startBtn" class="primary-btn">START</button>
+
+        <div class="title-stats">
+          <span id="bestRevenueDisplay">Best: --</span>
+          <span id="totalEarnedDisplay">Total: --</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── Game Screen ─── -->
+    <div id="game-screen" class="screen">
+      <!-- HUD -->
+      <div id="hud">
+        <div class="hud-group">
+          <div class="hud-item">
+            <span class="hud-label">Time</span>
+            <span class="hud-value" id="timerDisplay">60</span>
+          </div>
+          <div class="hud-item">
+            <span class="hud-label">Revenue</span>
+            <span class="hud-value" id="revenueDisplay">$0</span>
+          </div>
+          <div class="hud-item">
+            <span class="hud-label">Goal</span>
+            <span class="hud-value" id="goalDisplay">$30</span>
+          </div>
+        </div>
+        <div class="hud-group">
+          <span id="comboDisplay"></span>
+          <div id="queueIndicator">
+            <span id="queueLabel">0/0</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pet Area -->
+      <div id="pet-area">
+        <div id="registerZone" title="Drag a finished pet here to ring up!">
+          <span>🛎️</span>
+          <span style="font-size:0.45rem;color:#8a75a0;">Register</span>
+        </div>
+        <div id="comboToast"></div>
+      </div>
+
+      <!-- Toolbar -->
+      <div id="toolbar">
+        <div class="tool" data-tool="scissors" id="tool1" tabindex="0">
+          <span class="tool-key">1</span>
+          <span>✂️</span>
+          <span class="tool-label">Trim</span>
+        </div>
+        <div class="tool" data-tool="brush" id="tool2" tabindex="0">
+          <span class="tool-key">2</span>
+          <span>🪥</span>
+          <span class="tool-label">Fluff</span>
+        </div>
+        <div class="tool" data-tool="clippers" id="tool3" tabindex="0">
+          <span class="tool-key">3</span>
+          <span>⚡</span>
+          <span class="tool-label">Shave</span>
+        </div>
+        <div class="tool" data-tool="dye" id="tool4" tabindex="0">
+          <span class="tool-key">4</span>
+          <span>🧴</span>
+          <span class="tool-label">Dye</span>
+          <span class="tool-dye-color" id="dyeColorDot" style="background:#3498db;"></span>
+        </div>
+        <div class="tool" data-tool="register" id="tool5" tabindex="0">
+          <span class="tool-key">5</span>
+          <span>🛎️</span>
+          <span class="tool-label">Register</span>
+        </div>
+      </div>
+
+      <!-- Drag Ghost -->
+      <div id="dragGhost" class="hidden">✂️</div>
+    </div>
+
+    <!-- ─── Result Screen ─── -->
+    <div id="result-screen" class="screen">
+      <div class="result-icon" id="resultIcon">🎉</div>
+      <h1 class="result-heading" id="resultHeading">LEVEL COMPLETE!</h1>
+      <p class="result-sub" id="resultSub">Great job!</p>
+      <div class="result-stats">
+        <div class="result-stat">
+          <div class="result-stat-value" id="resultRevenue">$0</div>
+          <div class="result-stat-label">Revenue</div>
+        </div>
+        <div class="result-stat">
+          <div class="result-stat-value" id="resultPets">0</div>
+          <div class="result-stat-label">Pets Served</div>
+        </div>
+        <div class="result-stat">
+          <div class="result-stat-value" id="resultBestCombo">0x</div>
+          <div class="result-stat-label">Best Combo</div>
+        </div>
+      </div>
+      <div class="result-buttons">
+        <button id="replayBtn" class="primary-btn">Play Again</button>
+        <button id="nextLevelBtn" class="secondary-btn">Next Level</button>
+        <button id="menuBtn" class="secondary-btn">Menu</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* === Pet Hair Panic - Game Logic === */
+    (function() {
+      'use strict';
+
+      // ─── Audio ───
+      var AudioCtx = window.AudioContext || window.webkitAudioContext;
+      var audioCtx = null;
+
+      function initAudio() {
+        if (!audioCtx) {
+          try { audioCtx = new AudioCtx(); } catch(e) {}
+        }
+      }
+
+      function playTone(freq, duration, type, vol) {
+        if (!audioCtx) return;
+        try {
+          var osc = audioCtx.createOscillator();
+          var gain = audioCtx.createGain();
+          osc.type = type || 'sine';
+          osc.frequency.value = freq;
+          gain.gain.setValueAtTime(vol || 0.15, audioCtx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.start();
+          osc.stop(audioCtx.currentTime + duration);
+        } catch(e) {}
+      }
+
+      function playSnip() { playTone(800, 0.08, 'square', 0.1);
+        setTimeout(function() { playTone(1200, 0.06, 'square', 0.08); }, 40); }
+
+      function playDye() { playTone(400, 0.2, 'sine', 0.12);
+        setTimeout(function() { playTone(600, 0.15, 'sine', 0.1); }, 60); }
+
+      function playRegister() { playTone(523, 0.15, 'sine', 0.12);
+        setTimeout(function() { playTone(659, 0.15, 'sine', 0.1); }, 80);
+        setTimeout(function() { playTone(784, 0.2, 'sine', 0.12); }, 160); }
+
+      function playHappy() { playTone(880, 0.12, 'sine', 0.1);
+        setTimeout(function() { playTone(1100, 0.12, 'sine', 0.1); }, 60);
+        setTimeout(function() { playTone(1320, 0.18, 'sine', 0.12); }, 120); }
+
+      function playAngry() { playTone(300, 0.2, 'square', 0.1);
+        setTimeout(function() { playTone(200, 0.3, 'square', 0.12); }, 100); }
+
+      function playWrong() { playTone(200, 0.15, 'sawtooth', 0.08);
+        setTimeout(function() { playTone(150, 0.2, 'sawtooth', 0.08); }, 80); }
+
+      function playCombo() { playTone(600, 0.1, 'sine', 0.1);
+        setTimeout(function() { playTone(800, 0.1, 'sine', 0.1); }, 50);
+        setTimeout(function() { playTone(1000, 0.1, 'sine', 0.1); }, 100);
+        setTimeout(function() { playTone(1200, 0.15, 'sine', 0.12); }, 150); }
+
+      // ─── Vibration ───
+      function vibrate(ms) {
+        try { navigator.vibrate && navigator.vibrate(ms); } catch(e) {}
+      }
+
+      // ─── Config ───
+      var LEVELS = [
+        { name: 'Puppy Start', petCount: 3, timeLimit: 60, requiredRevenue: 30, dyeChance: 0, styles: ['trim'], arrivalInterval: 8000 },
+        { name: 'Cat & Dogs', petCount: 5, timeLimit: 90, requiredRevenue: 55, dyeChance: 0.4, styles: ['trim','fluff','shave'], arrivalInterval: 7000 },
+        { name: 'Full Service', petCount: 7, timeLimit: 120, requiredRevenue: 90, dyeChance: 0.6, styles: ['trim','fluff','shave'], arrivalInterval: 6000 },
+        { name: 'Rush Hour', petCount: 9, timeLimit: 120, requiredRevenue: 120, dyeChance: 0.7, styles: ['trim','fluff','shave'], arrivalInterval: 5000 },
+        { name: 'Grand Opening', petCount: 12, timeLimit: 150, requiredRevenue: 170, dyeChance: 0.8, styles: ['trim','fluff','shave'], arrivalInterval: 4500 }
+      ];
+
+      var PET_NAMES = ['Bella','Max','Luna','Charlie','Lucy','Cooper','Daisy','Rocky','Molly','Buddy','Sadie','Bailey','Lola','Zoe','Coco','Leo','Ruby','Milo','Chloe','Oscar'];
+      var DYE_COLORS = ['blue','pink','green'];
+      var FUR_STYLES = ['trim','fluff','shave'];
+      var STYLE_ICONS = { trim: '✂️', fluff: '🧸', shave: '⚡' };
+      var DYE_ICONS = { blue: '🔵', pink: '🟣', green: '🟢' };
+      var DYE_HEX = { blue: '#3498db', pink: '#e91e8a', green: '#2ecc71' };
+      var COMBO_WINDOW = 5000; // ms
+      var MAX_PETS_ON_SCREEN = 3;
+
+      // ─── State ───
+      var state = {
+        screen: 'title',
+        currentLevel: 0,
+        revenue: 0,
+        timeLeft: 60,
+        petsServed: 0,
+        petsTotal: 0,
+        petsOnScreen: [],
+        petQueue: [],
+        totalSpawned: 0,
+        selectedTool: null,
+        isDragging: false,
+        dragTool: null,
+        comboCount: 0,
+        bestCombo: 0,
+        lastServeTime: 0,
+        running: false,
+        gameOver: false,
+        levelComplete: false,
+        timerInterval: null,
+        spawnTimeout: null,
+        earnedStars: 0
+      };
+
+      // ─── DOM refs ───
+      var titleScreen, gameScreen, resultScreen;
+      var levelListEl, startBtn, bestRevenueDisplay, totalEarnedDisplay;
+      var timerDisplay, revenueDisplay, goalDisplay, comboDisplay, queueLabel;
+      var petArea, dragGhost, comboToast, registerZone;
+      var resultIcon, resultHeading, resultSub, resultRevenue, resultPets, resultBestCombo;
+      var replayBtn, nextLevelBtn, menuBtn;
+      var tools = {};
+
+      // ─── localStorage ───
+      function getSaveData() {
+        try { return JSON.parse(localStorage.getItem('petHairPanic') || '{}'); } catch(e) { return {}; }
+      }
+      function saveToDisk() {
+        try {
+          var data = getSaveData();
+          data.levels = data.levels || [];
+          for (var i = 0; i <= state.currentLevel; i++) {
+            if (!data.levels[i]) data.levels[i] = { unlocked: false, bestRevenue: 0, stars: 0 };
+          }
+          data.levels[state.currentLevel].bestRevenue = Math.max(data.levels[state.currentLevel].bestRevenue || 0, state.revenue);
+          data.levels[state.currentLevel].stars = Math.max(data.levels[state.currentLevel].stars || 0, state.earnedStars);
+          data.levels[state.currentLevel].unlocked = true;
+          // Unlock next
+          if (data.levels[state.currentLevel + 1] === undefined) {
+            data.levels[state.currentLevel + 1] = { unlocked: false, bestRevenue: 0, stars: 0 };
+          }
+          data.levels[state.currentLevel + 1].unlocked = true;
+          data.totalRevenue = 0;
+          for (var j = 0; j < data.levels.length; j++) {
+            if (data.levels[j]) data.totalRevenue += (data.levels[j].bestRevenue || 0);
+          }
+          localStorage.setItem('petHairPanic', JSON.stringify(data));
+        } catch(e) {}
+      }
+
+      // ─── Utility ───
+      function rand(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+      function pick(arr) { return arr[rand(0, arr.length - 1)]; }
+      function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
+
+      // ─── Pet Generation ───
+      function generatePet(levelIdx) {
+        var level = LEVELS[levelIdx];
+        var breed = pick(['dog','cat']);
+        var furStyle = pick(level.styles);
+        var dyeColor = 'none';
+        if (Math.random() < level.dyeChance) {
+          dyeColor = pick(DYE_COLORS);
+        }
+        var patienceBase = 12 + rand(0, 4) - levelIdx;
+        if (patienceBase < 6) patienceBase = 6;
+        var name = pick(PET_NAMES);
+        return {
+          id: Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+          name: name,
+          breed: breed,
+          furStyle: furStyle,
+          dyeColor: dyeColor,
+          patience: patienceBase * 1000, // ms
+          maxPatience: patienceBase * 1000,
+          satisfaction: 100,
+          maxSatisfaction: 100,
+          trimmed: false,
+          dyed: false,
+          registered: false,
+          state: 'waiting', // waiting, active, done, angry
+          el: null,
+          arrivalTime: Date.now()
+        };
+      }
+
+      // ─── Render Pet Card ───
+      function createPetCard(pet) {
+        var card = document.createElement('div');
+        card.className = 'pet-card pet-' + pet.breed;
+        card.dataset.petId = pet.id;
+
+        // Happiness bar
+        var happiness = document.createElement('div');
+        happiness.className = 'pet-happiness';
+        var fill = document.createElement('div');
+        fill.className = 'pet-happiness-fill green';
+        fill.style.width = '100%';
+        happiness.appendChild(fill);
+        card.appendChild(happiness);
+
+        // Body
+        var body = document.createElement('div');
+        body.className = 'pet-body';
+
+        if (pet.breed === 'dog') {
+          body.innerHTML = '<div class="pet-ear pet-ear-l"></div><div class="pet-ear pet-ear-r"></div><div class="pet-head"><div class="pet-eye pet-eye-l"></div><div class="pet-eye pet-eye-r"></div><div class="pet-nose"></div><div class="pet-mouth"></div><div class="pet-tongue"></div></div>';
+        } else {
+          body.innerHTML = '<div class="pet-ear pet-ear-l"></div><div class="pet-ear pet-ear-r"></div><div class="pet-head"><div class="pet-eye pet-eye-l"></div><div class="pet-eye pet-eye-r"></div><div class="pet-nose"></div><div class="pet-whisker pet-whisker-l"></div><div class="pet-whisker pet-whisker-r"></div></div>';
+        }
+
+        // Fur effect
+        var fur = document.createElement('div');
+        fur.className = 'pet-fur';
+        card.appendChild(fur);
+        card.appendChild(body);
+
+        // Info
+        var info = document.createElement('div');
+        info.className = 'pet-info';
+        var nameEl = document.createElement('div');
+        nameEl.className = 'pet-name';
+        nameEl.textContent = pet.name;
+        info.appendChild(nameEl);
+
+        // Request badge
+        var req = document.createElement('div');
+        req.className = 'pet-request';
+        var styleIcon = STYLE_ICONS[pet.furStyle] || '?';
+        var dyeIcon = pet.dyeColor !== 'none' ? DYE_ICONS[pet.dyeColor] || '?' : '';
+        req.innerHTML = '<span>' + styleIcon + '</span>' + (dyeIcon ? '<span>' + dyeIcon + '</span>' : '');
+        info.appendChild(req);
+
+        // Step label
+        var stepLabel = document.createElement('div');
+        stepLabel.className = 'pet-step-label';
+        stepLabel.textContent = 'Needs ' + pet.furStyle + (pet.dyeColor !== 'none' ? ' + ' + pet.dyeColor : '');
+        info.appendChild(stepLabel);
+
+        card.appendChild(info);
+        return card;
+      }
+
+      function updatePetCard(pet) {
+        if (!pet.el) return;
+        var fill = pet.el.querySelector('.pet-happiness-fill');
+        var pct = (pet.satisfaction / pet.maxSatisfaction) * 100;
+        fill.style.width = pct + '%';
+        if (pct > 60) { fill.className = 'pet-happiness-fill green'; }
+        else if (pct > 30) { fill.className = 'pet-happiness-fill yellow'; }
+        else { fill.className = 'pet-happiness-fill red'; }
+
+        // Step label
+        var stepLabel = pet.el.querySelector('.pet-step-label');
+        var steps = [];
+        if (!pet.trimmed) steps.push('trim');
+        if (!pet.dyed && pet.dyeColor !== 'none') steps.push('dye');
+        if (!pet.registered && pet.trimmed && (pet.dyeColor === 'none' || pet.dyed)) steps.push('register');
+        if (steps.length === 0) {
+          stepLabel.textContent = '✔️ Done!';
+          pet.el.classList.add('done');
+        } else {
+          stepLabel.textContent = 'Next: ' + steps[0];
+        }
+
+        // Update patience bar as the happiness fill
+        var patiencePct = (pet.patience / pet.maxPatience) * 100;
+        var patienceFill = pet.el.querySelector('.pet-patience-fill');
+        if (patienceFill) {
+          patienceFill.style.width = patiencePct + '%';
+        }
+      }
+
+      // ─── Pet Queue ───
+      function spawnPet(levelIdx) {
+        if (!state.running || state.gameOver) return;
+        if (state.totalSpawned >= LEVELS[levelIdx].petCount) {
+          checkLevelEnd();
+          return;
+        }
+
+        var pet = generatePet(levelIdx);
+
+        // Check if pet needs dye or not
+        if (state.petsOnScreen.length < MAX_PETS_ON_SCREEN) {
+          showPet(pet);
+        } else {
+          state.petQueue.push(pet);
+          updateQueueIndicator();
+        }
+
+        state.totalSpawned++;
+        scheduleNextPet(levelIdx);
+      }
+
+      function showPet(pet) {
+        var card = createPetCard(pet);
+        pet.el = card;
+        pet.state = 'active';
+        pet.arrivalTime = Date.now();
+        state.petsOnScreen.push(pet);
+        petArea.appendChild(card);
+
+        // Click to apply selected tool
+        card.addEventListener('click', function(e) {
+          e.stopPropagation();
+          if (state.selectedTool && !state.isDragging) {
+            applyToolToPet(state.selectedTool, pet);
+          }
+        });
+
+        updatePetCard(pet);
+        updateQueueIndicator();
+      }
+
+      function scheduleNextPet(levelIdx) {
+        if (state.spawnTimeout) clearTimeout(state.spawnTimeout);
+        var interval = LEVELS[levelIdx].arrivalInterval;
+        state.spawnTimeout = setTimeout(function() { spawnPet(levelIdx); }, interval);
+      }
+
+      function updateQueueIndicator() {
+        var total = LEVELS[state.currentLevel].petCount;
+        var remaining = total - state.totalSpawned;
+        var onScreen = state.petsOnScreen.length;
+        var inQueue = state.petQueue.length;
+        queueLabel.textContent = (total - remaining) + '/' + total;
+      }
+
+      function checkPetQueue() {
+        while (state.petQueue.length > 0 && state.petsOnScreen.length < MAX_PETS_ON_SCREEN) {
+          var pet = state.petQueue.shift();
+          showPet(pet);
+        }
+        updateQueueIndicator();
+      }
+
+      // ─── Tool System ───
+      function initTools() {
+        var toolEls = document.querySelectorAll('.tool');
+        toolEls.forEach(function(el) {
+          var type = el.dataset.tool;
+          tools[type] = el;
+
+          // Click to select tool
+          el.addEventListener('click', function(e) {
+            e.stopPropagation();
+            if (state.isDragging) return;
+            if (!state.running) return;
+            initAudio();
+            selectTool(type);
+          });
+
+          // Pointer drag
+          el.addEventListener('pointerdown', function(e) {
+            e.preventDefault();
+            if (!state.running) return;
+            initAudio();
+            selectTool(type);
+            startDrag(type, e);
+          });
+
+          // Keyboard hint via tab
+          el.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              if (!state.running) return;
+              initAudio();
+              selectTool(type);
+            }
+          });
+        });
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+          if (!state.running) return;
+          var keyMap = { '1': 'scissors', '2': 'brush', '3': 'clippers', '4': 'dye', '5': 'register' };
+          var tool = keyMap[e.key];
+          if (tool) {
+            e.preventDefault();
+            initAudio();
+            selectTool(tool);
+          }
+        });
+      }
+
+      function selectTool(type) {
+        // Deselect all
+        Object.keys(tools).forEach(function(k) { tools[k].classList.remove('active'); });
+
+        if (state.selectedTool === type) {
+          state.selectedTool = null;
+          document.body.style.cursor = '';
+          return;
+        }
+
+        state.selectedTool = type;
+        tools[type].classList.add('active');
+
+        // If dye, cycle color
+        if (type === 'dye') {
+          cycleDyeColor();
+        }
+
+        document.body.style.cursor = type === 'register' ? 'pointer' : 'crosshair';
+      }
+
+      var dyeColorIndex = 0;
+
+      function cycleDyeColor() {
+        dyeColorIndex = (dyeColorIndex + 1) % DYE_COLORS.length;
+        var color = DYE_COLORS[dyeColorIndex];
+        var dot = document.getElementById('dyeColorDot');
+        dot.style.background = DYE_HEX[color];
+        // Update tool label
+        var label = tools.dye.querySelector('.tool-label');
+        label.textContent = color.charAt(0).toUpperCase() + color.slice(1);
+      }
+
+      function getCurrentDyeColor() {
+        return DYE_COLORS[dyeColorIndex];
+      }
+
+      // ─── Drag & Drop ───
+      function startDrag(type, e) {
+        if (!state.running) return;
+        state.isDragging = true;
+        state.dragTool = type;
+
+        var toolEl = tools[type];
+        var icon = toolEl.querySelector(':not(.tool-key):not(.tool-label)');
+        var iconText = icon ? icon.textContent : '?';
+
+        if (type === 'dye') {
+          var color = getCurrentDyeColor();
+          iconText = DYE_ICONS[color] || '🧸';
+        }
+
+        dragGhost.textContent = iconText;
+        dragGhost.className = '';
+        dragGhost.style.left = e.clientX + 'px';
+        dragGhost.style.top = e.clientY + 'px';
+
+        document.addEventListener('pointermove', onDragMove);
+        document.addEventListener('pointerup', onDragEnd);
+      }
+
+      function onDragMove(e) {
+        e.preventDefault();
+        dragGhost.style.left = e.clientX + 'px';
+        dragGhost.style.top = e.clientY + 'px';
+
+        // Highlight register zone if hovering
+        var rect = registerZone.getBoundingClientRect();
+        if (e.clientX >= rect.left && e.clientX <= rect.right &&
+            e.clientY >= rect.top && e.clientY <= rect.bottom) {
+          registerZone.classList.add('highlight');
+        } else {
+          registerZone.classList.remove('highlight');
+        }
+      }
+
+      function onDragEnd(e) {
+        document.removeEventListener('pointermove', onDragMove);
+        document.removeEventListener('pointerup', onDragEnd);
+        dragGhost.className = 'hidden';
+        registerZone.classList.remove('highlight');
+
+        if (!state.isDragging || !state.dragTool) {
+          state.isDragging = false;
+          state.dragTool = null;
+          return;
+        }
+
+        var toolType = state.dragTool;
+        state.isDragging = false;
+        state.dragTool = null;
+
+        // Check if dropped on a pet
+        var petCards = petArea.querySelectorAll('.pet-card');
+        var hitPet = null;
+        petCards.forEach(function(card) {
+          var rect = card.getBoundingClientRect();
+          if (e.clientX >= rect.left && e.clientX <= rect.right &&
+              e.clientY >= rect.top && e.clientY <= rect.bottom) {
+            var petId = card.dataset.petId;
+            for (var i = 0; i < state.petsOnScreen.length; i++) {
+              if (state.petsOnScreen[i].id === petId) {
+                hitPet = state.petsOnScreen[i];
+              }
+            }
+          }
+        });
+
+        if (hitPet && toolType) {
+          applyToolToPet(toolType, hitPet);
+        } else if (toolType === 'register') {
+          // Clicked register zone - check for ready pets
+          var readyPets = state.petsOnScreen.filter(function(p) {
+            return p.trimmed && (p.dyeColor === 'none' || p.dyed) && !p.registered;
+          });
+          if (readyPets.length > 0) {
+            applyToolToPet('register', readyPets[0]);
+          }
+        }
+      }
+
+      // ─── Applying Tools ───
+      function applyToolToPet(toolType, pet) {
+        if (!pet || pet.state === 'done' || pet.state === 'angry') return;
+        if (pet.registered) return;
+
+        var success = false;
+        var wrong = false;
+
+        if (toolType === 'scissors' || toolType === 'brush' || toolType === 'clippers') {
+          if (pet.trimmed) {
+            wrong = true;
+          } else if (toolType === 'scissors' && pet.furStyle === 'trim') {
+            pet.trimmed = true;
+            success = true;
+            playSnip();
+            vibrate(30);
+          } else if (toolType === 'brush' && pet.furStyle === 'fluff') {
+            pet.trimmed = true;
+            success = true;
+            playSnip();
+            vibrate(30);
+          } else if (toolType === 'clippers' && pet.furStyle === 'shave') {
+            pet.trimmed = true;
+            success = true;
+            playSnip();
+            vibrate(30);
+          } else {
+            wrong = true;
+          }
+        } else if (toolType === 'dye') {
+          if (!pet.trimmed) {
+            wrong = true;
+          } else if (pet.dyed) {
+            wrong = true;
+          } else if (pet.dyeColor === 'none') {
+            wrong = true;
+          } else {
+            var color = getCurrentDyeColor();
+            if (color === pet.dyeColor) {
+              pet.dyed = true;
+              success = true;
+              playDye();
+              vibrate(50);
+              // Apply dye visual
+              if (pet.el) {
+                var fur = pet.el.querySelector('.pet-fur');
+                fur.classList.add('dyed-' + color);
+              }
+            } else {
+              wrong = true;
+            }
+          }
+        } else if (toolType === 'register') {
+          if (!pet.trimmed) {
+            wrong = true;
+          } else if (pet.dyeColor !== 'none' && !pet.dyed) {
+            wrong = true;
+          } else if (pet.registered) {
+            wrong = true;
+          } else {
+            pet.registered = true;
+            success = true;
+            completePet(pet);
+            return;
+          }
+        }
+
+        if (wrong) {
+          pet.satisfaction = Math.max(0, pet.satisfaction - 25);
+          playWrong();
+          vibrate(40);
+          if (pet.satisfaction <= 0) {
+            petLeaveAngry(pet);
+          }
+          updatePetCard(pet);
+        }
+
+        if (success) {
+          pet.satisfaction = Math.min(pet.maxSatisfaction, pet.satisfaction + 5);
+          updatePetCard(pet);
+
+          // If all steps done (except register), show ready state
+          if (pet.trimmed && (pet.dyeColor === 'none' || pet.dyed) && !pet.registered) {
+            playHappy();
+          }
+        }
+      }
+
+      function completePet(pet) {
+        pet.state = 'done';
+        pet.registered = true;
+        playRegister();
+        vibrate(60);
+
+        // Calculate revenue
+        var timeBonus = pet.patience / pet.maxPatience; // 0-1
+        var satisfactionBonus = pet.satisfaction / pet.maxSatisfaction; // 0-1
+        var base = 10;
+        var tip = Math.round(base * 0.5 * (timeBonus + satisfactionBonus));
+        var comboMultiplier = getComboMultiplier();
+        var revenue = Math.round((base + tip) * comboMultiplier);
+
+        // Combo
+        var now = Date.now();
+        if (now - state.lastServeTime < COMBO_WINDOW && state.lastServeTime > 0) {
+          state.comboCount++;
+          if (state.comboCount > state.bestCombo) state.bestCombo = state.comboCount;
+          showComboToast(state.comboCount, comboMultiplier);
+          playCombo();
+        } else {
+          state.comboCount = 0;
+        }
+        state.lastServeTime = now;
+
+        state.revenue += revenue;
+        state.petsServed++;
+        updateHUD();
+
+        // Animate and remove pet
+        if (pet.el) {
+          pet.el.style.transition = 'all 0.3s ease';
+          pet.el.style.transform = 'scale(0.5)';
+          pet.el.style.opacity = '0';
+          var self = pet;
+          setTimeout(function() {
+            if (self.el && self.el.parentNode) {
+              self.el.parentNode.removeChild(self.el);
+            }
+          }, 350);
+        }
+
+        removePet(pet);
+        checkPetQueue();
+        checkLevelEnd();
+      }
+
+      function petLeaveAngry(pet) {
+        pet.state = 'angry';
+        playAngry();
+        vibrate(100);
+
+        if (pet.el) {
+          pet.el.classList.add('angry');
+          pet.el.style.transition = 'all 0.5s ease';
+          pet.el.style.transform = 'translateX(100px)';
+          pet.el.style.opacity = '0';
+          var self = pet;
+          setTimeout(function() {
+            if (self.el && self.el.parentNode) {
+              self.el.parentNode.removeChild(self.el);
+            }
+          }, 500);
+        }
+
+        removePet(pet);
+        checkPetQueue();
+        checkLevelEnd();
+      }
+
+      function removePet(pet) {
+        var idx = state.petsOnScreen.indexOf(pet);
+        if (idx >= 0) {
+          state.petsOnScreen.splice(idx, 1);
+        }
+      }
+
+      function getComboMultiplier() {
+        if (state.comboCount === 0) return 1;
+        if (state.comboCount === 1) return 1.5;
+        if (state.comboCount === 2) return 2;
+        if (state.comboCount >= 3) return 3;
+        return 1;
+      }
+
+      function showComboToast(count, mult) {
+        comboToast.textContent = comboToast.textContent = count + 'x Combo! x' + mult.toFixed(1);
+        comboToast.style.opacity = '1';
+        comboToast.style.animation = 'none';
+        comboToast.offsetHeight; // reflow
+        comboToast.style.animation = 'bounceIn 0.5s ease forwards';
+        setTimeout(function() {
+          comboToast.style.opacity = '0';
+        }, 1200);
+      }
+
+      // ─── Game Loop ───
+      function updatePatience() {
+        var now = Date.now();
+        var toRemove = [];
+        state.petsOnScreen.forEach(function(pet) {
+          if (pet.state === 'done' || pet.state === 'angry') return;
+          var elapsed = now - pet.arrivalTime;
+          pet.patience = Math.max(0, pet.maxPatience - elapsed);
+          pet.satisfaction = Math.max(0, pet.satisfaction - 0.3); // gradual decay
+          if (pet.patience <= 0 || pet.satisfaction <= 0) {
+            toRemove.push(pet);
+          }
+          updatePetCard(pet);
+        });
+
+        toRemove.forEach(function(pet) {
+          if (pet.state !== 'done' && pet.state !== 'angry') {
+            petLeaveAngry(pet);
+          }
+        });
+      }
+
+      function updateTimer() {
+        if (!state.running || state.gameOver) return;
+        state.timeLeft--;
+        if (state.timeLeft <= 0) {
+          state.timeLeft = 0;
+          endGame(false);
+        }
+        updateHUD();
+      }
+
+      function updateHUD() {
+        timerDisplay.textContent = Math.ceil(state.timeLeft);
+        if (state.timeLeft <= 15) {
+          timerDisplay.classList.add('time-warn');
+        }
+        revenueDisplay.textContent = '$' + state.revenue;
+        var level = LEVELS[state.currentLevel];
+        goalDisplay.textContent = '$' + level.requiredRevenue;
+
+        if (state.comboCount > 0) {
+          comboDisplay.textContent = 'Combo x' + (state.comboCount + 1);
+        } else {
+          comboDisplay.textContent = '';
+        }
+
+        updateQueueIndicator();
+      }
+
+      function checkLevelEnd() {
+        if (!state.running || state.gameOver) return;
+        var level = LEVELS[state.currentLevel];
+        var allDone = state.totalSpawned >= level.petCount &&
+          state.petsOnScreen.length === 0 &&
+          state.petQueue.length === 0;
+        if (allDone) {
+          endGame(state.revenue >= level.requiredRevenue);
+        }
+      }
+
+      function endGame(won) {
+        if (state.gameOver) return;
+        state.gameOver = true;
+        state.running = false;
+
+        if (state.timerInterval) {
+          clearInterval(state.timerInterval);
+          state.timerInterval = null;
+        }
+        if (state.spawnTimeout) {
+          clearTimeout(state.spawnTimeout);
+          state.spawnTimeout = null;
+        }
+
+        // Calculate stars
+        var level = LEVELS[state.currentLevel];
+        var stars = 0;
+        if (won) {
+          var ratio = state.revenue / level.requiredRevenue;
+          if (ratio >= 2) stars = 3;
+          else if (ratio >= 1.5) stars = 2;
+          else stars = 1;
+        }
+        state.earnedStars = stars;
+
+        // Save progress
+        saveToDisk();
+
+        // Show result after delay
+        setTimeout(function() {
+          showResult(won);
+        }, 800);
+
+        if (won) {
+          playHappy();
+        }
+      }
+
+      // ─── Screen Management ───
+      function showScreen(id) {
+        titleScreen.classList.remove('active');
+        gameScreen.classList.remove('active');
+        resultScreen.classList.remove('active');
+        document.getElementById(id).classList.add('active');
+        state.screen = id;
+      }
+
+      function showTitle() {
+        showScreen('title-screen');
+        updateTitleScreen();
+      }
+
+      function updateTitleScreen() {
+        var data = getSaveData();
+        var levels = data.levels || [];
+
+        // Best revenue display
+        var best = 0;
+        var total = data.totalRevenue || 0;
+        for (var i = 0; i < levels.length; i++) {
+          if (levels[i] && (levels[i].bestRevenue || 0) > best) {
+            best = levels[i].bestRevenue;
+          }
+        }
+        bestRevenueDisplay.textContent = best > 0 ? 'Best: $' + best : 'Best: --';
+        totalEarnedDisplay.textContent = 'Total: $' + total;
+
+        // Level list
+        levelListEl.innerHTML = '';
+        LEVELS.forEach(function(level, i) {
+          var levelData = levels[i] || { unlocked: i === 0, bestRevenue: 0, stars: 0 };
+          var isUnlocked = levelData.unlocked || i === 0;
+          var btn = document.createElement('button');
+          btn.className = 'level-btn' + (isUnlocked ? '' : ' locked') + (i === state.currentLevel ? ' selected' : '');
+          btn.innerHTML = '<div class="level-btn-left"><span class="level-btn-num">Lv' + (i + 1) + '</span><div><div class="level-btn-name">' + level.name + '</div><div class="level-btn-detail">' + level.petCount + ' pets · ' + level.timeLimit + 's · $' + level.requiredRevenue + '</div></div></div><div class="level-btn-stars">' + '★'.repeat(levelData.stars || 0) + '☆'.repeat(3 - (levelData.stars || 0)) + '</div>';
+          btn.addEventListener('click', function() {
+            if (isUnlocked) {
+              state.currentLevel = i;
+              updateTitleScreen();
+            }
+          });
+          if (i === state.currentLevel) {
+            // Scroll into view
+            setTimeout(function() { btn.scrollIntoView({ block: 'nearest' }); }, 50);
+          }
+          levelListEl.appendChild(btn);
+        });
+      }
+
+      function startGame() {
+        var level = LEVELS[state.currentLevel];
+        state.revenue = 0;
+        state.timeLeft = level.timeLimit;
+        state.petsServed = 0;
+        state.petsTotal = level.petCount;
+        state.petsOnScreen = [];
+        state.petQueue = [];
+        state.totalSpawned = 0;
+        state.selectedTool = null;
+        state.isDragging = false;
+        state.dragTool = null;
+        state.comboCount = 0;
+        state.bestCombo = 0;
+        state.lastServeTime = 0;
+        state.running = true;
+        state.gameOver = false;
+        state.levelComplete = false;
+        state.earnedStars = 0;
+        dyeColorIndex = 0;
+        var dot = document.getElementById('dyeColorDot');
+        dot.style.background = DYE_HEX[DYE_COLORS[0]];
+        tools.dye.querySelector('.tool-label').textContent = 'Blue';
+
+        // Clear pet area (keep register zone)
+        petArea.innerHTML = '';
+        petArea.appendChild(registerZone);
+        petArea.appendChild(comboToast);
+        registerZone.classList.remove('highlight');
+
+        // Deselect tools
+        Object.keys(tools).forEach(function(k) { tools[k].classList.remove('active'); });
+        document.body.style.cursor = '';
+
+        showScreen('game-screen');
+        updateHUD();
+        goalDisplay.textContent = '$' + level.requiredRevenue;
+
+        // Timer
+        if (state.timerInterval) clearInterval(state.timerInterval);
+        state.timerInterval = setInterval(function() {
+          updatePatience();
+          updateTimer();
+        }, 1000);
+
+        // Start spawning
+        state.spawnTimeout = setTimeout(function() { spawnPet(state.currentLevel); }, 1000);
+      }
+
+      function showResult(won) {
+        showScreen('result-screen');
+        var level = LEVELS[state.currentLevel];
+
+        if (won) {
+          resultIcon.textContent = '🎉';
+          resultHeading.textContent = 'LEVEL COMPLETE!';
+          resultHeading.className = 'result-heading win';
+          resultSub.textContent = 'You earned $' + state.revenue + ' / $' + level.requiredRevenue + ' needed!';
+          spawnConfetti();
+        } else {
+          resultIcon.textContent = '😢';
+          resultHeading.textContent = 'TIME\'S UP!';
+          resultHeading.className = 'result-heading lose';
+          resultSub.textContent = 'You earned $' + state.revenue + ' / $' + level.requiredRevenue + ' needed.';
+        }
+
+        resultRevenue.textContent = '$' + state.revenue;
+        resultPets.textContent = state.petsServed;
+        resultBestCombo.textContent = (state.bestCombo + 1) + 'x';
+
+        var nextLevel = state.currentLevel < LEVELS.length - 1;
+        nextLevelBtn.style.display = won && nextLevel ? '' : 'none';
+      }
+
+      function spawnConfetti() {
+        var colors = ['#ff7eb3','#b392cc','#7ec8e3','#f1c40f','#2ecc71','#ff6b6b'];
+        for (var i = 0; i < 30; i++) {
+          var piece = document.createElement('div');
+          piece.className = 'confetti-piece';
+          piece.style.left = rand(0, 100) + 'vw';
+          piece.style.top = '-10px';
+          piece.style.background = pick(colors);
+          piece.style.width = rand(6, 12) + 'px';
+          piece.style.height = rand(6, 12) + 'px';
+          piece.style.borderRadius = rand(0, 1) ? '50%' : '2px';
+          piece.style.animationDelay = (Math.random() * 0.8) + 's';
+          piece.style.animationDuration = (1.5 + Math.random() * 1.5) + 's';
+          document.body.appendChild(piece);
+          setTimeout(function() { if (piece.parentNode) piece.parentNode.removeChild(piece); }, 4000);
+        }
+      }
+
+      // ─── Init ───
+      function init() {
+        // DOM refs
+        titleScreen = document.getElementById('title-screen');
+        gameScreen = document.getElementById('game-screen');
+        resultScreen = document.getElementById('result-screen');
+        levelListEl = document.getElementById('levelList');
+        startBtn = document.getElementById('startBtn');
+        bestRevenueDisplay = document.getElementById('bestRevenueDisplay');
+        totalEarnedDisplay = document.getElementById('totalEarnedDisplay');
+        timerDisplay = document.getElementById('timerDisplay');
+        revenueDisplay = document.getElementById('revenueDisplay');
+        goalDisplay = document.getElementById('goalDisplay');
+        comboDisplay = document.getElementById('comboDisplay');
+        queueLabel = document.getElementById('queueLabel');
+        petArea = document.getElementById('pet-area');
+        dragGhost = document.getElementById('dragGhost');
+        comboToast = document.getElementById('comboToast');
+        registerZone = document.getElementById('registerZone');
+        resultIcon = document.getElementById('resultIcon');
+        resultHeading = document.getElementById('resultHeading');
+        resultSub = document.getElementById('resultSub');
+        resultRevenue = document.getElementById('resultRevenue');
+        resultPets = document.getElementById('resultPets');
+        resultBestCombo = document.getElementById('resultBestCombo');
+        replayBtn = document.getElementById('replayBtn');
+        nextLevelBtn = document.getElementById('nextLevelBtn');
+        menuBtn = document.getElementById('menuBtn');
+
+        // Init tools
+        initTools();
+
+        // Button handlers
+        startBtn.addEventListener('click', function() {
+          initAudio();
+          startGame();
+        });
+
+        replayBtn.addEventListener('click', function() {
+          initAudio();
+          startGame();
+        });
+
+        nextLevelBtn.addEventListener('click', function() {
+          if (state.currentLevel < LEVELS.length - 1) {
+            state.currentLevel++;
+          }
+          startGame();
+        });
+
+        menuBtn.addEventListener('click', function() {
+          showTitle();
+        });
+
+        // Keyboard Enter to start
+        document.addEventListener('keydown', function(e) {
+          if (e.key === 'Enter' && state.screen === 'title-screen') {
+            startBtn.click();
+          }
+        });
+
+        // Show title
+        showTitle();
+      }
+
+      // Run on DOM ready
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+      } else {
+        init();
+      }
+
+      // Expose for testing
+      window.__PET_HAIR_PANIC = {
+        state: state,
+        LEVELS: LEVELS,
+        generatePet: generatePet,
+        applyToolToPet: applyToolToPet,
+        getComboMultiplier: getComboMultiplier,
+        DYE_COLORS: DYE_COLORS,
+        FUR_STYLES: FUR_STYLES,
+        rand: rand,
+        pick: pick,
+        startGame: startGame
+      };
+    })();
+  </script>
+</body>
+</html>
