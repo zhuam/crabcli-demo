@@ -944,6 +944,26 @@
             "version": "1.0.0",
             "featured": false,
             "rating": 3
+        },
+        {
+            "id": "neon-circuit-connect",
+            "name": "Neon Circuit Connect",
+            "description": "连接同色电路节点，路径不能交叉",
+            "category": "puzzle",
+            "tags": [
+                "singleplayer",
+                "puzzle",
+                "logic",
+                "neon",
+                "short-session"
+            ],
+            "thumbnail": "/games/023-neon-circuit-connect/thumb.svg",
+            "path": "/games/023-neon-circuit-connect/",
+            "hasServer": false,
+            "players": "1",
+            "version": "1.0.0",
+            "featured": false,
+            "rating": 3
         }
     ],
     "categories": [
