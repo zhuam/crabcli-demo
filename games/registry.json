@@ -925,6 +925,25 @@
             "version": "1.0.0",
             "featured": true,
             "rating": 4
+        },
+        {
+            "id": "pixel-tower-stack",
+            "name": "Pixel Tower Stack",
+            "description": "落下的方块要精准对齐，错位部分会消失",
+            "category": "casual",
+            "tags": [
+                "singleplayer",
+                "casual",
+                "stacking",
+                "short-session"
+            ],
+            "thumbnail": "/games/011-pixel-tower-stack/thumb.svg",
+            "path": "/games/011-pixel-tower-stack/",
+            "hasServer": false,
+            "players": "1",
+            "version": "1.0.0",
+            "featured": false,
+            "rating": 3
         }
     ],
     "categories": [
