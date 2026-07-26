@@ -1,6 +1,26 @@
 {
     "games": [
         {
+            "id": "chaos-race",
+            "name": "Chaos Race",
+            "description": "Side-scrolling race against AI opponents with chaotic obstacles",
+            "category": "racing",
+            "tags": [
+                "racing",
+                "chaos",
+                "multiplayer",
+                "platformer",
+                "retro"
+            ],
+            "thumbnail": "/games/047-chaos-race/thumb.svg",
+            "path": "/games/047-chaos-race/",
+            "hasServer": false,
+            "players": "1",
+            "version": "1.0.0",
+            "featured": true,
+            "rating": 4
+        },
+        {
             "id": "bridge-brawl-3d",
             "name": "Bridge Brawl 3D",
             "description": "对抗式抢桥战，把对手撞下桥",
@@ -451,6 +471,28 @@
             "rating": 4
         },
         {
+            "id": "spongebob-art-quest",
+            "name": "SpongeBob Art Quest",
+            "description": "Paint-by-number coloring game — fill numbered zones to complete SpongeBob character artworks",
+            "category": "casual",
+            "tags": [
+                "singleplayer",
+                "casual",
+                "coloring",
+                "spongebob",
+                "paint-by-number",
+                "cartoon",
+                "short-session"
+            ],
+            "thumbnail": "/games/048-spongebob-art-quest/thumb.svg",
+            "path": "/games/048-spongebob-art-quest/",
+            "hasServer": false,
+            "players": "1",
+            "version": "1.0.0",
+            "featured": true,
+            "rating": 4
+        },
+        {
             "id": "word-ladder-climb",
             "name": "Word Ladder Climb",
             "description": "改一个字母连成新词，沿词梯爬到顶层目标词",
@@ -666,6 +708,27 @@
             "rating": 4.3
         },
         {
+            "id": "slime-ascent",
+            "name": "Slime Ascent",
+            "description": "绿色史莱姆向上跳跃、粘附墙壁、反弹攀升，到达云端获胜",
+            "category": "platformer",
+            "tags": [
+                "singleplayer",
+                "platformer",
+                "slime",
+                "wall-jump",
+                "neon",
+                "short-session"
+            ],
+            "thumbnail": "/games/046-slime-ascent/thumb.svg",
+            "path": "/games/046-slime-ascent/",
+            "hasServer": false,
+            "players": "1",
+            "version": "1.0.0",
+            "featured": true,
+            "rating": 4
+        },
+        {
             "id": "wheel-o-mon-showdown",
             "name": "Wheel-o-Mon Showdown",
             "description": "转轮盘决定技能进行回合制对战 — 宝可梦+轮盘融合",
@@ -823,6 +886,25 @@
             "version": "1.0.0",
             "featured": true,
             "rating": 4.2
+        },
+        {
+            "id": "grandma-garden-grub",
+            "name": "Grandma's Garden Grub",
+            "description": "Pick fresh veggies from the garden, cook delicious dishes, and deliver orders against the clock!",
+            "category": "casual",
+            "tags": [
+                "cooking",
+                "garden",
+                "time-management",
+                "family"
+            ],
+            "thumbnail": "/games/045-grandma-garden-grub/thumb.svg",
+            "path": "/games/045-grandma-garden-grub/",
+            "hasServer": false,
+            "players": "1",
+            "version": "1.0.0",
+            "featured": true,
+            "rating": 4
         }
     ],
     "categories": [
@@ -884,6 +966,11 @@
             "id": "action",
             "name": "Action",
             "icon": "⚡"
+        },
+        {
+            "id": "platformer",
+            "name": "Platformer",
+            "icon": "🎯"
         },
         {
             "id": "strategy",

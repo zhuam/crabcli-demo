@@ -1,0 +1,1293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no">
+  <meta name="theme-color" content="#0d0d1a">
+  <title>Slime Ascent</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@700;800;900&family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/games/shared/game-frame.css">
+  <style>
+    /* ═══════════════════════════════════════════════════════
+       Slime Ascent — Neon Wall-Jump Platformer
+       ═══════════════════════════════════════════════════════ */
+
+    :root {
+      --bg-deep: #0d0d1a;
+      --bg-mid: #151530;
+      --surface: rgba(255,255,255,0.07);
+      --surface-hover: rgba(255,255,255,0.12);
+      --border: rgba(255,255,255,0.10);
+      --text: #f0f0f0;
+      --text-dim: rgba(255,255,255,0.55);
+      --text-muted: rgba(255,255,255,0.30);
+      --neon-green: #39FF14;
+      --neon-green-dim: rgba(57,255,20,0.3);
+      --purple: #6C5CE7;
+      --purple-glow: rgba(108,92,231,0.4);
+      --cyan: #4ECDC4;
+      --orange: #FF6B6B;
+      --pink: #FF6B9D;
+      --gold: #FFD700;
+      --font-display: 'Outfit', system-ui, sans-serif;
+      --font-body: 'Inter', system-ui, sans-serif;
+      --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+      --radius-sm: 8px;
+      --radius-md: 16px;
+      --radius-lg: 24px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      background: var(--bg-deep);
+      color: var(--text);
+      font-family: var(--font-body);
+      overflow: hidden;
+      height: 100%; width: 100%;
+      user-select: none; -webkit-user-select: none;
+      touch-action: none; -webkit-touch-callout: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    #app { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; }
+
+    /* ═══ Screens ═══ */
+    .screen {
+      position: fixed; inset: 0;
+      display: flex; flex-direction: column; align-items: center;
+      transition: opacity 0.35s ease, transform 0.35s ease;
+      opacity: 0; pointer-events: none;
+      will-change: opacity, transform;
+      z-index: 1;
+    }
+    .screen.active {
+      opacity: 1; pointer-events: auto;
+      z-index: 10;
+    }
+
+    /* ═══ SPLASH SCREEN ═══ */
+    #screen-splash {
+      justify-content: center; gap: 20px;
+      background: linear-gradient(180deg, #0d0d1a 0%, #151530 50%, #1a0a2e 100%);
+      padding: 24px;
+    }
+    #screen-splash::before {
+      content: '';
+      position: absolute; inset: 0;
+      background:
+        radial-gradient(ellipse 200px 100px at 30% 20%, rgba(57,255,20,0.06) 0%, transparent 70%),
+        radial-gradient(ellipse 150px 80px at 70% 15%, rgba(108,92,231,0.05) 0%, transparent 70%),
+        radial-gradient(ellipse 180px 90px at 50% 80%, rgba(78,205,196,0.04) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .splash-slime {
+      font-size: 90px;
+      line-height: 1;
+      filter: drop-shadow(0 0 40px rgba(57,255,20,0.4));
+      animation: splashFloat 3s ease-in-out infinite;
+      position: relative; z-index: 1;
+    }
+    @keyframes splashFloat {
+      0%, 100% { transform: translateY(0) scale(1); }
+      50% { transform: translateY(-12px) scale(1.05); }
+    }
+
+    .splash-title {
+      font-family: var(--font-display);
+      font-size: 48px;
+      font-weight: 900;
+      background: linear-gradient(135deg, #39FF14, #4ECDC4, #6C5CE7);
+      background-size: 300% auto;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      animation: titleGrad 4s ease infinite;
+      line-height: 1.1;
+      text-align: center;
+      position: relative; z-index: 1;
+      letter-spacing: 2px;
+    }
+    @keyframes titleGrad {
+      0% { background-position: 0% center; }
+      50% { background-position: 100% center; }
+      100% { background-position: 0% center; }
+    }
+
+    .splash-subtitle {
+      font-family: var(--font-display);
+      font-size: 14px;
+      color: var(--text-dim);
+      text-align: center;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      margin-top: -8px;
+      position: relative; z-index: 1;
+    }
+
+    .splash-score {
+      font-family: var(--font-mono);
+      font-size: 16px;
+      color: var(--neon-green);
+      position: relative; z-index: 1;
+      padding: 8px 20px;
+      border: 1px solid rgba(57,255,20,0.2);
+      border-radius: var(--radius-sm);
+      background: rgba(57,255,20,0.05);
+    }
+
+    .splash-controls {
+      font-size: 12px;
+      color: var(--text-muted);
+      text-align: center;
+      line-height: 1.6;
+      position: relative; z-index: 1;
+    }
+
+    /* ═══ BUTTONS ═══ */
+    .btn {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 18px;
+      padding: 14px 48px;
+      border: none;
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      position: relative;
+      overflow: hidden;
+      letter-spacing: 1px;
+    }
+    .btn:active { transform: scale(0.96); }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #39FF14, #2dd910);
+      color: #0d0d1a;
+      box-shadow: 0 0 30px rgba(57,255,20,0.3);
+    }
+    .btn-primary:hover {
+      box-shadow: 0 0 50px rgba(57,255,20,0.5);
+      transform: translateY(-2px);
+    }
+    .btn-primary:active { transform: translateY(0) scale(0.96); }
+
+    .btn-secondary {
+      background: rgba(255,255,255,0.08);
+      color: var(--text);
+      border: 1px solid rgba(255,255,255,0.15);
+    }
+    .btn-secondary:hover {
+      background: rgba(255,255,255,0.14);
+      border-color: var(--neon-green);
+    }
+
+    /* ═══ GAME SCREEN ═══ */
+    #screen-game {
+      background: var(--bg-deep);
+    }
+
+    #gameCanvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      touch-action: none;
+    }
+
+    #score-overlay {
+      position: fixed;
+      top: 56px;
+      right: 16px;
+      font-family: var(--font-mono);
+      font-size: 16px;
+      color: var(--neon-green);
+      text-shadow: 0 0 20px rgba(57,255,20,0.4);
+      z-index: 20;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+    #score-overlay.visible { opacity: 1; }
+
+    /* ═══ GAME OVER / WIN SCREENS ═══ */
+    #screen-gameover, #screen-win {
+      justify-content: center;
+      gap: 12px;
+      padding: 24px;
+      background: linear-gradient(180deg, #0d0d1a 0%, #151530 50%, #1a0a2e 100%);
+    }
+
+    .result-icon {
+      font-size: 64px;
+      line-height: 1;
+      margin-bottom: 4px;
+      filter: drop-shadow(0 0 30px rgba(57,255,20,0.3));
+    }
+
+    .result-title {
+      font-family: var(--font-display);
+      font-size: 36px;
+      font-weight: 900;
+      text-align: center;
+      line-height: 1.2;
+    }
+    .result-title.gameover {
+      background: linear-gradient(135deg, #ff5252, #ff6b9d);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .result-title.win {
+      background: linear-gradient(135deg, #FFD700, #39FF14);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .result-score {
+      font-family: var(--font-mono);
+      font-size: 18px;
+      color: var(--neon-green);
+      text-align: center;
+      margin: 8px 0;
+    }
+
+    .result-best {
+      font-family: var(--font-mono);
+      font-size: 14px;
+      color: var(--text-dim);
+      text-align: center;
+      margin-bottom: 8px;
+    }
+
+    .btn-group {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      align-items: center;
+      margin-top: 8px;
+      z-index: 1;
+    }
+
+    /* ═══ RESPONSIVE ═══ */
+    @media (max-width: 480px) {
+      .splash-title { font-size: 34px; }
+      .splash-slime { font-size: 70px; }
+      .btn { font-size: 16px; padding: 12px 36px; }
+      .result-title { font-size: 28px; }
+    }
+
+    @media (min-width: 768px) {
+      #app {
+        max-width: 500px;
+        margin: 0 auto;
+        border-left: 1px solid rgba(255,255,255,0.06);
+        border-right: 1px solid rgba(255,255,255,0.06);
+      }
+      #score-overlay { right: 50%; transform: translateX(250px); }
+    }
+  </style>
+</head>
+<body>
+  <a href="/games/" class="back-to-hub" aria-label="Back to game hub">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5m7-7-7 7 7 7"/></svg>
+    <span>Back</span>
+  </a>
+
+  <div id="app">
+    <!-- ═══ SPLASH ═══ -->
+    <div id="screen-splash" class="screen active">
+      <div class="splash-slime">🟢</div>
+      <div class="splash-title">SLIME ASCENT</div>
+      <div class="splash-subtitle">Jump. Stick. Climb.</div>
+      <div class="splash-score" id="splash-best">BEST: 0</div>
+      <button class="btn btn-primary" id="btn-play">PLAY</button>
+      <div class="splash-controls">
+        SPACE / CLICK to jump &bull; ARROWS to move<br>
+        Stick to walls then jump off!
+      </div>
+    </div>
+
+    <!-- ═══ GAME ═══ -->
+    <div id="screen-game" class="screen">
+      <canvas id="gameCanvas"></canvas>
+      <div id="score-overlay">Height: 0</div>
+    </div>
+
+    <!-- ═══ GAME OVER ═══ -->
+    <div id="screen-gameover" class="screen">
+      <div class="result-icon">💀</div>
+      <div class="result-title gameover">GAME OVER</div>
+      <div class="result-score" id="go-score">Score: 0</div>
+      <div class="result-best" id="go-best">Best: 0</div>
+      <div class="btn-group">
+        <button class="btn btn-primary" id="btn-rematch">REMATCH</button>
+        <button class="btn btn-secondary" id="btn-menu">MENU</button>
+      </div>
+    </div>
+
+    <!-- ═══ WIN ═══ -->
+    <div id="screen-win" class="screen">
+      <div class="result-icon">☁️</div>
+      <div class="result-title win">CLOUD KING!</div>
+      <div class="result-score" id="win-score">Score: 0</div>
+      <div class="result-best" id="win-best">Best: 0</div>
+      <div class="btn-group">
+        <button class="btn btn-primary" id="btn-replay">PLAY AGAIN</button>
+        <button class="btn btn-secondary" id="btn-menu2">MENU</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function() {
+      'use strict';
+
+      /* ═══════════════════════════════════════════════════════
+         Slime Ascent — Game Engine
+         ═══════════════════════════════════════════════════════ */
+
+      // ─── DOM refs ───
+      const $ = function(id) { return document.getElementById(id); };
+      const canvas = $('gameCanvas');
+      const ctx = canvas.getContext('2d');
+      const screens = {
+        splash: $('screen-splash'),
+        game: $('screen-game'),
+        gameover: $('screen-gameover'),
+        win: $('screen-win')
+      };
+      const scoreOverlay = $('score-overlay');
+
+      // ─── Constants ───
+      const GRAVITY = 0.55;
+      const JUMP_VEL = -11;
+      const MAX_VX = 5.5;
+      const AIR_CONTROL = 0.35;
+      const GROUND_FRICTION = 0.82;
+      const AIR_FRICTION = 0.95;
+      const WALL_STICK_MS = 600;
+      const WALL_JUMP_H = 7.5;
+      const WALL_JUMP_V = -10.5;
+      const PLAYER_R = 17;
+      const PLATFORM_H = 14;
+      const ROW_SPACING = 95;
+      const GENERATE_BUFFER = 400;
+      const CLEANUP_BUFFER = 300;
+      const WIN_HEIGHT = 5000;
+      const BOUNCE_MULT = 1.6;
+      const CRUMBLE_MS = 400;
+
+      // ─── Audio (Web Audio API) ───
+      let audioCtx = null;
+
+      function initAudio() {
+        if (!audioCtx) {
+          try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e) {}
+        }
+      }
+
+      function playTone(freq, duration, type, vol) {
+        if (!audioCtx) return;
+        try {
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = type || 'square';
+          osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+          gain.gain.setValueAtTime(vol || 0.12, audioCtx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.start(audioCtx.currentTime);
+          osc.stop(audioCtx.currentTime + duration);
+        } catch(e) {}
+      }
+
+      function sfxJump()    { playTone(520, 0.12, 'square', 0.10); playTone(680, 0.10, 'sine', 0.08); }
+      function sfxStick()   { playTone(200, 0.15, 'sine', 0.08); playTone(150, 0.10, 'sine', 0.06); }
+      function sfxBounce()  { playTone(440, 0.08, 'sine', 0.10); setTimeout(function(){ playTone(880, 0.10, 'sine', 0.08); }, 60); }
+      function sfxWin()     {
+        [523, 659, 784, 1047].forEach(function(f, i) {
+          setTimeout(function() { playTone(f, 0.25, 'sine', 0.10); }, i * 120);
+        });
+      }
+      function sfxLose()    { playTone(400, 0.2, 'sawtooth', 0.08); setTimeout(function() { playTone(250, 0.3, 'sawtooth', 0.06); }, 150); }
+      function sfxCrumb()   { playTone(300, 0.06, 'square', 0.06); setTimeout(function() { playTone(200, 0.08, 'square', 0.05); }, 40); }
+
+      // ─── Vibration ───
+      function vibrate(ms) {
+        try { if (navigator.vibrate) navigator.vibrate(ms); } catch(e) {}
+      }
+
+      // ─── Storage ───
+      var bestScore = 0;
+      function loadBest() {
+        try { bestScore = parseInt(localStorage.getItem('slime-ascent-best')) || 0; } catch(e) { bestScore = 0; }
+        return bestScore;
+      }
+      function saveBest(score) {
+        if (score > bestScore) {
+          bestScore = score;
+          try { localStorage.setItem('slime-ascent-best', String(score)); } catch(e) {}
+        }
+      }
+
+      // ─── Canvas sizing ───
+      var W = 0, H = 0;
+      function resize() {
+        var parent = canvas.parentElement;
+        var dpr = 1; // keep 1x for perf on mobile
+        W = parent.clientWidth;
+        H = parent.clientHeight;
+        canvas.width = W * dpr;
+        canvas.height = H * dpr;
+        canvas.style.width = W + 'px';
+        canvas.style.height = H + 'px';
+        ctx.scale(dpr, dpr);
+      }
+
+      // ─── State ───
+      var state = null;
+      var keys = {};
+      var touchX = null, touchY = null, touchActive = false;
+
+      function getDefaultState() {
+        return {
+          player: { x: 0, y: 0, vx: 0, vy: 0, r: PLAYER_R, onGround: false, isStuck: false, wallSide: null, stickTimer: 0, alive: true },
+          camera: { y: 0 },
+          platforms: [],
+          particles: [],
+          maxHeight: 0,
+          startY: 0,
+          score: 0,
+          highestGenY: 0,
+          heightReached: false,
+          animFrame: 0
+        };
+      }
+
+      // ─── Particles ───
+      function addParticles(x, y, count, color, vxR, vyR) {
+        var p = state.particles;
+        for (var i = 0; i < count; i++) {
+          p.push({
+            x: x + (Math.random() - 0.5) * 10,
+            y: y + (Math.random() - 0.5) * 10,
+            vx: (Math.random() - 0.5) * (vxR || 3),
+            vy: (Math.random() - 0.5) * (vyR || 3) - 1,
+            life: 1,
+            decay: 0.015 + Math.random() * 0.02,
+            r: 2 + Math.random() * 3,
+            color: color || '#39FF14'
+          });
+        }
+      }
+
+      function updateParticles() {
+        var p = state.particles;
+        for (var i = p.length - 1; i >= 0; i--) {
+          var pt = p[i];
+          pt.x += pt.vx;
+          pt.y += pt.vy;
+          pt.vy += 0.05;
+          pt.life -= pt.decay;
+          if (pt.life <= 0) { p.splice(i, 1); }
+        }
+      }
+
+      // ─── Platforms ───
+      var PLATFORM_COLORS = {
+        normal: '#6C5CE7',
+        moving: '#4ECDC4',
+        crumble: '#FF6B6B',
+        bouncy: '#FF6B9D'
+      };
+      var PLATFORM_GLOWS = {
+        normal: 'rgba(108,92,231,0.4)',
+        moving: 'rgba(78,205,196,0.4)',
+        crumble: 'rgba(255,107,107,0.4)',
+        bouncy: 'rgba(255,107,157,0.5)'
+      };
+
+      function generateRow(rowY, forceCount) {
+        var platforms = state.platforms;
+        var count = forceCount || (1 + Math.floor(Math.random() * 2)); // 1-3
+        var margin = 40;
+        var used = [];
+        var types = ['normal', 'normal', 'normal', 'normal', 'normal', 'normal', 'normal', 'moving', 'crumble', 'bouncy'];
+
+        for (var i = 0; i < count; i++) {
+          var attempts = 0;
+          var px, pw;
+          var ok = false;
+          while (!ok && attempts < 20) {
+            pw = 60 + Math.random() * 50;
+            px = margin + Math.random() * (W - pw - margin * 2);
+            ok = true;
+            for (var j = 0; j < used.length; j++) {
+              if (Math.abs(px - used[j]) < pw + 40) { ok = false; break; }
+            }
+            attempts++;
+          }
+          used.push(px);
+
+          var ti = Math.floor(Math.random() * types.length);
+          var type = types[ti];
+          if (type === 'moving' && count > 1 && i === 0) type = 'normal';
+          if (type === 'crumble' && i === count - 1 && count > 1) type = 'normal';
+
+          var plat = {
+            x: px,
+            y: rowY,
+            w: pw,
+            h: PLATFORM_H,
+            type: type,
+            broken: false,
+            breakTimer: 0,
+            moveDir: Math.random() > 0.5 ? 1 : -1,
+            moveSpeed: 0.5 + Math.random() * 0.8,
+            moveRange: 30 + Math.random() * 30,
+            origX: px,
+            shake: 0
+          };
+          platforms.push(plat);
+        }
+      }
+
+      function generateInitialPlatforms() {
+        state.platforms = [];
+        state.highestGenY = state.startY;
+        // Generate starting platforms from startY upward
+        var camTop = state.camera.y;
+        while (state.highestGenY > camTop - GENERATE_BUFFER) {
+          generateRow(state.highestGenY);
+          state.highestGenY -= ROW_SPACING;
+        }
+        // Also generate a few rows below the player
+        for (var i = 0; i < 3; i++) {
+          generateRow(state.startY + (i + 1) * ROW_SPACING);
+        }
+        // Ensure a platform just below the player so they start with a small drop
+        state.platforms.push({
+          x: state.player.x - 50,
+          y: state.player.y + PLAYER_R + 3,
+          w: 100,
+          h: PLATFORM_H,
+          type: 'normal',
+          broken: false,
+          breakTimer: 0,
+          moveDir: 1,
+          moveSpeed: 0,
+          moveRange: 0,
+          origX: state.player.x - 50,
+          shake: 0
+        });
+      }
+
+      function managePlatforms() {
+        var s = state;
+        var camTop = s.camera.y;
+        var camBottom = s.camera.y + H;
+
+        // Generate upward
+        while (s.highestGenY > camTop - GENERATE_BUFFER) {
+          generateRow(s.highestGenY);
+          s.highestGenY -= ROW_SPACING;
+        }
+
+        // Cleanup below
+        for (var i = s.platforms.length - 1; i >= 0; i--) {
+          if (s.platforms[i].y > camBottom + CLEANUP_BUFFER) {
+            s.platforms.splice(i, 1);
+          }
+        }
+
+        // Update moving platforms
+        for (var j = 0; j < s.platforms.length; j++) {
+          var p = s.platforms[j];
+          if (p.type === 'moving' && !p.broken) {
+            p.x = p.origX + Math.sin(s.animFrame * 0.03 * p.moveSpeed) * p.moveRange;
+          }
+          if (p.type === 'crumble' && p.broken) {
+            p.shake = Math.sin(s.animFrame * 0.5) * 2;
+            p.breakTimer -= 16;
+          }
+        }
+      }
+
+      // ─── Player Physics ───
+      function updatePlayer(dt) {
+        var p = state.player;
+        if (!p.alive) return;
+        dt = Math.min(dt, 2);
+
+        // Gravity
+        if (!p.isStuck) {
+          p.vy += GRAVITY * dt;
+        }
+
+        // Horizontal input
+        var hInput = 0;
+        if (keys['ArrowLeft'] || keys['KeyA']) hInput = -1;
+        if (keys['ArrowRight'] || keys['KeyD']) hInput = 1;
+
+        // Touch input
+        if (touchActive && touchX !== null) {
+          var center = W / 2;
+          if (touchX < center - 20) hInput = -1;
+          else if (touchX > center + 20) hInput = 1;
+        }
+
+        // Air control / wall movement
+        if (p.isStuck) {
+          // No movement while stuck — handled later
+        } else if (p.onGround) {
+          p.vx += hInput * 0.8 * dt;
+          p.vx *= GROUND_FRICTION;
+        } else {
+          p.vx += hInput * AIR_CONTROL * dt;
+          p.vx *= AIR_FRICTION;
+        }
+
+        // Clamp horizontal speed
+        if (Math.abs(p.vx) > MAX_VX) {
+          p.vx = Math.sign(p.vx) * MAX_VX;
+        }
+
+        // Move
+        var dx = p.vx * dt;
+        var dy = p.vy * dt;
+
+        // Wall collision & sticking
+        p.onGround = false;
+
+        // Terminal velocity cap
+        if (p.vy > 15) p.vy = 15;
+
+        // Horizontal collision with walls
+        if (p.x + dx - p.r < 0) {
+          dx = p.r - p.x;
+          if (!p.isStuck && p.vy > -1) {
+            p.isStuck = true;
+            p.wallSide = 'left';
+            p.stickTimer = WALL_STICK_MS;
+            p.vx = 0;
+            p.vy = 0;
+            sfxStick();
+            vibrate(30);
+          }
+        } else if (p.x + dx + p.r > W) {
+          dx = W - p.r - p.x;
+          if (!p.isStuck && p.vy > -1) {
+            p.isStuck = true;
+            p.wallSide = 'right';
+            p.stickTimer = WALL_STICK_MS;
+            p.vx = 0;
+            p.vy = 0;
+            sfxStick();
+            vibrate(30);
+          }
+        }
+
+        p.x += dx;
+        p.y += dy;
+
+        // Wall stick behavior — hold player still
+        if (p.isStuck) {
+          p.vy = 0;
+          p.vx = 0;
+          p.stickTimer -= 16.67 * dt;
+          if (p.stickTimer <= 0) {
+            p.isStuck = false;
+            p.wallSide = null;
+          }
+        }
+
+        // Platform collision
+        var s = state;
+        for (var i = 0; i < s.platforms.length; i++) {
+          var plat = s.platforms[i];
+          if (plat.broken) continue;
+
+          var pTop = plat.y;
+          var pBot = plat.y + plat.h;
+          var pL = plat.x;
+          var pR = plat.x + plat.w;
+
+          // Check if player feet overlap platform
+          var feetY = p.y + p.r;
+          var prevFeetY = feetY - p.vy * dt;
+
+          if (p.vy >= 0 &&
+              p.x + p.r > pL && p.x - p.r < pR &&
+              feetY >= pTop && feetY <= pBot + 10 &&
+              prevFeetY <= pTop + 5) {
+
+            p.y = pTop - p.r;
+            p.vy = 0;
+            p.onGround = true;
+            p.isStuck = false;
+            p.wallSide = null;
+
+            // Platform type effects
+            if (plat.type === 'bouncy') {
+              p.vy = JUMP_VEL * BOUNCE_MULT;
+              p.onGround = false;
+              sfxBounce();
+              addParticles(p.x, p.y + p.r, 12, '#FF6B9D', 4, 3);
+              vibrate(20);
+            }
+            if (plat.type === 'crumble') {
+              plat.broken = true;
+              plat.breakTimer = CRUMBLE_MS;
+              sfxCrumb();
+              addParticles(plat.x + plat.w / 2, plat.y, 8, '#FF6B6B', 3, 2);
+            }
+            if (plat.type === 'moving') {
+              p.vx += plat.moveDir * plat.moveSpeed * 0.2;
+            }
+
+            break;
+          }
+        }
+
+        // Remove broken crumble platforms
+        for (var k = s.platforms.length - 1; k >= 0; k--) {
+          if (s.platforms[k].broken && s.platforms[k].breakTimer <= 0) {
+            s.platforms.splice(k, 1);
+          }
+        }
+
+        // Update max height
+        if (p.y < s.maxHeight) {
+          s.maxHeight = p.y;
+        }
+
+        // Camera follows upward only
+        var targetCamY = p.y - H * 0.3;
+        if (targetCamY < s.camera.y) {
+          s.camera.y = targetCamY;
+        }
+
+        // Score
+        s.score = Math.max(0, Math.floor((s.startY - s.maxHeight) * 0.1));
+
+        // Death check
+        if (p.y > s.camera.y + H + 100) {
+          p.alive = false;
+          gameOver();
+        }
+
+        // Win check
+        if (s.startY - s.maxHeight >= WIN_HEIGHT && !s.heightReached) {
+          s.heightReached = true;
+          winGame();
+        }
+
+        // Particles for movement
+        if (p.onGround && Math.abs(p.vx) > 1) {
+          if (Math.random() < 0.15) {
+            addParticles(p.x - p.vx * 0.5, p.y + p.r, 1, '#39FF14', 1, 1);
+          }
+        }
+      }
+
+      // ─── Rendering ───
+      function drawBackground() {
+        var grad = ctx.createLinearGradient(0, 0, 0, H);
+        grad.addColorStop(0, '#0d0d1a');
+        grad.addColorStop(0.4, '#151530');
+        grad.addColorStop(0.7, '#1a0a2e');
+        grad.addColorStop(1, '#0d0d1a');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, W, H);
+
+        // Stars
+        var seed = 12345;
+        for (var i = 0; i < 60; i++) {
+          seed = (seed * 9301 + 49297) % 233280;
+          var sx = (seed / 233280) * W;
+          seed = (seed * 9301 + 49297) % 233280;
+          var sy = (seed / 233280) * H + (state.camera.y % H * 0.3);
+          sy = ((sy % H) + H) % H;
+          seed = (seed * 9301 + 49297) % 233280;
+          var bright = 0.2 + (seed / 233280) * 0.5;
+          seed = (seed * 9301 + 49297) % 233280;
+          var sr = 0.5 + (seed / 233280) * 1.5;
+
+          ctx.fillStyle = 'rgba(255,255,255,' + bright + ')';
+          ctx.beginPath();
+          ctx.arc(sx, sy, sr, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        // Clouds near top (parallax)
+        var cloudY = state.camera.y - (H - state.camera.y) * 0.1;
+        var cloudBase = state.startY - WIN_HEIGHT * 0.7;
+        if (state.maxHeight < cloudBase + WIN_HEIGHT * 0.3) {
+          var cloudAlpha = Math.min(1, (cloudBase - state.camera.y + H * 0.5) / 500);
+          if (cloudAlpha > 0) {
+            ctx.save();
+            ctx.globalAlpha = cloudAlpha * 0.3;
+            ctx.fillStyle = '#ffffff';
+            for (var c = 0; c < 8; c++) {
+              var cx = ((c * 137 + 50) % W);
+              var cy = ((c * 97 + (state.camera.y * 0.05)) % (H * 0.4) + H * 0.1) - 100;
+              drawCloud(cx, cy, 40 + (c % 3) * 20);
+            }
+            ctx.restore();
+          }
+        }
+      }
+
+      function drawCloud(x, y, size) {
+        ctx.beginPath();
+        ctx.arc(x, y, size * 0.5, 0, Math.PI * 2);
+        ctx.arc(x + size * 0.4, y - size * 0.15, size * 0.4, 0, Math.PI * 2);
+        ctx.arc(x + size * 0.8, y, size * 0.45, 0, Math.PI * 2);
+        ctx.arc(x + size * 0.4, y + size * 0.1, size * 0.35, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      function drawPlatforms() {
+        var s = state;
+        var cam = s.camera;
+
+        for (var i = 0; i < s.platforms.length; i++) {
+          var p = s.platforms[i];
+          var sx = p.x + (p.shake || 0);
+          var sy = p.y - cam.y;
+
+          if (sy + p.h < -20 || sy > H + 20) continue;
+
+          var color = PLATFORM_COLORS[p.type] || PLATFORM_COLORS.normal;
+          var glow = PLATFORM_GLOWS[p.type] || PLATFORM_GLOWS.normal;
+
+          // Glow
+          ctx.save();
+          ctx.shadowColor = glow;
+          ctx.shadowBlur = 15;
+
+          // Platform rect with rounded corners
+          var r = 4;
+          ctx.fillStyle = color;
+          ctx.beginPath();
+          ctx.moveTo(sx + r, sy);
+          ctx.lineTo(sx + p.w - r, sy);
+          ctx.quadraticCurveTo(sx + p.w, sy, sx + p.w, sy + r);
+          ctx.lineTo(sx + p.w, sy + p.h - r);
+          ctx.quadraticCurveTo(sx + p.w, sy + p.h, sx + p.w - r, sy + p.h);
+          ctx.lineTo(sx + r, sy + p.h);
+          ctx.quadraticCurveTo(sx, sy + p.h, sx, sy + p.h - r);
+          ctx.lineTo(sx, sy + r);
+          ctx.quadraticCurveTo(sx, sy, sx + r, sy);
+          ctx.closePath();
+          ctx.fill();
+
+          ctx.restore();
+
+          // Top edge highlight
+          ctx.fillStyle = 'rgba(255,255,255,0.15)';
+          ctx.fillRect(sx + 4, sy + 2, p.w - 8, 3);
+
+          // Type indicator for special platforms
+          if (p.type === 'moving') {
+            ctx.fillStyle = 'rgba(255,255,255,0.3)';
+            ctx.fillRect(sx + p.w * 0.3, sy + 4, p.w * 0.4, 4);
+          }
+          if (p.type === 'bouncy') {
+            // Arrow indicators
+            ctx.fillStyle = 'rgba(255,255,255,0.3)';
+            for (var a = 0; a < 3; a++) {
+              var ax = sx + p.w * 0.2 + a * p.w * 0.3;
+              ctx.beginPath();
+              ctx.moveTo(ax, sy + p.h - 4);
+              ctx.lineTo(ax + 4, sy + 2);
+              ctx.lineTo(ax + 8, sy + p.h - 4);
+              ctx.fill();
+            }
+          }
+          if (p.type === 'crumble' && !p.broken) {
+            // Crack pattern
+            ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(sx + 10, sy + p.h - 4);
+            ctx.lineTo(sx + 18, sy + 4);
+            ctx.lineTo(sx + 26, sy + p.h - 4);
+            ctx.stroke();
+          }
+        }
+      }
+
+      function drawSlime() {
+        var p = state.player;
+        var cam = state.camera;
+        if (!p.alive) return;
+
+        var sx = p.x;
+        var sy = p.y - cam.y;
+
+        // Squash & stretch
+        var sqFactor = 1;
+        var stFactor = 1;
+        if (p.onGround) {
+          sqFactor = 1 + Math.abs(p.vx) * 0.02;
+          stFactor = 1 - Math.abs(p.vx) * 0.01;
+        }
+        if (p.vy < -2) {
+          sqFactor = 1 - Math.min(Math.abs(p.vy) * 0.01, 0.2);
+          stFactor = 1 + Math.min(Math.abs(p.vy) * 0.008, 0.15);
+        }
+
+        // Outer glow
+        var grd = ctx.createRadialGradient(sx, sy, 0, sx, sy, p.r * 2.5);
+        grd.addColorStop(0, 'rgba(57,255,20,0.15)');
+        grd.addColorStop(0.5, 'rgba(57,255,20,0.05)');
+        grd.addColorStop(1, 'rgba(57,255,20,0)');
+        ctx.fillStyle = grd;
+        ctx.beginPath();
+        ctx.arc(sx, sy, p.r * 2.5, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Slime body
+        ctx.save();
+        ctx.shadowColor = '#39FF14';
+        ctx.shadowBlur = 25;
+        ctx.translate(sx, sy);
+        ctx.scale(sqFactor, stFactor);
+
+        // Main body — rounded blob
+        var g = ctx.createRadialGradient(-4, -4, 2, 0, 0, p.r);
+        g.addColorStop(0, '#7AFF5C');
+        g.addColorStop(0.5, '#39FF14');
+        g.addColorStop(1, '#1CB800');
+        ctx.fillStyle = g;
+        ctx.beginPath();
+        ctx.arc(0, 0, p.r, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Highlight
+        ctx.fillStyle = 'rgba(255,255,255,0.25)';
+        ctx.beginPath();
+        ctx.ellipse(-5, -7, 7, 5, -0.3, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.restore();
+
+        // Eyes
+        var eyeOffX = p.vx * 0.3;
+        ctx.fillStyle = '#0d0d1a';
+        ctx.beginPath();
+        ctx.ellipse(sx - 5 + eyeOffX, sy - 1, 3.5, 4.5, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.ellipse(sx + 5 + eyeOffX, sy - 1, 3.5, 4.5, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Pupils
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(sx - 4 + eyeOffX, sy - 2, 1.5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(sx + 6 + eyeOffX, sy - 2, 1.5, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Mouth — happy when bouncing, neutral otherwise
+        if (p.vy < -3) {
+          ctx.strokeStyle = '#0d0d1a';
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          ctx.arc(sx, sy + 5, 4, 0.1, Math.PI - 0.1);
+          ctx.stroke();
+        } else if (p.vy > 2) {
+          ctx.strokeStyle = '#0d0d1a';
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          ctx.arc(sx, sy + 9, 3, Math.PI + 0.3, -0.3);
+          ctx.stroke();
+        }
+
+        // Wall-stick indicator
+        if (p.isStuck) {
+          ctx.save();
+          ctx.strokeStyle = 'rgba(57,255,20,0.5)';
+          ctx.lineWidth = 2;
+          ctx.setLineDash([3, 5]);
+          ctx.beginPath();
+          if (p.wallSide === 'left') {
+            ctx.moveTo(5, sy - p.r - 5);
+            ctx.lineTo(5, sy + p.r + 5);
+          } else {
+            ctx.moveTo(W - 5, sy - p.r - 5);
+            ctx.lineTo(W - 5, sy + p.r + 5);
+          }
+          ctx.stroke();
+          ctx.restore();
+        }
+      }
+
+      function drawParticles() {
+        var cam = state.camera;
+        var p = state.particles;
+        for (var i = 0; i < p.length; i++) {
+          var pt = p[i];
+          ctx.save();
+          ctx.globalAlpha = pt.life;
+          ctx.fillStyle = pt.color;
+          ctx.shadowColor = pt.color;
+          ctx.shadowBlur = 8;
+          ctx.beginPath();
+          ctx.arc(pt.x, pt.y - cam.y, pt.r * pt.life, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+        }
+      }
+
+      function drawHUD() {
+        // Height indicator bar
+        var progress = Math.min(1, (state.startY - state.maxHeight) / WIN_HEIGHT);
+        var barW = 4;
+        var barH = H * 0.3;
+        var barX = 14;
+        var barY = H * 0.35;
+
+        ctx.fillStyle = 'rgba(255,255,255,0.08)';
+        ctx.fillRect(barX, barY, barW, barH);
+
+        var fillH = barH * progress;
+        var grad = ctx.createLinearGradient(0, barY + barH, 0, barY);
+        grad.addColorStop(0, '#6C5CE7');
+        grad.addColorStop(0.5, '#39FF14');
+        grad.addColorStop(1, '#FFD700');
+        ctx.fillStyle = grad;
+        ctx.fillRect(barX, barY + barH - fillH, barW, fillH);
+
+        // Cloud icon at top
+        ctx.font = '12px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillStyle = 'rgba(255,255,255,0.3)';
+        ctx.fillText('☁️', barX + barW / 2, barY - 4);
+      }
+
+      function render() {
+        ctx.clearRect(0, 0, W, H);
+        drawBackground();
+        drawPlatforms();
+        drawParticles();
+        drawSlime();
+        drawHUD();
+      }
+
+      // ─── Screens ───
+      function showScreen(name) {
+        Object.keys(screens).forEach(function(k) {
+          screens[k].classList.toggle('active', k === name);
+        });
+        if (name === 'game') {
+          scoreOverlay.classList.add('visible');
+        } else {
+          scoreOverlay.classList.remove('visible');
+        }
+      }
+
+      // ─── Game Flow ───
+      function startGame() {
+        initAudio();
+        resize();
+        state = getDefaultState();
+
+        var p = state.player;
+        p.x = W / 2;
+        p.y = H - 60;
+        state.startY = p.y;
+        state.maxHeight = p.y;
+        state.camera.y = p.y - H * 0.3;
+
+        generateInitialPlatforms();
+        showScreen('game');
+
+        // Reset input state
+        keys = {};
+        touchActive = false;
+
+        if (window.recordPlayed) window.recordPlayed('slime-ascent');
+
+        // Ensure game loop is running
+        if (!gameLoop.running) {
+          gameLoop.running = true;
+          gameLoop.lastTime = performance.now();
+          requestAnimationFrame(gameLoop.tick);
+        }
+      }
+
+      function gameOver() {
+        saveBest(state.score);
+        loadBest();
+        $('go-score').textContent = 'Score: ' + state.score;
+        $('go-best').textContent = 'Best: ' + bestScore;
+        showScreen('gameover');
+        sfxLose();
+        vibrate(100);
+      }
+
+      function winGame() {
+        saveBest(state.score);
+        loadBest();
+        $('win-score').textContent = 'Score: ' + state.score;
+        $('win-best').textContent = 'Best: ' + bestScore;
+        showScreen('win');
+        sfxWin();
+        vibrate([100, 50, 100, 50, 100]);
+      }
+
+      function goToMenu() {
+        showScreen('splash');
+        loadBest();
+        $('splash-best').textContent = 'BEST: ' + bestScore;
+      }
+
+      // ─── Input ───
+      function handleJump() {
+        if (!state || !state.player.alive) return;
+
+        var p = state.player;
+        if (p.isStuck) {
+          // Wall jump
+          var dir = p.wallSide === 'left' ? 1 : -1;
+          p.vx = dir * WALL_JUMP_H;
+          p.vy = WALL_JUMP_V;
+          p.isStuck = false;
+          p.wallSide = null;
+          p.onGround = false;
+          sfxJump();
+          addParticles(p.x + (p.vx > 0 ? -p.r : p.r), p.y, 6, '#39FF14', 2, 2);
+          vibrate(30);
+        } else if (p.onGround) {
+          p.vy = JUMP_VEL;
+          p.onGround = false;
+          sfxJump();
+          addParticles(p.x, p.y + p.r, 5, '#39FF14', 2, 1);
+          vibrate(15);
+        }
+      }
+
+      // Keyboard
+      document.addEventListener('keydown', function(e) {
+        keys[e.code] = true;
+        if (e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'KeyW') {
+          e.preventDefault();
+          handleJump();
+        }
+        if (e.code === 'ArrowDown' || e.code === 'KeyS') {
+          e.preventDefault();
+        }
+        if (e.code === 'ArrowLeft' || e.code === 'ArrowRight' || e.code === 'KeyA' || e.code === 'KeyD') {
+          e.preventDefault();
+        }
+      });
+      document.addEventListener('keyup', function(e) {
+        keys[e.code] = false;
+        if (e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'ArrowDown') {
+          e.preventDefault();
+        }
+      });
+
+      // Mouse
+      canvas.addEventListener('mousedown', function(e) {
+        e.preventDefault();
+        handleJump();
+      });
+
+      // Touch
+      canvas.addEventListener('touchstart', function(e) {
+        e.preventDefault();
+        var t = e.changedTouches[0];
+        touchX = t.clientX - canvas.getBoundingClientRect().left;
+        touchY = t.clientY - canvas.getBoundingClientRect().top;
+        touchActive = true;
+        handleJump();
+      }, { passive: false });
+
+      canvas.addEventListener('touchmove', function(e) {
+        e.preventDefault();
+        var t = e.changedTouches[0];
+        touchX = t.clientX - canvas.getBoundingClientRect().left;
+        touchY = t.clientY - canvas.getBoundingClientRect().top;
+      }, { passive: false });
+
+      canvas.addEventListener('touchend', function(e) {
+        e.preventDefault();
+        touchActive = false;
+      }, { passive: false });
+
+      document.addEventListener('touchcancel', function() {
+        touchActive = false;
+      });
+
+      // ─── Game Loop ───
+      var gameLoop = {
+        running: false,
+        lastTime: 0,
+        tick: function(time) {
+          if (!gameLoop.running) return;
+
+          var dt = (time - gameLoop.lastTime) / 16.667;
+          gameLoop.lastTime = time;
+
+          if (state && state.player && state.player.alive) {
+            state.animFrame++;
+            updatePlayer(dt);
+            managePlatforms();
+            updateParticles();
+
+            // Update score display
+            $('score-overlay').textContent = 'Height: ' + state.score;
+          }
+
+          render();
+          requestAnimationFrame(gameLoop.tick);
+        }
+      };
+
+      // ─── Window resize ───
+      window.addEventListener('resize', function() {
+        resize();
+        if (state) {
+          // Clamp player to new bounds
+          if (state.player.x - state.player.r < 0) state.player.x = state.player.r;
+          if (state.player.x + state.player.r > W) state.player.x = W - state.player.r;
+        }
+      });
+
+      // ─── Button handlers ───
+      $('btn-play').addEventListener('click', startGame);
+      $('btn-rematch').addEventListener('click', startGame);
+      $('btn-replay').addEventListener('click', startGame);
+      $('btn-menu').addEventListener('click', goToMenu);
+      $('btn-menu2').addEventListener('click', goToMenu);
+
+      // ─── Init ───
+      function init() {
+        resize();
+        loadBest();
+        $('splash-best').textContent = 'BEST: ' + bestScore;
+        showScreen('splash');
+
+        // Start empty render loop for background
+        state = getDefaultState();
+        state.player.alive = false;
+        state.camera.y = 0;
+        gameLoop.running = true;
+        gameLoop.lastTime = performance.now();
+        requestAnimationFrame(gameLoop.tick);
+      }
+
+      init();
+    })();
+  </script>
+</body>
+</html>
