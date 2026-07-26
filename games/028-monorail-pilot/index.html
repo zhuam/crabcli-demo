@@ -1,0 +1,1364 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#0b0e2a">
+<title>Monorail Pilot</title>
+<link rel="stylesheet" href="/games/shared/game-frame.css">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0b0e2a;--surface:#12143a;--surface-hover:#1a1d4a;--border:#2a2d5a;
+  --text:#e8e8f0;--text-secondary:#8888aa;--accent:#6c5ce7;--accent-glow:rgba(108,92,231,0.3);
+  --success:#55efc4;--danger:#ff6b6b;--warning:#fdcb6e;
+  --font-sans:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+  --font-mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Consolas,monospace;
+}
+html,body{width:100%;height:100%;overflow:hidden}
+body{
+  font-family:var(--font-sans);background:var(--bg);color:var(--text);
+  display:flex;align-items:center;justify-content:center;
+  touch-action:none;-webkit-tap-highlight-color:transparent;
+  user-select:none;-webkit-user-select:none;
+}
+.game-container{
+  position:relative;width:100%;height:100%;max-width:500px;max-height:min(100vh,860px);
+  overflow:hidden;
+}
+.screen{position:absolute;inset:0;display:none;flex-direction:column;z-index:1}
+.screen.active{display:flex}
+
+/* ===== SPLASH ===== */
+.splash{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;text-align:center;position:relative;overflow:hidden}
+.splash::before{content:'';position:absolute;inset:0;
+  background:radial-gradient(ellipse 80% 50% at 50% 35%,var(--accent-glow) 0%,transparent 70%);
+  pointer-events:none}
+.splash-stars{position:absolute;inset:0;overflow:hidden;pointer-events:none}
+.splash-stars span{position:absolute;width:2px;height:2px;border-radius:50%;background:#fff;opacity:0;animation:twinkle 3s infinite}
+@keyframes twinkle{0%,100%{opacity:0}50%{opacity:0.8}}
+.splash-icon{width:90px;height:90px;border-radius:50%;background:var(--surface);border:2px solid var(--border);display:flex;align-items:center;justify-content:center;margin-bottom:20px;position:relative;z-index:1}
+.splash-icon svg{width:50px;height:50px}
+.splash h1{font-size:32px;font-weight:800;letter-spacing:0.04em;margin-bottom:4px;position:relative;z-index:1}
+.splash h1 .accent{color:var(--accent)}
+.splash-sub{font-size:13px;color:var(--text-secondary);letter-spacing:0.12em;margin-bottom:36px;position:relative;z-index:1}
+.splash-start-btn{
+  display:inline-flex;align-items:center;gap:8px;
+  padding:16px 48px;border-radius:16px;border:none;
+  background:var(--accent);color:#fff;font-size:18px;font-weight:700;
+  cursor:pointer;position:relative;z-index:1;
+  animation:pulseBtn 2s ease-in-out infinite}
+.splash-start-btn:hover{transform:scale(1.04);box-shadow:0 0 32px var(--accent-glow)}
+@keyframes pulseBtn{0%,100%{box-shadow:0 0 0 0 var(--accent-glow)}50%{box-shadow:0 0 24px 8px var(--accent-glow)}}
+.splash-controls{margin-top:28px;display:flex;gap:16px;flex-wrap:wrap;justify-content:center;position:relative;z-index:1}
+.splash-controls kbd{font-size:11px;padding:3px 8px;border-radius:4px;background:var(--surface);border:1px solid var(--border);color:var(--text-secondary)}
+.splash-hint{margin-top:10px;font-size:11px;color:var(--text-secondary);position:relative;z-index:1}
+
+/* ===== LEVEL SELECT ===== */
+.level-select{display:flex;flex-direction:column;padding:24px 16px;height:100%;overflow-y:auto}
+.level-select h2{text-align:center;font-size:22px;font-weight:700;margin-bottom:4px}
+.level-select .sub{text-align:center;font-size:13px;color:var(--text-secondary);margin-bottom:20px}
+.star-count{text-align:center;font-size:14px;color:var(--warning);margin-bottom:16px}
+.level-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding-bottom:20px}
+.level-card{
+  background:var(--surface);border:1px solid var(--border);border-radius:14px;
+  padding:16px;cursor:pointer;transition:all 0.2s;position:relative;overflow:hidden}
+.level-card:hover{border-color:var(--accent);background:var(--surface-hover)}
+.level-card.locked{opacity:0.5;cursor:not-allowed}
+.level-card.locked::after{content:'🔒';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:32px;opacity:0.6}
+.level-card .lv-num{font-size:11px;color:var(--accent);font-weight:600;letter-spacing:0.06em}
+.level-card .lv-name{font-size:15px;font-weight:700;margin:4px 0}
+.level-card .lv-info{font-size:11px;color:var(--text-secondary);line-height:1.4}
+.level-card .lv-stars{font-size:12px;margin-top:4px}
+.level-card .lv-best{font-size:11px;color:var(--success);margin-top:2px}
+
+/* ===== GAME CANVAS ===== */
+.game-canvas-wrap{position:relative;flex:1;overflow:hidden}
+.game-canvas-wrap canvas{display:block;width:100%;height:100%}
+.game-hud{
+  position:absolute;top:0;left:0;right:0;padding:8px 12px;
+  display:flex;justify-content:space-between;align-items:flex-start;
+  pointer-events:none;z-index:10;
+}
+.game-hud>div{pointer-events:auto}
+.hud-speed{background:rgba(11,14,42,0.8);border-radius:8px;padding:6px 10px;min-width:120px}
+.hud-speed-label{font-size:10px;color:var(--text-secondary);letter-spacing:0.08em}
+.hud-speed-value{font-size:22px;font-weight:700;font-family:var(--font-mono);line-height:1.2}
+.hud-speed-bar{height:4px;background:var(--border);border-radius:2px;margin-top:4px;overflow:hidden}
+.hud-speed-fill{height:100%;border-radius:2px;transition:width 0.1s,background 0.3s}
+.hud-station{text-align:center;min-width:100px}
+.hud-station-name{font-size:13px;font-weight:600}
+.hud-station-desc{font-size:10px;color:var(--text-secondary)}
+.hud-station-eta{font-size:11px;color:var(--warning);margin-top:2px}
+.hud-time{text-align:right;min-width:80px}
+.hud-time-value{font-size:22px;font-weight:700;font-family:var(--font-mono);line-height:1.2}
+.hud-time-label{font-size:10px;color:var(--text-secondary)}
+.hud-pause-btn{
+  background:rgba(11,14,42,0.8);border:1px solid var(--border);
+  color:var(--text);width:36px;height:36px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;font-size:16px;margin-bottom:6px;pointer-events:auto}
+.hud-pause-btn:hover{background:var(--surface-hover);border-color:var(--accent)}
+.touch-zone{position:absolute;bottom:0;top:0;width:50%;z-index:5;opacity:0}
+.touch-zone.left{left:0}
+.touch-zone.right{right:0}
+.touch-indicator{
+  position:absolute;bottom:40px;left:50%;transform:translateX(-50%);
+  background:rgba(108,92,231,0.2);border:2px solid var(--accent);
+  border-radius:12px;padding:8px 20px;font-size:13px;font-weight:600;
+  opacity:0;transition:opacity 0.15s;white-space:nowrap;z-index:6;
+  pointer-events:none;}
+.touch-indicator.show{opacity:1}
+.touch-indicator.brake{border-color:var(--danger);background:rgba(255,107,107,0.15);color:var(--danger)}
+.touch-indicator.accel{border-color:var(--success);background:rgba(85,239,196,0.15);color:var(--success)}
+.station-popup{
+  position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+  background:rgba(11,14,42,0.95);border:2px solid var(--accent);
+  border-radius:16px;padding:20px 32px;text-align:center;
+  opacity:0;transition:opacity 0.3s;z-index:8;pointer-events:none;
+  min-width:200px;
+}
+.station-popup.show{opacity:1}
+.station-popup .sp-name{font-size:18px;font-weight:700;color:var(--accent)}
+.station-popup .sp-status{font-size:13px;color:var(--text-secondary);margin-top:4px}
+.station-popup .sp-score{font-size:14px;color:var(--success);margin-top:4px}
+.overshoot-warning{
+  position:absolute;top:40%;left:50%;transform:translate(-50%,-50%);
+  color:var(--danger);font-size:20px;font-weight:800;
+  opacity:0;transition:opacity 0.2s;z-index:7;pointer-events:none;
+}
+.overshoot-warning.show{opacity:1}
+
+/* ===== PAUSE ===== */
+.pause-overlay{
+  display:none;position:absolute;inset:0;z-index:20;
+  background:rgba(11,14,42,0.85);align-items:center;justify-content:center;
+  flex-direction:column;gap:24px;backdrop-filter:blur(8px);
+}
+.pause-overlay.show{display:flex}
+.pause-overlay h2{font-size:28px;font-weight:700}
+.pause-overlay button{
+  padding:14px 40px;border-radius:14px;border:none;
+  background:var(--accent);color:#fff;font-size:16px;font-weight:600;
+  cursor:pointer}
+.pause-overlay button:hover{box-shadow:0 0 24px var(--accent-glow)}
+.pause-overlay .hint{font-size:12px;color:var(--text-secondary)}
+
+/* ===== RESULT ===== */
+.result{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  height:100%;padding:24px;text-align:center;position:relative}
+.result .stars{font-size:48px;margin-bottom:10px;letter-spacing:8px}
+.result h2{font-size:28px;font-weight:800;margin-bottom:6px}
+.result .sub{font-size:14px;color:var(--text-secondary);margin-bottom:24px}
+.result .scores{display:flex;gap:24px;margin-bottom:28px;flex-wrap:wrap;justify-content:center}
+.result .scores .s-item{text-align:center}
+.result .scores .s-val{font-size:26px;font-weight:700;font-family:var(--font-mono)}
+.result .scores .s-label{font-size:11px;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.06em}
+.result .btn-group{display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
+.result .btn{
+  padding:14px 36px;border-radius:14px;border:none;
+  font-size:16px;font-weight:600;cursor:pointer;transition:all 0.2s}
+.result .btn-primary{background:var(--accent);color:#fff}
+.result .btn-primary:hover{box-shadow:0 0 24px var(--accent-glow);transform:scale(1.04)}
+.result .btn-secondary{background:var(--surface);color:var(--text);border:1px solid var(--border)}
+.result .btn-secondary:hover{background:var(--surface-hover)}
+.result .confetti{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.result .confetti span{position:absolute;width:8px;height:8px;border-radius:2px;animation:confettiFall 3s linear forwards}
+@keyframes confettiFall{
+  0%{transform:translateY(-20px) rotate(0deg);opacity:1}
+  100%{transform:translateY(100vh) rotate(720deg);opacity:0}
+}
+
+/* ===== MISC ===== */
+.fade-in{animation:fadeIn 0.3s ease}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.pulse{animation:pulse 1.5s ease-in-out infinite}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
+
+@media(max-width:480px){
+  .splash h1{font-size:26px}
+  .level-card{padding:12px}
+  .hud-speed{min-width:80px}
+  .hud-speed-value{font-size:18px}
+  .hud-time-value{font-size:18px}
+  .station-popup{padding:16px 24px}
+}
+</style>
+</head>
+<body>
+
+<div class="game-container" id="app">
+  <!-- Back to Hub -->
+  <a href="/" class="back-to-hub" onclick="window.recordPlayed&&window.recordPlayed('monorail-pilot')">&larr; Arcade</a>
+
+  <!-- ===== SPLASH ===== -->
+  <div class="screen splash active" id="splashScreen">
+    <div class="splash-stars" id="starField"></div>
+    <div class="splash-icon">
+      <svg viewBox="0 0 50 50" width="50" height="50">
+        <rect x="8" y="20" width="34" height="16" rx="4" fill="#6c5ce7"/>
+        <rect x="12" y="24" width="6" height="5" rx="1.5" fill="#a29bfe" opacity="0.6"/>
+        <rect x="21" y="24" width="6" height="5" rx="1.5" fill="#a29bfe" opacity="0.6"/>
+        <rect x="30" y="24" width="6" height="5" rx="1.5" fill="#a29bfe" opacity="0.6"/>
+        <circle cx="40" cy="30" r="3" fill="#fdcb6e"/>
+        <rect x="10" y="36" width="30" height="5" rx="2" fill="#2a2d5a"/>
+        <rect x="14" y="41" width="22" height="4" rx="1" fill="#1a1d4a"/>
+      </svg>
+    </div>
+    <h1>MONORAIL<br><span class="accent">PILOT</span></h1>
+    <div class="splash-sub">MASTER THE TRACK · STOP ON TIME</div>
+    <button class="splash-start-btn" id="startBtn">&#9654; START</button>
+    <div class="splash-controls">
+      <span><kbd>&uarr;</kbd> Accel</span>
+      <span><kbd>&darr;</kbd> Brake</span>
+      <span><kbd>Touch</kbd> L/R</span>
+    </div>
+    <div class="splash-hint">Stop at every station. Reach the finish. Earn your stars.</div>
+  </div>
+
+  <!-- ===== LEVEL SELECT ===== -->
+  <div class="screen level-select" id="levelScreen">
+    <h2>&#128646; Select Route</h2>
+    <div class="star-count" id="totalStarsDisplay">&#11088; 0 / 18</div>
+    <div class="level-grid" id="levelGrid"></div>
+  </div>
+
+  <!-- ===== GAME ===== -->
+  <div class="screen" id="gameScreen">
+    <div class="game-canvas-wrap" id="canvasWrap">
+      <canvas id="gameCanvas"></canvas>
+      <!-- HUD -->
+      <div class="game-hud" id="gameHud">
+        <div class="hud-speed">
+          <div class="hud-speed-label">SPEED</div>
+          <div class="hud-speed-value" id="speedDisplay">0</div>
+          <div class="hud-speed-bar"><div class="hud-speed-fill" id="speedFill" style="width:0%;background:var(--success)"></div></div>
+          <div style="font-size:10px;color:var(--text-secondary);margin-top:2px" id="stationApproach"></div>
+        </div>
+        <div class="hud-station">
+          <div class="hud-station-name" id="stationName">--</div>
+          <div class="hud-station-desc" id="stationDesc">Next station</div>
+          <div class="hud-station-eta" id="stationEta"></div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end">
+          <button class="hud-pause-btn" id="pauseBtn">&#10074;&#10074;</button>
+          <div class="hud-time">
+            <div class="hud-time-value" id="timeDisplay">0:00</div>
+            <div class="hud-time-label">TIME</div>
+          </div>
+        </div>
+      </div>
+      <!-- Touch zones -->
+      <div class="touch-zone left" id="touchLeft"></div>
+      <div class="touch-zone right" id="touchRight"></div>
+      <!-- Touch indicators -->
+      <div class="touch-indicator brake" id="brakeIndicator">&#9664; BRAKE</div>
+      <div class="touch-indicator accel" id="accelIndicator">ACCEL &#9654;</div>
+      <!-- Station popup -->
+      <div class="station-popup" id="stationPopup">
+        <div class="sp-name" id="popupName">Station</div>
+        <div class="sp-status" id="popupStatus">Stopping...</div>
+        <div class="sp-score" id="popupScore"></div>
+      </div>
+      <!-- Overshoot warning -->
+      <div class="overshoot-warning" id="overshootWarning">&#9888; TOO FAST!</div>
+    </div>
+  </div>
+
+  <!-- ===== PAUSE ===== -->
+  <div class="pause-overlay" id="pauseOverlay">
+    <h2>&#10074;&#10074; PAUSED</h2>
+    <button id="resumeBtn">&#9654; Resume</button>
+    <button id="quitBtn" style="background:var(--surface);border:1px solid var(--border);color:var(--text)">&#128682; Quit</button>
+    <div class="hint"><kbd>P</kbd> or <kbd>Esc</kbd> to resume</div>
+  </div>
+
+  <!-- ===== RESULT ===== -->
+  <div class="screen result" id="resultScreen">
+    <div class="confetti" id="confettiContainer"></div>
+    <div class="stars" id="resultStars">&#11088;&#11088;&#11088;</div>
+    <h2 id="resultTitle">&#127881; Route Complete!</h2>
+    <div class="sub" id="resultSub">Great driving, Pilot!</div>
+    <div class="scores">
+      <div class="s-item"><div class="s-val" id="resultScore">0</div><div class="s-label">Score</div></div>
+      <div class="s-item"><div class="s-val" id="resultTime">0:00</div><div class="s-label">Time</div></div>
+      <div class="s-item"><div class="s-val" id="resultBest">--</div><div class="s-label">Best</div></div>
+    </div>
+    <div class="btn-group">
+      <button class="btn btn-primary" id="retryBtn">&#128260; Retry</button>
+      <button class="btn btn-secondary" id="levelsBtn">&#127968; Routes</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(()=>{
+'use strict';
+
+// ============================================================
+// CONSTANTS
+// ============================================================
+const MAX_SPEED = 420;
+const ACCEL = 180;
+const BRAKE = 320;
+const FRICTION = 50;
+const STOP_THRESHOLD = 20; // speed units below which train "stops" in station
+const STOP_ZONE_RADIUS = 40; // distance tolerance for station stop zone
+const APPROACH_DIST = 300; // how far ahead station appears in HUD
+
+// ============================================================
+// LEVEL DATA
+// ============================================================
+const LEVELS = [
+  {
+    id:1,name:'Beginner Loop',desc:'Learn the basics',distance:2400,
+    stations:[
+      {pos:500,name:'North Park',type:'normal',stopDuration:1.5},
+      {pos:1400,name:'East Gate',type:'normal',stopDuration:1.5},
+      {pos:2200,name:'Central Hub',type:'finish',stopDuration:2}
+    ],timeLimit:90,stars3:85,stars2:60,
+    bgType:'city',maxSpeed:MAX_SPEED,speedLimits:[],curves:[]
+  },
+  {
+    id:2,name:'City Sprint',desc:'Speed limit zones',distance:3200,
+    stations:[
+      {pos:500,name:'Market Square',type:'normal',stopDuration:1.5},
+      {pos:1300,name:'River Bend',type:'normal',stopDuration:1.5},
+      {pos:2200,name:'Tech Park',type:'normal',stopDuration:1.5},
+      {pos:3000,name:'Grand Central',type:'finish',stopDuration:2}
+    ],timeLimit:110,stars3:80,stars2:55,
+    bgType:'city',maxSpeed:MAX_SPEED,
+    speedLimits:[{from:700,to:1200,limit:200}],curves:[]
+  },
+  {
+    id:3,name:'Coastal Route',desc:'S-curves ahead',distance:4000,
+    stations:[
+      {pos:500,name:'Lighthouse',type:'normal',stopDuration:1.5},
+      {pos:1300,name:'Seaside Cove',type:'normal',stopDuration:1.5},
+      {pos:2200,name:'Cliff View',type:'normal',stopDuration:1.5},
+      {pos:3200,name:'Harbor Town',type:'normal',stopDuration:1.5},
+      {pos:3800,name:'Sunset Pier',type:'finish',stopDuration:2}
+    ],timeLimit:130,stars3:78,stars2:50,
+    bgType:'coastal',maxSpeed:MAX_SPEED-20,
+    speedLimits:[{from:600,to:1000,limit:180},{from:2000,to:2500,limit:180},{from:3000,to:3400,limit:200}],
+    curves:[{pos:900,sharpness:0.3},{pos:2300,sharpness:0.4},{pos:3300,sharpness:0.25}]
+  },
+  {
+    id:4,name:'Rush Hour',desc:'Tight windows',distance:3800,
+    stations:[
+      {pos:450,name:'Central Station',type:'normal',stopDuration:1.2},
+      {pos:1200,name:'Business Park',type:'normal',stopDuration:1.0},
+      {pos:2000,name:'University',type:'normal',stopDuration:1.0},
+      {pos:2800,name:'Hospital',type:'normal',stopDuration:1.2},
+      {pos:3600,name:'Transit Hub',type:'finish',stopDuration:2}
+    ],timeLimit:120,stars3:75,stars2:48,
+    bgType:'city',maxSpeed:MAX_SPEED,
+    speedLimits:[],curves:[]
+  },
+  {
+    id:5,name:'Express Line',desc:'Mixed stations',distance:4400,
+    stations:[
+      {pos:600,name:'Airport',type:'express',stopDuration:0},
+      {pos:1500,name:'Green Park',type:'normal',stopDuration:1.5},
+      {pos:2500,name:'Lake View',type:'express',stopDuration:0},
+      {pos:3500,name:'Old Town',type:'normal',stopDuration:1.5},
+      {pos:4200,name:'Union Depot',type:'finish',stopDuration:2}
+    ],timeLimit:120,stars3:80,stars2:52,
+    bgType:'city',maxSpeed:MAX_SPEED+20,
+    speedLimits:[],curves:[{pos:1800,sharpness:0.2},{pos:3800,sharpness:0.2}]
+  },
+  {
+    id:6,name:'Night Express',desc:'Limited visibility',distance:5200,
+    stations:[
+      {pos:500,name:'Moon Gate',type:'normal',stopDuration:1.5},
+      {pos:1200,name:'Star Plaza',type:'normal',stopDuration:1.5},
+      {pos:2100,name:'Crystal Tower',type:'normal',stopDuration:1.5},
+      {pos:3000,name:'Silver River',type:'normal',stopDuration:1.5},
+      {pos:3900,name:'Diamond Park',type:'normal',stopDuration:1.5},
+      {pos:5000,name:'Cosmic Terminal',type:'finish',stopDuration:2}
+    ],timeLimit:150,stars3:82,stars2:55,
+    bgType:'night',maxSpeed:MAX_SPEED-30,
+    speedLimits:[
+      {from:800,to:1100,limit:180},{from:2000,to:2300,limit:160},{from:3500,to:3800,limit:170}
+    ],
+    curves:[{pos:1400,sharpness:0.3},{pos:2600,sharpness:0.35},{pos:3700,sharpness:0.3},{pos:4500,sharpness:0.25}]
+  }
+];
+
+// ============================================================
+// STORAGE
+// ============================================================
+function loadScores(){
+  try{return JSON.parse(localStorage.getItem('monorail_pilot_scores'))||{levelScores:{},totalStars:0,lastPlayed:null}}
+  catch(e){return{levelScores:{},totalStars:0,lastPlayed:null}}
+}
+function saveScores(scores){
+  try{localStorage.setItem('monorail_pilot_scores',JSON.stringify(scores))}catch(e){}
+}
+function loadSettings(){
+  try{return JSON.parse(localStorage.getItem('monorail_pilot_settings'))||{sound:true}}
+  catch(e){return{sound:true}}
+}
+function saveSettings(s){
+  try{localStorage.setItem('monorail_pilot_settings',JSON.stringify(s))}catch(e){}
+}
+const settings = loadSettings();
+
+// ============================================================
+// SOUND ENGINE (Web Audio API)
+// ============================================================
+let audioCtx = null;
+function getAudioCtx(){
+  if(!audioCtx) audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+  if(audioCtx.state==='suspended') audioCtx.resume();
+  return audioCtx;
+}
+function playTone(freq,dur,type='square',vol=0.12){
+  if(!settings.sound) return;
+  try{
+    const ctx=getAudioCtx();
+    const osc=ctx.createOscillator();osc.type=type;osc.frequency.value=freq;
+    const gain=ctx.createGain();gain.gain.setValueAtTime(vol,ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+dur);
+    osc.connect(gain);gain.connect(ctx.destination);
+    osc.start(ctx.currentTime);osc.stop(ctx.currentTime+dur);
+  }catch(e){}
+}
+function playAccel(){
+  if(!settings.sound) return;
+  try{
+    const ctx=getAudioCtx();
+    const osc=ctx.createOscillator();osc.type='sawtooth';osc.frequency.value=80;
+    const gain=ctx.createGain();gain.gain.setValueAtTime(0.04,ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+0.15);
+    osc.connect(gain);gain.connect(ctx.destination);
+    osc.start(ctx.currentTime);osc.stop(ctx.currentTime+0.15);
+  }catch(e){}
+}
+function playBrake(){
+  playTone(300,0.12,'sawtooth',0.08);
+  setTimeout(()=>playTone(200,0.15,'sawtooth',0.06),60);
+}
+function playChime(){
+  playTone(880,0.12,'sine',0.15);
+  setTimeout(()=>playTone(1320,0.18,'sine',0.12),120);
+}
+function playExpressPass(){
+  playTone(660,0.08,'sine',0.1);
+  setTimeout(()=>playTone(880,0.1,'sine',0.08),80);
+}
+function playVictory(){
+  const notes=[523,659,784,1047];const dur=0.2;
+  notes.forEach((f,i)=>setTimeout(()=>playTone(f,dur,'sine',0.12),i*150));
+}
+function playFail(){
+  playTone(400,0.3,'sawtooth',0.1);
+  setTimeout(()=>playTone(300,0.4,'sawtooth',0.08),300);
+}
+function playTick(){
+  playTone(1000,0.05,'sine',0.05);
+}
+
+// ============================================================
+// GAME STATE
+// ============================================================
+let state = {
+  screen:'splash',
+  currentLevel: null,
+  // gameplay
+  pos:0, speed:0,
+  accelInput:false, brakeInput:false,
+  stationIndex:0,
+  stationStopTimer:0,
+  isStopped:false,
+  elapsed:0,
+  completedStations:[],
+  missedStations:[],
+  stationAccuracy:[],
+  overshot:false,
+  overshootTimer:0,
+  finished:false,
+  // level select
+  scores: loadScores(),
+};
+let canvas,ctx;
+let animFrameId=null;
+let lastTime=0;
+let canvasW=0,canvasH=0;
+let cameraX=0;
+let bgBuildings=[];
+let particles=[];
+
+// ============================================================
+// CANVAS SETUP & RESIZE
+// ============================================================
+function setupCanvas(){
+  canvas=document.getElementById('gameCanvas');
+  ctx=canvas.getContext('2d');
+  resizeCanvas();
+  window.addEventListener('resize',resizeCanvas);
+}
+function resizeCanvas(){
+  const wrap=document.getElementById('canvasWrap');
+  if(!wrap) return;
+  const rect=wrap.getBoundingClientRect();
+  canvasW=Math.floor(rect.width*devicePixelRatio);
+  canvasH=Math.floor(rect.height*devicePixelRatio);
+  canvas.width=canvasW;
+  canvas.height=canvasH;
+  canvas.style.width=rect.width+'px';
+  canvas.style.height=rect.height+'px';
+  ctx.setTransform(1,0,0,1,0,0);
+}
+function cX(x){return x*canvasW/rectW()}
+function cY(y){return y*canvasH/rectH()}
+function rectW(){return canvas.width/devicePixelRatio}
+function rectH(){return canvas.height/devicePixelRatio}
+
+// ============================================================
+// BACKGROUND GENERATION
+// ============================================================
+function generateBg(type){
+  bgBuildings=[];
+  const count=type==='city'?25:type==='coastal'?18:12;
+  for(let i=0;i<count;i++){
+    const w=30+Math.random()*70;
+    const h=80+Math.random()*200;
+    bgBuildings.push({
+      x:i*(100+Math.random()*80)-200,
+      w,h,
+      color:type==='night'?`hsl(240,30%,${8+Math.random()*12}%)`:
+            type==='coastal'?`hsl(220,20%,${30+Math.random()*25}%)`:
+            `hsl(250,20%,${20+Math.random()*20}%)`,
+      windows:type!=='coastal',
+      hasLight:Math.random()>0.3
+    });
+  }
+}
+
+// ============================================================
+// PARTICLES
+// ============================================================
+function addParticles(x,y,count,color,spread,speed){
+  for(let i=0;i<count;i++){
+    particles.push({
+      x,y,
+      vx:-1-Math.random()*3,
+      vy:-2+Math.random()*4,
+      life:0.3+Math.random()*0.5,
+      maxLife:0.3+Math.random()*0.5,
+      size:2+Math.random()*4,
+      color
+    });
+  }
+}
+function updateParticles(dt){
+  for(let i=particles.length-1;i>=0;i--){
+    const p=particles[i];
+    p.x+=p.vx*dt*60;
+    p.y+=p.vy*dt*60;
+    p.life-=dt;
+    if(p.life<=0) particles.splice(i,1);
+  }
+}
+function drawParticles(){
+  for(const p of particles){
+    const sx=p.x-cameraX;
+    if(sx<-50||sx>rectW()+50) continue;
+    const alpha=Math.max(0,p.life/p.maxLife);
+    ctx.globalAlpha=alpha*0.7;
+    ctx.fillStyle=p.color;
+    const sz=p.size*(0.5+0.5*alpha);
+    ctx.fillRect(sx*canvasW/rectW(),p.y*canvasH/rectH(),sz*canvasW/rectW(),sz*canvasH/rectH());
+  }
+  ctx.globalAlpha=1;
+}
+
+// ============================================================
+// DRAWING FUNCTIONS
+// ============================================================
+function drawSky(type){
+  const grad=ctx.createLinearGradient(0,0,0,canvasH);
+  switch(type){
+    case'night':
+      grad.addColorStop(0,'#07081a');grad.addColorStop(0.5,'#0b0e2a');grad.addColorStop(1,'#12143a');
+    break;
+    case'coastal':
+      grad.addColorStop(0,'#1a1a3a');grad.addColorStop(0.5,'#2a3a5a');grad.addColorStop(1,'#3a4a6a');
+    break;
+    default:
+      grad.addColorStop(0,'#0d124a');grad.addColorStop(0.5,'#12143a');grad.addColorStop(1,'#1a1d4a');
+  }
+  ctx.fillStyle=grad;
+  ctx.fillRect(0,0,canvasW,canvasH);
+
+  // Stars (night)
+  if(type==='night'){
+    ctx.fillStyle='rgba(255,255,255,0.6)';
+    for(let i=0;i<80;i++){
+      const sx=(i*137.5+50)%canvasW;
+      const sy=(i*97.3+30)%(canvasH*0.4);
+      const sr=0.5+(i%3)*0.5;
+      ctx.globalAlpha=0.3+0.4*Math.sin(i+Date.now()/2000);
+      ctx.beginPath();ctx.arc(sx,sy,sr,0,Math.PI*2);ctx.fill();
+    }
+    ctx.globalAlpha=1;
+  }
+}
+
+function drawBuildings(type,levelPos){
+  const groundY=rectH()*0.72;
+  for(const b of bgBuildings){
+    const sx=b.x-cameraX;if(sx<-200||sx>rectW()+200) continue;
+    const scx=sx*canvasW/rectW();
+    const bw=b.w*canvasW/rectW();
+    const bh=b.h*canvasH/rectH();
+    const by=groundY*canvasH/rectH()-bh;
+    ctx.fillStyle=b.color;
+    ctx.fillRect(scx,by,bw,bh+2);
+    // Windows
+    if(b.windows&&b.hasLight){
+      for(let wy=by+bh*0.12;wy<by+bh*0.85;wy+=bh*0.22){
+        for(let wx=scx+bw*0.12;wx<scx+bw*0.85;wx+=bw*0.35){
+          ctx.fillStyle=`rgba(255,220,100,${0.1+Math.random()*0.3})`;
+          ctx.fillRect(wx,wy,bw*0.18,bh*0.12);
+        }
+      }
+    }
+  }
+}
+
+function drawTrack(type,level){
+  const trackY=rectH()*0.68;
+  const ty=trackY*canvasH/rectH();
+  const beamH=canvasH*0.04;
+
+  // Speed limit zones
+  if(level.speedLimits){
+    for(const sl of level.speedLimits){
+      const lx=sl.from-cameraX;const rx=sl.to-cameraX;
+      if(rx<0||lx>rectW()) continue;
+      const lxs=Math.max(0,lx)*canvasW/rectW();
+      const rxs=Math.min(rectW(),rx)*canvasW/rectW();
+      ctx.fillStyle='rgba(255,200,50,0.08)';
+      ctx.fillRect(lxs,ty-20,Math.max(0,rxs-lxs),100);
+    }
+  }
+
+  // Track beam
+  const beamTop=ty-beamH/2;
+  ctx.fillStyle='#2a2d5a';
+  ctx.fillRect(0,beamTop,canvasW,beamH);
+
+  // Rail top
+  ctx.fillStyle='#3a3d7a';
+  ctx.fillRect(0,beamTop,canvasW,4);
+  ctx.fillStyle='rgba(108,92,231,0.15)';
+  ctx.fillRect(0,beamTop,canvasW,1.5);
+
+  // Pillars
+  const pillarSpacing=150;
+  const startPillar=Math.floor(cameraX/pillarSpacing);
+  const endPillar=Math.ceil((cameraX+rectW())/pillarSpacing);
+  for(let i=startPillar;i<=endPillar;i++){
+    const px=i*pillarSpacing-cameraX;
+    const pxs=px*canvasW/rectW();
+    const groundY=rectH()*0.72;
+    ctx.fillStyle='#1a1d4a';
+    ctx.fillRect(pxs-2,ty+beamH/2,4,(groundY*canvasH/rectH()-ty-beamH/2));
+    // Pillar light (night)
+    if(type==='night'){
+      ctx.fillStyle='rgba(108,92,231,0.15)';
+      ctx.beginPath();ctx.arc(pxs,ty+beamH/2,4,0,Math.PI*2);ctx.fill();
+    }
+  }
+
+  // Station markers on track
+  for(const st of level.stations){
+    const sx=st.pos-cameraX;
+    if(sx<-50||sx>rectW()+50) continue;
+    const sxs=sx*canvasW/rectW();
+    const zoneW=STOP_ZONE_RADIUS*2*canvasW/rectW();
+    // Stop zone
+    const isPast=state.completedStations.includes(st.pos);
+    const isNext=level.stations[state.stationIndex]===st;
+    if(!isPast){
+      ctx.fillStyle=isNext?'rgba(85,239,196,0.1)':'rgba(255,255,255,0.03)';
+      ctx.fillRect(sxs-zoneW/2,ty-beamH-25,zoneW,beamH+110);
+    }
+    // Station marker
+    ctx.fillStyle=isPast?'#2a2d5a':st.type==='express'?'#fdcb6e':'#55efc4';
+    ctx.fillRect(sxs-15*canvasW/rectW(),beamTop-54*canvasH/rectH(),30*canvasW/rectW(),55*canvasH/rectH());
+  }
+}
+
+function drawTrain(level){
+  const trackY=rectH()*0.68;
+  const ty=trackY*canvasH/rectH();
+  const trainX=rectW()*0.28;
+  const txs=trainX*canvasW/rectW();
+  const tw=80*canvasW/rectW();
+  const th=28*canvasH/rectH();
+  const trainY=ty-th-8*canvasH/rectH();
+
+  // Train body
+  const grad=ctx.createLinearGradient(0,trainY,0,trainY+th);
+  grad.addColorStop(0,'#7c6ced');grad.addColorStop(0.5,'#6c5ce7');grad.addColorStop(1,'#5a4ad5');
+  ctx.fillStyle=grad;
+
+  ctx.beginPath();
+  const r=6*canvasW/rectW();
+  ctx.moveTo(txs+tw-r,trainY);
+  ctx.quadraticCurveTo(txs+tw,trainY,txs+tw,trainY+r);
+  ctx.lineTo(txs+tw,trainY+th-r);
+  ctx.quadraticCurveTo(txs+tw,trainY+th,txs+tw-r,trainY+th);
+  ctx.lineTo(txs+r,trainY+th);
+  ctx.quadraticCurveTo(txs,trainY+th,txs,trainY+th-r);
+  ctx.lineTo(txs,trainY+r);
+  ctx.quadraticCurveTo(txs,trainY,txs+r,trainY);
+  ctx.closePath();
+  ctx.fill();
+
+  // Train stripe
+  ctx.fillStyle='rgba(162,155,254,0.4)';
+  ctx.fillRect(txs+4*canvasW/rectW(),trainY+th*0.35,tw-14*canvasW/rectW(),2*canvasH/rectH());
+
+  // Windows
+  for(let i=0;i<4;i++){
+    const wx=txs+10*canvasW/rectW()+i*17*canvasW/rectW();
+    const wy=trainY+th*0.42;
+    ctx.fillStyle='rgba(200,220,255,0.25)';
+    ctx.fillRect(wx,wy,10*canvasW/rectW(),8*canvasH/rectH());
+  }
+
+  // Headlight
+  ctx.fillStyle='#fdcb6e';
+  ctx.beginPath();ctx.arc(txs+tw-2,ty-th*0.3,5*canvasW/rectW(),0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='rgba(253,203,110,0.2)';
+  ctx.beginPath();ctx.arc(txs+tw-2,ty-th*0.3,10*canvasW/rectW(),0,Math.PI*2);ctx.fill();
+
+  // Speed lines when fast
+  if(state.speed>150){
+    const alpha=Math.min(0.4,(state.speed-150)/270);
+    ctx.strokeStyle=`rgba(108,92,231,${alpha})`;
+    ctx.lineWidth=1.5;
+    for(let i=0;i<3;i++){
+      const ly=ty-th*0.1*(i+1);
+      ctx.beginPath();ctx.moveTo(txs-10-20*i*alpha,trainY+th*0.3+i*4);ctx.lineTo(txs-30-20*i*alpha,trainY+th*0.3+i*4);ctx.stroke();
+    }
+  }
+}
+
+function drawStations(level){
+  const trackY=rectH()*0.68;
+  const ty=trackY*canvasH/rectH();
+  const beamTop=ty-rectH()*0.04/2;
+
+  for(const st of level.stations){
+    const sx=st.pos-cameraX;
+    if(sx<-100||sx>rectW()+100) continue;
+    const sxs=sx*canvasW/rectW();
+    const isPast=state.completedStations.includes(st.pos);
+    const isNext=level.stations[state.stationIndex]===st;
+
+    if(isPast){
+      // Already visited - dim marker
+      ctx.fillStyle='rgba(255,255,255,0.08)';
+      ctx.fillRect(sxs-20,beamTop-60,40,60);
+      continue;
+    }
+
+    // Station platform
+    const platW=40*canvasW/rectW();
+    const platH=8*canvasH/rectH();
+    const platY=beamTop-platH-2;
+
+    // Canopy roof
+    ctx.fillStyle=st.type==='express'?'rgba(253,203,110,0.3)':'rgba(85,239,196,0.3)';
+    ctx.fillRect(sxs-platW/2-5,platY-10,platW+10,4);
+
+    // Platform base
+    ctx.fillStyle=st.type==='express'?'#5a5a3a':'#2a5a4a';
+    ctx.fillRect(sxs-platW/2,platY,platW,platH);
+
+    // Platform top
+    ctx.fillStyle=st.type==='express'?'rgba(253,203,110,0.5)':'rgba(85,239,196,0.4)';
+    ctx.fillRect(sxs-platW/2,platY,platW,3);
+
+    // Station sign
+    ctx.fillStyle='rgba(255,255,255,0.1)';
+    ctx.fillRect(sxs-25,platY-28,50,18);
+    ctx.fillStyle='rgba(200,200,220,0.6)';
+    ctx.font=`${Math.round(8*canvasW/rectW())}px monospace`;
+    ctx.textAlign='center';
+    ctx.fillText(st.name.substr(0,8),sxs,platY-15);
+
+    // Stop zone indicator
+    if(isNext){
+      ctx.strokeStyle='rgba(85,239,196,0.3)';
+      ctx.lineWidth=1;
+      ctx.setLineDash([4,4]);
+      ctx.strokeRect(sxs-STOP_ZONE_RADIUS*canvasW/rectW(),beamTop-50,
+                     STOP_ZONE_RADIUS*2*canvasW/rectW(),50);
+      ctx.setLineDash([]);
+    }
+  }
+}
+
+function drawStationPopup(level){
+  const popup=document.getElementById('stationPopup');
+  if(state.isStopped&&state.stationIndex<level.stations.length){
+    const st=level.stations[state.stationIndex];
+    popup.classList.add('show');
+    document.getElementById('popupName').textContent=st.name;
+    const stopping=state.stationStopTimer<st.stopDuration;
+    document.getElementById('popupStatus').textContent=
+      stopping?`Stopping... ${state.stationStopTimer.toFixed(1)}/${st.stopDuration}s`:
+      st.type==='finish'?'Arrived!':'Departing...';
+    if(!stopping&&st.type!=='finish'){
+      const acc=Math.max(0,100-Math.abs(state.pos-st.pos)*1.5);
+      document.getElementById('popupScore').textContent=`Precision: ${Math.round(acc)}%`;
+    } else {
+      document.getElementById('popupScore').textContent='';
+    }
+  } else {
+    popup.classList.remove('show');
+  }
+}
+
+// ============================================================
+// HUD UPDATE
+// ============================================================
+function updateHUD(level){
+  const pct=state.speed/level.maxSpeed;
+  document.getElementById('speedDisplay').textContent=Math.round(state.speed);
+  const fill=document.getElementById('speedFill');
+  fill.style.width=Math.min(100,pct*100)+'%';
+  if(pct>0.85) fill.style.background='var(--danger)';
+  else if(pct>0.65) fill.style.background='var(--warning)';
+  else fill.style.background='var(--success)';
+
+  const secs=Math.max(0,level.timeLimit-state.elapsed);
+  const m=Math.floor(secs/60);const s=Math.floor(secs%60);
+  document.getElementById('timeDisplay').textContent=m+':'+s.toString().padStart(2,'0');
+
+  // Station info
+  const si=state.stationIndex;
+  const stName=document.getElementById('stationName');
+  const stDesc=document.getElementById('stationDesc');
+  const stEta=document.getElementById('stationApproach');
+  if(si<level.stations.length){
+    const st=level.stations[si];
+    const dist=st.pos-state.pos;
+    if(dist>APPROACH_DIST){
+      const eta=dist/Math.max(1,state.speed);
+      stName.textContent=st.name;
+      stDesc.textContent=st.type==='express'?'Express (slow to pass)':'Stop here';
+      stEta.textContent=eta<20?`${Math.round(eta)}s away`:eta<60?`${Math.round(eta)}s`:'';
+    } else if(dist>0){
+      stName.textContent=st.name;
+      stDesc.textContent='Approaching!';
+      stEta.textContent=state.speed>STOP_THRESHOLD+10?'Slow down!':'Ready';
+    } else {
+      stName.textContent=state.isStopped?st.name:'--';
+      stDesc.textContent=state.isStopped?'Stopped':'Missed?';
+      stEta.textContent='';
+    }
+  } else {
+    stName.textContent='--';
+    stDesc.textContent='End of line';
+    stEta.textContent='';
+  }
+}
+
+// ============================================================
+// PHYSICS UPDATE
+// ============================================================
+function updatePhysics(level,dt){
+  // Input
+  if(state.accelInput&&!state.brakeInput){
+    state.speed=Math.min(level.maxSpeed,state.speed+ACCEL*dt);
+  } else if(state.brakeInput&&!state.accelInput){
+    state.speed=Math.max(0,state.speed-BRAKE*dt);
+  } else {
+    state.speed=Math.max(0,state.speed-FRICTION*dt);
+  }
+
+  // Speed limits
+  if(level.speedLimits){
+    for(const sl of level.speedLimits){
+      if(state.pos>=sl.from&&state.pos<=sl.to&&state.speed>sl.limit){
+        state.speed=Math.max(state.speed-BRAKE*1.5*dt,sl.limit-10);
+      }
+    }
+  }
+
+  // Position
+  state.pos+=state.speed*dt;
+  state.pos=Math.min(state.pos,level.distance);
+
+  // Particles (acceleration)
+  if(state.accelInput&&state.speed>50){
+    const trainX=rectW()*0.28;
+    addParticles(trainX+state.pos-cameraX,rectH()*0.68-5,1,'rgba(108,92,231,0.6)',0,0);
+  }
+}
+
+// ============================================================
+// STATION LOGIC
+// ============================================================
+function updateStations(level,dt){
+  if(state.finished) return;
+  const si=state.stationIndex;
+  if(si>=level.stations.length) return;
+  const st=level.stations[si];
+
+  const distToStation=Math.abs(state.pos-st.pos);
+
+  // Check if overshooting
+  if(state.pos>st.pos+STOP_ZONE_RADIUS+20&&!state.completedStations.includes(st.pos)){
+    state.overshot=true;
+    state.overshootTimer+=dt;
+    if(state.overshootTimer>0.5){
+      // Missed this station
+      state.missedStations.push(st.pos);
+      state.stationIndex++;
+      state.overshot=false;
+      state.overshootTimer=0;
+      state.isStopped=false;
+      state.stationStopTimer=0;
+      playFail();
+      if(navigator.vibrate) navigator.vibrate(200);
+    }
+    return;
+  }
+
+  // In stop zone
+  if(distToStation<=STOP_ZONE_RADIUS&&!state.completedStations.includes(st.pos)){
+    if(st.type==='express'){
+      // Express: just need to slow down
+      if(state.speed<level.maxSpeed*0.45){
+        if(!state.completedStations.includes(st.pos)){
+          state.completedStations.push(st.pos);
+          state.stationAccuracy.push({pos:st.pos,accuracy:100-Math.abs(state.pos-st.pos)*0.5});
+          state.stationIndex++;
+          state.isStopped=false;
+          state.stationStopTimer=0;
+          playExpressPass();
+          if(navigator.vibrate) navigator.vibrate(50);
+        }
+      } else {
+        // Too fast for express - warning
+        document.getElementById('overshootWarning').classList.add('show');
+        setTimeout(()=>document.getElementById('overshootWarning').classList.remove('show'),300);
+      }
+    } else {
+      // Normal or finish station - need to stop
+      if(state.speed<=STOP_THRESHOLD){
+        state.isStopped=true;
+        state.speed=0;
+        state.stationStopTimer+=dt;
+
+        // First frame of stopping
+        if(state.stationStopTimer-dt<=0){
+          playChime();
+          if(navigator.vibrate) navigator.vibrate(100);
+        }
+
+        // Check if stop duration met
+        if(state.stationStopTimer>=st.stopDuration){
+          state.completedStations.push(st.pos);
+          state.stationAccuracy.push({
+            pos:st.pos,
+            accuracy:Math.max(0,100-Math.abs(state.pos-st.pos)*1.5)
+          });
+          state.isStopped=false;
+          state.stationStopTimer=0;
+
+          if(st.type==='finish'){
+            state.finished=true;
+            // Allow a tiny speed so final position is at the station
+          } else {
+            state.stationIndex++;
+            playChime();
+          }
+        }
+      } else {
+        state.isStopped=false;
+        state.stationStopTimer=0;
+        // Slow down warning
+        if(state.speed>80){
+          document.getElementById('overshootWarning').classList.add('show');
+          setTimeout(()=>document.getElementById('overshootWarning').classList.remove('show'),200);
+        }
+      }
+    }
+  } else {
+    state.isStopped=false;
+    state.stationStopTimer=0;
+  }
+}
+
+// ============================================================
+// SCORING
+// ============================================================
+function calculateScore(level){
+  const timeBonus=Math.max(0,(level.timeLimit-state.elapsed)*15);
+  let stationScore=0;
+  let totalAccuracy=0;
+  let accuracyCount=0;
+  for(const sa of state.stationAccuracy){
+    stationScore+=Math.round(sa.accuracy*10);
+    totalAccuracy+=sa.accuracy;
+    accuracyCount++;
+  }
+  // Penalty for missed stations
+  const missedPenalty=state.missedStations.length*500;
+  const total=timeBonus+stationScore-missedPenalty;
+  const maxScore=level.timeLimit*15+level.stations.length*1000;
+
+  // Stars
+  let stars=1;
+  if(total>=maxScore*level.stars3/100&&accuracyCount===level.stations.filter(s=>s.type!=='express').length){
+    // Check all required stations stopped accurately
+    let allAccurate=true;
+    for(const sa of state.stationAccuracy){
+      if(sa.accuracy<70) allAccurate=false;
+    }
+    if(allAccurate) stars=3;
+    else stars=2;
+  } else if(total>=maxScore*level.stars2/100){
+    stars=2;
+  }
+
+  return {score:Math.max(0,total),stars,timeBonus,stationScore,missedPenalty};
+}
+
+// ============================================================
+// GAME SCREEN RENDER (Canvas)
+// ============================================================
+function render(level){
+  ctx.clearRect(0,0,canvasW,canvasH);
+  cameraX=state.pos-rectW()*0.28;
+  cameraX=Math.max(0,Math.min(cameraX,level.distance-rectW()*0.3));
+
+  drawSky(level.bgType);
+  drawBuildings(level.bgType,state.pos);
+  drawTrack(level.bgType,level);
+  drawStations(level);
+  drawTrain(level);
+  drawParticles();
+}
+
+// ============================================================
+// GAME MAIN LOOP
+// ============================================================
+function gameLoop(time){
+  if(state.screen!=='game') return;
+  const dt=Math.min((time-lastTime)/1000,0.05);
+  lastTime=time;
+
+  const level=state.currentLevel;
+  if(!level) return;
+
+  // Timer
+  state.elapsed+=dt;
+  if(state.elapsed>=level.timeLimit&&!state.finished){
+    state.finished=true;
+    showResult(level,false);
+    return;
+  }
+
+  updatePhysics(level,dt);
+  updateSounds();
+  updateParticles(dt);
+  updateStations(level,dt);
+
+  // Check finish
+  if(state.finished&&state.speed===0){
+    showResult(level,true);
+    return;
+  }
+
+  updateHUD(level);
+  drawStationPopup(level);
+  render(level);
+
+  animFrameId=requestAnimationFrame(gameLoop);
+}
+
+// ============================================================
+// SCREEN MANAGEMENT
+// ============================================================
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  const el=document.getElementById(id);
+  if(el) el.classList.add('active');
+  state.screen=id.replace('Screen','').replace('Overlay','').toLowerCase();
+}
+
+function startGame(levelId){
+  const level=LEVELS.find(l=>l.id===levelId);
+  if(!level) return;
+
+  state.currentLevel=level;
+  state.pos=0;
+  state.speed=0;
+  state.accelInput=false;
+  state.brakeInput=false;
+  state.stationIndex=0;
+  state.stationStopTimer=0;
+  state.isStopped=false;
+  state.elapsed=0;
+  state.completedStations=[];
+  state.missedStations=[];
+  state.stationAccuracy=[];
+  state.overshot=false;
+  state.overshootTimer=0;
+  state.finished=false;
+  particles=[];
+
+  generateBg(level.bgType);
+  showScreen('gameScreen');
+  document.getElementById('pauseOverlay').classList.remove('show');
+  document.getElementById('stationPopup').classList.remove('show');
+  document.getElementById('overshootWarning').classList.remove('show');
+  resizeCanvas();
+  lastTime=performance.now();
+  cancelAnimationFrame(animFrameId);
+  animFrameId=requestAnimationFrame(gameLoop);
+}
+
+function showResult(level,won){
+  cancelAnimationFrame(animFrameId);
+  showScreen('resultScreen');
+  document.getElementById('pauseOverlay').classList.remove('show');
+  document.getElementById('stationPopup').classList.remove('show');
+
+  const result=calculateScore(level);
+  const scores=loadScores();
+
+  // Save if better
+  const prev=scores.levelScores[level.id];
+  if(!prev||won&&result.score>prev.score||result.stars>prev.stars){
+    scores.levelScores[level.id]={score:result.score,stars:result.stars,time:Math.round(state.elapsed*1000)};
+    // Recalculate total stars
+    let totalStars=0;
+    for(const k in scores.levelScores) totalStars+=scores.levelScores[k].stars;
+    scores.totalStars=totalStars;
+    scores.lastPlayed=new Date().toISOString();
+    saveScores(scores);
+    state.scores=scores;
+  }
+
+  const starsStr=won?'⭐'.repeat(result.stars)+'☆'.repeat(3-result.stars):'☆'.repeat(3);
+  document.getElementById('resultStars').textContent=starsStr;
+  document.getElementById('resultTitle').textContent=won?'🎉 Route Complete!':'⏰ Time Expired';
+  document.getElementById('resultSub').textContent=won?
+    (result.stars>=3?'Perfect run, Pilot!':'Good effort, Pilot!'):
+    'Keep practicing!';
+  document.getElementById('resultScore').textContent=result.score;
+  const secs=Math.round(state.elapsed);
+  document.getElementById('resultTime').textContent=Math.floor(secs/60)+':'+(secs%60).toString().padStart(2,'0');
+  const best=scores.levelScores[level.id];
+  document.getElementById('resultBest').textContent=best?Math.floor(best.time/1000/60)+':'+(Math.floor(best.time/1000)%60).toString().padStart(2,'0'):'--';
+
+  // Confetti for win
+  if(won){
+    playVictory();
+    if(navigator.vibrate) navigator.vibrate([100,100,100]);
+    const container=document.getElementById('confettiContainer');
+    container.innerHTML='';
+    const colors=['#6c5ce7','#55efc4','#fdcb6e','#ff6b6b','#a29bfe','#00b894'];
+    for(let i=0;i<50;i++){
+      const el=document.createElement('span');
+      el.style.left=Math.random()*100+'%';
+      el.style.background=colors[Math.floor(Math.random()*colors.length)];
+      el.style.animationDuration=(2+Math.random()*2)+'s';
+      el.style.animationDelay=Math.random()+'s';
+      container.appendChild(el);
+    }
+    setTimeout(()=>container.innerHTML='',4000);
+  } else {
+    playFail();
+    if(navigator.vibrate) navigator.vibrate(300);
+  }
+
+  // Store current level for retry
+  state._resultLevel=level.id;
+}
+
+// ============================================================
+// LEVEL SELECT
+// ============================================================
+function renderLevelSelect(){
+  const grid=document.getElementById('levelGrid');
+  grid.innerHTML='';
+  const scores=loadScores();
+  state.scores=scores;
+
+  let totalStars=0;
+  for(const k in scores.levelScores) totalStars+=scores.levelScores[k].stars;
+  document.getElementById('totalStarsDisplay').textContent='⭐ '+totalStars+' / '+(LEVELS.length*3);
+
+  LEVELS.forEach(level=>{
+    const prev=scores.levelScores[level.id];
+    const unlocked=level.id===1||scores.levelScores[level.id-1];
+    const card=document.createElement('div');
+    card.className='level-card'+(unlocked?'':' locked');
+    if(unlocked) card.addEventListener('click',()=>startGame(level.id));
+    card.innerHTML=`
+      <div class="lv-num">ROUTE ${level.id}</div>
+      <div class="lv-name">${level.name}</div>
+      <div class="lv-info">${level.desc} · ${level.stations.length} stops</div>
+      <div class="lv-stars">${prev?'⭐'.repeat(prev.stars)+'☆'.repeat(3-prev.stars):'☆☆☆'}</div>
+      <div class="lv-best">${prev?'Best: '+prev.score:'Not played'}</div>
+    `;
+    grid.appendChild(card);
+  });
+}
+
+// ============================================================
+// INPUT HANDLING
+// ============================================================
+function setupInput(){
+  // Keyboard
+  document.addEventListener('keydown',e=>{
+    const key=e.key;
+    if(key==='ArrowUp'||key==='w'||key==='W'||key===' '){
+      if(state.screen==='game'){e.preventDefault();state.accelInput=true}
+    }
+    if(key==='ArrowDown'||key==='s'||key==='S'){
+      if(state.screen==='game'){e.preventDefault();state.brakeInput=true}
+    }
+    if((key==='p'||key==='P'||key==='Escape')&&state.screen==='game'){
+      e.preventDefault();
+      togglePause();
+    }
+    if(key==='Enter'&&state.screen==='splash'){
+      showLevelSelect();
+    }
+  });
+  document.addEventListener('keyup',e=>{
+    const key=e.key;
+    if(key==='ArrowUp'||key==='w'||key==='W'||key===' '){
+      if(state.screen==='game') state.accelInput=false;
+    }
+    if(key==='ArrowDown'||key==='s'||key==='S'){
+      if(state.screen==='game') state.brakeInput=false;
+    }
+  });
+
+  // Touch / Mouse for game
+  const leftZone=document.getElementById('touchLeft');
+  const rightZone=document.getElementById('touchRight');
+  const brakeInd=document.getElementById('brakeIndicator');
+  const accelInd=document.getElementById('accelIndicator');
+
+  function handleTouchStart(zone,isAccel){
+    return (e)=>{
+      e.preventDefault();
+      if(state.screen!=='game') return;
+      if(isAccel){state.accelInput=true;state.brakeInput=false}
+      else{state.brakeInput=true;state.accelInput=false}
+      const ind=isAccel?accelInd:brakeInd;
+      ind.classList.add('show');
+    };
+  }
+  function handleTouchEnd(zone,isAccel){
+    return (e)=>{
+      e.preventDefault();
+      if(isAccel) state.accelInput=false;
+      else state.brakeInput=false;
+      const ind=isAccel?accelInd:brakeInd;
+      ind.classList.remove('show');
+    };
+  }
+
+  leftZone.addEventListener('touchstart',handleTouchStart(leftZone,false),{passive:false});
+  leftZone.addEventListener('touchend',handleTouchEnd(leftZone,false),{passive:false});
+  leftZone.addEventListener('touchcancel',handleTouchEnd(leftZone,false),{passive:false});
+  rightZone.addEventListener('touchstart',handleTouchStart(rightZone,true),{passive:false});
+  rightZone.addEventListener('touchend',handleTouchEnd(rightZone,true),{passive:false});
+  rightZone.addEventListener('touchcancel',handleTouchEnd(rightZone,true),{passive:false});
+
+  // Mouse also works for touch zones (click and hold)
+  leftZone.addEventListener('mousedown',(e)=>{if(state.screen==='game'){state.brakeInput=true;state.accelInput=false;brakeInd.classList.add('show')}});
+  leftZone.addEventListener('mouseup',(e)=>{state.brakeInput=false;brakeInd.classList.remove('show')});
+  leftZone.addEventListener('mouseleave',(e)=>{state.brakeInput=false;brakeInd.classList.remove('show')});
+  rightZone.addEventListener('mousedown',(e)=>{if(state.screen==='game'){state.accelInput=true;state.brakeInput=false;accelInd.classList.add('show')}});
+  rightZone.addEventListener('mouseup',(e)=>{state.accelInput=false;accelInd.classList.remove('show')});
+  rightZone.addEventListener('mouseleave',(e)=>{state.accelInput=false;accelInd.classList.remove('show')});
+}
+
+// ============================================================
+// UI ACTIONS
+// ============================================================
+function togglePause(){
+  const overlay=document.getElementById('pauseOverlay');
+  if(overlay.classList.contains('show')){
+    overlay.classList.remove('show');
+    lastTime=performance.now();
+    animFrameId=requestAnimationFrame(gameLoop);
+  } else {
+    cancelAnimationFrame(animFrameId);
+    overlay.classList.add('show');
+  }
+}
+
+function showLevelSelect(){
+  renderLevelSelect();
+  showScreen('levelScreen');
+}
+
+function init(){
+  setupCanvas();
+  setupInput();
+
+  // Splash stars
+  const starField=document.getElementById('starField');
+  for(let i=0;i<60;i++){
+    const s=document.createElement('span');
+    s.style.left=Math.random()*100+'%';
+    s.style.top=Math.random()*100+'%';
+    s.style.animationDelay=Math.random()*3+'s';
+    s.style.width=s.style.height=(1+Math.random()*2)+'px';
+    starField.appendChild(s);
+  }
+
+  // Event handlers
+  document.getElementById('startBtn').addEventListener('click',showLevelSelect);
+  document.getElementById('resumeBtn').addEventListener('click',togglePause);
+  document.getElementById('quitBtn').addEventListener('click',()=>{
+    document.getElementById('pauseOverlay').classList.remove('show');
+    cancelAnimationFrame(animFrameId);
+    showLevelSelect();
+  });
+  document.getElementById('retryBtn').addEventListener('click',()=>{
+    if(state._resultLevel) startGame(state._resultLevel);
+    else showLevelSelect();
+  });
+  document.getElementById('levelsBtn').addEventListener('click',showLevelSelect);
+}
+
+// ============================================================
+// SOUND TRIGGERS
+// ============================================================
+let prevAccel=false, prevBrake=false;
+function updateSounds(){
+  if(state.accelInput&&!prevAccel) playAccel();
+  if(state.brakeInput&&!prevBrake) playBrake();
+  prevAccel=state.accelInput;
+  prevBrake=state.brakeInput;
+}
+
+// ============================================================
+// START
+// ============================================================
+document.addEventListener('DOMContentLoaded',init);
+
+})();
+</script>
+</body>
+</html>

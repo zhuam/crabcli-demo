@@ -906,6 +906,26 @@
             "featured": true,
             "rating": 4
         }
+        {
+            "id": "monorail-pilot",
+            "name": "Monorail Pilot",
+            "description": "单轨列车驾驶 — 加速/刹车，准时停靠每一站，6 条难度递增路线",
+            "category": "action",
+            "tags": [
+                "singleplayer",
+                "action",
+                "driving",
+                "simulation",
+                "short-session"
+            ],
+            "thumbnail": "/games/028-monorail-pilot/thumb.svg",
+            "path": "/games/028-monorail-pilot/",
+            "hasServer": false,
+            "players": "1",
+            "version": "1.0.0",
+            "featured": true,
+            "rating": 4
+        }
     ],
     "categories": [
         {

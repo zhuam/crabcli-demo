@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" fill="none">
+  <rect width="256" height="256" rx="24" fill="#0b0e2a"/>
+  <rect x="20" y="20" width="216" height="216" rx="12" fill="none" stroke="#6c5ce7" stroke-width="1.5" opacity="0.15"/>
+  <!-- Sky -->
+  <rect x="24" y="36" width="208" height="140" rx="4" fill="#0d124a"/>
+  <!-- Stars -->
+  <circle cx="48" cy="52" r="1.5" fill="#fff" opacity="0.7"/>
+  <circle cx="80" cy="60" r="1" fill="#fff" opacity="0.5"/>
+  <circle cx="120" cy="46" r="1.5" fill="#fff" opacity="0.8"/>
+  <circle cx="160" cy="58" r="1" fill="#fff" opacity="0.6"/>
+  <circle cx="200" cy="50" r="1.5" fill="#fff" opacity="0.7"/>
+  <circle cx="68" cy="76" r="1" fill="#fff" opacity="0.4"/>
+  <circle cx="180" cy="72" r="1" fill="#fff" opacity="0.5"/>
+  <!-- Moon -->
+  <circle cx="208" cy="56" r="10" fill="#ffeaa7" opacity="0.3"/>
+  <circle cx="208" cy="56" r="6" fill="#ffeaa7" opacity="0.6"/>
+  <!-- Track beam -->
+  <rect x="24" y="140" width="208" height="8" rx="2" fill="#2a2a5a"/>
+  <rect x="24" y="142" width="208" height="4" rx="1" fill="#3a3a7a"/>
+  <!-- Pillars -->
+  <rect x="60" y="148" width="6" height="28" rx="1" fill="#1a1a4a"/>
+  <rect x="130" y="148" width="6" height="28" rx="1" fill="#1a1a4a"/>
+  <rect x="190" y="148" width="6" height="28" rx="1" fill="#1a1a4a"/>
+  <!-- Train -->
+  <rect x="82" y="118" width="52" height="24" rx="6" fill="#6c5ce7"/>
+  <rect x="82" y="118" width="52" height="24" rx="6" fill="url(#tGrad)" opacity="0.6"/>
+  <rect x="90" y="124" width="8" height="6" rx="2" fill="#a29bfe" opacity="0.6"/>
+  <rect x="102" y="124" width="8" height="6" rx="2" fill="#a29bfe" opacity="0.6"/>
+  <rect x="114" y="124" width="8" height="6" rx="2" fill="#a29bfe" opacity="0.6"/>
+  <!-- Headlight -->
+  <circle cx="132" cy="132" r="3" fill="#ffeaa7" opacity="0.9"/>
+  <circle cx="132" cy="132" r="6" fill="#ffeaa7" opacity="0.2"/>
+  <!-- Station platform (ahead) -->
+  <rect x="170" y="130" width="50" height="4" rx="1" fill="#55efc4" opacity="0.6"/>
+  <rect x="182" y="120" width="26" height="12" rx="2" fill="#00b894" opacity="0.5"/>
+  <!-- Speed lines -->
+  <line x1="38" y1="130" x2="58" y2="130" stroke="#6c5ce7" stroke-width="1.5" opacity="0.4"/>
+  <line x1="42" y1="126" x2="62" y2="126" stroke="#6c5ce7" stroke-width="1.5" opacity="0.3"/>
+  <line x1="36" y1="134" x2="56" y2="134" stroke="#6c5ce7" stroke-width="1.5" opacity="0.3"/>
+  <!-- Ground -->
+  <rect x="24" y="176" width="208" height="60" fill="#0a0a1a"/>
+  <!-- City silhouette -->
+  <rect x="28" y="160" width="16" height="20" rx="1" fill="#1a1a3a" opacity="0.5"/>
+  <rect x="46" y="156" width="12" height="24" rx="1" fill="#1a1a3a" opacity="0.4"/>
+  <rect x="220" y="164" width="10" height="16" rx="1" fill="#1a1a3a" opacity="0.4"/>
+  <!-- Title text -->
+  <text x="128" y="236" text-anchor="middle" font-family="monospace" font-size="13" font-weight="700" fill="#a29bfe" letter-spacing="2">MONORAIL PILOT</text>
+  <defs>
+    <linearGradient id="tGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#a29bfe" stop-opacity="0.8"/>
+      <stop offset="100%" stop-color="#6c5ce7" stop-opacity="0.3"/>
+    </linearGradient>
+  </defs>
+</svg>
