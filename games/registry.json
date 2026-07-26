@@ -1,1027 +1,740 @@
 {
-    "games": [
-        {
-            "id": "chaos-race",
-            "name": "Chaos Race",
-            "description": "Side-scrolling race against AI opponents with chaotic obstacles",
-            "category": "racing",
-            "tags": [
-                "racing",
-                "chaos",
-                "multiplayer",
-                "platformer",
-                "retro"
-            ],
-            "thumbnail": "/games/047-chaos-race/thumb.svg",
-            "path": "/games/047-chaos-race/",
-            "hasServer": false,
-            "players": "1",
-            "version": "1.0.0",
-            "featured": true,
-            "rating": 4
-        },
-        {
-            "id": "bridge-brawl-3d",
-            "name": "Bridge Brawl 3D",
-            "description": "\u5bf9\u6297\u5f0f\u62a2\u6865\u6218\uff0c\u628a\u5bf9\u624b\u649e\u4e0b\u6865",
-            "category": "action",
-            "tags": [
-                "singleplayer",
-                "action",
-                "physics",
-                "3d",
-                "short-session"
-            ],
-            "thumbnail": "/games/052-bridge-brawl-3d/thumb.png",
-            "path": "/games/052-bridge-brawl-3d/",
-            "hasServer": false,
-            "players": "1",
-            "version": "1.0.0",
-            "featured": true,
-            "rating": 4
-        },
-        {
-            "id": "spaceship-builder",
-            "name": "Spaceship Builder",
-            "description": "\u62fc\u88c5\u98de\u8239\u96f6\u4ef6\uff0c\u53d1\u5c04\u63a2\u7d22\u592a\u7a7a",
-            "category": "sandbox",
-            "tags": [
-                "singleplayer",
-                "sandbox",
-                "building",
-                "short-session"
-            ],
-            "thumbnail": "/games/091-spaceship-builder/thumb.png",
-            "path": "/games/091-spaceship-builder/",
-            "hasServer": false,
-            "players": "1",
-            "version": "1.0.0",
-            "featured": true,
-            "rating": 4
-        },
-        {
-            "id": "trivia-royale",
-            "name": "Astrocade Trivia Royale",
-            "description": "Real-time multiplayer trivia battle against 2-8 players",
-            "category": "puzzle",
-            "tags": [
-                "multiplayer",
-                "websocket",
-                "trivia"
-            ],
-            "thumbnail": "/games/trivia-royale/thumb.png",
-            "path": "/games/trivia-royale/",
-            "hasServer": true,
-            "wsPath": "/ws/game/trivia-royale",
-            "players": "2-8",
-            "version": "1.0.0",
-            "featured": true,
-            "rating": 4.5
-        },
-        {
-            "id": "idle-dungeon-heroes",
-            "name": "Idle Dungeon Heroes",
-            "description": "\u82f1\u96c4\u81ea\u52a8\u95ef\u5173\u6302\u673a\uff0c\u6d3e\u9063\u3001\u88c5\u5907\u3001\u5347\u7ea7\u5e76\u5728\u4e09\u5206\u949f\u5185\u901a\u5173\u526f\u672c",
-            "category": "idle",
-            "tags": [
-                "singleplayer",
-                "idle",
-                "rpg",
-                "short-session"
-            ],
-            "thumbnail": "/games/094-idle-dungeon-heroes/thumb.png",
-            "path": "/games/094-idle-dungeon-heroes/",
-            "hasServer": false,
-            "players": "1",
-            "version": "1.0.0",
-            "featured": true,
-            "rating": 4.4
-        },
-        {
-            "id": "idle-lemonade",
-            "name": "Idle Lemonade Stand",
-            "description": "Build your lemonade empire one cup at a time",
-            "category": "idle",
-            "tags": [
-                "singleplayer",
-                "idle",
-                "management"
-            ],
-            "thumbnail": "/games/idle-lemonade/thumb.png",
-            "path": "/games/idle-lemonade/",
-            "hasServer": false,
-            "players": "1",
-            "version": "1.0.0",
-            "featured": true,
-            "rating": 4.2
-        },
-        {
-            "id": "cosmic-shooter",
-            "name": "Cosmic Shooter",
-            "description": "Defend the galaxy from waves of pixel aliens",
-            "category": "action",
-            "tags": [
-                "singleplayer",
-                "action",
-                "shooter",
-                "short-session"
-            ],
-            "thumbnail": "/games/cosmic-shooter/thumb.png",
-            "path": "/games/cosmic-shooter/",
-            "hasServer": false,
-            "players": "1",
-            "version": "1.0.0",
-            "featured": true,
-            "rating": 4.3
-        },
-        {
-            "id": "neon-block-pop",
-            "name": "Neon Block Pop",
-            "description": "Pop colorful blocks in this neon puzzle game",
-            "category": "puzzle",
-            "tags": [
-                "singleplayer",
-                "puzzle",
-                "colorful",
-                "short-session"
-            ],
-            "thumbnail": "/games/001-neon-block-pop/thumb.svg",
-            "path": "/games/001-neon-block-pop/",
-            "hasServer": false,
-            "players": "1",
-            "version": "1.0.0",
-            "featured": true,
-            "rating": 4.5
-        },
-        {
-            "id": "stickman-archer-duel",
-            "name": "Stickman Archer Duel",
-            "description": "\u5f13\u7bad\u5bf9\u5c04\u51b3\u6597 \u2014 \u84c4\u529b\u3001\u7784\u51c6\u3001\u5c04\u51fb\uff01\u7cbe\u786e\u8ba1\u7b97\u8f68\u8ff9\u51fb\u8d25\u5bf9\u624b",
-            "category": "action",
-            "tags": [
-                "singleplayer",
-                "action",
-                "archery",
-                "physics",
-                "short-session"
-            ],
-            "thumbnail": "/games/002-stickman-archer-duel/thumb.svg",
-            "path": "/games/002-stickman-archer-duel/",
-            "hasServer": false,
-            "players": "1",
-            "version": "1.0.0",
-            "featured": true,
-            "rating": 4
-        },
-        {
-            "id": "cube-labyrinth-roll",
-            "name": "Cube Labyrinth Roll",
-            "description": "\u503e\u659c\u8ff7\u5bab\u6eda\u52a8\u65b9\u5757\u5230\u7ec8\u70b9 \u2014 \u91cd\u529b\u611f\u5e94+\u89e6\u63a7\u7684 3D \u8ff7\u5bab\u6e38\u620f",
-            "category": "puzzle",
-            "tags": [
-                "singleplayer",
-                "puzzle",
-                "3d",
-                "physics",
-                "short-session"
-            ],
-            "thumbnail": "/games/003-cube-labyrinth-roll/thumb.svg",
-            "path": "/games/003-cube-labyrinth-roll/",
-            "hasServer": false,
-            "players": "1",
-            "version": "1.0.0",
-            "featured": true,
-            "rating": 4.2
-        },
-        {
-            "id": "pirate-gold-merge",
-            "name": "Pirate Gold Merge",
-            "description": "\u5408\u5e76\u91d1\u5e01\u8d22\u5b9d\uff0c\u6253\u9020\u6d77\u76d7\u5e1d\u56fd \u2014 \u6ed1\u52a8\u5408\u5e76\u540c\u7c7b\u5b9d\u85cf\uff0c\u89e3\u9501\u4f20\u5947\u6d77\u8d3c\u88c5\u5907",
-            "category": "puzzle",
-            "tags": [
-                "singleplayer",
-                "puzzle",
-                "merge",
-                "pirate",
-                "short-session"
-            ],
-            "thumbnail": "/games/004-pirate-gold-merge/thumb.svg",
-            "path": "/games/004-pirate-gold-merge/",
-            "hasServer": false,
-            "players": "1",
-            "version": "1.0.0",
-            "featured": true,
-            "rating": 4.3
-        },
-        {
-            "id": "sky-guardian-3d",
-            "name": "Sky Guardian 3D",
-            "description": "3D \u7a7a\u6218\u9632\u5fa1 \u2014 \u63a7\u5236\u70ae\u5854\u51fb\u843d\u654c\u673a\uff0c\u4fdd\u62a4\u4f60\u7684\u9886\u7a7a",
-            "category": "action",
-            "tags": [
-                "singleplayer",
-                "action",
-                "3d",
-                "shooter",
-                "short-session"
-            ],
-            "thumbnail": "/games/005-sky-guardian-3d/thumb.svg",
-            "path": "/games/005-sky-guardian-3d/",
-            "hasServer": false,
-            "players": "1",
-            "version": "1.0.0",
-            "featured": true,
-            "rating": 4.1
-        },
-        {
-            "id": "mushroom-kingdom-run",
-            "name": "Mushroom Kingdom Run",
-            "description": "\u8611\u83c7\u738b\u56fd\u8dd1\u9177 \u2014 \u8df3\u8dc3\u3001\u6ed1\u94f2\u3001\u6536\u96c6\u91d1\u5e01\uff0c\u8dd1\u8fc7\u4e09\u4e2a\u4e3b\u9898\u738b\u56fd",
-            "category": "action",
-            "tags": [
-                "singleplayer",
-                "action",
-                "runner",
-                "platformer",
-                "short-session"
-            ],
-            "thumbnail": "/games/006-mushroom-kingdom-run/thumb.svg",
-            "path": "/games/006-mushroom-kingdom-run/",
-            "hasServer": false,
-            "players": "1",
-            "version": "1.0.0",
-            "featured": true,
-            "rating": 4.4
-        },
-        {
-            "id": "chess-online-blitz",
-            "name": "Chess Online Blitz",
-            "description": "2+1 \u5206\u949f\u589e\u91cf\u5feb\u68cb \u2014 \u7ecf\u5178\u56fd\u9645\u8c61\u68cb\uff0c\u5bf9\u6218 AI \u6216\u672c\u5730\u53cc\u4eba",
-            "category": "strategy",
-            "tags": [
-                "multiplayer",
-                "chess",
-                "board",
-                "pvp",
-                "ai",
-                "short-session"
-            ],
-            "thumbnail": "/games/007-chess-online-blitz/thumb.svg",
-            "path": "/games/007-chess-online-blitz/",
-            "hasServer": false,
-            "players": "1-2",
-            "version": "1.0.0",
-            "featured": true,
-            "rating": 4
-        },
-        {
-            "id": "punch-monkey-cafe",
-            "name": "Punch Monkey Cafe",
-            "description": "\ud83d\udc12\ud83c\udf79 Monkey cafe \u2014 take orders, mix fruit punches, serve customers, earn profit across 3 days!",
-            "category": "casual",
-            "tags": [
-                "singleplayer",
-                "management",
-                "simulation",
-                "drag",
-                "short-session"
-            ],
-            "thumbnail": "/games/008-punch-monkey-cafe/thumb.svg",
-            "path": "/games/008-punch-monkey-cafe/",
-            "hasServer": false,
-            "players": "1",
-            "version": "1.0.0",
-            "featured": true,
-            "rating": 4
-        },
-        {
-            "id": "sort-till-you-cant",
-            "name": "Sort Till You Cant",
-            "description": "\u989c\u8272\u6c34\u7ba1\u5206\u7c7b\uff0c\u5012\u5165\u76f8\u540c\u989c\u8272 \u2014 sort colored water layers into matching bottles!",
-            "category": "puzzle",
-            "tags": [
-                "singleplayer",
-                "puzzle",
-                "sorting",
-                "logic",
-                "short-session"
-            ],
-            "thumbnail": "/games/070-sort-till-you-cant/thumb.svg",
-            "path": "/games/070-sort-till-you-cant/",
-            "hasServer": false,
-            "players": "1",
-            "version": "1.0.0",
-            "featured": false,
-            "rating": 4
-        },
-        {
-            "id": "garden-keeper",
-            "name": "Garden Keeper",
-            "description": "\u82b1\u56ed\u517b\u62a4\u6a21\u62df \u2014 \u79cd\u690d\u3001\u6d47\u6c34\u3001\u4fee\u526a\uff0c\u6253\u9020\u4f60\u7684\u68a6\u5e7b\u82b1\u56ed",
-            "category": "idle",
-            "tags": [
-                "singleplayer",
-                "idle",
-                "management",
-                "garden",
-                "short-session"
-            ],
-            "thumbnail": "/games/041-garden-keeper/thumb.svg",
-            "path": "/games/041-garden-keeper/",
-            "hasServer": false,
-            "players": "1",
-            "version": "1.0.0",
-            "featured": true,
-            "rating": 4.2
-        },
-        {
-            "id": "connect-four-online",
-            "name": "Connect Four Online",
-            "description": "\u7ecf\u5178\u56db\u5b50\u68cb\u5728\u7ebf\u5bf9\u6218 \u2014 \u6a2a\u7ad6\u659c\u56db\u5b50\u8fde\u73e0\u5373\u53ef\u83b7\u80dc",
-            "category": "strategy",
-            "tags": [
-                "multiplayer",
-                "board",
-                "pvp",
-                "classic",
-                "short-session"
-            ],
-            "thumbnail": "/games/063-connect-four-online/thumb.svg",
-            "path": "/games/063-connect-four-online/",
-            "hasServer": false,
-            "players": "2",
-            "version": "1.0.0",
-            "featured": true,
-            "rating": 4.3
-        },
-        {
-            "id": "auto-spa-dash",
-            "name": "Auto Spa Dash",
-            "description": "\u81ea\u52a8\u5316\u6c34\u7597\u4e2d\u5fc3 \u2014 \u5efa\u9020\u8bbe\u65bd\u3001\u96c7\u4f63\u5458\u5de5\u3001\u4f18\u5316\u52a8\u7ebf\u6700\u5927\u5316\u6536\u5165",
-            "category": "idle",
-            "tags": [
-                "singleplayer",
-                "idle",
-                "management",
-                "automation",
-                "short-session"
-            ],
-            "thumbnail": "/games/071-auto-spa-dash/thumb.svg",
-            "path": "/games/071-auto-spa-dash/",
-            "hasServer": false,
-            "players": "1",
-            "version": "1.0.0",
-            "featured": true,
-            "rating": 4.2
-        },
-        {
-            "id": "paws-and-claws-clinic",
-            "name": "Paws and Claws Clinic",
-            "description": "\u5ba0\u7269\u8bca\u6240\u6a21\u62df \u2014 \u63a5\u8bca\u3001\u8bca\u65ad\u3001\u6cbb\u7597\u53ef\u7231\u7684\u5c0f\u52a8\u7269\u4eec",
-            "category": "idle",
-            "tags": [
-                "singleplayer",
-                "idle",
-                "management",
-                "pets",
-                "short-session"
-            ],
-            "thumbnail": "/games/072-paws-and-claws-clinic/thumb.svg",
-            "path": "/games/072-paws-and-claws-clinic/",
-            "hasServer": false,
-            "players": "1",
-            "version": "1.0.0",
-            "featured": true,
-            "rating": 4.3
-        },
-        {
-            "id": "baby-shark-manicure",
-            "name": "Baby Shark Manicure",
-            "description": "\u9ca8\u9c7c\u5b9d\u5b9d\u7f8e\u7532\u6c99\u9f99 \u2014 \u4e3a\u53ef\u7231\u9ca8\u9c7c\u987e\u5ba2\u8bbe\u8ba1\u7f8e\u7532\u6b3e\u5f0f",
-            "category": "casual",
-            "tags": [
-                "singleplayer",
-                "casual",
-                "creative",
-                "touch",
-                "short-session"
-            ],
-            "thumbnail": "/games/073-baby-shark-manicure/thumb.svg",
-            "path": "/games/073-baby-shark-manicure/",
-            "hasServer": false,
-            "players": "1",
-            "version": "1.0.0",
-            "featured": true,
-            "rating": 4.1
-        },
-        {
-            "id": "case-crafters",
-            "name": "Case Crafters",
-            "description": "\u624b\u673a\u58f3\u8bbe\u8ba1\u5de5\u574a \u2014 \u8bbe\u8ba1\u3001\u88c5\u9970\u3001\u6253\u9020\u72ec\u4e00\u65e0\u4e8c\u7684\u624b\u673a\u58f3",
-            "category": "casual",
-            "tags": [
-                "singleplayer",
-                "casual",
-                "creative",
-                "design",
-                "short-session"
-            ],
-            "thumbnail": "/games/074-case-crafters/thumb.svg",
-            "path": "/games/074-case-crafters/",
-            "hasServer": false,
-            "players": "1",
-            "version": "1.0.0",
-            "featured": true,
-            "rating": 4.2
-        },
-        {
-            "id": "sparkle-sweep",
-            "name": "Sparkle Sweep",
-            "description": "\u4eae\u6676\u6676\u6e05\u6d01\u5927\u4f5c\u6218 \u2014 \u6ed1\u52a8\u6e05\u626b glitter \u548c\u661f\u661f\uff0c\u6536\u96c6\u95ea\u8000\u91d1\u5e01",
-            "category": "casual",
-            "tags": [
-                "singleplayer",
-                "casual",
-                "cleaning",
-                "touch",
-                "short-session"
-            ],
-            "thumbnail": "/games/075-sparkle-sweep/thumb.svg",
-            "path": "/games/075-sparkle-sweep/",
-            "hasServer": false,
-            "players": "1",
-            "version": "1.0.0",
-            "featured": true,
-            "rating": 4.1
-        },
-        {
-            "id": "dice",
-            "name": "Dice",
-            "description": "Minimal dice roller \u2014 click for a fair 1\u20136 with a short animation",
-            "category": "casual",
-            "tags": [
-                "singleplayer",
-                "classic",
-                "minimal"
-            ],
-            "path": "/games/dice/",
-            "hasServer": false,
-            "players": "1",
-            "version": "1.0.0",
-            "rating": 4
-        },
-        {
-            "id": "spongebob-art-quest",
-            "name": "SpongeBob Art Quest",
-            "description": "Paint-by-number coloring game \u2014 fill numbered zones to complete SpongeBob character artworks",
-            "category": "casual",
-            "tags": [
-                "singleplayer",
-                "casual",
-                "coloring",
-                "spongebob",
-                "paint-by-number",
-                "cartoon",
-                "short-session"
-            ],
-            "thumbnail": "/games/048-spongebob-art-quest/thumb.svg",
-            "path": "/games/048-spongebob-art-quest/",
-            "hasServer": false,
-            "players": "1",
-            "version": "1.0.0",
-            "featured": true,
-            "rating": 4
-        },
-        {
-            "id": "word-ladder-climb",
-            "name": "Word Ladder Climb",
-            "description": "\u6539\u4e00\u4e2a\u5b57\u6bcd\u8fde\u6210\u65b0\u8bcd\uff0c\u6cbf\u8bcd\u68af\u722c\u5230\u9876\u5c42\u76ee\u6807\u8bcd",
-            "category": "puzzle",
-            "tags": [
-                "singleplayer",
-                "word",
-                "puzzle",
-                "short-session"
-            ],
-            "path": "/games/096-word-ladder-climb/",
-            "hasServer": false,
-            "players": "1",
-            "version": "1.0.0",
-            "rating": 4.2
-        },
-        {
-            "id": "knight-vs-slime",
-            "name": "Knight vs Slime",
-            "description": "\u9a91\u58eb\u5728\u6d1e\u7a74\u51fb\u9000\u53f2\u83b1\u59c6\uff0c\u653b\u51fb\u2192\u95ea\u907f\u2192\u62fe\u53d6\uff0c\u51fb\u8d25 Boss \u901a\u5173",
-            "category": "action",
-            "tags": [
-                "singleplayer",
-                "action",
-                "roguelite",
-                "short-session"
-            ],
-            "thumbnail": "/games/095-knight-vs-slime/thumb.png",
-            "path": "/games/095-knight-vs-slime/",
-            "hasServer": false,
-            "players": "1",
-            "version": "1.0.0",
-            "featured": true,
-            "rating": 4.5
-        },
-        {
-            "id": "guess-number",
-            "name": "\u731c\u6570\u5b57",
-            "description": "\u731c 1-100 \u4e4b\u95f4\u7684\u6570\u5b57\uff0c\u770b\u770b\u51e0\u6b21\u80fd\u731c\u5bf9",
-            "category": "casual",
-            "tags": [
-                "singleplayer",
-                "puzzle",
-                "minimal"
-            ],
-            "path": "/games/guess-number/",
-            "hasServer": false,
-            "players": "1",
-            "version": "1.0.0",
-            "rating": 4
-        },
-        {
-            "id": "word-guess",
-            "name": "\u731c\u5355\u8bcd",
-            "description": "\u731c\u51fa\u9690\u85cf\u7684\u82f1\u6587\u5355\u8bcd\uff0c\u6bcf\u6b21\u731c\u9519\u51cf\u5c11\u4e00\u6b21\u673a\u4f1a\uff0cHangman \u98ce\u683c",
-            "category": "puzzle",
-            "tags": [
-                "singleplayer",
-                "word",
-                "puzzle",
-                "hangman"
-            ],
-            "path": "/games/word-guess/",
-            "hasServer": false,
-            "players": "1",
-            "version": "1.0.0",
-            "rating": 4
-        },
-        {
-            "id": "pet-run-io",
-            "name": "Pet Run IO",
-            "description": "Pet Run IO \u2014 cute pet runner",
-            "category": "action",
-            "tags": [
-                "singleplayer",
-                "action",
-                "runner"
-            ],
-            "path": "/games/097-pet-run-io/",
-            "hasServer": false,
-            "players": "1",
-            "version": "1.0.0",
-            "rating": 4
-        },
-        {
-            "id": "solar-snake",
-            "name": "Solar Snake",
-            "description": "Solar Snake \u2014 classic snake in space",
-            "category": "casual",
-            "tags": [
-                "singleplayer",
-                "casual",
-                "classic"
-            ],
-            "path": "/games/098-solar-snake/",
-            "hasServer": false,
-            "players": "1",
-            "version": "1.0.0",
-            "rating": 4
-        },
-        {
-            "id": "idle-lemonade-stand",
-            "name": "Idle Lemonade Stand",
-            "description": "Idle Lemonade Stand \u2014 build your lemonade empire",
-            "category": "idle",
-            "tags": [
-                "singleplayer",
-                "idle",
-                "management"
-            ],
-            "path": "/games/099-idle-lemonade-stand/",
-            "hasServer": false,
-            "players": "1",
-            "version": "1.0.0",
-            "rating": 4
-        },
-        {
-            "id": "sushi-master",
-            "name": "Sushi Master",
-            "description": "\u5bff\u53f8\u5e97\u51fa\u9910\uff0c\u634f\u996d\u00b7\u52a0\u6599\u00b7\u6446\u76d8\uff0c\u7cbe\u51c6\u5b8c\u6210\u8ba2\u5355\u8fc7\u5173\uff01",
-            "category": "casual",
-            "tags": [
-                "singleplayer",
-                "management",
-                "drag",
-                "simulation",
-                "short-session"
-            ],
-            "thumbnail": "/games/093-sushi-master/thumb.svg",
-            "path": "/games/093-sushi-master/",
-            "hasServer": false,
-            "players": "1",
-            "version": "1.0.0",
-            "rating": 4
-        },
-        {
-            "id": "detective-crime-board",
-            "name": "Detective Crime Board",
-            "description": "\u7ebf\u7d22\u677f\u4e0a\u62fc\u63a5\u8bc1\u636e\u627e\u51fa\u51f6\u624b \u2014 \u62d6\u62fd\u7ebf\u7d22\u5339\u914d\u5acc\u7591\u4eba\uff0c\u89e3\u5f00\u591a\u91cd\u6848\u4ef6",
-            "category": "puzzle",
-            "tags": [
-                "singleplayer",
-                "puzzle",
-                "detective",
-                "drag",
-                "short-session"
-            ],
-            "thumbnail": "/games/092-detective-crime-board/thumb.svg",
-            "path": "/games/092-detective-crime-board/",
-            "hasServer": false,
-            "players": "1",
-            "version": "1.0.0",
-            "featured": true,
-            "rating": 4
-        },
-        {
-            "id": "chat-master",
-            "name": "Chat Master",
-            "description": "\u804a\u5929\u604b\u7231\u6a21\u62df \u2014 \u9009\u62e9\u56de\u590d\u63a8\u8fdb\u5267\u60c5\uff0c\u8fbe\u6210\u76ee\u6807\u597d\u611f\u5ea6\u901a\u5173",
-            "category": "casual",
-            "tags": [
-                "singleplayer",
-                "casual",
-                "reading",
-                "short-session"
-            ],
-            "thumbnail": "/games/058-chat-master/thumb.svg",
-            "path": "/games/058-chat-master/",
-            "hasServer": false,
-            "players": "1",
-            "version": "1.0.0",
-            "featured": true,
-            "rating": 4
-        },
-        {
-            "id": "battle-dogs-arena",
-            "name": "Battle Dogs Arena",
-            "description": "\u72d7\u72d7\u7ec4\u961f\u7ade\u6280\u573a \u2014 \u5143\u7d20\u514b\u5236\u3001\u81ea\u52a8\u6218\u6597\uff0c\u6536\u96c6\u72ac\u79cd\u8d62\u53d6\u56de\u5408\u80dc\u5229",
-            "category": "strategy",
-            "tags": [
-                "singleplayer",
-                "strategy",
-                "pets",
-                "auto-battle",
-                "short-session"
-            ],
-            "thumbnail": "/games/064-battle-dogs-arena/thumb.svg",
-            "path": "/games/064-battle-dogs-arena/",
-            "hasServer": false,
-            "players": "1",
-            "version": "1.0.0",
-            "featured": true,
-            "rating": 4.5
-        },
-        {
-            "id": "slime-siege",
-            "name": "Slime Siege",
-            "description": "\u53ef\u7231\u53f2\u83b1\u59c6\u5854\u9632\u4e3b\u57ce \u2014 \u653e\u7f6e\u7bad\u5854\u3001\u62b5\u5fa1\u53f2\u83b1\u59c6\u6d6a\u6f6e\u3001\u5347\u7ea7\u4e0e\u7b26\u6587",
-            "category": "strategy",
-            "tags": [
-                "singleplayer",
-                "tower-defense",
-                "strategy",
-                "short-session",
-                "touch"
-            ],
-            "thumbnail": "/games/065-slime-siege/thumb.svg",
-            "path": "/games/065-slime-siege/",
-            "hasServer": false,
-            "players": "1",
-            "version": "1.0.0",
-            "featured": true,
-            "rating": 4.3
-        },
-        {
-            "id": "slime-ascent",
-            "name": "Slime Ascent",
-            "description": "\u7eff\u8272\u53f2\u83b1\u59c6\u5411\u4e0a\u8df3\u8dc3\u3001\u7c98\u9644\u5899\u58c1\u3001\u53cd\u5f39\u6500\u5347\uff0c\u5230\u8fbe\u4e91\u7aef\u83b7\u80dc",
-            "category": "platformer",
-            "tags": [
-                "singleplayer",
-                "platformer",
-                "slime",
-                "wall-jump",
-                "neon",
-                "short-session"
-            ],
-            "thumbnail": "/games/046-slime-ascent/thumb.svg",
-            "path": "/games/046-slime-ascent/",
-            "hasServer": false,
-            "players": "1",
-            "version": "1.0.0",
-            "featured": true,
-            "rating": 4
-        },
-        {
-            "id": "wheel-o-mon-showdown",
-            "name": "Wheel-o-Mon Showdown",
-            "description": "\u8f6c\u8f6e\u76d8\u51b3\u5b9a\u6280\u80fd\u8fdb\u884c\u56de\u5408\u5236\u5bf9\u6218 \u2014 \u5b9d\u53ef\u68a6+\u8f6e\u76d8\u878d\u5408",
-            "category": "casual",
-            "tags": [
-                "singleplayer",
-                "turn-based",
-                "strategy",
-                "wheel",
-                "pokemon-style",
-                "short-session"
-            ],
-            "thumbnail": "/games/062-wheel-o-mon-showdown/thumb.svg",
-            "path": "/games/062-wheel-o-mon-showdown/",
-            "hasServer": false,
-            "players": "1",
-            "version": "1.0.0",
-            "featured": true,
-            "rating": 4
-        },
-        {
-            "id": "my-talking-luntik",
-            "name": "My Talking Luntik",
-            "description": "\u517b\u5c0f\u5ba0\u7269\uff0c\u5582\u98df\u6d17\u6fa1\u8bb2\u6545\u4e8b \u2014 \u63d0\u5347\u53cb\u597d\u5ea6\u6ee1\u7ea7\u901a\u5173",
-            "category": "casual",
-            "tags": [
-                "singleplayer",
-                "casual",
-                "pets",
-                "simulation",
-                "short-session"
-            ],
-            "thumbnail": "/games/060-my-talking-luntik/thumb.svg",
-            "path": "/games/060-my-talking-luntik/",
-            "hasServer": false,
-            "players": "1",
-            "version": "1.0.0",
-            "featured": true,
-            "rating": 4
-        },
-        {
-            "id": "texting-terror",
-            "name": "Texting Terror",
-            "description": "\u6df1\u591c\u77ed\u4fe1\u60ac\u7591\u89e3\u8c1c \u2014 23:58 \u964c\u751f\u53f7\u7801\u53d1\u6765\u77ed\u4fe1\uff1aRiley Chen \u6ca1\u6709\u8df3\u697c\u3002\u8bfb\u6d88\u606f\u3001\u4fdd\u5b58 6 \u6761\u77db\u76fe\u8bc1\u636e\u3001\u5728\u672b\u73ed\u8f66\u5f00\u8d70\u524d\u62d6\u653e\u6307\u8ba4\u771f\u51f6\uff0c3 \u79cd\u7ed3\u5c40",
-            "category": "puzzle",
-            "tags": [
-                "singleplayer",
-                "puzzle",
-                "detective",
-                "horror",
-                "short-session"
-            ],
-            "thumbnail": "/games/059-texting-terror/thumb.svg",
-            "path": "/games/059-texting-terror/",
-            "hasServer": false,
-            "players": "1",
-            "version": "1.0.0",
-            "rating": 4.2
-        },
-        {
-            "id": "evil-brother-2",
-            "name": "Evil Brother 2",
-            "description": "\u5bf9\u54e5\u54e5\u8fdb\u884c\u65e0\u4f24\u5927\u96c5\u7684\u6076\u4f5c\u5267 \u2014 \u9009\u9053\u5177\u00b7\u70b9\u70ed\u70b9\u5b9e\u65bd\u6574\u86ca\uff0cS/A/B/C \u641e\u7b11\u8bc4\u5206\uff0c\u96c6\u9f50 6 \u679a\u6210\u5c31\u901a\u5173",
-            "category": "casual",
-            "tags": [
-                "singleplayer",
-                "casual",
-                "prank",
-                "clicker",
-                "short-session"
-            ],
-            "thumbnail": "/games/057-evil-brother-2/thumb.png",
-            "path": "/games/057-evil-brother-2/",
-            "hasServer": false,
-            "players": "1",
-            "version": "1.0.0",
-            "rating": 4
-        },
-        {
-            "id": "beach-babes-volleyball",
-            "name": "Beach Babes Volleyball",
-            "description": "\u6c99\u6ee9\u6392\u7403\u8df3\u6263\u6551\u7403 \u2014 \u79fb\u52a8\u00b7\u8df3\u8dc3\u00b7\u6263\u6740\uff0c3 \u5c40 2 \u80dc\uff0c\u8d1d\u58f3\u89e3\u9501\u89d2\u8272\u4e0e\u573a\u5730",
-            "category": "action",
-            "tags": [
-                "singleplayer",
-                "action",
-                "sports",
-                "physics",
-                "short-session"
-            ],
-            "thumbnail": "/games/056-beach-babes-volleyball/thumb.svg",
-            "path": "/games/056-beach-babes-volleyball/",
-            "hasServer": false,
-            "players": "1",
-            "version": "1.0.0",
-            "featured": true,
-            "rating": 4.3
-        },
-        {
-            "id": "arena-blitz",
-            "name": "Arena Blitz",
-            "description": "3v3 \u5feb\u8282\u594f MOBA-Lite \u2014 \u8d70\u4f4d\u00b7\u653e\u6280\u80fd\u00b7\u63a8\u5854\uff0c\u6467\u6bc1\u654c\u65b9\u6838\u5fc3\u83b7\u80dc",
-            "category": "action",
-            "tags": [
-                "singleplayer",
-                "action",
-                "moba",
-                "short-session"
-            ],
-            "thumbnail": "/games/055-arena-blitz/thumb.svg",
-            "path": "/games/055-arena-blitz/",
-            "hasServer": false,
-            "players": "1",
-            "version": "1.0.0",
-            "featured": true,
-            "rating": 4.3
-        },
-        {
-            "id": "ricochet-rumble",
-            "name": "Ricochet Rumble",
-            "description": "\u5b50\u5f39\u53cd\u5f39\u56de\u5408\u5236\u5bf9\u6218 \u2014 \u62d6\u62fd\u7784\u51c6\uff0c\u5229\u7528\u53cd\u5f39\u51fb\u6740\u5bf9\u624b\uff015 \u4e2a\u96be\u5ea6\u9012\u589e\u5173\u5361",
-            "category": "action",
-            "tags": [
-                "singleplayer",
-                "action",
-                "turn-based",
-                "physics",
-                "shooter",
-                "short-session"
-            ],
-            "thumbnail": "/games/054-ricochet-rumble/thumb.svg",
-            "path": "/games/054-ricochet-rumble/",
-            "hasServer": false,
-            "players": "1",
-            "version": "1.0.0",
-            "featured": true,
-            "rating": 4
-        },
-        {
-            "id": "city-racer-neon",
-            "name": "City Racer Neon",
-            "description": "\u9713\u8679\u90fd\u5e02\u8d5b\u8f66 \u2014 \u6f02\u79fb\u00b7\u907f\u8b66\u8f66\u00b7\u8f66\u5e93\u6539\u88c5\uff0c\u9996\u8fbe\u7ec8\u70b9\u83b7\u80dc",
-            "category": "action",
-            "tags": [
-                "singleplayer",
-                "action",
-                "racing",
-                "neon",
-                "short-session"
-            ],
-            "thumbnail": "/games/053-city-racer-neon/thumb.svg",
-            "path": "/games/053-city-racer-neon/",
-            "hasServer": false,
-            "players": "1",
-            "version": "1.0.0",
-            "featured": true,
-            "rating": 4.2
-        },
-        {
-            "id": "grandma-garden-grub",
-            "name": "Grandma's Garden Grub",
-            "description": "Pick fresh veggies from the garden, cook delicious dishes, and deliver orders against the clock!",
-            "category": "casual",
-            "tags": [
-                "cooking",
-                "garden",
-                "time-management",
-                "family"
-            ],
-            "thumbnail": "/games/045-grandma-garden-grub/thumb.svg",
-            "path": "/games/045-grandma-garden-grub/",
-            "hasServer": false,
-            "players": "1",
-            "version": "1.0.0",
-            "featured": true,
-            "rating": 4
-        },
-        {
-            "id": "monorail-pilot",
-            "name": "Monorail Pilot",
-            "description": "\u5355\u8f68\u5217\u8f66\u9a7e\u9a76 \u2014 \u52a0\u901f/\u5239\u8f66\uff0c\u51c6\u65f6\u505c\u9760\u6bcf\u4e00\u7ad9\uff0c6 \u6761\u96be\u5ea6\u9012\u589e\u8def\u7ebf",
-            "category": "action",
-            "tags": [
-                "singleplayer",
-                "action",
-                "driving",
-                "simulation",
-                "short-session"
-            ],
-            "thumbnail": "/games/028-monorail-pilot/thumb.svg",
-            "path": "/games/028-monorail-pilot/",
-            "hasServer": false,
-            "players": "1",
-            "version": "1.0.0",
-            "featured": true,
-            "rating": 4
-        },
-        {
-            "id": "bridge-builder-frenzy",
-            "name": "Bridge Builder Frenzy",
-            "description": "Physics bridge-building game \u2014 design and test bridges to carry trucks across chasms",
-            "category": "puzzle",
-            "tags": [
-                "singleplayer",
-                "puzzle",
-                "physics",
-                "bridge",
-                "builder",
-                "construction"
-            ],
-            "thumbnail": "/games/050-bridge-builder-frenzy/thumb.svg",
-            "path": "/games/050-bridge-builder-frenzy/",
-            "hasServer": false,
-            "players": "1",
-            "version": "1.0.0",
-            "featured": true,
-            "rating": 4
-        }
-    ],
-    "categories": [
-        {
-            "id": "all",
-            "name": "All",
-            "icon": "\ud83c\udfae"
-        },
-        {
-            "id": "puzzle",
-            "name": "Puzzle",
-            "icon": "\ud83e\udde9"
-        },
-        {
-            "id": "wheel-o-mon-showdown",
-            "name": "Wheel-o-Mon Showdown",
-            "description": "\u65cb\u8f6c\u8f6e\u76d8\u51b3\u5b9a\u6280\u80fd\u8fdb\u884c\u56de\u5408\u5236\u5bf9\u6218 \u2014 \u5b9d\u53ef\u68a6+\u8f6e\u76d8\u878d\u5408",
-            "category": "casual",
-            "tags": [
-                "singleplayer",
-                "turn-based",
-                "battle",
-                "short-session"
-            ],
-            "thumbnail": "/games/062-wheel-o-mon-showdown/thumb.png",
-            "path": "/games/062-wheel-o-mon-showdown/",
-            "hasServer": false,
-            "players": "1",
-            "version": "1.0.0",
-            "featured": true,
-            "rating": 4
-        },
-        {
-            "id": "skyport-cardhouse",
-            "name": "Skyport Cardhouse",
-            "description": "\u642d\u53e0\u5361\u724c\u7b51\u5c4b\uff0c\u6bcf\u5f20\u5361\u90fd\u6709\u6280\u80fd \u2014 \u62bd\u5361\u00b7\u653e\u7f6e\u00b7\u89e6\u53d1\uff0c\u62b5\u8fbe\u5c4b\u9876\u901a\u5173",
-            "category": "strategy",
-            "tags": [
-                "singleplayer",
-                "card",
-                "roguelike",
-                "strategy",
-                "short-session"
-            ],
-            "thumbnail": "/games/061-skyport-cardhouse/thumb.svg",
-            "path": "/games/061-skyport-cardhouse/",
-            "hasServer": false,
-            "players": "1",
-            "version": "1.0.0",
-            "featured": true,
-            "rating": 4
-        },
-        {
-            "id": "idle",
-            "name": "Idle",
-            "icon": "\ud83c\udfea"
-        },
-        {
-            "id": "action",
-            "name": "Action",
-            "icon": "\u26a1"
-        },
-        {
-            "id": "platformer",
-            "name": "Platformer",
-            "icon": "\ud83c\udfaf"
-        },
-        {
-            "id": "strategy",
-            "name": "Strategy",
-            "icon": "\u265f\ufe0f"
-        },
-        {
-            "id": "casual",
-            "name": "Casual",
-            "icon": "\ud83c\udfaf"
-        }
-    ]
+  "games": [
+    {
+      "id": "bridge-builder-frenzy",
+      "name": "Bridge Builder Frenzy",
+      "description": "Build bridges across canyons! Place beams, manage budget, test with a truck — 5 levels of physics bridge building",
+      "category": "casual",
+      "tags": [
+        "singleplayer",
+        "building",
+        "physics",
+        "puzzle",
+        "short-session"
+      ],
+      "thumbnail": "/games/050-bridge-builder-frenzy/thumb.svg",
+      "path": "/games/050-bridge-builder-frenzy/",
+      "hasServer": false,
+      "players": "1",
+      "version": "1.0.0",
+      "featured": true,
+      "rating": 4.0
+    },
+    {
+      "id": "color-sort-balls",
+      "name": "Color Sort Balls",
+      "description": "不同颜色的球排序入管 · 拖拽解压，同色归管",
+      "category": "puzzle",
+      "tags": [
+        "singleplayer",
+        "puzzle",
+        "sorting",
+        "drag",
+        "short-session"
+      ],
+      "thumbnail": "/games/100-color-sort-balls/thumb.svg",
+      "path": "/games/100-color-sort-balls/",
+      "hasServer": false,
+      "players": "1",
+      "version": "1.0.0",
+      "featured": true,
+      "rating": 4.0
+    },
+    {
+      "id": "cooking-marathon",
+      "name": "Cooking Marathon",
+      "description": "马拉松式烹饪订单，多锅同时进行 — 拖食材、烹饪、上菜，限时完成订单",
+      "category": "casual",
+      "tags": [
+        "singleplayer",
+        "management",
+        "drag",
+        "simulation",
+        "timed",
+        "short-session"
+      ],
+      "path": "/games/087-cooking-marathon/",
+      "hasServer": false,
+      "players": "1",
+      "version": "1.0.0"
+    },
+    {
+      "id": "spaceship-builder",
+      "name": "Spaceship Builder",
+      "description": "拼装飞船零件，发射探索太空",
+      "category": "sandbox",
+      "tags": [
+        "singleplayer",
+        "sandbox",
+        "building",
+        "short-session"
+      ],
+      "thumbnail": "/games/091-spaceship-builder/thumb.png",
+      "path": "/games/091-spaceship-builder/",
+      "hasServer": false,
+      "players": "1",
+      "version": "1.0.0",
+      "featured": true,
+      "rating": 4.0
+    },
+    {
+      "id": "trivia-royale",
+      "name": "Astrocade Trivia Royale",
+      "description": "Real-time multiplayer trivia battle against 2-8 players",
+      "category": "puzzle",
+      "tags": [
+        "multiplayer",
+        "websocket",
+        "trivia"
+      ],
+      "thumbnail": "/games/trivia-royale/thumb.png",
+      "path": "/games/trivia-royale/",
+      "hasServer": true,
+      "wsPath": "/ws/game/trivia-royale",
+      "players": "2-8",
+      "version": "1.0.0",
+      "featured": true,
+      "rating": 4.5
+    },
+    {
+      "id": "idle-dungeon-heroes",
+      "name": "Idle Dungeon Heroes",
+      "description": "英雄自动闯关挂机，派遣、装备、升级并在三分钟内通关副本",
+      "category": "idle",
+      "tags": [
+        "singleplayer",
+        "idle",
+        "rpg",
+        "short-session"
+      ],
+      "thumbnail": "/games/094-idle-dungeon-heroes/thumb.png",
+      "path": "/games/094-idle-dungeon-heroes/",
+      "hasServer": false,
+      "players": "1",
+      "version": "1.0.0",
+      "featured": true,
+      "rating": 4.4
+    },
+    {
+      "id": "idle-lemonade",
+      "name": "Idle Lemonade Stand",
+      "description": "Build your lemonade empire one cup at a time",
+      "category": "idle",
+      "tags": [
+        "singleplayer",
+        "idle",
+        "management"
+      ],
+      "thumbnail": "/games/idle-lemonade/thumb.png",
+      "path": "/games/idle-lemonade/",
+      "hasServer": false,
+      "players": "1",
+      "version": "1.0.0",
+      "featured": true,
+      "rating": 4.2
+    },
+    {
+      "id": "cosmic-shooter",
+      "name": "Cosmic Shooter",
+      "description": "Defend the galaxy from waves of pixel aliens",
+      "category": "action",
+      "tags": [
+        "singleplayer",
+        "action",
+        "shooter",
+        "short-session"
+      ],
+      "thumbnail": "/games/cosmic-shooter/thumb.png",
+      "path": "/games/cosmic-shooter/",
+      "hasServer": false,
+      "players": "1",
+      "version": "1.0.0",
+      "featured": true,
+      "rating": 4.3
+    },
+    {
+      "id": "neon-block-pop",
+      "name": "Neon Block Pop",
+      "description": "Pop colorful blocks in this neon puzzle game",
+      "category": "puzzle",
+      "tags": [
+        "singleplayer",
+        "puzzle",
+        "colorful",
+        "short-session"
+      ],
+      "thumbnail": "/games/001-neon-block-pop/thumb.svg",
+      "path": "/games/001-neon-block-pop/",
+      "hasServer": false,
+      "players": "1",
+      "version": "1.0.0",
+      "featured": true,
+      "rating": 4.5
+    },
+    {
+      "id": "stickman-archer-duel",
+      "name": "Stickman Archer Duel",
+      "description": "弓箭对射决斗 — 蓄力、瞄准、射击！精确计算轨迹击败对手",
+      "category": "action",
+      "tags": [
+        "singleplayer",
+        "action",
+        "archery",
+        "physics",
+        "short-session"
+      ],
+      "thumbnail": "/games/002-stickman-archer-duel/thumb.svg",
+      "path": "/games/002-stickman-archer-duel/",
+      "hasServer": false,
+      "players": "1",
+      "version": "1.0.0",
+      "featured": true,
+      "rating": 4.0
+    },
+    {
+      "id": "cube-labyrinth-roll",
+      "name": "Cube Labyrinth Roll",
+      "description": "倾斜迷宫滚动方块到终点 — 重力感应+触控的 3D 迷宫游戏",
+      "category": "puzzle",
+      "tags": [
+        "singleplayer",
+        "puzzle",
+        "3d",
+        "physics",
+        "short-session"
+      ],
+      "thumbnail": "/games/003-cube-labyrinth-roll/thumb.svg",
+      "path": "/games/003-cube-labyrinth-roll/",
+      "hasServer": false,
+      "players": "1",
+      "version": "1.0.0",
+      "featured": true,
+      "rating": 4.2
+    },
+    {
+      "id": "pirate-gold-merge",
+      "name": "Pirate Gold Merge",
+      "description": "合并金币财宝，打造海盗帝国 — 滑动合并同类宝藏，解锁传奇海贼装备",
+      "category": "puzzle",
+      "tags": [
+        "singleplayer",
+        "puzzle",
+        "merge",
+        "pirate",
+        "short-session"
+      ],
+      "thumbnail": "/games/004-pirate-gold-merge/thumb.svg",
+      "path": "/games/004-pirate-gold-merge/",
+      "hasServer": false,
+      "players": "1",
+      "version": "1.0.0",
+      "featured": true,
+      "rating": 4.3
+    },
+    {
+      "id": "sky-guardian-3d",
+      "name": "Sky Guardian 3D",
+      "description": "3D 空战防御 — 控制炮塔击落敌机，保护你的领空",
+      "category": "action",
+      "tags": [
+        "singleplayer",
+        "action",
+        "3d",
+        "shooter",
+        "short-session"
+      ],
+      "thumbnail": "/games/005-sky-guardian-3d/thumb.svg",
+      "path": "/games/005-sky-guardian-3d/",
+      "hasServer": false,
+      "players": "1",
+      "version": "1.0.0",
+      "featured": true,
+      "rating": 4.1
+    },
+    {
+      "id": "mushroom-kingdom-run",
+      "name": "Mushroom Kingdom Run",
+      "description": "蘑菇王国跑酷 — 跳跃、滑铲、收集金币，跑过三个主题王国",
+      "category": "action",
+      "tags": [
+        "singleplayer",
+        "action",
+        "runner",
+        "platformer",
+        "short-session"
+      ],
+      "thumbnail": "/games/006-mushroom-kingdom-run/thumb.svg",
+      "path": "/games/006-mushroom-kingdom-run/",
+      "hasServer": false,
+      "players": "1",
+      "version": "1.0.0",
+      "featured": true,
+      "rating": 4.4
+    },
+    {
+      "id": "chess-online-blitz",
+      "name": "Chess Online Blitz",
+      "description": "2+1 分钟增量快棋 — 经典国际象棋，对战 AI 或本地双人",
+      "category": "strategy",
+      "tags": [
+        "multiplayer",
+        "chess",
+        "board",
+        "pvp",
+        "ai",
+        "short-session"
+      ],
+      "thumbnail": "/games/007-chess-online-blitz/thumb.svg",
+      "path": "/games/007-chess-online-blitz/",
+      "hasServer": false,
+      "players": "1-2",
+      "version": "1.0.0",
+      "featured": true,
+      "rating": 4.0
+    },
+    {
+      "id": "punch-monkey-cafe",
+      "name": "Punch Monkey Cafe",
+      "description": "🐒🍹 Monkey cafe — take orders, mix fruit punches, serve customers, earn profit across 3 days!",
+      "category": "casual",
+      "tags": [
+        "singleplayer",
+        "management",
+        "simulation",
+        "drag",
+        "short-session"
+      ],
+      "thumbnail": "/games/008-punch-monkey-cafe/thumb.svg",
+      "path": "/games/008-punch-monkey-cafe/",
+      "hasServer": false,
+      "players": "1",
+      "version": "1.0.0",
+      "featured": true,
+      "rating": 4.0
+    },
+    {
+      "id": "sort-till-you-cant",
+      "name": "Sort Till You Cant",
+      "description": "颜色水管分类，倒入相同颜色 — sort colored water layers into matching bottles!",
+      "category": "puzzle",
+      "tags": [
+        "singleplayer",
+        "puzzle",
+        "sorting",
+        "logic",
+        "short-session"
+      ],
+      "thumbnail": "/games/070-sort-till-you-cant/thumb.svg",
+      "path": "/games/070-sort-till-you-cant/",
+      "hasServer": false,
+      "players": "1",
+      "version": "1.0.0",
+      "featured": false,
+      "rating": 4.0
+    },
+    {
+      "id": "garden-keeper",
+      "name": "Garden Keeper",
+      "description": "花园养护模拟 — 种植、浇水、修剪，打造你的梦幻花园",
+      "category": "idle",
+      "tags": [
+        "singleplayer",
+        "idle",
+        "management",
+        "garden",
+        "short-session"
+      ],
+      "thumbnail": "/games/041-garden-keeper/thumb.svg",
+      "path": "/games/041-garden-keeper/",
+      "hasServer": false,
+      "players": "1",
+      "version": "1.0.0",
+      "featured": true,
+      "rating": 4.2
+    },
+    {
+      "id": "connect-four-online",
+      "name": "Connect Four Online",
+      "description": "经典四子棋在线对战 — 横竖斜四子连珠即可获胜",
+      "category": "strategy",
+      "tags": [
+        "multiplayer",
+        "board",
+        "pvp",
+        "classic",
+        "short-session"
+      ],
+      "thumbnail": "/games/063-connect-four-online/thumb.svg",
+      "path": "/games/063-connect-four-online/",
+      "hasServer": false,
+      "players": "2",
+      "version": "1.0.0",
+      "featured": true,
+      "rating": 4.3
+    },
+    {
+      "id": "auto-spa-dash",
+      "name": "Auto Spa Dash",
+      "description": "自动化水疗中心 — 建造设施、雇佣员工、优化动线最大化收入",
+      "category": "idle",
+      "tags": [
+        "singleplayer",
+        "idle",
+        "management",
+        "automation",
+        "short-session"
+      ],
+      "thumbnail": "/games/071-auto-spa-dash/thumb.svg",
+      "path": "/games/071-auto-spa-dash/",
+      "hasServer": false,
+      "players": "1",
+      "version": "1.0.0",
+      "featured": true,
+      "rating": 4.2
+    },
+    {
+      "id": "paws-and-claws-clinic",
+      "name": "Paws and Claws Clinic",
+      "description": "宠物诊所模拟 — 接诊、诊断、治疗可爱的小动物们",
+      "category": "idle",
+      "tags": [
+        "singleplayer",
+        "idle",
+        "management",
+        "pets",
+        "short-session"
+      ],
+      "thumbnail": "/games/072-paws-and-claws-clinic/thumb.svg",
+      "path": "/games/072-paws-and-claws-clinic/",
+      "hasServer": false,
+      "players": "1",
+      "version": "1.0.0",
+      "featured": true,
+      "rating": 4.3
+    },
+    {
+      "id": "baby-shark-manicure",
+      "name": "Baby Shark Manicure",
+      "description": "鲨鱼宝宝美甲沙龙 — 为可爱鲨鱼顾客设计美甲款式",
+      "category": "casual",
+      "tags": [
+        "singleplayer",
+        "casual",
+        "creative",
+        "touch",
+        "short-session"
+      ],
+      "thumbnail": "/games/073-baby-shark-manicure/thumb.svg",
+      "path": "/games/073-baby-shark-manicure/",
+      "hasServer": false,
+      "players": "1",
+      "version": "1.0.0",
+      "featured": true,
+      "rating": 4.1
+    },
+    {
+      "id": "case-crafters",
+      "name": "Case Crafters",
+      "description": "手机壳设计工坊 — 设计、装饰、打造独一无二的手机壳",
+      "category": "casual",
+      "tags": [
+        "singleplayer",
+        "casual",
+        "creative",
+        "design",
+        "short-session"
+      ],
+      "thumbnail": "/games/074-case-crafters/thumb.svg",
+      "path": "/games/074-case-crafters/",
+      "hasServer": false,
+      "players": "1",
+      "version": "1.0.0",
+      "featured": true,
+      "rating": 4.2
+    },
+    {
+      "id": "sparkle-sweep",
+      "name": "Sparkle Sweep",
+      "description": "亮晶晶清洁大作战 — 滑动清扫 glitter 和星星，收集闪耀金币",
+      "category": "casual",
+      "tags": [
+        "singleplayer",
+        "casual",
+        "cleaning",
+        "touch",
+        "short-session"
+      ],
+      "thumbnail": "/games/075-sparkle-sweep/thumb.svg",
+      "path": "/games/075-sparkle-sweep/",
+      "hasServer": false,
+      "players": "1",
+      "version": "1.0.0",
+      "featured": true,
+      "rating": 4.1
+    },
+    {
+      "id": "dice",
+      "name": "Dice",
+      "description": "Minimal dice roller — click for a fair 1–6 with a short animation",
+      "category": "casual",
+      "tags": [
+        "singleplayer",
+        "classic",
+        "minimal"
+      ],
+      "path": "/games/dice/",
+      "hasServer": false,
+      "players": "1",
+      "version": "1.0.0",
+      "rating": 4.0
+    },
+    {
+      "id": "word-ladder-climb",
+      "name": "Word Ladder Climb",
+      "description": "改一个字母连成新词，沿词梯爬到顶层目标词",
+      "category": "puzzle",
+      "tags": [
+        "singleplayer",
+        "word",
+        "puzzle",
+        "short-session"
+      ],
+      "path": "/games/096-word-ladder-climb/",
+      "hasServer": false,
+      "players": "1",
+      "version": "1.0.0",
+      "rating": 4.2
+    },
+    {
+      "id": "knight-vs-slime",
+      "name": "Knight vs Slime",
+      "description": "骑士在洞穴击退史莱姆，攻击→闪避→拾取，击败 Boss 通关",
+      "category": "action",
+      "tags": [
+        "singleplayer",
+        "action",
+        "roguelite",
+        "short-session"
+      ],
+      "thumbnail": "/games/095-knight-vs-slime/thumb.png",
+      "path": "/games/095-knight-vs-slime/",
+      "hasServer": false,
+      "players": "1",
+      "version": "1.0.0",
+      "featured": true,
+      "rating": 4.5
+    },
+    {
+      "id": "guess-number",
+      "name": "猜数字",
+      "description": "猜 1-100 之间的数字，看看几次能猜对",
+      "category": "casual",
+      "tags": [
+        "singleplayer",
+        "puzzle",
+        "minimal"
+      ],
+      "path": "/games/guess-number/",
+      "hasServer": false,
+      "players": "1",
+      "version": "1.0.0",
+      "rating": 4.0
+    },
+    {
+      "id": "word-guess",
+      "name": "猜单词",
+      "description": "猜出隐藏的英文单词，每次猜错减少一次机会，Hangman 风格",
+      "category": "puzzle",
+      "tags": [
+        "singleplayer",
+        "word",
+        "puzzle",
+        "hangman"
+      ],
+      "path": "/games/word-guess/",
+      "hasServer": false,
+      "players": "1",
+      "version": "1.0.0",
+      "rating": 4.0
+    },
+    {
+      "id": "pet-run-io",
+      "name": "Pet Run IO",
+      "description": "Pet Run IO — cute pet runner",
+      "category": "action",
+      "tags": [
+        "singleplayer",
+        "action",
+        "runner"
+      ],
+      "path": "/games/097-pet-run-io/",
+      "hasServer": false,
+      "players": "1",
+      "version": "1.0.0",
+      "rating": 4.0
+    },
+    {
+      "id": "solar-snake",
+      "name": "Solar Snake",
+      "description": "Solar Snake — classic snake in space",
+      "category": "casual",
+      "tags": [
+        "singleplayer",
+        "casual",
+        "classic"
+      ],
+      "path": "/games/098-solar-snake/",
+      "hasServer": false,
+      "players": "1",
+      "version": "1.0.0",
+      "rating": 4.0
+    },
+    {
+      "id": "idle-lemonade-stand",
+      "name": "Idle Lemonade Stand",
+      "description": "Idle Lemonade Stand — build your lemonade empire",
+      "category": "idle",
+      "tags": [
+        "singleplayer",
+        "idle",
+        "management"
+      ],
+      "path": "/games/099-idle-lemonade-stand/",
+      "hasServer": false,
+      "players": "1",
+      "version": "1.0.0",
+      "rating": 4.0
+    },
+    {
+      "id": "sushi-master",
+      "name": "Sushi Master",
+      "description": "寿司店出餐，捏饭·加料·摆盘，精准完成订单过关！",
+      "category": "casual",
+      "tags": [
+        "singleplayer",
+        "management",
+        "drag",
+        "simulation",
+        "short-session"
+      ],
+      "thumbnail": "/games/093-sushi-master/thumb.svg",
+      "path": "/games/093-sushi-master/",
+      "hasServer": false,
+      "players": "1",
+      "version": "1.0.0",
+      "rating": 4.0
+    },
+    {
+      "id": "hyper-casual-hop",
+      "name": "Hyper Casual Hop",
+      "description": "节奏跳跃方块 — 空格/点击命中节拍，连跳得分，解锁新主题",
+      "category": "casual",
+      "tags": [
+        "singleplayer",
+        "rhythm",
+        "jumping",
+        "music",
+        "short-session"
+      ],
+      "thumbnail": "/games/090-hyper-casual-hop/thumb.svg",
+      "path": "/games/090-hyper-casual-hop/",
+      "hasServer": false,
+      "players": "1",
+      "version": "1.0.0",
+      "featured": true,
+      "rating": 4.5
+    },
+    {
+      "id": "detective-crime-board",
+      "name": "Detective Crime Board",
+      "description": "线索板上拼接证据找出凶手 — 拖拽线索匹配嫌疑人，解开多重案件",
+      "category": "puzzle",
+      "tags": [
+        "singleplayer",
+        "puzzle",
+        "detective",
+        "drag",
+        "short-session"
+      ],
+      "thumbnail": "/games/092-detective-crime-board/thumb.svg",
+      "path": "/games/092-detective-crime-board/",
+      "hasServer": false,
+      "players": "1",
+      "version": "1.0.0",
+      "featured": true,
+      "rating": 4.0
+    },
+    {
+      "id": "bubble-tea-maker",
+      "name": "Bubble Tea Maker",
+      "description": "手工调制珍珠奶茶 — 选茶底→加配料→摇匀，3星过关解锁新口味",
+      "category": "casual",
+      "tags": [
+        "singleplayer",
+        "management",
+        "drag",
+        "simulation",
+        "short-session"
+      ],
+      "thumbnail": "/games/089-bubble-tea-maker/thumb.svg",
+      "path": "/games/089-bubble-tea-maker/",
+      "hasServer": false,
+      "players": "1",
+      "version": "1.0.0",
+      "featured": true,
+      "rating": 4.0
+    },
+    {
+      "id": "tank-battalion-2d",
+      "name": "Tank Battalion 2D",
+      "description": "2D 坦克守卫基地 — 方向键移动，空格射击，波次战斗，保护基地",
+      "category": "action",
+      "tags": [
+        "singleplayer",
+        "shooting",
+        "action",
+        "classic",
+        "short-session"
+      ],
+      "thumbnail": "/games/084-tank-battalion-2d/thumb.svg",
+      "path": "/games/084-tank-battalion-2d/",
+      "hasServer": false,
+      "players": "1",
+      "version": "1.0.0",
+      "featured": false,
+      "rating": 4.0
+    }
+  ],
+  "categories": [
+    {
+      "id": "all",
+      "name": "All",
+      "icon": "🎮"
+    },
+    {
+      "id": "puzzle",
+      "name": "Puzzle",
+      "icon": "🧩"
+    },
+    {
+      "id": "idle",
+      "name": "Idle",
+      "icon": "🏪"
+    },
+    {
+      "id": "action",
+      "name": "Action",
+      "icon": "⚡"
+    },
+    {
+      "id": "strategy",
+      "name": "Strategy",
+      "icon": "♟️"
+    },
+    {
+      "id": "casual",
+      "name": "Casual",
+      "icon": "🎯"
+    }
+  ]
 }
