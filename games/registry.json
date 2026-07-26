@@ -1,6 +1,20 @@
 {
     "games": [
         {
+            "id": "neptune-drift",
+            "name": "Neptune Drift",
+            "description": "海王星轨道漂移赛车，在神秘水下赛道漂移过弯",
+            "category": "action",
+            "tags": ["singleplayer", "action", "racing", "drift", "short-session"],
+            "thumbnail": "/games/014-neptune-drift/thumb.png",
+            "path": "/games/014-neptune-drift/",
+            "hasServer": false,
+            "players": "1",
+            "version": "1.0.0",
+            "featured": false,
+            "rating": 3
+        },
+        {
             "id": "chaos-race",
             "name": "Chaos Race",
             "description": "Side-scrolling race against AI opponents with chaotic obstacles",
