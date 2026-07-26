@@ -886,6 +886,25 @@
             "version": "1.0.0",
             "featured": true,
             "rating": 4.2
+        },
+        {
+            "id": "grandma-garden-grub",
+            "name": "Grandma's Garden Grub",
+            "description": "Pick fresh veggies from the garden, cook delicious dishes, and deliver orders against the clock!",
+            "category": "casual",
+            "tags": [
+                "cooking",
+                "garden",
+                "time-management",
+                "family"
+            ],
+            "thumbnail": "/games/045-grandma-garden-grub/thumb.svg",
+            "path": "/games/045-grandma-garden-grub/",
+            "hasServer": false,
+            "players": "1",
+            "version": "1.0.0",
+            "featured": true,
+            "rating": 4
         }
     ],
     "categories": [
