@@ -964,6 +964,26 @@
             "version": "1.0.0",
             "featured": false,
             "rating": 3
+        },
+        {
+            "id": "block-bliss",
+            "name": "Block Bliss",
+            "description": "像素艺术创作工坊，自由拼色创作",
+            "category": "casual",
+            "tags": [
+                "singleplayer",
+                "casual",
+                "creative",
+                "pixel-art",
+                "sandbox"
+            ],
+            "thumbnail": "/games/021-block-bliss/thumb.svg",
+            "path": "/games/021-block-bliss/",
+            "hasServer": false,
+            "players": "1",
+            "version": "1.0.0",
+            "featured": false,
+            "rating": 3
         }
     ],
     "categories": [
