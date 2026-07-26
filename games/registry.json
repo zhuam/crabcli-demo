@@ -1004,6 +1004,26 @@
             "version": "1.0.0",
             "featured": false,
             "rating": 3
+        },
+        {
+            "id": "equation-quest",
+            "name": "Equation Quest",
+            "description": "解方程式，英雄前进",
+            "category": "puzzle",
+            "tags": [
+                "singleplayer",
+                "puzzle",
+                "math",
+                "educational",
+                "short-session"
+            ],
+            "thumbnail": "/games/015-equation-quest/thumb.svg",
+            "path": "/games/015-equation-quest/",
+            "hasServer": false,
+            "players": "1",
+            "version": "1.0.0",
+            "featured": false,
+            "rating": 3
         }
     ],
     "categories": [

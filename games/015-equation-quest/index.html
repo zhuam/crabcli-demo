@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#0a0e27">
+<title>Equation Quest</title>
+<link rel="stylesheet" href="/games/shared/game-frame.css">
+<style>
+:root{--bg-deep:#0a0e27;--neon-cyan:#00FFFF;--neon-pink:#FF00FF;--neon-yellow:#FFD700;--neon-green:#39FF14;--neon-orange:#FF6B35;--text-primary:#FFFFFF;--text-muted:rgba(255,255,255,0.5);--success:#10B981;--danger:#DC2626;--font-display:'Audiowide','Orbitron',system-ui,sans-serif;--font-body:system-ui,-apple-system,sans-serif}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg-deep);color:var(--text-primary);font-family:var(--font-body);overflow:hidden;width:100vw;height:100vh;display:flex;align-items:center;justify-content:center;touch-action:manipulation;-webkit-tap-highlight-color:transparent;user-select:none}
+.screen{display:none;flex-direction:column;align-items:center;width:100%;position:fixed;inset:0}
+.screen.active{display:flex}
+.title-screen{justify-content:center;gap:20px;text-align:center;z-index:1}
+.title-icon{width:88px;height:88px;border-radius:12px;background:linear-gradient(135deg,var(--neon-cyan),var(--neon-green));display:flex;align-items:center;justify-content:center;margin:0 auto;font-size:3rem}
+h1{font-family:var(--font-display);font-size:1.8rem;background:linear-gradient(135deg,var(--neon-cyan),var(--neon-green));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.subtitle{font-size:0.85rem;color:var(--text-muted);max-width:280px;line-height:1.4}
+#startBtn,#replayBtn{padding:14px 48px;border:none;border-radius:8px;font-family:var(--font-display);font-size:1rem;font-weight:700;cursor:pointer;transition:all .15s;background:linear-gradient(135deg,var(--neon-cyan),var(--neon-green));color:var(--bg-deep)}
+#startBtn:hover,#replayBtn:hover{transform:scale(1.05);box-shadow:0 0 24px rgba(0,255,255,.4)}
+.play-screen{justify-content:flex-start;padding-top:55px}
+.hud{position:fixed;top:48px;left:0;right:0;height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 16px;background:rgba(10,14,39,.9);border-bottom:1px solid rgba(255,255,255,.06);z-index:100}
+.hud-level{font-family:var(--font-display);font-size:.8rem;color:var(--neon-cyan)}
+.hud-progress{font-size:.75rem;color:var(--text-muted)}
+.hud-score{font-size:.75rem;color:var(--neon-yellow)}
+.hero-area{position:relative;width:100%;max-width:360px;height:130px;margin:10px auto 0;overflow:hidden}
+.hero-area svg{position:absolute;bottom:5px}
+.hero-area .path{position:absolute;bottom:15px;left:0;right:0;height:2px;background:rgba(255,255,255,.1)}
+.question-area{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;width:100%;max-width:360px;padding:0 16px}
+.equation{font-family:var(--font-mono);font-size:1.8rem;font-weight:700;color:var(--neon-yellow);text-align:center;padding:12px;font-family:'Courier New',monospace}
+.options{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%;max-width:320px}
+.opt-btn{padding:14px;border:1px solid rgba(255,255,255,.12);border-radius:8px;background:rgba(255,255,255,.04);color:var(--text-primary);font-size:1.1rem;cursor:pointer;transition:all .12s;text-align:center;font-family:var(--font-mono)}
+.opt-btn:hover{border-color:var(--neon-cyan);background:rgba(0,255,255,.08)}
+.opt-btn:active{transform:scale(.95)}
+.opt-btn.correct{border-color:var(--success);background:rgba(16,185,129,.15);color:var(--success)}
+.opt-btn.wrong{border-color:var(--danger);background:rgba(220,38,38,.15);color:var(--danger);animation:shake .3s}
+.opt-btn:disabled{opacity:.6;cursor:default}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+.feedback{font-size:.9rem;min-height:24px;text-align:center}
+.gameover-screen{justify-content:center;gap:16px;text-align:center;background:rgba(10,14,39,.92);z-index:200;backdrop-filter:blur(12px)}
+.go-title{font-family:var(--font-display);font-size:1.6rem}
+.go-title.win{color:var(--neon-green)}.go-title.lose{color:var(--danger)}
+.go-stats{font-size:.9rem;color:var(--text-muted);display:flex;flex-direction:column;gap:4px}
+.stars{font-size:2rem;letter-spacing:4px;margin:8px 0}
+#goNewBest{color:var(--neon-yellow);font-weight:700;display:none}
+#muteBtn{position:fixed;bottom:16px;right:16px;z-index:300;width:40px;height:40px;border-radius:50%;border:1px solid rgba(255,255,255,.12);background:rgba(10,14,39,.8);color:var(--text-muted);font-size:1.2rem;cursor:pointer;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(8px)}
+#muteBtn:hover{color:var(--text-primary)}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap}
+@media(max-width:480px){h1{font-size:1.4rem}.equation{font-size:1.4rem}}
+</style>
+</head>
+<body>
+<div id="ariaLive" class="sr-only" aria-live="polite"></div>
+<div id="titleScreen" class="screen title-screen active">
+<div class="title-icon" aria-hidden="true">🧮</div><h1>EQUATION QUEST</h1>
+<p class="subtitle">解出方程式，英雄踏上前进之路！</p>
+<button id="startBtn" autofocus>开始冒险</button>
+<div class="subtitle" style="font-size:.75rem;margin-top:4px">🏆 最高分 <span id="titleBest">0</span></div></div>
+<div id="playScreen" class="screen play-screen">
+<div class="hud"><span class="hud-level" id="hudLevel">第1关</span><span class="hud-progress" id="hudProgress">0%</span><span class="hud-score" id="hudScore">0分</span></div>
+<div class="hero-area">
+<svg width="360" height="120" viewBox="0 0 360 120" style="position:absolute;bottom:0;left:0">
+<line x1="0" y1="100" x2="360" y2="100" stroke="rgba(255,255,255,.1)" stroke-width="1"/>
+<circle id="heroPos" cx="20" cy="70" r="14" fill="none" stroke="var(--neon-cyan)" stroke-width="2"/>
+<text id="heroEmoji" x="20" y="75" text-anchor="middle" font-size="20">🧙</text>
+<rect id="progressBar" x="20" y="95" width="0" height="4" rx="2" fill="var(--neon-green)"/>
+</svg>
+</div>
+<div class="question-area">
+<div class="equation" id="equation">3 + 5 = ?</div>
+<div class="options" id="options"></div>
+<div class="feedback" id="feedback"></div>
+</div></div>
+<div id="gameoverScreen" class="screen gameover-screen">
+<div class="go-title win" id="goTitle">🎉 冒险完成</div>
+<div class="stars" id="goStars">⭐⭐⭐</div>
+<div class="go-stats"><span>答对 <span id="goCorrect">0</span>/<span id="goTotal">0</span></span><span>得分 <span id="goScore">0</span></span><span id="goNewBest">🏆 新纪录！</span></div>
+<button id="replayBtn">再来一次</button>
+<div style="font-size:.75rem;color:var(--text-muted)">Space / Enter 继续</div></div>
+<button id="muteBtn" aria-label="切换音效" aria-pressed="false">🔊</button>
+<a href="/" class="back-to-hub"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg><span>返回</span></a>
+<script>
+'use strict';
+const TITLE=0,PLAYING=1,GAMEOVER=2;
+let gameState=TITLE,score=0,level=0,correct=0,total=0,timer=0,interval,animId,maxLevel=0;
+const STORAGE_KEY='equation-quest-best',MUTED_KEY='equation-quest-muted';
+const TOTAL_QUESTIONS=15;
+let audioCtx=null,muted=false;
+
+function ensureAudioCtx(){if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)();if(audioCtx.state==='suspended')audioCtx.resume()}
+function loadMuted(){try{muted=localStorage.getItem(MUTED_KEY)==='1'}catch(e){}updateMuteBtn()}
+function toggleMute(){muted=!muted;try{localStorage.setItem(MUTED_KEY,muted?'1':'0')}catch(e){}updateMuteBtn()}
+function updateMuteBtn(){const b=document.getElementById('muteBtn');b.textContent=muted?'🔇':'🔊';b.setAttribute('aria-pressed',String(muted))}
+function playSound(t){if(muted)return;ensureAudioCtx();try{const o=audioCtx.createOscillator(),g=audioCtx.createGain();o.connect(g);g.connect(audioCtx.destination);const n=audioCtx.currentTime;switch(t){case'correct':o.type='sine';o.frequency.setValueAtTime(523,n);o.frequency.setValueAtTime(659,n+.1);o.frequency.setValueAtTime(784,n+.2);g.gain.setValueAtTime(.1,n);g.gain.exponentialRampToValueAtTime(.001,n+.3);o.start(n);o.stop(n+.3);break;case'wrong':o.type='sawtooth';o.frequency.setValueAtTime(200,n);o.frequency.exponentialRampToValueAtTime(100,n+.15);g.gain.setValueAtTime(.08,n);g.gain.exponentialRampToValueAtTime(.001,n+.2);o.start(n);o.stop(n+.2);break;case'complete':o.type='sine';o.frequency.setValueAtTime(523,n);o.frequency.setValueAtTime(659,n+.15);o.frequency.setValueAtTime(784,n+.3);o.frequency.setValueAtTime(1047,n+.45);g.gain.setValueAtTime(.12,n);g.gain.exponentialRampToValueAtTime(.001,n+.6);o.start(n);o.stop(n+.6);break}}catch(e){}}
+
+function loadBest(){try{return parseInt(localStorage.getItem(STORAGE_KEY),10)||0}catch(e){return 0}}
+function saveBest(v){try{localStorage.setItem(STORAGE_KEY,String(v))}catch(e){}}
+let best=loadBest();document.getElementById('titleBest').textContent=best;
+
+function showScreen(id){['titleScreen','playScreen','gameoverScreen'].forEach(s=>document.getElementById(s).classList.remove('active'));document.getElementById(id).classList.add('active')}
+
+function generateQuestion(lvl){
+  const ops=['+','-','*'];const op=ops[Math.floor(Math.random()*3)];
+  let a,b,answer;
+  const d=Math.min(lvl+1,10);
+  if(op==='+'){a=Math.floor(Math.random()*10*d);b=Math.floor(Math.random()*10*d);answer=a+b}
+  else if(op==='-'){a=Math.floor(Math.random()*10*d);b=Math.floor(Math.random()*a+1);answer=a-b}
+  else{a=Math.floor(Math.random()*d)+1;b=Math.floor(Math.random()*10)+1;answer=a*b}
+  const display=a+' '+op+' '+b+' = ?';
+  const opts=new Set();opts.add(answer);
+  while(opts.size<4){let w=answer+(Math.floor(Math.random()*21)-10);if(w!==answer&&w>=0)opts.add(w)}
+  const optArr=Array.from(opts).sort(()=>Math.random()-.5);
+  return{display,answer,options:optArr};
+}
+
+let currentQ=null,answered=false;
+function showQuestion(){
+  if(total>=TOTAL_QUESTIONS){gameComplete();return}
+  currentQ=generateQuestion(level);answered=false;
+  document.getElementById('equation').textContent=currentQ.display;
+  document.getElementById('options').innerHTML='';
+  document.getElementById('feedback').textContent='';
+  currentQ.options.forEach((opt,i)=>{
+    const btn=document.createElement('button');btn.className='opt-btn';btn.textContent=opt;
+    btn.addEventListener('click',()=>answerQuestion(opt,btn));
+    document.getElementById('options').appendChild(btn);
+  });
+  updateHUD();
+}
+
+function answerQuestion(ans,btn){
+  if(answered)return;answered=true;
+  const allBtns=document.querySelectorAll('.opt-btn');allBtns.forEach(b=>b.disabled=true);
+  if(ans===currentQ.answer){
+    btn.classList.add('correct');correct++;score+=10+level*2;
+    playSound('correct');
+    document.getElementById('feedback').textContent='✅ 正确！';document.getElementById('feedback').style.color='var(--success)';
+    moveHero(1);
+  }else{
+    btn.classList.add('wrong');
+    // Highlight correct answer
+    allBtns.forEach(b=>{if(parseInt(b.textContent)===currentQ.answer)b.classList.add('correct')});
+    playSound('wrong');
+    document.getElementById('feedback').textContent='❌ 答案是 '+currentQ.answer;document.getElementById('feedback').style.color='var(--danger)';
+  }
+  total++;document.getElementById('hudScore').textContent=score+'分';
+  setTimeout(()=>{level++;showQuestion()},1200);
+}
+
+function moveHero(steps){
+  const pct=Math.min(100,(total+1)/TOTAL_QUESTIONS*100);
+  document.getElementById('heroPos').setAttribute('cx',20+(320*pct/100));
+  document.getElementById('heroEmoji').setAttribute('x',20+(320*pct/100));
+  document.getElementById('progressBar').setAttribute('width',320*pct/100);
+}
+
+function updateHUD(){
+  document.getElementById('hudLevel').textContent='第'+(level+1)+'关';
+  document.getElementById('hudProgress').textContent=Math.round(total/TOTAL_QUESTIONS*100)+'%';
+}
+
+function gameComplete(){
+  gameState=GAMEOVER;if(interval)clearInterval(interval);
+  const isNew=score>best;if(isNew){best=score;saveBest(best)}
+  const stars=score>=TOTAL_QUESTIONS*15?3:score>=TOTAL_QUESTIONS*10?2:1;
+  document.getElementById('goTitle').textContent='🎉 冒险完成！';
+  document.getElementById('goStars').textContent='⭐'.repeat(stars)+'☆'.repeat(3-stars);
+  document.getElementById('goCorrect').textContent=correct;document.getElementById('goTotal').textContent=total;
+  document.getElementById('goScore').textContent=score;
+  document.getElementById('goNewBest').style.display=isNew?'block':'none';
+  showScreen('gameoverScreen');playSound('complete');
+}
+
+function startGame(){
+  score=0;level=0;correct=0;total=0;answered=false;
+  document.getElementById('hudScore').textContent='0分';
+  showScreen('playScreen');gameState=PLAYING;
+  if(interval)clearInterval(interval);timer=0;interval=setInterval(()=>timer++,1000);
+  showQuestion();moveHero(0);
+  document.getElementById('heroPos').setAttribute('cx',20);
+  document.getElementById('heroEmoji').setAttribute('x',20);
+}
+
+function setupInput(){
+  document.getElementById('startBtn').addEventListener('click',startGame);
+  document.getElementById('replayBtn').addEventListener('click',startGame);
+  document.getElementById('muteBtn').addEventListener('click',toggleMute);
+  document.addEventListener('keydown',e=>{
+    if(e.key===' '||e.key==='Enter'){e.preventDefault();if(gameState!==PLAYING)startGame()}
+    if(gameState===PLAYING&&!answered){
+      const n=parseInt(e.key);if(n>=1&&n<=4){
+        const btns=document.querySelectorAll('.opt-btn');
+        if(btns[n-1])btns[n-1].click();
+      }
+    }
+  });
+}
+
+function init(){
+  loadMuted();setupInput();showScreen('titleScreen');
+}
+document.addEventListener('DOMContentLoaded',init);
+</script>
+</body>
+</html>
