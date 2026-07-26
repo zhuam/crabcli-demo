@@ -1,0 +1,1121 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no">
+  <meta name="theme-color" content="#0a0e27">
+  <title>Pixel Tower Stack</title>
+  <link rel="stylesheet" href="/games/shared/game-frame.css">
+  <style>
+    :root {
+      --bg-deep: #0a0e27;
+      --neon-cyan: #00FFFF;
+      --neon-pink: #FF00FF;
+      --neon-yellow: #FFD700;
+      --neon-orange: #FF6B35;
+      --neon-green: #39FF14;
+      --neon-blue: #00BFFF;
+      --text-primary: #FFFFFF;
+      --text-muted: rgba(255,255,255,0.5);
+      --danger: #DC2626;
+      --focus-ring: #00FFFF;
+      --font-display: 'Audiowide', 'Orbitron', system-ui, sans-serif;
+      --font-body: system-ui, -apple-system, sans-serif;
+      --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg-deep);
+      color: var(--text-primary);
+      font-family: var(--font-body);
+      overflow: hidden;
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+
+    .screen { display: none; flex-direction: column; align-items: center; width: 100%; position: fixed; inset: 0; }
+    .screen.active { display: flex; }
+
+    /* ── Title Screen ── */
+    .title-screen { justify-content: center; gap: 20px; text-align: center; z-index: 1; }
+    .title-icon {
+      width: 88px; height: 88px; border-radius: 8px;
+      background: linear-gradient(135deg, var(--neon-cyan), var(--neon-pink));
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 0 40px rgba(0,255,255,0.4), 0 0 80px rgba(255,0,255,0.2);
+      margin: 0 auto; position: relative; overflow: hidden;
+    }
+    .title-icon::before {
+      content: ''; position: absolute; inset: 4px;
+      border: 2px solid rgba(255,255,255,0.15); border-radius: 4px;
+    }
+    .title-icon-inner {
+      width: 40px; height: 40px; background: var(--bg-deep);
+      border-radius: 4px; position: relative;
+      box-shadow: 0 0 20px rgba(0,255,255,0.3);
+    }
+    .title-icon-inner::before {
+      content: ''; position: absolute; top: -10px; left: 5px;
+      width: 30px; height: 10px; background: var(--neon-cyan);
+      border-radius: 2px; opacity: 0.7;
+    }
+    @media (prefers-reduced-motion: no-preference) {
+      .title-icon { animation: glow-pulse 2s ease-in-out infinite alternate; }
+    }
+    @keyframes glow-pulse {
+      0% { box-shadow: 0 0 40px rgba(0,255,255,0.4), 0 0 80px rgba(255,0,255,0.2); }
+      100% { box-shadow: 0 0 60px rgba(0,255,255,0.6), 0 0 100px rgba(255,0,255,0.3); }
+    }
+    .title-text {
+      font-family: var(--font-display); font-size: 38px; font-weight: 400;
+      letter-spacing: 0.06em; color: var(--neon-cyan);
+      text-shadow: 0 0 24px rgba(0,255,255,0.5), 0 0 48px rgba(0,255,255,0.2);
+      line-height: 1.1;
+    }
+    .title-subtitle { font-size: 12px; color: var(--text-muted); letter-spacing: 0.2em; text-transform: uppercase; margin-top: -8px; }
+    .tap-to-start {
+      font-family: var(--font-display); font-size: 15px; letter-spacing: 0.2em;
+      color: var(--neon-pink); margin-top: 4px;
+    }
+    @media (prefers-reduced-motion: no-preference) {
+      .tap-to-start { animation: pulse-text 1.2s ease-in-out infinite alternate; }
+    }
+    @keyframes pulse-text { 0% { opacity: 0.3; } 100% { opacity: 0.9; } }
+    .title-best { font-family: var(--font-mono); font-size: 14px; color: var(--text-muted); margin-top: 4px; }
+    .title-best span { color: var(--neon-yellow); font-weight: 700; }
+
+    .btn-primary {
+      font-family: var(--font-display); font-size: 16px; letter-spacing: 0.15em; text-transform: uppercase;
+      background: linear-gradient(135deg, var(--neon-cyan), var(--neon-blue));
+      color: #0a0e27; border: none; border-radius: 6px;
+      padding: 14px 48px; min-height: 50px; cursor: pointer;
+      box-shadow: 0 0 24px rgba(0,255,255,0.3), 0 4px 16px rgba(0,0,0,0.3);
+      transition: transform 150ms ease, box-shadow 150ms ease;
+      margin-top: 8px;
+    }
+    .btn-primary:hover { transform: scale(1.05); box-shadow: 0 0 36px rgba(0,255,255,0.5); }
+    .btn-primary:active { transform: scale(0.97); }
+    .btn-primary:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 4px; }
+
+    /* ── Playing Screen ── */
+    .play-screen { justify-content: center; z-index: 1; padding: 0; }
+    .canvas-wrapper {
+      position: relative; width: 100%; max-width: 400px; aspect-ratio: 3/5;
+      border-radius: 12px; overflow: hidden;
+      box-shadow: 0 0 60px rgba(0,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.04);
+    }
+    .canvas-wrapper canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+
+    /* ── HUD ── */
+    .hud {
+      position: absolute; top: 0; left: 0; right: 0;
+      padding: 10px 14px; display: flex; align-items: center; justify-content: space-between;
+      pointer-events: none; z-index: 2;
+    }
+    .hud-left { display: flex; align-items: center; gap: 8px; }
+    .hud-score {
+      font-family: var(--font-display); font-size: 20px; font-weight: 700;
+      text-shadow: 0 0 8px rgba(0,255,255,0.3); letter-spacing: 0.05em;
+    }
+    .hud-high { font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); }
+    .hud-right { display: flex; align-items: center; gap: 6px; }
+    .speed-badge {
+      font-family: var(--font-mono); font-size: 10px; padding: 2px 8px;
+      border-radius: 4px; background: rgba(255,0,255,0.2);
+      color: var(--neon-pink); border: 1px solid rgba(255,0,255,0.3);
+    }
+
+    /* ── Game Over Overlay ── */
+    .gameover-overlay {
+      position: absolute; inset: 0; background: rgba(0,0,0,0.8);
+      z-index: 10; display: none; flex-direction: column; align-items: center;
+      justify-content: center; gap: 8px; border-radius: 12px;
+      backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+    }
+    .gameover-overlay.active { display: flex; }
+    .gameover-heading {
+      font-family: var(--font-display); font-size: 28px; letter-spacing: 0.1em;
+      color: var(--danger); text-shadow: 0 0 16px rgba(220,38,38,0.5);
+    }
+    .gameover-score-label { font-size: 11px; color: var(--text-muted); letter-spacing: 0.2em; text-transform: uppercase; }
+    .gameover-score-value { font-family: var(--font-mono); font-size: 52px; font-weight: 700; line-height: 1.1; }
+    .gameover-new-best {
+      font-family: var(--font-display); font-size: 14px; color: var(--neon-yellow);
+      letter-spacing: 0.1em; text-shadow: 0 0 12px rgba(255,215,0,0.5);
+    }
+    @media (prefers-reduced-motion: no-preference) {
+      .gameover-new-best { animation: celebrate 0.6s ease-in-out infinite alternate; }
+    }
+    @keyframes celebrate { 0% { transform: scale(1); } 100% { transform: scale(1.12); } }
+    .gameover-best { font-family: var(--font-mono); font-size: 12px; color: var(--text-muted); }
+    .btn-replay {
+      font-family: var(--font-display); font-size: 15px; letter-spacing: 0.12em; text-transform: uppercase;
+      background: linear-gradient(135deg, var(--neon-cyan), var(--neon-blue));
+      color: #0a0e27; border: none; border-radius: 6px;
+      padding: 12px 44px; min-height: 44px; cursor: pointer;
+      box-shadow: 0 0 20px rgba(0,255,255,0.3), 0 4px 12px rgba(0,0,0,0.3);
+      margin-top: 8px; transition: transform 150ms ease, box-shadow 150ms ease;
+    }
+    .btn-replay:hover { transform: scale(1.05); }
+    .btn-replay:active { transform: scale(0.97); }
+    .btn-replay:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 4px; }
+
+    /* Score popup */
+    .score-pop {
+      position: absolute; top: 30%; left: 50%; transform: translateX(-50%);
+      font-family: var(--font-display); font-size: 22px; font-weight: 700;
+      pointer-events: none; z-index: 4; color: var(--neon-yellow);
+      text-shadow: 0 0 12px rgba(255,215,0,0.5);
+    }
+    @media (prefers-reduced-motion: no-preference) {
+      .score-pop { animation: score-pop-anim 0.5s ease-out forwards; }
+    }
+    @keyframes score-pop-anim {
+      0% { opacity: 1; transform: translateX(-50%) scale(1.4) translateY(0); }
+      100% { opacity: 0; transform: translateX(-50%) scale(1) translateY(-30px); }
+    }
+
+    /* Missed piece falling effect */
+    .piece-pop {
+      position: absolute;
+      pointer-events: none; z-index: 3;
+      font-family: var(--font-display); font-size: 12px; color: var(--neon-pink);
+    }
+
+    /* ── Mute Toggle ── */
+    .mute-btn {
+      position: fixed; top: 12px; right: 12px; z-index: 10001;
+      width: 40px; height: 40px; border: none;
+      background: rgba(255,255,255,0.08); border-radius: 50%;
+      font-size: 18px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: background 150ms ease, transform 150ms ease; color: var(--text-primary);
+      backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+    }
+    .mute-btn:hover { background: rgba(255,255,255,0.2); transform: scale(1.1); }
+    .mute-btn:active { transform: scale(0.95); }
+    .mute-btn:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
+
+    .sr-only {
+      position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+      overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0;
+    }
+  </style>
+</head>
+<body>
+
+<!-- Back to Hub -->
+<a href="/" class="back-to-hub" onclick="window.recordPlayed&&window.recordPlayed('pixel-tower-stack')" aria-label="Back to hub">&larr; Arcade</a>
+
+<!-- Mute toggle -->
+<button class="mute-btn" id="muteBtn" aria-label="Toggle sound" aria-pressed="false">🔊</button>
+
+<!-- ═══════ TITLE SCREEN ═══════ -->
+<div class="screen title-screen active" id="titleScreen" role="region" aria-label="Title screen">
+  <div class="title-icon" aria-hidden="true">
+    <div class="title-icon-inner"></div>
+  </div>
+  <h1 class="title-text">TOWER<br>STACK</h1>
+  <p class="title-subtitle">像素叠叠乐</p>
+  <p class="tap-to-start">TAP TO START</p>
+  <button class="btn-primary" id="startBtn" autofocus>PLAY</button>
+  <p class="title-best" id="titleBest">Best: <span>0</span></p>
+</div>
+
+<!-- ═══════ PLAYING SCREEN ═══════ -->
+<div class="screen play-screen" id="playScreen" role="region" aria-label="Game screen">
+  <div class="canvas-wrapper" id="canvasWrapper">
+    <canvas id="gameCanvas" width="300" height="500"></canvas>
+    <!-- HUD -->
+    <div class="hud">
+      <div class="hud-left">
+        <span class="hud-score" id="scoreDisplay">0</span>
+        <span class="hud-high" id="hudHigh">HI: 0</span>
+      </div>
+      <div class="hud-right">
+        <span class="speed-badge" id="speedBadge">x1.0</span>
+      </div>
+    </div>
+    <!-- Score popup container -->
+    <div id="scorePopContainer" style="position:absolute;inset:0;pointer-events:none;z-index:4"></div>
+    <!-- Game Over Overlay -->
+    <div class="gameover-overlay" id="gameoverOverlay" role="dialog" aria-label="Game over">
+      <h2 class="gameover-heading">GAME OVER</h2>
+      <p class="gameover-score-label">Score</p>
+      <p class="gameover-score-value" id="goScore">0</p>
+      <p class="gameover-new-best" id="goNewBest" style="display:none">NEW BEST!</p>
+      <p class="gameover-best" id="goBest">Best: 0</p>
+      <button class="btn-replay" id="replayBtn" aria-label="Play again">Play Again</button>
+    </div>
+  </div>
+</div>
+
+<!-- Aria live region -->
+<div class="sr-only" role="status" aria-live="polite" id="ariaLive">Score: 0</div>
+
+<script>
+(function() {
+  'use strict';
+
+  // ══════════════════════════════════════════════
+  //  CONSTANTS
+  // ══════════════════════════════════════════════
+  var W = 300, H = 500;
+  var TOWER_BASE_W = 140;
+  var TOWER_BASE_H = 20;
+  var BLOCK_H = 20;
+  var STORAGE_KEY = 'pixel-tower-best';
+  var MUTED_KEY = 'pixel-tower-muted';
+  var PIECE_COLORS = [
+    '#00FFFF', // cyan
+    '#FF00FF', // pink
+    '#FFD700', // gold
+    '#FF6B35', // orange
+    '#39FF14', // green
+    '#00BFFF', // blue
+    '#FF1493', // deep pink
+    '#7B68EE', // medium slate
+  ];
+
+  // ── DOM refs ──
+  var titleScreen = document.getElementById('titleScreen');
+  var playScreen = document.getElementById('playScreen');
+  var canvas = document.getElementById('gameCanvas');
+  var ctx = canvas.getContext('2d');
+  var canvasWrapper = document.getElementById('canvasWrapper');
+  var scoreDisplay = document.getElementById('scoreDisplay');
+  var hudHigh = document.getElementById('hudHigh');
+  var speedBadge = document.getElementById('speedBadge');
+  var goScore = document.getElementById('goScore');
+  var goBest = document.getElementById('goBest');
+  var goNewBest = document.getElementById('goNewBest');
+  var gameoverOverlay = document.getElementById('gameoverOverlay');
+  var titleBest = document.getElementById('titleBest');
+  var ariaLive = document.getElementById('ariaLive');
+  var scorePopContainer = document.getElementById('scorePopContainer');
+
+  // ── State ──
+  var gameState = 'TITLE'; // TITLE | PLAYING | GAMEOVER
+  var score = 0;
+  var highScore = loadHighScore();
+  var muted = loadMuted();
+
+  // Tower data
+  var tower = []; // array of { x, w, color } from bottom to top
+  var towerTopY = 0;
+
+  // Moving block
+  var movingBlock = null; // { x, w, color, speed, dir }
+
+  // Falling piece (cut-off overhang)
+  var fallingPieces = [];
+
+  // Particles / effects
+  var particles = [];
+  var screenFlash = 0;
+  var shakeActive = false;
+  var shakeStart = 0;
+
+  // Timing
+  var lastTime = 0;
+  var rafId = null;
+  var baseSpeed = 2.5;
+  var currentSpeed = 2.5;
+
+  var audioCtx = null;
+  var prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // ══════════════════════════════════════════════
+  //  AUDIO (Web Audio API)
+  // ══════════════════════════════════════════════
+  function ensureAudioCtx() {
+    if (!audioCtx) {
+      try {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      } catch (e) {}
+    }
+    if (audioCtx && audioCtx.state === 'suspended') {
+      audioCtx.resume();
+    }
+  }
+
+  function playSound(type) {
+    if (muted || !audioCtx) return;
+    var now = audioCtx.currentTime;
+    var osc, gain;
+
+    try {
+      switch (type) {
+        case 'place':
+          osc = audioCtx.createOscillator();
+          gain = audioCtx.createGain();
+          osc.connect(gain); gain.connect(audioCtx.destination);
+          osc.type = 'square';
+          osc.frequency.setValueAtTime(300, now);
+          osc.frequency.linearRampToValueAtTime(600, now + 0.06);
+          gain.gain.setValueAtTime(0.12, now);
+          gain.gain.linearRampToValueAtTime(0, now + 0.08);
+          osc.start(now); osc.stop(now + 0.08);
+          break;
+        case 'perfect':
+          osc = audioCtx.createOscillator();
+          gain = audioCtx.createGain();
+          osc.connect(gain); gain.connect(audioCtx.destination);
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(660, now);
+          osc.frequency.linearRampToValueAtTime(880, now + 0.08);
+          osc.frequency.linearRampToValueAtTime(1100, now + 0.16);
+          gain.gain.setValueAtTime(0.18, now);
+          gain.gain.linearRampToValueAtTime(0, now + 0.2);
+          osc.start(now); osc.stop(now + 0.2);
+          break;
+        case 'miss':
+          osc = audioCtx.createOscillator();
+          gain = audioCtx.createGain();
+          osc.connect(gain); gain.connect(audioCtx.destination);
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(400, now);
+          osc.frequency.linearRampToValueAtTime(100, now + 0.25);
+          gain.gain.setValueAtTime(0.15, now);
+          gain.gain.linearRampToValueAtTime(0, now + 0.25);
+          osc.start(now); osc.stop(now + 0.25);
+          break;
+        case 'gameover':
+          osc = audioCtx.createOscillator();
+          gain = audioCtx.createGain();
+          osc.connect(gain); gain.connect(audioCtx.destination);
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(300, now);
+          osc.frequency.linearRampToValueAtTime(80, now + 0.4);
+          gain.gain.setValueAtTime(0.18, now);
+          gain.gain.linearRampToValueAtTime(0, now + 0.5);
+          osc.start(now); osc.stop(now + 0.5);
+
+          // Second tone
+          var osc2 = audioCtx.createOscillator();
+          var gain2 = audioCtx.createGain();
+          osc2.connect(gain2); gain2.connect(audioCtx.destination);
+          osc2.type = 'square';
+          osc2.frequency.setValueAtTime(200, now + 0.1);
+          osc2.frequency.linearRampToValueAtTime(60, now + 0.35);
+          gain2.gain.setValueAtTime(0.1, now + 0.1);
+          gain2.gain.linearRampToValueAtTime(0, now + 0.4);
+          osc2.start(now + 0.1); osc2.stop(now + 0.4);
+          break;
+        case 'start':
+          osc = audioCtx.createOscillator();
+          gain = audioCtx.createGain();
+          osc.connect(gain); gain.connect(audioCtx.destination);
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(440, now);
+          osc.frequency.linearRampToValueAtTime(880, now + 0.15);
+          gain.gain.setValueAtTime(0.15, now);
+          gain.gain.linearRampToValueAtTime(0, now + 0.2);
+          osc.start(now); osc.stop(now + 0.2);
+          break;
+        case 'highscore':
+          var notes = [523, 659, 784, 1047];
+          notes.forEach(function(freq, i) {
+            var o = audioCtx.createOscillator();
+            var g = audioCtx.createGain();
+            o.connect(g); g.connect(audioCtx.destination);
+            o.type = 'sine';
+            o.frequency.setValueAtTime(freq, now + i * 0.1);
+            g.gain.setValueAtTime(0.12, now + i * 0.1);
+            g.gain.linearRampToValueAtTime(0, now + i * 0.1 + 0.15);
+            o.start(now + i * 0.1); o.stop(now + i * 0.1 + 0.15);
+          });
+          break;
+      }
+    } catch (e) {}
+  }
+
+  function vibrate(pattern) {
+    if (muted) return;
+    try { if (navigator.vibrate) navigator.vibrate(pattern); } catch (e) {}
+  }
+
+  // ══════════════════════════════════════════════
+  //  LOCAL STORAGE
+  // ══════════════════════════════════════════════
+  function loadHighScore() {
+    try { return parseInt(localStorage.getItem(STORAGE_KEY)) || 0; } catch(e) { return 0; }
+  }
+  function saveHighScore(s) {
+    try {
+      var cur = loadHighScore();
+      if (s > cur) { localStorage.setItem(STORAGE_KEY, String(s)); return true; }
+      return false;
+    } catch(e) { return false; }
+  }
+  function loadMuted() {
+    try { return localStorage.getItem(MUTED_KEY) === 'true'; } catch(e) { return false; }
+  }
+  function recordPlayed() {
+    try {
+      var recent = JSON.parse(localStorage.getItem('recentlyPlayed') || '[]');
+      var filtered = recent.filter(function(p) { return p.id !== 'pixel-tower-stack'; });
+      filtered.unshift({ id: 'pixel-tower-stack', playedAt: Date.now() });
+      localStorage.setItem('recentlyPlayed', JSON.stringify(filtered.slice(0, 10)));
+    } catch(e) {}
+  }
+
+  // ══════════════════════════════════════════════
+  //  MUTE
+  // ══════════════════════════════════════════════
+  var muteBtn = document.getElementById('muteBtn');
+  muteBtn.addEventListener('click', function() {
+    muted = !muted;
+    try { localStorage.setItem(MUTED_KEY, String(muted)); } catch(e) {}
+    updateMuteBtn();
+    if (!muted) ensureAudioCtx();
+  });
+  function updateMuteBtn() {
+    muteBtn.textContent = muted ? '🔇' : '🔊';
+    muteBtn.setAttribute('aria-pressed', String(muted));
+  }
+  updateMuteBtn();
+
+  // ══════════════════════════════════════════════
+  //  SCREENS
+  // ══════════════════════════════════════════════
+  function showScreen(name) {
+    titleScreen.classList.remove('active');
+    playScreen.classList.remove('active');
+    gameoverOverlay.classList.remove('active');
+    if (name === 'TITLE') {
+      titleScreen.classList.add('active');
+      updateTitleBest();
+      renderTitlePreview();
+      document.title = 'Pixel Tower Stack';
+    } else if (name === 'PLAYING') {
+      playScreen.classList.add('active');
+      updateHUD();
+    } else if (name === 'GAMEOVER') {
+      playScreen.classList.add('active');
+      gameoverOverlay.classList.add('active');
+    }
+    gameState = name;
+  }
+
+  function updateTitleBest() {
+    titleBest.querySelector('span').textContent = loadHighScore();
+  }
+
+  function updateHUD() {
+    scoreDisplay.textContent = score;
+    hudHigh.textContent = 'HI: ' + loadHighScore();
+    var speedFactor = (currentSpeed / baseSpeed).toFixed(1);
+    speedBadge.textContent = 'x' + speedFactor;
+  }
+
+  // ══════════════════════════════════════════════
+  //  GAME INIT
+  // ══════════════════════════════════════════════
+  function initGame() {
+    score = 0;
+    currentSpeed = baseSpeed;
+    fallingPieces = [];
+    particles = [];
+    screenFlash = 0;
+    shakeActive = false;
+
+    // Build initial tower: one base block centered at bottom
+    var centerX = (W - TOWER_BASE_W) / 2;
+    tower = [{
+      x: centerX,
+      w: TOWER_BASE_W,
+      color: PIECE_COLORS[0]
+    }];
+    towerTopY = H - 30;
+
+    // Spawn first moving block
+    spawnMovingBlock();
+    updateHUD();
+    recordPlayed();
+  }
+
+  function getColorForIndex(idx) {
+    return PIECE_COLORS[idx % PIECE_COLORS.length];
+  }
+
+  function spawnMovingBlock() {
+    var topPiece = tower[tower.length - 1];
+    var blockW = topPiece.w;
+    var spawnX = 10; // Start from left edge
+    var dir = 1;
+
+    // Determine color based on score
+    var color = getColorForIndex(score);
+
+    movingBlock = {
+      x: spawnX,
+      w: blockW,
+      y: 8,
+      color: color,
+      speed: currentSpeed,
+      dir: dir
+    };
+  }
+
+  // ══════════════════════════════════════════════
+  //  GAME LOOP
+  // ══════════════════════════════════════════════
+  function startLoop() {
+    lastTime = performance.now();
+    if (rafId) cancelAnimationFrame(rafId);
+    rafId = requestAnimationFrame(gameLoop);
+  }
+
+  function gameLoop(timestamp) {
+    var rawDt = timestamp - lastTime;
+    lastTime = timestamp;
+    var dt = Math.min(rawDt, 33); // cap at ~30fps
+
+    if (gameState === 'PLAYING') {
+      update(dt);
+    }
+
+    render();
+    if (gameState === 'PLAYING' || gameState === 'GAMEOVER') {
+      rafId = requestAnimationFrame(gameLoop);
+    }
+  }
+
+  // ══════════════════════════════════════════════
+  //  UPDATE
+  // ══════════════════════════════════════════════
+  function update(dt) {
+    // Update moving block
+    if (movingBlock) {
+      movingBlock.x += movingBlock.speed * movingBlock.dir * (dt / 16);
+
+      // Bounce off edges
+      if (movingBlock.x + movingBlock.w > W - 4) {
+        movingBlock.x = W - 4 - movingBlock.w;
+        movingBlock.dir = -1;
+      } else if (movingBlock.x < 4) {
+        movingBlock.x = 4;
+        movingBlock.dir = 1;
+      }
+    }
+
+    // Update falling pieces
+    for (var i = fallingPieces.length - 1; i >= 0; i--) {
+      var fp = fallingPieces[i];
+      fp.x += fp.vx;
+      fp.y += fp.vy;
+      fp.vy += 0.3;
+      fp.rotation += fp.rotV;
+      fp.life -= 0.02;
+      if (fp.life <= 0 || fp.y > H + 50) {
+        fallingPieces.splice(i, 1);
+      }
+    }
+
+    // Update particles
+    for (var j = particles.length - 1; j >= 0; j--) {
+      var p = particles[j];
+      p.x += p.vx;
+      p.y += p.vy;
+      p.life -= 0.03;
+      if (p.life <= 0) {
+        particles.splice(j, 1);
+      }
+    }
+    if (particles.length > 60) {
+      particles.splice(0, particles.length - 60);
+    }
+
+    // Screen flash decay
+    if (screenFlash > 0) screenFlash -= dt;
+
+    // Shake decay
+    if (shakeActive) {
+      var elapsed = performance.now() - shakeStart;
+      if (elapsed > 250) {
+        shakeActive = false;
+      }
+    }
+  }
+
+  // ══════════════════════════════════════════════
+  //  PLACE BLOCK
+  // ══════════════════════════════════════════════
+  function placeBlock() {
+    if (!movingBlock || gameState !== 'PLAYING') return;
+
+    var topPiece = tower[tower.length - 1];
+    var mb = movingBlock;
+    var mbRight = mb.x + mb.w;
+    var tpRight = topPiece.x + topPiece.w;
+
+    // Calculate overlap
+    var overlapLeft = Math.max(mb.x, topPiece.x);
+    var overlapRight = Math.min(mbRight, tpRight);
+    var overlapW = overlapRight - overlapLeft;
+
+    if (overlapW <= 0) {
+      // Complete miss — game over
+      playSound('miss');
+      vibrate([100, 50, 100]);
+      screenFlash = 200;
+      shakeActive = true;
+      shakeStart = performance.now();
+
+      // Show a brief spark where the block would have been
+      spawnParticles(mb.x + mb.w / 2, 45, 12);
+
+      die();
+      return;
+    }
+
+    // Check if perfectly aligned (within 2px tolerance)
+    var isPerfect = Math.abs(mb.x - topPiece.x) < 2;
+
+    if (isPerfect) {
+      // Perfect placement — full block stays, bonus
+      tower.push({
+        x: mb.x,
+        w: mb.w,
+        color: mb.color
+      });
+      score++;
+      playSound('perfect');
+      vibrate(20);
+      spawnParticles(mb.x + mb.w / 2, 40, 20);
+      showScorePopup('+2');
+      ariaLive.textContent = 'Perfect! Score: ' + score;
+    } else {
+      // Trim the block to the overlap
+      var trimmedX = overlapLeft;
+      var trimmedW = overlapW;
+
+      tower.push({
+        x: trimmedX,
+        w: trimmedW,
+        color: mb.color
+      });
+      score++;
+      playSound('place');
+      vibrate(15);
+      showScorePopup('+1');
+
+      // Spawn the cut-off piece as falling debris
+      var cutLeft = 0, cutW = 0;
+      if (mb.x < topPiece.x) {
+        // Overhang on left — left piece falls
+        cutLeft = mb.x;
+        cutW = topPiece.x - mb.x;
+        spawnFallingPiece(cutLeft, 8, cutW, mb.color, -1);
+      } else {
+        // Overhang on right — right piece falls
+        cutLeft = overlapRight;
+        cutW = mbRight - overlapRight;
+        spawnFallingPiece(cutLeft, 8, cutW, mb.color, 1);
+      }
+
+      ariaLive.textContent = 'Score: ' + score;
+    }
+
+    // Increase speed slightly
+    currentSpeed = baseSpeed + score * 0.08;
+
+    // Update tower top Y
+    var newBlockY = towerTopY - BLOCK_H;
+    towerTopY = newBlockY;
+
+    // Spawn next block
+    spawnMovingBlock();
+    updateHUD();
+  }
+
+  // ══════════════════════════════════════════════
+  //  DIE / GAME OVER
+  // ══════════════════════════════════════════════
+  function die() {
+    gameState = 'GAMEOVER';
+    playSound('gameover');
+    vibrate([100, 80, 100, 80, 150]);
+
+    var isNewBest = saveHighScore(score);
+    goScore.textContent = score;
+    goBest.textContent = 'Best: ' + loadHighScore();
+    goNewBest.style.display = isNewBest ? 'block' : 'none';
+
+    if (isNewBest) {
+      playSound('highscore');
+    }
+
+    setTimeout(function() {
+      showScreen('GAMEOVER');
+      document.getElementById('replayBtn').focus();
+      ariaLive.textContent = 'Game Over! Score: ' + score + (isNewBest ? ' New best!' : '');
+    }, prefersReduced ? 100 : 400);
+  }
+
+  // ══════════════════════════════════════════════
+  //  VISUAL HELPERS
+  // ══════════════════════════════════════════════
+  function spawnFallingPiece(x, y, w, color, dirX) {
+    var h = BLOCK_H;
+    fallingPieces.push({
+      x: x,
+      y: y,
+      w: w,
+      h: h,
+      color: color,
+      vx: dirX * (1 + Math.random() * 1.5),
+      vy: 2 + Math.random() * 2,
+      rotation: 0,
+      rotV: (Math.random() - 0.5) * 0.2,
+      life: 1
+    });
+  }
+
+  function spawnParticles(cx, cy, count) {
+    if (prefersReduced) return;
+    count = count || 10;
+    for (var i = 0; i < count; i++) {
+      var angle = (i / count) * Math.PI * 2 + Math.random() * 0.3;
+      var speed = 1.5 + Math.random() * 3;
+      var colors = ['#00FFFF', '#FF00FF', '#FFD700', '#FFFFFF'];
+      particles.push({
+        x: cx, y: cy,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed - 1,
+        life: 1,
+        size: 1.5 + Math.random() * 2,
+        color: colors[Math.floor(Math.random() * colors.length)]
+      });
+    }
+  }
+
+  function showScorePopup(text) {
+    if (prefersReduced) return;
+    var el = document.createElement('div');
+    el.className = 'score-pop';
+    el.textContent = text;
+    scorePopContainer.appendChild(el);
+    setTimeout(function() { el.remove(); }, 550);
+  }
+
+  // ══════════════════════════════════════════════
+  //  RENDER
+  // ══════════════════════════════════════════════
+  function render() {
+    ctx.save();
+
+    // Screen shake
+    if (shakeActive && !prefersReduced) {
+      var elapsed = performance.now() - shakeStart;
+      if (elapsed < 200) {
+        var intensity = 3 * (1 - elapsed / 200);
+        ctx.translate(
+          (Math.random() - 0.5) * intensity * 2,
+          (Math.random() - 0.5) * intensity * 2
+        );
+      } else {
+        shakeActive = false;
+      }
+    }
+
+    // ── Background ──
+    var bgGrad = ctx.createLinearGradient(0, 0, 0, H);
+    bgGrad.addColorStop(0, '#0a0e27');
+    bgGrad.addColorStop(0.5, '#0f1535');
+    bgGrad.addColorStop(1, '#0a0e27');
+    ctx.fillStyle = bgGrad;
+    ctx.fillRect(0, 0, W, H);
+
+    // Subtle grid pattern
+    ctx.strokeStyle = 'rgba(255,255,255,0.02)';
+    ctx.lineWidth = 0.5;
+    for (var gx = 0; gx <= W; gx += 20) {
+      ctx.beginPath(); ctx.moveTo(gx, 0); ctx.lineTo(gx, H); ctx.stroke();
+    }
+    for (var gy = 0; gy <= H; gy += 20) {
+      ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(W, gy); ctx.stroke();
+    }
+
+    // ── Scanning line effect ──
+    ctx.fillStyle = 'rgba(0,255,255,0.015)';
+    var scanY = (performance.now() * 0.05) % H;
+    ctx.fillRect(0, scanY, W, 2);
+
+    // ── Draw tower (from bottom to top) ──
+    var towerBaseY = H - 30;
+    for (var ti = 0; ti < tower.length; ti++) {
+      var piece = tower[ti];
+      var pieceY = towerBaseY - ti * BLOCK_H;
+      drawBlock(piece.x, pieceY, piece.w, BLOCK_H, piece.color, 1);
+    }
+
+    // ── Draw moving block ──
+    if (movingBlock && gameState === 'PLAYING') {
+      var mbY = 8;
+      // Glow effect
+      if (!prefersReduced) {
+        ctx.shadowBlur = 15;
+        ctx.shadowColor = movingBlock.color;
+      }
+      drawBlock(movingBlock.x, mbY, movingBlock.w, BLOCK_H, movingBlock.color, 1);
+      ctx.shadowBlur = 0;
+
+      // Bottom glow line
+      ctx.fillStyle = 'rgba(255,255,255,0.3)';
+      ctx.fillRect(movingBlock.x, mbY + BLOCK_H - 2, movingBlock.w, 2);
+
+      // Side indicators (showing where it will land)
+      var topPiece = tower[tower.length - 1];
+      ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([2, 4]);
+      ctx.beginPath();
+      ctx.moveTo(movingBlock.x, mbY + BLOCK_H);
+      ctx.lineTo(movingBlock.x, towerBaseY - (tower.length - 1) * BLOCK_H);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(movingBlock.x + movingBlock.w, mbY + BLOCK_H);
+      ctx.lineTo(movingBlock.x + movingBlock.w, towerBaseY - (tower.length - 1) * BLOCK_H);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Ghost outline on tower top showing expected position
+      if (topPiece) {
+        ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+        ctx.lineWidth = 1;
+        var ghostY = towerBaseY - tower.length * BLOCK_H;
+        ctx.strokeRect(topPiece.x, ghostY, topPiece.w, BLOCK_H);
+      }
+    }
+
+    // ── Draw falling pieces ──
+    for (var fi = 0; fi < fallingPieces.length; fi++) {
+      var fp = fallingPieces[fi];
+      ctx.save();
+      ctx.translate(fp.x + fp.w / 2, fp.y + fp.h / 2);
+      ctx.rotate(fp.rotation);
+      ctx.globalAlpha = fp.life;
+      ctx.fillStyle = fp.color;
+      ctx.fillRect(-fp.w / 2, -fp.h / 2, fp.w, fp.h);
+      ctx.restore();
+    }
+
+    // ── Particles ──
+    for (var pi = 0; pi < particles.length; pi++) {
+      var p = particles[pi];
+      ctx.globalAlpha = p.life;
+      ctx.fillStyle = p.color;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.size * p.life, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+
+    // ── Screen flash ──
+    if (screenFlash > 0) {
+      ctx.fillStyle = 'rgba(220, 38, 38, ' + (screenFlash / 200 * 0.2) + ')';
+      ctx.fillRect(0, 0, W, H);
+    }
+
+    ctx.restore();
+  }
+
+  function drawBlock(x, y, w, h, color, alpha) {
+    ctx.save();
+    ctx.globalAlpha = alpha || 1;
+
+    // Main block with gradient
+    var grad = ctx.createLinearGradient(x, y, x + w, y);
+    var lighter = lightenColor(color, 30);
+    grad.addColorStop(0, lighter);
+    grad.addColorStop(0.5, color);
+    grad.addColorStop(1, lighter);
+    ctx.fillStyle = grad;
+
+    // Rounded rectangle
+    var r = 4;
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + w - r, y);
+    ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+    ctx.lineTo(x + w, y + h - r);
+    ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    ctx.lineTo(x + r, y + h);
+    ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+    ctx.lineTo(x, y + r);
+    ctx.quadraticCurveTo(x, y, x + r, y);
+    ctx.closePath();
+    ctx.fill();
+
+    // Inner highlight (top)
+    ctx.fillStyle = 'rgba(255,255,255,0.15)';
+    ctx.fillRect(x + 4, y + 1, w - 8, 3);
+
+    // Inner shadow (bottom)
+    ctx.fillStyle = 'rgba(0,0,0,0.2)';
+    ctx.fillRect(x + 4, y + h - 2, w - 8, 1);
+
+    // Pixel grid lines
+    ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+    ctx.lineWidth = 0.5;
+    for (var px = x + 8; px < x + w - 4; px += 8) {
+      ctx.beginPath(); ctx.moveTo(px, y + 4); ctx.lineTo(px, y + h - 4); ctx.stroke();
+    }
+
+    ctx.restore();
+  }
+
+  function lightenColor(hex, percent) {
+    var num = parseInt(hex.replace('#', ''), 16);
+    var amt = Math.round(2.55 * percent);
+    var R = Math.min(255, (num >> 16) + amt);
+    var G = Math.min(255, ((num >> 8) & 0x00FF) + amt);
+    var B = Math.min(255, (num & 0x0000FF) + amt);
+    return '#' + (0x1000000 + R * 0x10000 + G * 0x100 + B).toString(16).slice(1);
+  }
+
+  // ── Title screen preview ──
+  function renderTitlePreview() {
+    ctx.save();
+    var bgGrad = ctx.createLinearGradient(0, 0, 0, H);
+    bgGrad.addColorStop(0, '#0a0e27');
+    bgGrad.addColorStop(0.5, '#0f1535');
+    bgGrad.addColorStop(1, '#0a0e27');
+    ctx.fillStyle = bgGrad;
+    ctx.fillRect(0, 0, W, H);
+
+    // Grid
+    ctx.strokeStyle = 'rgba(255,255,255,0.02)';
+    ctx.lineWidth = 0.5;
+    for (var gx = 0; gx <= W; gx += 20) {
+      ctx.beginPath(); ctx.moveTo(gx, 0); ctx.lineTo(gx, H); ctx.stroke();
+    }
+    for (var gy = 0; gy <= H; gy += 20) {
+      ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(W, gy); ctx.stroke();
+    }
+
+    // Draw a demo tower
+    var baseY = H - 30;
+    var demoW = TOWER_BASE_W;
+    var demoX = (W - demoW) / 2;
+
+    // Shrink toward top
+    for (var i = 0; i < 8; i++) {
+      var w = demoW - i * 12;
+      var x = (W - w) / 2;
+      var y = baseY - i * BLOCK_H;
+      var c = PIECE_COLORS[i % PIECE_COLORS.length];
+      var alpha = 0.15 + (i / 8) * 0.1;
+      ctx.shadowBlur = 6;
+      ctx.shadowColor = c;
+      drawBlock(x, y, w, BLOCK_H, c, alpha);
+      ctx.shadowBlur = 0;
+    }
+
+    // Moving block on preview
+    var previewX = (W - (demoW - 8 * 12)) / 2;
+    var previewW = demoW - 8 * 12;
+    ctx.shadowBlur = 12;
+    ctx.shadowColor = '#00FFFF';
+    drawBlock(previewX, 8, Math.max(previewW, 20), BLOCK_H, '#00FFFF', 0.6);
+    ctx.shadowBlur = 0;
+
+    ctx.restore();
+  }
+
+  // ══════════════════════════════════════════════
+  //  INPUT
+  // ══════════════════════════════════════════════
+  function handleInput() {
+    if (gameState === 'TITLE') {
+      ensureAudioCtx();
+      startGame();
+      return;
+    }
+    if (gameState === 'GAMEOVER') {
+      startGame();
+      return;
+    }
+    if (gameState !== 'PLAYING') return;
+
+    placeBlock();
+  }
+
+  // Keyboard
+  document.addEventListener('keydown', function(e) {
+    var key = e.key;
+    var tag = (e.target && e.target.tagName || '').toLowerCase();
+    if (tag === 'input' || tag === 'textarea') return;
+
+    if (key === ' ' || key === 'Enter' || key === 'ArrowUp') {
+      e.preventDefault();
+      handleInput();
+    }
+  });
+
+  // Click / touch on canvas
+  canvas.addEventListener('click', function(e) {
+    e.preventDefault();
+    handleInput();
+  });
+
+  canvas.addEventListener('touchstart', function(e) {
+    e.preventDefault();
+    handleInput();
+  }, { passive: false });
+
+  // Replay button
+  document.getElementById('replayBtn').addEventListener('click', function() {
+    ensureAudioCtx();
+    startGame();
+  });
+
+  // Start button
+  document.getElementById('startBtn').addEventListener('click', function() {
+    ensureAudioCtx();
+    startGame();
+  });
+
+  // Title screen click anywhere
+  titleScreen.addEventListener('click', function(e) {
+    if (e.target.closest('.swatch') || e.target.closest('.mute-btn') || e.target.closest('.back-to-hub') || e.target.closest('.btn-primary') || e.target.closest('.title-icon')) return;
+    handleInput();
+  });
+
+  titleScreen.addEventListener('touchstart', function(e) {
+    if (e.target.closest('.swatch') || e.target.closest('.mute-btn') || e.target.closest('.back-to-hub') || e.target.closest('.btn-primary') || e.target.closest('.title-icon')) return;
+    e.preventDefault();
+    handleInput();
+  }, { passive: false });
+
+  // ══════════════════════════════════════════════
+  //  GAME START
+  // ══════════════════════════════════════════════
+  function startGame() {
+    initGame();
+    showScreen('PLAYING');
+    document.title = 'Pixel Tower Stack — Score: 0';
+    playSound('start');
+    if (rafId) cancelAnimationFrame(rafId);
+    rafId = requestAnimationFrame(gameLoop);
+  }
+
+  // ══════════════════════════════════════════════
+  //  INIT
+  // ══════════════════════════════════════════════
+  updateTitleBest();
+  showScreen('TITLE');
+
+})();
+</script>
+</body>
+</html>
