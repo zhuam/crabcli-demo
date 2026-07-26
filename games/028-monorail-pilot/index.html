@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#0a0e23" />
+  <title>Monorail Pilot</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="/games/shared/game-frame.css" />
+</head>
+<body>
+  <a href="/" class="back-to-hub" onclick="window.recordPlayed && window.recordPlayed('monorail-pilot')">← Arcade</a>
+
+  <script>
+    window.recordPlayed = function recordPlayed(gameId) {
+      try {
+        const recent = JSON.parse(localStorage.getItem('recentlyPlayed') || '[]');
+        const filtered = recent.filter(function(p) { return p.id !== gameId; });
+        filtered.unshift({ id: gameId, playedAt: Date.now() });
+        localStorage.setItem('recentlyPlayed', JSON.stringify(filtered.slice(0, 10)));
+      } catch(e) {}
+    };
+  </script>
+
+  <div id="app">
+    <!-- Title Screen -->
+    <div id="title-screen" class="screen active">
+      <div class="title-bg"></div>
+      <div class="title-content">
+        <h1 class="title-heading neon-cyan">MONORAIL<br/>PILOT</h1>
+        <p class="title-sub">Master the tracks. Hit the mark.</p>
+
+        <div class="level-select">
+          <div class="level-select-label">SELECT ROUTE</div>
+          <div id="levelList" class="level-list"></div>
+        </div>
+
+        <button id="startBtn" class="start-btn neon-pink glow-box">START</button>
+
+        <div class="title-stats">
+          <span id="bestScoreDisplay">Best: --</span>
+          <span id="totalStarsDisplay">Stars: --</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Gameplay Screen -->
+    <div id="gameplay-screen" class="screen">
+      <canvas id="gameCanvas"></canvas>
+
+      <!-- HUD -->
+      <div id="hud" class="hud">
+        <div class="hud-row">
+          <div class="hud-item">
+            <span class="hud-label">STATION</span>
+            <span class="hud-value" id="stationDisplay">1/3</span>
+          </div>
+          <div class="hud-item">
+            <span class="hud-label">TIME</span>
+            <span class="hud-value" id="timeDisplay">0.0s</span>
+          </div>
+          <div class="hud-item">
+            <span class="hud-label">STARS</span>
+            <span class="hud-value" id="starsDisplay">☆☆☆</span>
+          </div>
+        </div>
+        <div class="hud-row">
+          <div class="hud-item target-time">
+            <span class="hud-label">TARGET</span>
+            <span class="hud-value" id="targetDisplay">--</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Speed Gauge -->
+      <div id="speedGauge" class="speed-gauge">
+        <div class="speed-gauge-text" id="speedDisplay">0</div>
+        <div class="speed-gauge-label">km/h</div>
+        <div class="speed-gauge-bar">
+          <div id="speedFill" class="speed-gauge-fill"></div>
+        </div>
+      </div>
+
+      <!-- Touch Controls -->
+      <div id="touchControls" class="touch-controls">
+        <button id="brakeBtn" class="ctrl-btn brake-btn" aria-label="Brake">BRAKE</button>
+        <button id="accelBtn" class="ctrl-btn accel-btn" aria-label="Accelerate">ACCEL</button>
+      </div>
+
+      <!-- Level Complete Overlay -->
+      <div id="stationOverlay" class="station-overlay" hidden>
+        <div class="station-card">
+          <div class="station-card-title" id="stationCardTitle">ARRIVAL</div>
+          <div class="station-card-stars" id="stationCardStars">☆☆☆</div>
+          <div class="station-card-detail" id="stationCardDetail">Perfect timing!</div>
+          <div class="station-card-time" id="stationCardTime">Target: 0.0s  |  Arrived: 0.0s</div>
+          <button class="station-card-btn" id="stationContinueBtn">CONTINUE →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Result Screen -->
+    <div id="result-screen" class="screen">
+      <div class="result-content">
+        <h1 class="result-heading neon-cyan" id="resultHeading">COMPLETE!</h1>
+        <div class="result-score neon-pink" id="resultScore">0</div>
+        <div class="result-label">TOTAL SCORE</div>
+
+        <div class="result-breakdown" id="resultBreakdown"></div>
+
+        <div class="result-total-stars" id="resultTotalStars">☆☆☆☆☆</div>
+
+        <button id="replayBtn" class="start-btn neon-pink glow-box">PLAY AGAIN</button>
+        <button id="menuBtn" class="menu-btn">ROUTE SELECT</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

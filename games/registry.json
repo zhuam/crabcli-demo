@@ -5,7 +5,13 @@
             "name": "Neptune Drift",
             "description": "海王星轨道漂移赛车，在神秘水下赛道漂移过弯",
             "category": "action",
-            "tags": ["singleplayer", "action", "racing", "drift", "short-session"],
+            "tags": [
+                "singleplayer",
+                "action",
+                "racing",
+                "drift",
+                "short-session"
+            ],
             "thumbnail": "/games/014-neptune-drift/thumb.png",
             "path": "/games/014-neptune-drift/",
             "hasServer": false,
@@ -944,7 +950,13 @@
             "name": "Magic Bubble Shooter",
             "description": "经典泡泡龙：发射同色泡泡形成3连消除",
             "category": "puzzle",
-            "tags": ["singleplayer", "puzzle", "matching", "bubble-shooter", "short-session"],
+            "tags": [
+                "singleplayer",
+                "puzzle",
+                "matching",
+                "bubble-shooter",
+                "short-session"
+            ],
             "thumbnail": "/games/013-magic-bubble-shooter/thumb.png",
             "path": "/games/013-magic-bubble-shooter/",
             "hasServer": false,
@@ -967,6 +979,26 @@
             ],
             "thumbnail": "/games/012-era-civilization/thumb.png",
             "path": "/games/012-era-civilization/",
+            "hasServer": false,
+            "players": "1",
+            "version": "1.0.0",
+            "featured": false,
+            "rating": 3
+        },
+        {
+            "id": "monorail-pilot",
+            "name": "Monorail Pilot",
+            "description": "驾驶单轨列车按时停靠，精准到站获星评级",
+            "category": "simulation",
+            "tags": [
+                "singleplayer",
+                "simulation",
+                "driving",
+                "timing",
+                "short-session"
+            ],
+            "thumbnail": "/games/028-monorail-pilot/thumb.svg",
+            "path": "/games/028-monorail-pilot/",
             "hasServer": false,
             "players": "1",
             "version": "1.0.0",

@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Monorail Pilot · Smoke Tests</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 16px; max-width: 760px; margin: 0 auto; background: #0a0e23; color: #e0e8ff; }
+    h1 { font-size: 18px; color: #00f0ff; }
+    .test { padding: 6px 10px; margin: 4px 0; border-radius: 6px; font-family: 'JetBrains Mono', monospace; font-size: 13px; word-break: break-all; }
+    .pass { background: #0a2e0a; color: #00ff88; }
+    .fail { background: #2e0a0a; color: #ff2d95; }
+    .info { background: #1a1a30; color: #7a8ac0; }
+    #summary { font-weight: 800; font-size: 16px; padding: 10px; border-radius: 8px; margin: 12px 0; }
+    .ok { background: #00ff88; color: #0a0e23; }
+    .ng { background: #ff2d95; color: white; }
+    iframe { width: 100%; height: 400px; border: 1px solid rgba(0, 240, 255, 0.2); border-radius: 8px; margin-top: 16px; background: #0a0e23; }
+    button { padding: 8px 14px; font-weight: 700; border-radius: 6px; border: 1px solid #00f0ff; background: rgba(0, 240, 255, 0.1); color: #00f0ff; cursor: pointer; }
+    button:hover { background: rgba(0, 240, 255, 0.2); }
+  </style>
+</head>
+<body>
+  <h1>Monorail Pilot · Smoke Tests</h1>
+  <p>Verifies Issue #28 acceptance criteria. Opens ../index.html in iframe and runs assertions.</p>
+  <button id="runBtn">Run Tests</button>
+  <div id="summary"></div>
+  <div id="results"></div>
+  <iframe id="frame" src="../index.html" title="game under test"></iframe>
+
+  <script>
+    const results = document.getElementById('results');
+    const summary = document.getElementById('summary');
+    let pass = 0, fail = 0;
+
+    function record(name, ok, detail = '') {
+      const div = document.createElement('div');
+      div.className = 'test ' + (ok ? 'pass' : 'fail');
+      div.textContent = (ok ? 'PASS  ' : 'FAIL  ') + name + (detail ? '  -- ' + detail : '');
+      results.appendChild(div);
+      ok ? pass++ : fail++;
+    }
+    function info(text) {
+      const div = document.createElement('div');
+      div.className = 'test info';
+      div.textContent = 'INFO  ' + text;
+      results.appendChild(div);
+    }
+    function assert(name, cond, detail = '') { record(name, !!cond, detail); }
+
+    async function runTests() {
+      results.innerHTML = '';
+      pass = 0; fail = 0;
+      summary.textContent = 'running...';
+      summary.className = '';
+
+      const frame = document.getElementById('frame');
+      // reload to get clean state
+      await new Promise(res => {
+        frame.onload = () => setTimeout(res, 1000); // give app.js time to boot
+        frame.src = '../index.html?t=' + Date.now();
+      });
+
+      const doc = frame.contentDocument;
+      const win = frame.contentWindow;
+
+      // ------- Test 1: Title screen renders with all required elements -------
+      info('=== Title Screen Elements ===');
+      assert('title-screen is active', doc.getElementById('title-screen').classList.contains('active'));
+      assert('gameplay-screen is not active', !doc.getElementById('gameplay-screen').classList.contains('active'));
+      assert('result-screen is not active', !doc.getElementById('result-screen').classList.contains('active'));
+      assert('levelList exists and has children', doc.getElementById('levelList').children.length > 0);
+      assert('start button exists', !!doc.getElementById('startBtn'));
+      assert('title heading shows MONORAIL PILOT', /MONORAIL/.test(doc.querySelector('.title-heading').textContent));
+      assert('title subtitle is present', doc.querySelector('.title-sub').textContent.length > 0);
+      assert('best score display exists', doc.getElementById('bestScoreDisplay').textContent.length > 0);
+      assert('total stars display exists', doc.getElementById('totalStarsDisplay').textContent.length > 0);
+
+      // ------- Test 2: Level list shows routes -------
+      info('=== Level List ===');
+      const levelBtns = doc.querySelectorAll('.level-btn');
+      assert('level-btn elements found', levelBtns.length === 6, 'found ' + levelBtns.length);
+      // First level is unlocked and selectable
+      assert('first level is not locked', !levelBtns[0].classList.contains('locked'));
+      // Levels beyond first are locked initially
+      assert('second level is locked on first boot', levelBtns[1].classList.contains('locked'));
+      // Each level has a name span
+      const nameSpans = doc.querySelectorAll('.level-btn-name');
+      assert('each level has a name span', nameSpans.length === 6);
+      const greenLine = doc.querySelector('.level-btn-name');
+      assert('first route is Green Line', greenLine && greenLine.textContent.includes('Green'));
+
+      // ------- Test 3: Click START transitions to gameplay screen -------
+      info('=== Start Button ===');
+      const startBtn = doc.getElementById('startBtn');
+      assert('start button is enabled', !startBtn.disabled);
+      startBtn.click();
+      await new Promise(r => setTimeout(r, 500));
+
+      assert('gameplay screen becomes active after start', doc.getElementById('gameplay-screen').classList.contains('active'));
+      assert('title screen is no longer active', !doc.getElementById('title-screen').classList.contains('active'));
+      assert('canvas exists in gameplay', !!doc.getElementById('gameCanvas'));
+
+      // ------- Test 4: HUD elements visible during gameplay -------
+      info('=== HUD during gameplay ===');
+      assert('station display shows 1/3', doc.getElementById('stationDisplay').textContent === '1/3', doc.getElementById('stationDisplay').textContent);
+      assert('time display shows 0.0s', doc.getElementById('timeDisplay').textContent === '0.0s', '"' + doc.getElementById('timeDisplay').textContent + '"');
+      assert('speed display shows 0', doc.getElementById('speedDisplay').textContent === '0', doc.getElementById('speedDisplay').textContent);
+      assert('target display shows station target time', doc.getElementById('targetDisplay').textContent.length > 0);
+      assert('stars display shows stars', doc.getElementById('starsDisplay').textContent.length > 0);
+      assert('ACCEL button exists', /ACCEL/.test(doc.getElementById('accelBtn').textContent));
+      assert('BRAKE button exists', /BRAKE/.test(doc.getElementById('brakeBtn').textContent));
+      assert('speed gauge fill has 0% height', doc.getElementById('speedFill').style.height === '0%' || doc.getElementById('speedFill').style.height === '0px' || doc.getElementById('speedFill').style.height === '');
+
+      // ------- Test 5: Station overlay after arrival (wait briefly) -------
+      info('=== Station Overlay ===');
+      // Speed up to trigger first station by simulating key press
+      // Press W (accelerate) for a bit to move
+      const keyW = new win.KeyboardEvent('keydown', { code: 'KeyW', key: 'w', bubbles: true });
+      doc.body.dispatchEvent(keyW);
+      await new Promise(r => setTimeout(r, 200));
+      const keyWUp = new win.KeyboardEvent('keyup', { code: 'KeyW', key: 'w', bubbles: true });
+      doc.body.dispatchEvent(keyWUp);
+
+      // Check overlay appears after enough movement (or bypass waiting)
+      // Since we can't easily wait for station arrival in a smoke test,
+      // just verify the elements are correctly structured
+      const overlay = doc.getElementById('stationOverlay');
+      assert('station overlay element exists', !!overlay);
+      assert('station card title element exists', !!doc.getElementById('stationCardTitle'));
+      assert('station card stars element exists', !!doc.getElementById('stationCardStars'));
+      assert('station card detail element exists', !!doc.getElementById('stationCardDetail'));
+      assert('station card time element exists', !!doc.getElementById('stationCardTime'));
+      assert('station continue button exists', !!doc.getElementById('stationContinueBtn'));
+
+      // ------- Test 6: Source-level verifications (keys, audio) -------
+      info('=== Source Code Patterns ===');
+      const appText = await fetch('../app.js').then(r => r.text());
+      assert('localStorage key monorail-pilot-best in source', /monorail-pilot-best/.test(appText));
+      assert('localStorage key monorail-pilot-unlocked in source', /monorail-pilot-unlocked/.test(appText));
+      assert('AudioContext used in source', /AudioContext\s*\|\|\s*window\.webkitAudioContext/.test(appText));
+      assert('navigator.vibrate guarded', /if\s*\(\s*navigator\.vibrate\s*\)/.test(appText));
+      assert('keyboard controls documented (ArrowUp/W)', /KeyW/.test(appText) && /ArrowUp/.test(appText));
+      assert('touch controls via pointer events', /pointerdown/.test(appText) && /pointerup/.test(appText));
+      assert('requestAnimationFrame game loop', /requestAnimationFrame\(gameLoop\)/.test(appText));
+
+      // ------- Test 7: CSS theme verification -------
+      info('=== CSS Theme ===');
+      const cssText = await fetch('../style.css').then(r => r.text());
+      assert('neon-cyan color defined', /--neon-cyan:\s*#00f0ff/.test(cssText));
+      assert('neon-pink color defined', /--neon-pink:\s*#ff2d95/.test(cssText));
+      assert('prefers-reduced-motion supported', /@media\s*\(prefers-reduced-motion:\s*reduce\)/.test(cssText));
+      assert('touch-action: manipulation', /touch-action:\s*manipulation/.test(cssText));
+
+      // ------- Test 8: Keyboard controls simulation -------
+      info('=== Keyboard Controls ===');
+      // Simulate pressing W (accelerate)
+      const initialSpeed = doc.getElementById('speedDisplay').textContent;
+      doc.body.dispatchEvent(new win.KeyboardEvent('keydown', { code: 'KeyW', bubbles: true }));
+      await new Promise(r => setTimeout(r, 300));
+      doc.body.dispatchEvent(new win.KeyboardEvent('keyup', { code: 'KeyW', bubbles: true }));
+      await new Promise(r => setTimeout(r, 100));
+      const afterSpeed = doc.getElementById('speedDisplay').textContent;
+
+      // Speed should have increased from 0
+      assert('speed increased after W key press', parseInt(afterSpeed) > parseInt(initialSpeed), 'initial=' + initialSpeed + ' after=' + afterSpeed);
+
+      // Simulate S key (brake)
+      doc.body.dispatchEvent(new win.KeyboardEvent('keydown', { code: 'KeyS', bubbles: true }));
+      await new Promise(r => setTimeout(r, 200));
+      doc.body.dispatchEvent(new win.KeyboardEvent('keyup', { code: 'KeyS', bubbles: true }));
+
+      // Simulate Space (emergency brake) while accelerating
+      doc.body.dispatchEvent(new win.KeyboardEvent('keydown', { code: 'KeyW', bubbles: true }));
+      await new Promise(r => setTimeout(r, 100));
+      doc.body.dispatchEvent(new win.KeyboardEvent('keydown', { code: 'Space', bubbles: true }));
+      await new Promise(r => setTimeout(r, 100));
+      doc.body.dispatchEvent(new win.KeyboardEvent('keyup', { code: 'Space', bubbles: true }));
+      doc.body.dispatchEvent(new win.KeyboardEvent('keyup', { code: 'KeyW', bubbles: true }));
+
+      // ------- Test 9: Results screen elements -------
+      info('=== Result Screen ===');
+      const resultScreen = doc.getElementById('result-screen');
+      assert('result heading exists', !!doc.getElementById('resultHeading'));
+      assert('result score display exists', !!doc.getElementById('resultScore'));
+      assert('result breakdown container exists', !!doc.getElementById('resultBreakdown'));
+      assert('result total stars exists', !!doc.getElementById('resultTotalStars'));
+      assert('replay button exists with PLAY AGAIN text', /PLAY AGAIN/.test(doc.getElementById('replayBtn').textContent));
+      assert('menu button exists with ROUTE SELECT text', /ROUTE SELECT/.test(doc.getElementById('menuBtn').textContent));
+
+      // ------- Test 10: Back-to-hub link -------
+      info('=== Back to Hub ===');
+      const backLink = doc.querySelector('.back-to-hub');
+      assert('back-to-hub link exists and links to /', backLink && backLink.getAttribute('href') === '/');
+      assert('back-to-hub text shows Arcade', /Arcade/.test(backLink.textContent));
+
+      // ------- Test 11: recordPlayed function ----
+      info('=== recordPlayed ===');
+      assert('recordPlayed is defined on window', typeof win.recordPlayed === 'function');
+      // Test that calling it doesn't throw
+      try {
+        win.recordPlayed('monorail-pilot');
+        assert('recordPlayed executes without error', true);
+      } catch (e) {
+        assert('recordPlayed executes without error', false, e.message);
+      }
+
+      // ------- Test 12: Canvas rendering ----
+      info('=== Canvas ===');
+      const canvas = doc.getElementById('gameCanvas');
+      assert('canvas width/height set after game start', canvas.width > 0 && canvas.height > 0, 'w=' + canvas.width + ' h=' + canvas.height);
+
+      // ============= SUMMARY =============
+      summary.textContent = pass + ' passed · ' + fail + ' failed';
+      summary.className = fail === 0 ? 'ok' : 'ng';
+    }
+
+    document.getElementById('runBtn').addEventListener('click', runTests);
+    // auto-run when iframe first loads
+    window.addEventListener('load', () => setTimeout(runTests, 300));
+  </script>
+</body>
+</html>

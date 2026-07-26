@@ -4,3 +4,4 @@ dist/
 *.js.map
 data/
 *.db
+.fuse_hidden*
