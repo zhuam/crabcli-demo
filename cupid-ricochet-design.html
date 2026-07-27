@@ -1,0 +1,943 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cupid Ricochet — Hi-fi UI Prototype · Game 022</title>
+<link rel="stylesheet" href="/fonts/design-fonts.css">
+<style>
+/* ============ tokens ============ */
+:root{
+  --stage:#1f1713;
+  --cream:#f8f1e6;
+  --cream-2:#f1e5d3;
+  --line:#e2d2bd;
+  --ink:#472c33;
+  --ink-soft:#93766c;
+  --rose:#e2537f;
+  --rose-deep:#c23a66;
+  --petal:#f7c8d8;
+  --lav:#9f86e0;
+  --lav-soft:#e6dcf7;
+  --gold:#e8a94e;
+  --taupe:#e0c9b2;
+  --coal:#0d0a09;
+  --sand:#a68d82;
+  --sand-2:#d9c4ba;
+  --sand-3:#8f7a70;
+  --sand-4:#c9ae9f;
+  --route:#d9c2ae;
+  --lock-fill:#eee0d1;
+  --lock-line:#dcc8b3;
+  --lock-num:#c4ab97;
+  --lock-ic:#b3987f;
+  --wall-hi:#e7d1ba;
+  --wall-lo:#dcc2a6;
+  --wall-line:#cdb195;
+  --dot:#e9d9c6;
+  --wood:#b9825b;
+  --wood-2:#a4714c;
+  --card:#fffdf8;
+  --white:#ffffff;
+  --scrim:rgba(52,32,38,.36);
+  --f-disp:'Fraunces',Georgia,'Times New Roman',serif;
+  --f-body:'Inter','Geist',system-ui,-apple-system,sans-serif;
+  --f-mono:'JetBrains Mono','Geist Mono',ui-monospace,'SF Mono',monospace;
+  --phone-w:320px;
+  --phone-h:672px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%}
+body{
+  font-family:var(--f-body);
+  background:var(--stage);
+  color:var(--cream);
+  -webkit-font-smoothing:antialiased;
+  overflow-x:hidden;
+}
+
+/* ============ stage ============ */
+.stage{
+  position:relative;
+  min-height:100%;
+  padding:44px 48px 88px;
+  background:
+    radial-gradient(1100px 620px at 50% -140px, color-mix(in srgb, var(--rose) 16%, transparent), transparent 62%),
+    radial-gradient(820px 480px at 88% 6%, color-mix(in srgb, var(--lav) 11%, transparent), transparent 60%),
+    radial-gradient(700px 500px at 4% 42%, color-mix(in srgb, var(--rose) 6%, transparent), transparent 60%),
+    var(--stage);
+}
+.stage-inner{max-width:1560px;margin:0 auto;position:relative}
+
+/* ambient floating hearts + sparkles */
+.amb{position:absolute;pointer-events:none;opacity:.14;z-index:0}
+.amb svg{display:block;width:100%;height:100%}
+.amb.rose{color:var(--rose)} .amb.lav{color:var(--lav)} .amb.gold{color:var(--gold)}
+.a1{width:26px;height:26px;left:3%;top:16%;animation:float 11s ease-in-out infinite}
+.a2{width:16px;height:16px;left:9%;top:58%;animation:float 9s ease-in-out -3s infinite}
+.a3{width:34px;height:34px;right:4%;top:24%;animation:float 13s ease-in-out -5s infinite}
+.a4{width:14px;height:14px;right:10%;top:66%;animation:float 8s ease-in-out -2s infinite}
+.a5{width:20px;height:20px;left:46%;top:6%;animation:float 12s ease-in-out -7s infinite}
+.a6{width:22px;height:22px;right:26%;top:10%;opacity:.10;animation:float 14s ease-in-out -1s infinite}
+.a7{width:12px;height:12px;left:24%;top:84%;animation:float 10s ease-in-out -4s infinite}
+.s1{width:14px;height:14px;left:14%;top:30%;opacity:.5;animation:twinkle 3.4s ease-in-out infinite}
+.s2{width:10px;height:10px;right:16%;top:46%;opacity:.4;animation:twinkle 4.2s ease-in-out -1.6s infinite}
+
+/* ============ caption bar ============ */
+.caption{
+  display:flex;justify-content:space-between;align-items:center;gap:16px;
+  font-family:var(--f-mono);font-size:10px;letter-spacing:.2em;
+  color:var(--sand);text-transform:uppercase;
+  padding-bottom:18px;border-bottom:1px solid rgba(248,241,230,.10);
+  position:relative;z-index:1;
+}
+.caption .live{display:inline-flex;align-items:center;gap:8px}
+.caption .dot{width:6px;height:6px;border-radius:50%;background:var(--rose);animation:livepulse 2.2s ease-in-out infinite}
+
+/* ============ intro ============ */
+.intro{
+  display:flex;justify-content:space-between;align-items:flex-end;gap:24px;flex-wrap:wrap;
+  margin:38px 0 34px;position:relative;z-index:1;
+}
+.intro h1{
+  font-family:var(--f-disp);font-weight:600;font-size:44px;line-height:1.04;
+  letter-spacing:-.01em;color:var(--cream);
+}
+.intro h1 em{font-style:italic;color:var(--rose);font-weight:500}
+.intro .sub{
+  margin-top:12px;font-family:var(--f-mono);font-size:10px;letter-spacing:.16em;
+  color:var(--sand);text-transform:uppercase;
+}
+.intro .chips{display:flex;gap:8px;flex-wrap:wrap;padding-bottom:6px}
+.chip{
+  font-family:var(--f-mono);font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--sand-2);border:1px solid rgba(248,241,230,.22);border-radius:999px;
+  padding:7px 12px;display:inline-flex;align-items:center;gap:7px;
+  transition:border-color .25s, transform .25s, color .25s;
+}
+.chip:hover{border-color:var(--rose);color:var(--cream);transform:translateY(-2px)}
+.chip svg{width:11px;height:11px}
+
+/* ============ phones row ============ */
+.phones{
+  display:flex;gap:30px;align-items:flex-start;
+  overflow-x:auto;padding:10px 4px 26px;position:relative;z-index:1;
+  scrollbar-width:thin;scrollbar-color:rgba(248,241,230,.2) transparent;
+}
+.phones::-webkit-scrollbar{height:8px}
+.phones::-webkit-scrollbar-thumb{background:rgba(248,241,230,.16);border-radius:99px}
+.phone-unit{flex:0 0 auto;animation:rise .8s cubic-bezier(.2,.8,.25,1) both}
+.pu-1{animation-delay:.05s}.pu-2{animation-delay:.16s}.pu-3{animation-delay:.27s}.pu-4{animation-delay:.38s}
+.phone{
+  width:var(--phone-w);
+  background:var(--coal);border-radius:46px;padding:11px;position:relative;
+  box-shadow:0 34px 70px -24px rgba(0,0,0,.62), 0 0 0 1px rgba(255,255,255,.07),
+             inset 0 0 0 1px rgba(255,255,255,.04);
+  transition:transform .4s cubic-bezier(.2,.8,.25,1), box-shadow .4s;
+}
+.phone-unit:hover .phone{
+  transform:translateY(-10px);
+  box-shadow:0 50px 90px -26px rgba(0,0,0,.7), 0 0 0 1px rgba(255,255,255,.1),
+             inset 0 0 0 1px rgba(255,255,255,.05);
+}
+.screen{
+  border-radius:35px;overflow:hidden;height:var(--phone-h);position:relative;
+  background:var(--cream);display:flex;flex-direction:column;color:var(--ink);
+}
+.notch{
+  position:absolute;top:9px;left:50%;transform:translateX(-50%);
+  width:84px;height:23px;border-radius:13px;background:var(--coal);z-index:9;
+}
+.statusbar{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:13px 22px 0;font-family:var(--f-mono);font-size:10.5px;font-weight:600;color:var(--ink);
+  flex:0 0 auto;
+}
+.statusbar .sicons{display:flex;gap:5px;align-items:center;color:var(--ink)}
+.statusbar svg{display:block}
+.homebar{
+  position:absolute;bottom:7px;left:50%;transform:translateX(-50%);
+  width:92px;height:4px;border-radius:99px;background:rgba(71,44,51,.28);z-index:9;
+}
+.phone-cap{
+  margin-top:16px;text-align:center;font-family:var(--f-mono);font-size:9.5px;
+  letter-spacing:.22em;text-transform:uppercase;color:var(--sand-3);
+}
+.phone-cap b{color:var(--sand-4);font-weight:600}
+
+/* ============ shared in-screen bits ============ */
+.eyebrow{
+  display:inline-flex;align-items:center;gap:6px;
+  font-family:var(--f-mono);font-size:8.5px;letter-spacing:.2em;text-transform:uppercase;
+  color:var(--rose-deep);border:1px solid color-mix(in srgb, var(--rose) 40%, transparent);
+  border-radius:999px;padding:5px 10px;background:rgba(255,255,255,.55);
+}
+.pillbtn{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  font-family:var(--f-body);font-weight:600;font-size:13.5px;letter-spacing:.02em;
+  border-radius:999px;padding:13px 26px;border:none;cursor:pointer;
+  transition:transform .22s, box-shadow .22s, background .22s;
+}
+.pillbtn.primary{
+  background:var(--rose);color:var(--white);
+  box-shadow:0 10px 22px -8px color-mix(in srgb, var(--rose) 60%, transparent);
+}
+.pillbtn.primary:hover{transform:translateY(-2px);background:var(--rose-deep);box-shadow:0 14px 26px -8px color-mix(in srgb, var(--rose) 70%, transparent)}
+.pillbtn.ghost{
+  background:transparent;color:var(--ink);border:1.5px solid var(--line);
+}
+.pillbtn.ghost:hover{border-color:var(--rose);color:var(--rose-deep);transform:translateY(-2px)}
+.pillbtn svg{width:14px;height:14px}
+.iconbtn{
+  width:34px;height:34px;border-radius:50%;border:1.5px solid var(--line);
+  background:rgba(255,255,255,.6);display:inline-flex;align-items:center;justify-content:center;
+  color:var(--ink);cursor:pointer;transition:transform .22s,border-color .22s,color .22s;
+}
+.iconbtn:hover{transform:translateY(-2px);border-color:var(--rose);color:var(--rose-deep)}
+.iconbtn svg{width:15px;height:15px}
+.heart-fill{fill:var(--rose)}
+.heart-line{fill:none;stroke:var(--rose);stroke-width:2}
+
+/* =========================================================
+   SCREEN 1 — SPLASH
+   ========================================================= */
+.splash{position:relative}
+.splash-bg{
+  position:absolute;inset:0;
+  background:
+    radial-gradient(240px 200px at 82% 8%, color-mix(in srgb, var(--petal) 75%, transparent), transparent 70%),
+    radial-gradient(200px 180px at 8% 34%, color-mix(in srgb, var(--lav-soft) 70%, transparent), transparent 70%),
+    var(--cream);
+}
+.traj{position:absolute;inset:0;z-index:1;pointer-events:none}
+.traj .tline{fill:none;stroke:var(--rose);stroke-width:2;stroke-dasharray:5 8;stroke-linecap:round;opacity:.45;animation:dashmarch 1.4s linear infinite}
+.traj .bdot{fill:var(--rose);opacity:.5}
+.traj .bping{fill:none;stroke:var(--rose);stroke-width:1.5;opacity:0;transform-origin:center;transform-box:fill-box;animation:bping 2.4s ease-out infinite}
+.splash-best{
+  position:absolute;top:44px;right:16px;z-index:3;
+  font-family:var(--f-mono);font-size:8.5px;letter-spacing:.16em;color:var(--ink-soft);
+  border:1px solid var(--line);border-radius:999px;padding:5px 10px;background:rgba(255,255,255,.6);
+}
+.splash-col{
+  position:relative;z-index:2;flex:1;display:flex;flex-direction:column;align-items:center;
+  text-align:center;padding:52px 26px 0;
+}
+.hero-heart{width:128px;height:118px;position:relative;margin-bottom:18px}
+.hero-heart .beat{transform-origin:50% 55%;animation:beat 2.6s ease-in-out infinite}
+.hero-heart .glow{
+  position:absolute;inset:-26px;border-radius:50%;
+  background:radial-gradient(closest-side, color-mix(in srgb, var(--rose) 30%, transparent), transparent 72%);
+  animation:beat 2.6s ease-in-out infinite;
+}
+.hero-heart .spk{position:absolute;color:var(--gold);animation:twinkle 2.8s ease-in-out infinite}
+.hero-heart .spk svg{width:100%;height:100%}
+.hero-heart .k1{width:13px;height:13px;left:-4px;top:16px}
+.hero-heart .k2{width:9px;height:9px;right:-2px;top:2px;animation-delay:-1.3s}
+.splash-col .eyebrow{margin-bottom:14px}
+.splash-title{line-height:.98;margin-bottom:12px}
+.splash-title .t1{
+  display:block;font-family:var(--f-disp);font-style:italic;font-weight:500;
+  font-size:38px;color:var(--rose);letter-spacing:.01em;
+}
+.splash-title .t2{
+  display:block;font-family:var(--f-disp);font-weight:600;font-size:52px;
+  color:var(--ink);letter-spacing:-.015em;margin-top:2px;
+}
+.splash-tag{font-size:13px;color:var(--ink-soft);letter-spacing:.02em;margin-bottom:6px}
+.splash-cta{
+  margin-top:auto;margin-bottom:26px;display:flex;flex-direction:column;align-items:center;gap:14px;
+  padding:18px 0 4px;cursor:pointer;
+}
+.rings{position:relative;width:66px;height:66px;display:flex;align-items:center;justify-content:center}
+.rings .core{
+  width:40px;height:40px;border-radius:50%;background:var(--rose);z-index:2;
+  display:flex;align-items:center;justify-content:center;color:var(--white);
+  box-shadow:0 8px 18px -6px color-mix(in srgb, var(--rose) 65%, transparent);
+  transition:transform .25s;
+}
+.splash-cta:hover .core{transform:scale(1.12)}
+.rings .core svg{width:16px;height:16px}
+.rings .ring{position:absolute;inset:0;border-radius:50%;border:1.5px solid var(--rose);opacity:0;animation:ringout 2.4s ease-out infinite}
+.rings .ring.r2{animation-delay:1.2s}
+.cta-hint{font-family:var(--f-mono);font-size:9px;letter-spacing:.24em;text-transform:uppercase;color:var(--ink-soft)}
+.splash-teaser{
+  flex:0 0 auto;position:relative;z-index:2;border-top:1px dashed var(--line);
+  padding:12px 24px 22px;display:flex;align-items:center;justify-content:space-between;
+}
+.teaser-path{display:flex;align-items:center;gap:7px}
+.teaser-path .mini{width:13px;height:12px;color:var(--rose)}
+.teaser-path .mini.off{color:var(--taupe)}
+.teaser-path .mini svg{width:100%;height:100%;display:block}
+.teaser-path .dashline{width:26px;border-top:2px dotted var(--line)}
+.teaser-meta{font-family:var(--f-mono);font-size:8.5px;letter-spacing:.16em;color:var(--ink-soft);text-transform:uppercase}
+
+/* =========================================================
+   SCREEN 2 — LEVEL SELECT
+   ========================================================= */
+.levels-head{
+  flex:0 0 auto;display:flex;align-items:center;gap:10px;padding:46px 18px 8px;
+}
+.levels-head .ttl{font-family:var(--f-disp);font-weight:600;font-size:22px;color:var(--ink);flex:1}
+.lv-chip{
+  font-family:var(--f-mono);font-size:9px;letter-spacing:.12em;color:var(--rose-deep);
+  border:1px solid color-mix(in srgb, var(--rose) 38%, transparent);border-radius:999px;
+  padding:5px 9px;display:inline-flex;align-items:center;gap:5px;background:rgba(255,255,255,.55);
+}
+.lv-chip svg{width:10px;height:9px}
+.path-wrap{
+  flex:1;position:relative;margin:4px 14px 0;
+}
+.path-wrap>svg.route{position:absolute;inset:0;width:100%;height:100%}
+.route .rline{fill:none;stroke:var(--route);stroke-width:2.5;stroke-dasharray:2 8;stroke-linecap:round}
+.node{
+  position:absolute;width:38px;height:36px;transform:translate(-50%,-50%);
+  border:none;background:none;cursor:pointer;z-index:2;
+}
+.node .hb{transition:transform .25s;filter:drop-shadow(0 3px 5px color-mix(in srgb, var(--rose) 28%, transparent))}
+.node:hover .hb{transform:scale(1.16)}
+.node .hb path{fill:var(--taupe)}
+.node.done .hb path{fill:var(--rose);stroke:var(--white);stroke-width:1.2}
+.node.locked .hb path{fill:var(--lock-fill);stroke:var(--lock-line);stroke-width:1.2}
+.node .num{
+  position:absolute;left:50%;top:42%;transform:translate(-50%,-50%);
+  font-family:var(--f-body);font-weight:700;font-size:12px;color:var(--ink);pointer-events:none;
+}
+.node.done .num,.node.current .num{color:var(--white)}
+.node.locked .num{color:var(--lock-num)}
+.node .nstars{
+  position:absolute;left:50%;top:calc(100% + 1px);transform:translateX(-50%);
+  display:flex;gap:1.5px;width:max-content;
+}
+.node .nstars svg{width:7px;height:7px;display:block}
+.node .nstars .on{color:var(--gold)} .node .nstars .off{color:var(--lock-line)}
+.node .lockic{position:absolute;left:50%;top:44%;transform:translate(-50%,-50%);width:11px;height:11px;color:var(--lock-ic)}
+/* current node */
+.node.current{width:48px;height:46px;z-index:3}
+.node.current .hb{filter:drop-shadow(0 5px 10px color-mix(in srgb, var(--rose) 45%, transparent))}
+.node.current .hb path{fill:var(--rose);stroke:var(--white);stroke-width:1.6}
+.node.current .pring{
+  position:absolute;inset:-9px;border-radius:50%;border:2px solid var(--rose);opacity:0;
+  animation:ringout 2s ease-out infinite;
+}
+.node.current .pring.p2{animation-delay:1s}
+.node.current .aim{
+  position:absolute;right:-24px;top:50%;transform:translateY(-50%);
+  width:15px;height:15px;color:var(--rose);animation:nudge 1.4s ease-in-out infinite;
+}
+/* portal node halo */
+.node .halo{
+  position:absolute;inset:-7px;border-radius:50%;
+  border:2px dashed var(--lav);opacity:.75;animation:spin 9s linear infinite;
+}
+/* mover node chevrons */
+.node .mv{position:absolute;top:50%;width:7px;height:10px;color:var(--rose-deep);animation:nudge 1.2s ease-in-out infinite}
+.node .mv.l{left:-11px;transform:translateY(-50%) scaleX(-1)}
+.node .mv.r{right:-11px;transform:translateY(-50%)}
+.levels-foot{
+  flex:0 0 auto;display:flex;align-items:center;justify-content:center;gap:12px;
+  padding:14px 20px 30px;
+}
+
+/* =========================================================
+   SCREEN 3 — GAMEPLAY
+   ========================================================= */
+.game-hud{
+  flex:0 0 auto;display:flex;align-items:center;gap:8px;padding:44px 14px 8px;z-index:3;
+}
+.hud-lv{
+  font-family:var(--f-mono);font-size:9px;letter-spacing:.14em;color:var(--ink);
+  background:rgba(255,255,255,.7);border:1px solid var(--line);border-radius:999px;padding:6px 10px;
+}
+.hud-targets{flex:1;display:flex;align-items:center;justify-content:center;gap:5px}
+.hud-targets svg{width:15px;height:14px}
+.hud-targets .cnt{font-family:var(--f-mono);font-size:10px;font-weight:600;color:var(--rose-deep);margin-left:2px}
+.field{
+  flex:1;position:relative;margin:2px 10px 0;border-radius:22px;overflow:hidden;
+  background-color:var(--cream);
+  background-image:radial-gradient(var(--dot) 1px, transparent 1.4px);
+  background-size:22px 22px;
+  border:1px solid var(--line);
+}
+.wall{
+  position:absolute;background:linear-gradient(180deg,var(--wall-hi),var(--wall-lo));
+  border:1px solid var(--wall-line);border-radius:8px;
+  box-shadow:inset 0 -3px 0 rgba(71,44,51,.10), 0 2px 4px rgba(71,44,51,.06);
+}
+.wall-a{left:208px;top:148px;width:20px;height:182px;animation:breathe 2.2s ease-in-out infinite}
+.wall-b{left:38px;top:52px;width:152px;height:18px}
+.target{position:absolute;transform:translate(-50%,-50%);z-index:2}
+.target svg{display:block;width:100%;height:100%;overflow:visible}
+.target .th{fill:var(--rose);filter:drop-shadow(0 4px 7px color-mix(in srgb, var(--rose) 40%, transparent))}
+.target .gloss{fill:var(--white);opacity:.55}
+.target.t1{left:150px;top:125px;width:34px;height:32px;animation:bob 3.2s ease-in-out infinite}
+.target.t2{left:88px;top:112px;width:27px;height:25px;animation:bob 3.6s ease-in-out -1.4s infinite}
+.target .spk{position:absolute;color:var(--gold);animation:twinkle 2.6s ease-in-out infinite}
+.target .spk svg{width:100%;height:100%}
+.target.t1 .spk{width:9px;height:9px;right:-9px;top:-4px}
+.target.t2 .spk{width:7px;height:7px;left:-8px;top:-2px;animation-delay:-1.2s}
+/* aim overlay */
+.aimsvg{position:absolute;inset:0;width:100%;height:100%;z-index:3;pointer-events:none}
+.ray{stroke:var(--rose);stroke-width:2.5;stroke-dasharray:6 8;stroke-linecap:round;opacity:.85;animation:dashmarch 1.1s linear infinite}
+.impact .core{fill:var(--rose)}
+.impact .ping{fill:none;stroke:var(--rose);stroke-width:2;transform-origin:center;transform-box:fill-box;animation:bping 1.3s ease-out infinite}
+.band{stroke:var(--rose-deep);stroke-width:2;opacity:.65}
+.bow-arc{fill:none;stroke:var(--wood);stroke-width:5;stroke-linecap:round}
+.bow-str{stroke:var(--wood-2);stroke-width:1.6}
+.shaft{stroke:var(--ink);stroke-width:2.4;stroke-linecap:round}
+.fletch{stroke:var(--rose-deep);stroke-width:2;stroke-linecap:round}
+.arrow-heart{fill:var(--rose)}
+.handle{fill:rgba(255,255,255,.85);stroke:var(--rose);stroke-width:2;stroke-dasharray:3 4}
+.drag-ghost{fill:color-mix(in srgb, var(--rose) 16%, transparent);stroke:var(--rose);stroke-width:1.5;opacity:0;animation:handdrag 2.6s ease-in-out infinite}
+.game-hint{
+  flex:0 0 auto;display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;
+  padding:12px 12px 26px;
+}
+.game-hint .ht{font-family:var(--f-mono);font-size:8.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink-soft)}
+kbd{
+  font-family:var(--f-mono);font-size:8.5px;color:var(--ink);
+  border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;
+  background:var(--white);padding:2.5px 5px;min-width:16px;text-align:center;display:inline-block;
+}
+.game-hint .sep{width:1px;height:12px;background:var(--line)}
+
+/* =========================================================
+   SCREEN 4 — RESULT
+   ========================================================= */
+.result{position:relative}
+.result .behind{position:absolute;inset:0;opacity:.28}
+.result .scrim{position:absolute;inset:0;background:var(--scrim);z-index:1}
+.rcard{
+  position:relative;z-index:2;margin:auto 20px;width:auto;
+  background:var(--card);border-radius:26px;padding:26px 22px 22px;
+  border:1px solid var(--line);
+  box-shadow:0 24px 50px -16px rgba(71,44,51,.35);
+  text-align:center;overflow:hidden;
+}
+.rcard .conf{position:absolute;color:var(--rose);animation:confetti 3.4s ease-in-out infinite;z-index:1}
+.rcard .conf svg{width:100%;height:100%;display:block}
+.rcard .c1{width:11px;height:10px;left:12%;top:10%}
+.rcard .c2{width:8px;height:8px;left:26%;top:4%;color:var(--gold);animation-delay:-1.1s}
+.rcard .c3{width:9px;height:9px;right:20%;top:7%;color:var(--lav);animation-delay:-2s}
+.rcard .c4{width:7px;height:7px;right:9%;top:14%;animation-delay:-.6s}
+.rcard .c5{width:8px;height:8px;left:7%;top:26%;color:var(--lav);animation-delay:-1.6s}
+.r-hearts{display:flex;justify-content:center;gap:10px;margin-bottom:14px;position:relative;z-index:2}
+.r-hearts svg{width:30px;height:28px;display:block;filter:drop-shadow(0 4px 8px color-mix(in srgb, var(--rose) 38%, transparent))}
+.r-hearts .h{fill:var(--rose);transform-origin:center;transform-box:fill-box;animation:popin .6s cubic-bezier(.3,1.6,.5,1) both}
+.r-hearts .h2{animation-delay:.12s}.r-hearts .h3{animation-delay:.24s}
+.r-title{font-family:var(--f-disp);font-weight:600;font-size:31px;line-height:1.05;color:var(--ink);position:relative;z-index:2}
+.r-title em{font-style:italic;color:var(--rose)}
+.r-sub{font-size:12px;color:var(--ink-soft);margin-top:7px;position:relative;z-index:2}
+.r-stats{
+  display:flex;justify-content:center;margin:18px 0 4px;position:relative;z-index:2;
+}
+.r-stats .st{padding:0 16px;border-right:1px solid var(--line)}
+.r-stats .st:last-child{border-right:none}
+.r-stats .v{font-family:var(--f-mono);font-size:17px;font-weight:700;color:var(--ink)}
+.r-stats .l{font-family:var(--f-mono);font-size:7.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink-soft);margin-top:3px}
+.r-stars{display:flex;justify-content:center;gap:7px;margin:12px 0 18px;position:relative;z-index:2}
+.r-stars svg{width:22px;height:22px;display:block;color:var(--gold);transform-origin:center;transform-box:fill-box;animation:starin .5s cubic-bezier(.3,1.6,.5,1) both}
+.r-stars .s2{animation-delay:.14s}.r-stars .s3{animation-delay:.28s}
+.r-stars .fillp{fill:currentColor}
+.r-btns{display:flex;flex-direction:column;gap:9px;position:relative;z-index:2}
+.r-btns .pillbtn{width:100%}
+.r-best{
+  position:absolute;top:14px;right:-30px;transform:rotate(9deg);z-index:3;
+  font-family:var(--f-mono);font-size:8px;letter-spacing:.2em;text-transform:uppercase;
+  color:var(--rose-deep);border:1.5px dashed var(--rose);border-radius:6px;
+  padding:4px 34px;background:rgba(247,200,216,.35);
+  animation:popin .5s .5s cubic-bezier(.3,1.6,.5,1) both;
+}
+.r-tip{margin:14px auto 0;width:max-content}
+
+/* ============ spec strip ============ */
+.spec{
+  margin-top:52px;padding-top:26px;border-top:1px solid rgba(248,241,230,.12);
+  display:flex;gap:44px;flex-wrap:wrap;position:relative;z-index:1;
+}
+.spec .grp{display:flex;flex-direction:column;gap:9px}
+.spec .glab{font-family:var(--f-mono);font-size:8.5px;letter-spacing:.22em;text-transform:uppercase;color:var(--sand-3)}
+.spec .gbody{font-size:11.5px;color:var(--sand-2);display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.swatches{display:flex;gap:12px}
+.sw{display:flex;flex-direction:column;align-items:center;gap:5px}
+.sw i{width:22px;height:22px;border-radius:50%;display:block;box-shadow:inset 0 0 0 1px rgba(255,255,255,.14);transition:transform .25s}
+.sw:hover i{transform:scale(1.22)}
+.sw b{font-family:var(--f-mono);font-weight:500;font-size:8px;letter-spacing:.06em;color:var(--sand)}
+.type-sample{display:flex;align-items:baseline;gap:10px}
+.type-sample .big{font-family:var(--f-disp);font-size:26px;font-weight:600;color:var(--cream)}
+.type-sample .big em{font-style:italic;color:var(--rose)}
+.type-sample .sm{font-family:var(--f-mono);font-size:9px;letter-spacing:.1em;color:var(--sand);line-height:1.7}
+.spec .gbody kbd{background:rgba(248,241,230,.08);border-color:rgba(248,241,230,.22);color:var(--sand-2)}
+.spec .note{font-family:var(--f-mono);font-size:10px;letter-spacing:.05em;line-height:1.8;color:var(--sand-4)}
+.spec .note b{color:var(--cream);font-weight:600}
+
+/* ============ keyframes ============ */
+@keyframes rise{from{opacity:0;transform:translateY(26px)}to{opacity:1;transform:translateY(0)}}
+@keyframes float{0%,100%{transform:translateY(0) rotate(-6deg)}50%{transform:translateY(-16px) rotate(7deg)}}
+@keyframes twinkle{0%,100%{opacity:.15;transform:scale(.75)}50%{opacity:.95;transform:scale(1.15)}}
+@keyframes livepulse{0%,100%{opacity:1;box-shadow:0 0 0 0 color-mix(in srgb, var(--rose) 50%, transparent)}50%{opacity:.55;box-shadow:0 0 0 5px transparent}}
+@keyframes dashmarch{to{stroke-dashoffset:-26}}
+@keyframes bping{0%{opacity:.7;transform:scale(.4)}80%{opacity:0;transform:scale(1.9)}100%{opacity:0;transform:scale(1.9)}}
+@keyframes beat{0%,100%{transform:scale(1)}12%{transform:scale(1.07)}24%{transform:scale(1)}36%{transform:scale(1.045)}48%{transform:scale(1)}}
+@keyframes ringout{0%{opacity:.6;transform:scale(.55)}100%{opacity:0;transform:scale(1.75)}}
+@keyframes bob{0%,100%{transform:translate(-50%,-50%) translateY(0)}50%{transform:translate(-50%,-50%) translateY(-6px)}}
+@keyframes breathe{0%,100%{box-shadow:inset 0 -3px 0 rgba(71,44,51,.10), 0 0 0 0 color-mix(in srgb, var(--rose) 0%, transparent)}50%{box-shadow:inset 0 -3px 0 rgba(71,44,51,.10), 0 0 0 5px color-mix(in srgb, var(--rose) 26%, transparent)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes nudge{0%,100%{transform:translateY(-50%) translateX(0)}50%{transform:translateY(-50%) translateX(4px)}}
+@keyframes handdrag{0%{opacity:0;transform:translate(0,0)}18%{opacity:.9}55%{opacity:.9;transform:translate(-26px,26px)}72%{opacity:0;transform:translate(-26px,26px)}100%{opacity:0;transform:translate(0,0)}}
+@keyframes popin{0%{opacity:0;transform:scale(.3)}100%{opacity:1;transform:scale(1)}}
+@keyframes starin{0%{opacity:0;transform:scale(0) rotate(-40deg)}100%{opacity:1;transform:scale(1) rotate(0)}}
+@keyframes confetti{0%,100%{transform:translateY(0) rotate(-8deg)}50%{transform:translateY(9px) rotate(10deg)}}
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation-duration:.01ms !important;animation-iteration-count:1 !important;transition-duration:.01ms !important}
+}
+@media (max-width: 900px){
+  .stage{padding:32px 20px 64px}
+  .intro h1{font-size:34px}
+}
+</style>
+</head>
+<body>
+
+<!-- shared glyph library -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="g-heart" viewBox="0 0 24 24">
+      <path d="M12 21C12 21 4 15.6 4 9.9 4 7 6.2 5 8.7 5c1.5 0 2.7.8 3.3 2 .6-1.2 1.8-2 3.3-2C17.8 5 20 7 20 9.9 20 15.6 12 21 12 21z"/>
+    </symbol>
+    <symbol id="g-star" viewBox="0 0 24 24">
+      <path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8-6.1-3.4-6.1 3.4 1.4-6.8L2.2 9.1l6.9-.8z"/>
+    </symbol>
+    <symbol id="g-spark" viewBox="0 0 24 24">
+      <path d="M12 2l2.1 7.9L22 12l-7.9 2.1L12 22l-2.1-7.9L2 12l7.9-2.1z"/>
+    </symbol>
+    <symbol id="g-lock" viewBox="0 0 24 24">
+      <path d="M7 10V8a5 5 0 0 1 10 0v2h1a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-8a1 1 0 0 1 1-1h1zm2 0h6V8a3 3 0 0 0-6 0v2z"/>
+    </symbol>
+    <symbol id="g-play" viewBox="0 0 24 24">
+      <path d="M8 5.5v13l11-6.5z"/>
+    </symbol>
+    <symbol id="g-restart" viewBox="0 0 24 24">
+      <path d="M12 5V2L7 6l5 4V7a5 5 0 1 1-5 5H5a7 7 0 1 0 7-7z"/>
+    </symbol>
+    <symbol id="g-chev" viewBox="0 0 24 24">
+      <path d="M14.5 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+    </symbol>
+    <symbol id="g-chevr" viewBox="0 0 24 24">
+      <path d="M9.5 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+    </symbol>
+    <symbol id="g-sound" viewBox="0 0 24 24">
+      <path d="M4 9v6h4l5 4V5L8 9H4z"/>
+      <path d="M16.5 8.5a5 5 0 0 1 0 7M18.8 6a8.5 8.5 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="g-bow" viewBox="0 0 24 24">
+      <path d="M6 3C13 6 13 18 6 21" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      <path d="M6 3l9 9-9 9" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="g-key" viewBox="0 0 24 24">
+      <rect x="3" y="6" width="18" height="12" rx="2.5" fill="none" stroke="currentColor" stroke-width="2"/>
+      <path d="M8 12h8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="g-touch" viewBox="0 0 24 24">
+      <path d="M12 3a3 3 0 0 1 3 3v6.5l2.6-.6a2.4 2.4 0 0 1 2.9 2.9l-1.3 5A4 4 0 0 1 15.3 23h-3.1a4 4 0 0 1-3.2-1.6L5.2 16a2.3 2.3 0 0 1 3.4-3.1L9 13.6V6a3 3 0 0 1 3-3z" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/>
+    </symbol>
+  </defs>
+</svg>
+
+<div class="stage" data-comp-id="stage">
+  <!-- ambient -->
+  <span class="amb rose a1"><svg><use href="#g-heart"/></svg></span>
+  <span class="amb lav a2"><svg><use href="#g-heart"/></svg></span>
+  <span class="amb rose a3"><svg><use href="#g-heart"/></svg></span>
+  <span class="amb rose a4"><svg><use href="#g-heart"/></svg></span>
+  <span class="amb lav a5"><svg><use href="#g-heart"/></svg></span>
+  <span class="amb rose a6"><svg><use href="#g-heart"/></svg></span>
+  <span class="amb gold a7"><svg><use href="#g-heart"/></svg></span>
+  <span class="amb gold s1"><svg><use href="#g-spark"/></svg></span>
+  <span class="amb gold s2"><svg><use href="#g-spark"/></svg></span>
+
+  <div class="stage-inner">
+
+    <!-- caption bar -->
+    <header class="caption" data-comp-id="caption-bar">
+      <span class="live"><span class="dot"></span>Hi-fi prototype · Game 022 · Canvas 2D</span>
+      <span>Cupid Ricochet — UI kit v1.0</span>
+    </header>
+
+    <!-- intro -->
+    <section class="intro" data-comp-id="intro">
+      <div>
+        <h1>Cupid Ricochet <em>— ui kit</em></h1>
+        <p class="sub">Splash → Levels → Aim &amp; Fire → Result · 10 levels · ≤3-min sessions · zero-text tutorial</p>
+      </div>
+      <div class="chips" data-comp-id="input-chips">
+        <span class="chip"><svg><use href="#g-touch"/></svg>Pointer drag</span>
+        <span class="chip"><svg><use href="#g-key"/></svg>Keys ← → · Space</span>
+        <span class="chip"><svg><use href="#g-spark"/></svg>Haptics + WebAudio</span>
+      </div>
+    </section>
+
+    <!-- phones -->
+    <div class="phones" data-comp-id="phones-row">
+
+      <!-- ================= 01 SPLASH ================= -->
+      <div class="phone-unit pu-1">
+        <article class="phone" data-comp-id="phone-splash">
+          <span class="notch"></span>
+          <div class="screen splash">
+            <div class="splash-bg" data-comp-id="splash-bg"></div>
+
+            <div class="statusbar"><span>9:41</span>
+              <span class="sicons">
+                <svg width="15" height="10" viewBox="0 0 15 10" fill="currentColor"><rect x="0" y="6" width="2.6" height="4" rx="1"/><rect x="4" y="4" width="2.6" height="6" rx="1"/><rect x="8" y="2" width="2.6" height="8" rx="1"/><rect x="12" y="0" width="2.6" height="10" rx="1"/></svg>
+                <svg width="14" height="10" viewBox="0 0 14 10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M1 3.6a8.5 8.5 0 0 1 12 0M3.4 6.2a5 5 0 0 1 7.2 0"/><circle cx="7" cy="8.7" r="1.1" fill="currentColor" stroke="none"/></svg>
+                <svg width="20" height="10" viewBox="0 0 20 10" fill="none"><rect x=".5" y=".5" width="16" height="9" rx="2.5" stroke="currentColor" opacity=".5"/><rect x="2" y="2" width="10.5" height="6" rx="1.4" fill="currentColor"/><rect x="17.6" y="3" width="2" height="4" rx="1" fill="currentColor" opacity=".5"/></svg>
+              </span>
+            </div>
+
+            <!-- ricochet trajectory decoration -->
+            <svg class="traj" viewBox="0 0 306 672" preserveAspectRatio="none" aria-hidden="true">
+              <path class="tline" d="M244 618 L52 508 L52 196 L128 152"/>
+              <circle class="bdot" cx="52" cy="508" r="3"/>
+              <circle class="bdot" cx="52" cy="196" r="3"/>
+              <circle class="bping" cx="52" cy="508" r="7"/>
+              <circle class="bping" cx="52" cy="196" r="7" style="animation-delay:-1.2s"/>
+            </svg>
+
+            <span class="splash-best" data-comp-id="splash-best">Best · LV 4</span>
+
+            <div class="splash-col" data-comp-id="splash-content">
+              <div class="hero-heart" data-comp-id="splash-hero">
+                <span class="glow"></span>
+                <svg viewBox="0 0 128 118" width="128" height="118" class="beat">
+                  <!-- arrow through heart -->
+                  <line x1="14" y1="18" x2="112" y2="98" style="stroke:var(--ink)" stroke-width="3" stroke-linecap="round"/>
+                  <path d="M112 98 l-11 -3.5 M112 98 l-4 -10.5" style="stroke:var(--ink)" stroke-width="3" stroke-linecap="round" fill="none"/>
+                  <path d="M14 18 l8 2 M14 18 l2.5 8 M22 20 l7 2.2 M22 20 l2.6 7.4" style="stroke:var(--rose-deep)" stroke-width="2.6" stroke-linecap="round" fill="none"/>
+                  <path d="M64 92C64 92 38 74.6 38 56.2 38 46.8 45.2 40.4 53.2 40.4c4.9 0 8.8 2.6 10.8 6.4 2-3.8 5.9-6.4 10.8-6.4 8 0 15.2 6.4 15.2 15.8C90 74.6 64 92 64 92z"
+                        fill="var(--rose)" style="stroke:var(--white)" stroke-width="2.5"/>
+                  <ellipse cx="52" cy="54" rx="5.5" ry="3.4" style="fill:var(--white)" opacity=".6" transform="rotate(-24 52 54)"/>
+                </svg>
+                <span class="spk k1"><svg><use href="#g-spark"/></svg></span>
+                <span class="spk k2"><svg><use href="#g-spark"/></svg></span>
+              </div>
+
+              <span class="eyebrow">Game 022 · Physics puzzle</span>
+              <h2 class="splash-title" data-comp-id="splash-title">
+                <span class="t1">Cupid</span>
+                <span class="t2">Ricochet</span>
+              </h2>
+              <p class="splash-tag">One arrow. Every heart.</p>
+
+              <div class="splash-cta" data-comp-id="splash-cta">
+                <span class="rings">
+                  <span class="ring"></span><span class="ring r2"></span>
+                  <span class="core"><svg><use href="#g-bow"/></svg></span>
+                </span>
+                <span class="cta-hint">Tap to draw your bow</span>
+              </div>
+            </div>
+
+            <div class="splash-teaser" data-comp-id="splash-teaser">
+              <span class="teaser-path">
+                <span class="mini"><svg viewBox="0 0 24 24"><path class="heart-fill" d="M12 21C12 21 4 15.6 4 9.9 4 7 6.2 5 8.7 5c1.5 0 2.7.8 3.3 2 .6-1.2 1.8-2 3.3-2C17.8 5 20 7 20 9.9 20 15.6 12 21 12 21z"/></svg></span>
+                <span class="mini"><svg viewBox="0 0 24 24"><path class="heart-fill" d="M12 21C12 21 4 15.6 4 9.9 4 7 6.2 5 8.7 5c1.5 0 2.7.8 3.3 2 .6-1.2 1.8-2 3.3-2C17.8 5 20 7 20 9.9 20 15.6 12 21 12 21z"/></svg></span>
+                <span class="dashline"></span>
+                <span class="mini off"><svg viewBox="0 0 24 24"><path d="M12 21C12 21 4 15.6 4 9.9 4 7 6.2 5 8.7 5c1.5 0 2.7.8 3.3 2 .6-1.2 1.8-2 3.3-2C17.8 5 20 7 20 9.9 20 15.6 12 21 12 21z" fill="none" stroke="currentColor" stroke-width="2"/></svg></span>
+              </span>
+              <span class="teaser-meta">10 levels · ≈3 min</span>
+            </div>
+            <span class="homebar"></span>
+          </div>
+        </article>
+        <p class="phone-cap"><b>01</b> — Splash</p>
+      </div>
+
+      <!-- ================= 02 LEVELS ================= -->
+      <div class="phone-unit pu-2">
+        <article class="phone" data-comp-id="phone-levels">
+          <span class="notch"></span>
+          <div class="screen">
+            <div class="statusbar"><span>9:41</span>
+              <span class="sicons">
+                <svg width="15" height="10" viewBox="0 0 15 10" fill="currentColor"><rect x="0" y="6" width="2.6" height="4" rx="1"/><rect x="4" y="4" width="2.6" height="6" rx="1"/><rect x="8" y="2" width="2.6" height="8" rx="1"/><rect x="12" y="0" width="2.6" height="10" rx="1"/></svg>
+                <svg width="14" height="10" viewBox="0 0 14 10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M1 3.6a8.5 8.5 0 0 1 12 0M3.4 6.2a5 5 0 0 1 7.2 0"/><circle cx="7" cy="8.7" r="1.1" fill="currentColor" stroke="none"/></svg>
+                <svg width="20" height="10" viewBox="0 0 20 10" fill="none"><rect x=".5" y=".5" width="16" height="9" rx="2.5" stroke="currentColor" opacity=".5"/><rect x="2" y="2" width="10.5" height="6" rx="1.4" fill="currentColor"/><rect x="17.6" y="3" width="2" height="4" rx="1" fill="currentColor" opacity=".5"/></svg>
+              </span>
+            </div>
+
+            <div class="levels-head" data-comp-id="levels-head">
+              <button class="iconbtn" aria-label="Back"><svg><use href="#g-chev"/></svg></button>
+              <span class="ttl">Levels</span>
+              <span class="lv-chip"><svg><use href="#g-heart"/></svg>4 / 10</span>
+            </div>
+
+            <div class="path-wrap" data-comp-id="levels-path">
+              <svg class="route" viewBox="0 0 306 470" preserveAspectRatio="none" aria-hidden="true">
+                <path class="rline" d="M67 24 C120 28 160 30 202 52 C240 72 150 74 80 94 C40 106 150 110 214 132 C250 146 160 158 110 179 C70 196 170 196 220 216 C255 232 140 242 86 263 C50 278 150 282 202 301 C238 316 140 328 92 348 C60 362 130 368 184 385"/>
+              </svg>
+
+              <button class="node done" data-comp-id="node-1" style="left:22%;top:5.1%"><svg class="hb" viewBox="0 0 24 24"><path d="M12 21C12 21 4 15.6 4 9.9 4 7 6.2 5 8.7 5c1.5 0 2.7.8 3.3 2 .6-1.2 1.8-2 3.3-2C17.8 5 20 7 20 9.9 20 15.6 12 21 12 21z"/></svg><span class="num">1</span><span class="nstars"><svg class="on" viewBox="0 0 24 24"><use href="#g-star"/></svg><svg class="on" viewBox="0 0 24 24"><use href="#g-star"/></svg><svg class="on" viewBox="0 0 24 24"><use href="#g-star"/></svg></span></button>
+              <button class="node done" data-comp-id="node-2" style="left:66%;top:11%"><svg class="hb" viewBox="0 0 24 24"><path d="M12 21C12 21 4 15.6 4 9.9 4 7 6.2 5 8.7 5c1.5 0 2.7.8 3.3 2 .6-1.2 1.8-2 3.3-2C17.8 5 20 7 20 9.9 20 15.6 12 21 12 21z"/></svg><span class="num">2</span><span class="nstars"><svg class="on" viewBox="0 0 24 24"><use href="#g-star"/></svg><svg class="on" viewBox="0 0 24 24"><use href="#g-star"/></svg><svg class="off" viewBox="0 0 24 24"><use href="#g-star"/></svg></span></button>
+              <button class="node done" data-comp-id="node-3" style="left:26%;top:20%"><svg class="hb" viewBox="0 0 24 24"><path d="M12 21C12 21 4 15.6 4 9.9 4 7 6.2 5 8.7 5c1.5 0 2.7.8 3.3 2 .6-1.2 1.8-2 3.3-2C17.8 5 20 7 20 9.9 20 15.6 12 21 12 21z"/></svg><span class="num">3</span><span class="nstars"><svg class="on" viewBox="0 0 24 24"><use href="#g-star"/></svg><svg class="on" viewBox="0 0 24 24"><use href="#g-star"/></svg><svg class="on" viewBox="0 0 24 24"><use href="#g-star"/></svg></span></button>
+
+              <button class="node current" data-comp-id="node-4" style="left:70%;top:28.1%">
+                <span class="pring"></span><span class="pring p2"></span>
+                <svg class="hb" viewBox="0 0 24 24"><path d="M12 21C12 21 4 15.6 4 9.9 4 7 6.2 5 8.7 5c1.5 0 2.7.8 3.3 2 .6-1.2 1.8-2 3.3-2C17.8 5 20 7 20 9.9 20 15.6 12 21 12 21z"/></svg>
+                <span class="num">4</span>
+                <svg class="aim" viewBox="0 0 24 24"><use href="#g-chev"/></svg>
+              </button>
+
+              <button class="node locked" data-comp-id="node-5" style="left:36%;top:38.1%"><svg class="hb" viewBox="0 0 24 24"><path d="M12 21C12 21 4 15.6 4 9.9 4 7 6.2 5 8.7 5c1.5 0 2.7.8 3.3 2 .6-1.2 1.8-2 3.3-2C17.8 5 20 7 20 9.9 20 15.6 12 21 12 21z"/></svg><span class="num">5</span></button>
+              <button class="node locked" data-comp-id="node-6" style="left:72%;top:46%"><span class="halo"></span><svg class="hb" viewBox="0 0 24 24"><path d="M12 21C12 21 4 15.6 4 9.9 4 7 6.2 5 8.7 5c1.5 0 2.7.8 3.3 2 .6-1.2 1.8-2 3.3-2C17.8 5 20 7 20 9.9 20 15.6 12 21 12 21z"/></svg><span class="num">6</span></button>
+              <button class="node locked" data-comp-id="node-7" style="left:28%;top:56%"><svg class="hb" viewBox="0 0 24 24"><path d="M12 21C12 21 4 15.6 4 9.9 4 7 6.2 5 8.7 5c1.5 0 2.7.8 3.3 2 .6-1.2 1.8-2 3.3-2C17.8 5 20 7 20 9.9 20 15.6 12 21 12 21z"/></svg><span class="num">7</span></button>
+              <button class="node locked" data-comp-id="node-8" style="left:66%;top:64%">
+                <svg class="mv l" viewBox="0 0 24 24"><use href="#g-chev"/></svg>
+                <svg class="hb" viewBox="0 0 24 24"><path d="M12 21C12 21 4 15.6 4 9.9 4 7 6.2 5 8.7 5c1.5 0 2.7.8 3.3 2 .6-1.2 1.8-2 3.3-2C17.8 5 20 7 20 9.9 20 15.6 12 21 12 21z"/></svg>
+                <svg class="mv r" viewBox="0 0 24 24"><use href="#g-chevr"/></svg>
+                <span class="num">8</span>
+              </button>
+              <button class="node locked" data-comp-id="node-9" style="left:30%;top:74%"><svg class="hb" viewBox="0 0 24 24"><path d="M12 21C12 21 4 15.6 4 9.9 4 7 6.2 5 8.7 5c1.5 0 2.7.8 3.3 2 .6-1.2 1.8-2 3.3-2C17.8 5 20 7 20 9.9 20 15.6 12 21 12 21z"/></svg><span class="num">9</span></button>
+              <button class="node locked" data-comp-id="node-10" style="left:60%;top:82%"><svg class="hb" viewBox="0 0 24 24"><path d="M12 21C12 21 4 15.6 4 9.9 4 7 6.2 5 8.7 5c1.5 0 2.7.8 3.3 2 .6-1.2 1.8-2 3.3-2C17.8 5 20 7 20 9.9 20 15.6 12 21 12 21z"/></svg><span class="num">10</span></button>
+            </div>
+
+            <div class="levels-foot" data-comp-id="levels-foot">
+              <button class="iconbtn" aria-label="Sound on"><svg><use href="#g-sound"/></svg></button>
+              <button class="pillbtn primary" data-comp-id="levels-play"><svg style="fill:var(--white)"><use href="#g-play"/></svg>Play · Level 4</button>
+            </div>
+            <span class="homebar"></span>
+          </div>
+        </article>
+        <p class="phone-cap"><b>02</b> — Levels</p>
+      </div>
+
+      <!-- ================= 03 AIM & FIRE ================= -->
+      <div class="phone-unit pu-3">
+        <article class="phone" data-comp-id="phone-game">
+          <span class="notch"></span>
+          <div class="screen">
+            <div class="statusbar"><span>9:41</span>
+              <span class="sicons">
+                <svg width="15" height="10" viewBox="0 0 15 10" fill="currentColor"><rect x="0" y="6" width="2.6" height="4" rx="1"/><rect x="4" y="4" width="2.6" height="6" rx="1"/><rect x="8" y="2" width="2.6" height="8" rx="1"/><rect x="12" y="0" width="2.6" height="10" rx="1"/></svg>
+                <svg width="14" height="10" viewBox="0 0 14 10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M1 3.6a8.5 8.5 0 0 1 12 0M3.4 6.2a5 5 0 0 1 7.2 0"/><circle cx="7" cy="8.7" r="1.1" fill="currentColor" stroke="none"/></svg>
+                <svg width="20" height="10" viewBox="0 0 20 10" fill="none"><rect x=".5" y=".5" width="16" height="9" rx="2.5" stroke="currentColor" opacity=".5"/><rect x="2" y="2" width="10.5" height="6" rx="1.4" fill="currentColor"/><rect x="17.6" y="3" width="2" height="4" rx="1" fill="currentColor" opacity=".5"/></svg>
+              </span>
+            </div>
+
+            <div class="game-hud" data-comp-id="game-hud">
+              <span class="hud-lv">LV 2 · Bounce</span>
+              <span class="hud-targets" aria-label="2 heart targets">
+                <svg viewBox="0 0 24 24"><path class="heart-fill" d="M12 21C12 21 4 15.6 4 9.9 4 7 6.2 5 8.7 5c1.5 0 2.7.8 3.3 2 .6-1.2 1.8-2 3.3-2C17.8 5 20 7 20 9.9 20 15.6 12 21 12 21z"/></svg>
+                <svg viewBox="0 0 24 24"><path class="heart-fill" d="M12 21C12 21 4 15.6 4 9.9 4 7 6.2 5 8.7 5c1.5 0 2.7.8 3.3 2 .6-1.2 1.8-2 3.3-2C17.8 5 20 7 20 9.9 20 15.6 12 21 12 21z"/></svg>
+                <span class="cnt">×2</span>
+              </span>
+              <button class="iconbtn" aria-label="Sound on"><svg><use href="#g-sound"/></svg></button>
+            </div>
+
+            <div class="field" data-comp-id="game-field">
+              <span class="wall wall-b" data-comp-id="wall-top"></span>
+              <span class="wall wall-a" data-comp-id="wall-bounce"></span>
+
+              <span class="target t1" data-comp-id="target-1">
+                <svg viewBox="0 0 34 32"><path class="th" d="M17 30C17 30 3 20.4 3 11.6 3 6.6 6.8 3.2 11 3.2c2.6 0 4.6 1.4 6 3.4 1.4-2 3.4-3.4 6-3.4 4.2 0 8 3.4 8 8.4C31 20.4 17 30 17 30z"/><ellipse class="gloss" cx="10.6" cy="10.4" rx="3.4" ry="2.1" transform="rotate(-24 10.6 10.4)"/></svg>
+                <span class="spk"><svg><use href="#g-spark"/></svg></span>
+              </span>
+              <span class="target t2" data-comp-id="target-2">
+                <svg viewBox="0 0 34 32"><path class="th" d="M17 30C17 30 3 20.4 3 11.6 3 6.6 6.8 3.2 11 3.2c2.6 0 4.6 1.4 6 3.4 1.4-2 3.4-3.4 6-3.4 4.2 0 8 3.4 8 8.4C31 20.4 17 30 17 30z"/><ellipse class="gloss" cx="10.6" cy="10.4" rx="3.4" ry="2.1" transform="rotate(-24 10.6 10.4)"/></svg>
+                <span class="spk"><svg><use href="#g-spark"/></svg></span>
+              </span>
+
+              <svg class="aimsvg" viewBox="0 0 286 470" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+                <!-- preview: first segment only, to first impact -->
+                <line class="ray" x1="97" y1="368" x2="201" y2="214" data-comp-id="preview-ray"/>
+                <g class="impact" data-comp-id="impact-dot">
+                  <circle class="ping" cx="203" cy="211" r="8"/>
+                  <circle class="core" cx="203" cy="211" r="3.4"/>
+                </g>
+                <!-- bow, drawn back -->
+                <g transform="translate(70,405) rotate(35)">
+                  <line class="band" x1="-26" y1="26" x2="0" y2="46"/>
+                  <line class="band" x1="26" y1="26" x2="0" y2="46"/>
+                  <path class="bow-arc" d="M-26 26 Q0 -30 26 26"/>
+                  <line class="shaft" x1="0" y1="46" x2="0" y2="-36"/>
+                  <line class="fletch" x1="0" y1="40" x2="-6" y2="47"/>
+                  <line class="fletch" x1="0" y1="40" x2="6" y2="47"/>
+                  <path class="arrow-heart" d="M0 -46 c-1.6 -2.6 -5.6 -2.2 -5.6 1 0 2.6 5.6 6 5.6 6 s5.6 -3.4 5.6 -6 c0 -3.2 -4 -3.6 -5.6 -1 z"/>
+                </g>
+                <circle class="handle" cx="44" cy="443" r="12"/>
+                <circle class="drag-ghost" cx="58" cy="428" r="11"/>
+              </svg>
+            </div>
+
+            <div class="game-hint" data-comp-id="game-hint">
+              <span class="ht">Drag back · release</span>
+              <span class="sep"></span>
+              <kbd>←</kbd><kbd>→</kbd><kbd>↑</kbd><kbd>↓</kbd><kbd>space</kbd><kbd>R</kbd>
+            </div>
+            <span class="homebar"></span>
+          </div>
+        </article>
+        <p class="phone-cap"><b>03</b> — Aim &amp; fire</p>
+      </div>
+
+      <!-- ================= 04 RESULT ================= -->
+      <div class="phone-unit pu-4">
+        <article class="phone" data-comp-id="phone-result">
+          <span class="notch"></span>
+          <div class="screen result">
+            <div class="statusbar"><span>9:41</span>
+              <span class="sicons">
+                <svg width="15" height="10" viewBox="0 0 15 10" fill="currentColor"><rect x="0" y="6" width="2.6" height="4" rx="1"/><rect x="4" y="4" width="2.6" height="6" rx="1"/><rect x="8" y="2" width="2.6" height="8" rx="1"/><rect x="12" y="0" width="2.6" height="10" rx="1"/></svg>
+                <svg width="14" height="10" viewBox="0 0 14 10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M1 3.6a8.5 8.5 0 0 1 12 0M3.4 6.2a5 5 0 0 1 7.2 0"/><circle cx="7" cy="8.7" r="1.1" fill="currentColor" stroke="none"/></svg>
+                <svg width="20" height="10" viewBox="0 0 20 10" fill="none"><rect x=".5" y=".5" width="16" height="9" rx="2.5" stroke="currentColor" opacity=".5"/><rect x="2" y="2" width="10.5" height="6" rx="1.4" fill="currentColor"/><rect x="17.6" y="3" width="2" height="4" rx="1" fill="currentColor" opacity=".5"/></svg>
+              </span>
+            </div>
+
+            <!-- dimmed field behind -->
+            <svg class="behind" viewBox="0 0 306 672" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+              <rect x="38" y="96" width="152" height="18" rx="8" style="fill:var(--wall-lo)"/>
+              <rect x="208" y="220" width="20" height="182" rx="8" style="fill:var(--wall-lo)"/>
+              <path d="M150 190 c-9 -14 -34 -10 -34 8 0 16 34 34 34 34 s34 -18 34 -34 c0 -18 -25 -22 -34 -8 z" fill="var(--rose)"/>
+              <path d="M88 160 c-7 -11 -27 -8 -27 6 0 13 27 27 27 27 s27 -14 27 -27 c0 -14 -20 -17 -27 -6 z" fill="var(--rose)"/>
+            </svg>
+            <div class="scrim"></div>
+
+            <div class="rcard" data-comp-id="result-card">
+              <span class="r-best">New best</span>
+              <span class="conf c1"><svg><use href="#g-heart"/></svg></span>
+              <span class="conf c2"><svg><use href="#g-heart"/></svg></span>
+              <span class="conf c3"><svg><use href="#g-heart"/></svg></span>
+              <span class="conf c4"><svg><use href="#g-heart"/></svg></span>
+              <span class="conf c5"><svg><use href="#g-heart"/></svg></span>
+
+              <div class="r-hearts" data-comp-id="result-hearts">
+                <svg viewBox="0 0 24 24"><path class="h" d="M12 21C12 21 4 15.6 4 9.9 4 7 6.2 5 8.7 5c1.5 0 2.7.8 3.3 2 .6-1.2 1.8-2 3.3-2C17.8 5 20 7 20 9.9 20 15.6 12 21 12 21z"/></svg>
+                <svg viewBox="0 0 24 24"><path class="h h2" d="M12 21C12 21 4 15.6 4 9.9 4 7 6.2 5 8.7 5c1.5 0 2.7.8 3.3 2 .6-1.2 1.8-2 3.3-2C17.8 5 20 7 20 9.9 20 15.6 12 21 12 21z"/></svg>
+                <svg viewBox="0 0 24 24"><path class="h h3" d="M12 21C12 21 4 15.6 4 9.9 4 7 6.2 5 8.7 5c1.5 0 2.7.8 3.3 2 .6-1.2 1.8-2 3.3-2C17.8 5 20 7 20 9.9 20 15.6 12 21 12 21z"/></svg>
+              </div>
+              <h3 class="r-title">Level <em>clear</em></h3>
+              <p class="r-sub">Two hearts · one arrow · no misses</p>
+
+              <div class="r-stats" data-comp-id="result-stats">
+                <div class="st"><div class="v">3</div><div class="l">Bounces</div></div>
+                <div class="st"><div class="v">1</div><div class="l">Arrow</div></div>
+                <div class="st"><div class="v">0:12</div><div class="l">Time</div></div>
+              </div>
+
+              <div class="r-stars" data-comp-id="result-stars">
+                <svg viewBox="0 0 24 24"><path class="fillp" d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8-6.1-3.4-6.1 3.4 1.4-6.8L2.2 9.1l6.9-.8z"/></svg>
+                <svg class="s2" viewBox="0 0 24 24"><path class="fillp" d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8-6.1-3.4-6.1 3.4 1.4-6.8L2.2 9.1l6.9-.8z"/></svg>
+                <svg class="s3" viewBox="0 0 24 24"><path class="fillp" d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8-6.1-3.4-6.1 3.4 1.4-6.8L2.2 9.1l6.9-.8z"/></svg>
+              </div>
+
+              <div class="r-btns" data-comp-id="result-buttons">
+                <button class="pillbtn primary"><svg style="fill:var(--white)"><use href="#g-restart"/></svg>Play again</button>
+                <button class="pillbtn ghost">Next level<svg style="fill:none"><use href="#g-chevr"/></svg></button>
+              </div>
+            </div>
+
+            <span class="homebar"></span>
+          </div>
+        </article>
+        <p class="phone-cap"><b>04</b> — Result</p>
+      </div>
+
+    </div><!-- /phones -->
+
+    <!-- spec strip -->
+    <footer class="spec" data-comp-id="spec-strip">
+      <div class="grp">
+        <span class="glab">Palette</span>
+        <span class="gbody swatches">
+          <span class="sw"><i style="background:var(--cream)"></i><b>cream</b></span>
+          <span class="sw"><i style="background:var(--petal)"></i><b>petal</b></span>
+          <span class="sw"><i style="background:var(--rose)"></i><b>rose</b></span>
+          <span class="sw"><i style="background:var(--lav)"></i><b>portal</b></span>
+          <span class="sw"><i style="background:var(--ink)"></i><b>ink</b></span>
+        </span>
+      </div>
+      <div class="grp">
+        <span class="glab">Type</span>
+        <span class="gbody type-sample">
+          <span class="big">Aa <em>Aa</em></span>
+          <span class="sm">Fraunces — display<br>Inter — body · JetBrains Mono — HUD</span>
+        </span>
+      </div>
+      <div class="grp">
+        <span class="glab">Preview rule</span>
+        <span class="gbody note"><b>First segment only</b> — ray stops at first<br>impact; portals truncate, never spoil</span>
+      </div>
+      <div class="grp">
+        <span class="glab">Physics</span>
+        <span class="gbody note"><b>Ray-cast reflection</b> · 120 Hz substep<br>≤10 bounces · 8 s flight cap</span>
+      </div>
+      <div class="grp">
+        <span class="glab">Feedback</span>
+        <span class="gbody note"><b>WebAudio synth</b> · vibrate() haptics<br>mute persists · first-gesture unlock</span>
+      </div>
+      <div class="grp">
+        <span class="glab">Save</span>
+        <span class="gbody note"><b>localStorage</b><br><kbd>cupid-ricochet-best</kbd></span>
+      </div>
+    </footer>
+
+  </div>
+</div>
+<script type="application/x-design-tweaks+json" id="design-preview-tweaks">
+[
+	{
+		"current":"#e2537f",
+		"compId":"stage",
+		"param":"rose",
+		"cssProp":"--rose",
+		"label":"Heart accent",
+		"type":"color",
+		"target":"element"
+	},
+	{
+		"current":"#9f86e0",
+		"compId":"stage",
+		"param":"lav",
+		"cssProp":"--lav",
+		"label":"Portal tint",
+		"type":"color",
+		"target":"element"
+	},
+	{
+		"current":"#1f1713",
+		"compId":"stage",
+		"param":"stage",
+		"cssProp":"--stage",
+		"label":"Stage backdrop",
+		"type":"color",
+		"target":"element"
+	},
+	{
+		"unit":"px",
+		"current":320,
+		"min":280,
+		"compId":"phones-row",
+		"param":"phone-w",
+		"max":360,
+		"cssProp":"--phone-w",
+		"step":4,
+		"label":"Phone width",
+		"type":"range",
+		"target":"element"
+	},
+	{
+		"unit":"px",
+		"current":26,
+		"min":12,
+		"compId":"result-card",
+		"param":"card-radius",
+		"max":36,
+		"cssProp":"border-radius",
+		"step":2,
+		"label":"Result card radius",
+		"type":"range",
+		"target":"element"
+	}
+]
+</script>
+</body>
+</html>
