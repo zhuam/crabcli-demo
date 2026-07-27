@@ -801,17 +801,21 @@ function resolveStep() {
 }
 
 function addNewRow() {
-  const keys = Object.keys(state.grid);
-  if (!keys.length) return;
-  /* Shift all existing rows down by one */
-  for (const key of keys) {
-    const c = state.grid[key];
+  const entries = Object.entries(state.grid);
+  if (!entries.length) return;
+  /* Shift all existing rows down by one — rebuild grid so keys match new row values.
+     Without this, grid keys like "5,3" keep the old row while c.row is incremented,
+     breaking neighbors() which parses row from the key string. */
+  const shifted = {};
+  for (const [key, c] of entries) {
     if (c) {
       c.row += 1;
       const p = hexPos(c.col, c.row);
       c.x = p.x; c.y = p.y;
+      shifted[c.col + ',' + c.row] = c;
     }
   }
+  state.grid = shifted;
   /* Add new row at top */
   const alive = new Set();
   for (const key in state.grid) if (state.grid[key]) alive.add(state.grid[key].colorIdx);

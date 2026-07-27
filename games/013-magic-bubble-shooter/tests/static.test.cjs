@@ -238,7 +238,7 @@ ok('thumb.svg exists and is non-empty', fs.existsSync(path.join(ROOT, 'thumb.svg
 group('npm script wiring');
 const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, '..', '..', 'package.json'), 'utf8'));
 ok('package.json has test:magic-bubble-shooter',
-  (pkg.scripts || {})['test:magic-bubble-shooter'] === 'node games/013-magic-bubble-shooter/tests/static.test.cjs');
+  (pkg.scripts || {})['test:magic-bubble-shooter'] === 'node games/013-magic-bubble-shooter/tests/static.test.cjs && node games/013-magic-bubble-shooter/tests/behavior.test.cjs');
 
 console.log('\n' + '='.repeat(50));
 console.log(`  ${pass} passed, ${fail} failed`);
