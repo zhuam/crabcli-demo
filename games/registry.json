@@ -742,6 +742,26 @@
       "version": "1.0.0",
       "featured": false,
       "rating": 4.5
+    },
+    {
+      "id": "magic-bubble-shooter",
+      "name": "Magic Bubble Shooter",
+      "description": "经典泡泡龙 — 瞄准、发射、3连消除！逐层下降，清空通关。鼠标/键盘/触屏全支持",
+      "category": "puzzle",
+      "tags": [
+        "singleplayer",
+        "puzzle",
+        "bubble-shooter",
+        "colorful",
+        "short-session"
+      ],
+      "thumbnail": "/games/013-magic-bubble-shooter/thumb.svg",
+      "path": "/games/013-magic-bubble-shooter/",
+      "hasServer": false,
+      "players": "1",
+      "version": "1.0.0",
+      "featured": true,
+      "rating": 4.0
     }
   ],
   "categories": [

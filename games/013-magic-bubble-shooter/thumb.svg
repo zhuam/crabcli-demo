@@ -1,0 +1,77 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 180" width="320" height="180" role="img" aria-label="Magic Bubble Shooter thumbnail: colorful bubbles in hex grid with a shooter cannon">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="0%" r="90%">
+      <stop offset="0%" stop-color="#120622"/>
+      <stop offset="45%" stop-color="#0e0d0c"/>
+      <stop offset="100%" stop-color="#0f0f12"/>
+    </radialGradient>
+    <linearGradient id="ruby" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#f09090"/><stop offset="100%" stop-color="#E53E3E"/></linearGradient>
+    <linearGradient id="emerald" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#6fe7b5"/><stop offset="100%" stop-color="#34D399"/></linearGradient>
+    <linearGradient id="sapphire" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#7bb4ff"/><stop offset="100%" stop-color="#3B82F6"/></linearGradient>
+    <linearGradient id="amber" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#f5ceb5"/><stop offset="100%" stop-color="#EAAE87"/></linearGradient>
+  </defs>
+  <rect width="320" height="180" fill="url(#bg)"/>
+  <!-- Star field dots -->
+  <g fill="rgba(255,255,255,0.3)">
+    <circle cx="30" cy="20" r="1.2"/><circle cx="80" cy="10" r="0.8"/><circle cx="140" cy="25" r="1"/><circle cx="200" cy="15" r="0.8"/><circle cx="270" cy="20" r="1.2"/>
+    <circle cx="50" cy="165" r="0.8"/><circle cx="290" cy="160" r="1"/><circle cx="160" cy="170" r="0.8"/><circle cx="240" cy="168" r="1.2"/><circle cx="310" cy="170" r="0.8"/>
+  </g>
+  <!-- Hex grid bubbles (5 rows) -->
+  <g>
+    <!-- Row 0 (10 bubbles) -->
+    <circle cx="30" cy="35" r="10" fill="url(#ruby)"/>
+    <circle cx="58" cy="35" r="10" fill="url(#emerald)"/>
+    <circle cx="86" cy="35" r="10" fill="url(#sapphire)"/>
+    <circle cx="114" cy="35" r="10" fill="url(#ruby)"/>
+    <circle cx="142" cy="35" r="10" fill="url(#amber)"/>
+    <circle cx="170" cy="35" r="10" fill="url(#sapphire)"/>
+    <circle cx="198" cy="35" r="10" fill="url(#emerald)"/>
+    <circle cx="226" cy="35" r="10" fill="url(#ruby)"/>
+    <circle cx="254" cy="35" r="10" fill="url(#amber)"/>
+    <circle cx="282" cy="35" r="10" fill="url(#sapphire)"/>
+    <!-- Row 1 (9 bubbles, offset) -->
+    <circle cx="44" cy="56" r="10" fill="url(#amber)"/>
+    <circle cx="72" cy="56" r="10" fill="url(#ruby)"/>
+    <circle cx="100" cy="56" r="10" fill="url(#emerald)"/>
+    <circle cx="128" cy="56" r="10" fill="url(#sapphire)"/>
+    <circle cx="156" cy="56" r="10" fill="url(#ruby)"/>
+    <circle cx="184" cy="56" r="10" fill="url(#amber)"/>
+    <circle cx="212" cy="56" r="10" fill="url(#emerald)"/>
+    <circle cx="240" cy="56" r="10" fill="url(#sapphire)"/>
+    <circle cx="268" cy="56" r="10" fill="url(#ruby)"/>
+    <!-- Row 2 -->
+    <circle cx="30" cy="77" r="10" fill="url(#sapphire)"/>
+    <circle cx="58" cy="77" r="10" fill="url(#amber)"/>
+    <circle cx="86" cy="77" r="10" fill="url(#ruby)"/>
+    <circle cx="114" cy="77" r="10" fill="url(#emerald)"/>
+    <circle cx="142" cy="77" r="10" fill="url(#sapphire)"/>
+    <circle cx="170" cy="77" r="10" fill="url(#ruby)"/>
+    <circle cx="198" cy="77" r="10" fill="url(#amber)"/>
+    <circle cx="226" cy="77" r="10" fill="url(#emerald)"/>
+    <circle cx="254" cy="77" r="10" fill="url(#ruby)"/>
+    <circle cx="282" cy="77" r="10" fill="url(#sapphire)"/>
+    <!-- Row 3 -->
+    <circle cx="44" cy="98" r="10" fill="url(#ruby)"/>
+    <circle cx="72" cy="98" r="10" fill="url(#sapphire)"/>
+    <circle cx="100" cy="98" r="10" fill="url(#amber)"/>
+    <circle cx="128" cy="98" r="10" fill="url(#ruby)"/>
+    <circle cx="156" cy="98" r="10" fill="url(#emerald)"/>
+    <circle cx="184" cy="98" r="10" fill="url(#sapphire)"/>
+    <circle cx="212" cy="98" r="10" fill="url(#ruby)"/>
+    <circle cx="240" cy="98" r="10" fill="url(#amber)"/>
+    <circle cx="268" cy="98" r="10" fill="url(#emerald)"/>
+  </g>
+  <!-- Dashed aim line (trajectory preview) -->
+  <path d="M160 155 L160 80 L220 60" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="1.5" stroke-dasharray="4 4" stroke-linecap="round"/>
+  <!-- Shooter cannon area -->
+  <circle cx="160" cy="160" r="12" fill="rgba(124,97,212,0.2)" stroke="rgba(124,97,212,0.3)" stroke-width="1"/>
+  <circle cx="160" cy="160" r="9" fill="url(#emerald)"/>
+  <!-- Shine on shooter bubble -->
+  <ellipse cx="157" cy="157" rx="3" ry="2" fill="rgba(255,255,255,0.35)" transform="rotate(-20 157 157)"/>
+  <!-- Next preview label -->
+  <text x="276" y="165" fill="rgba(232,224,240,0.35)" font-family="monospace" font-size="7" text-anchor="middle">下一个</text>
+  <circle cx="276" cy="171" r="6" fill="url(#sapphire)"/>
+  <!-- Magic sparkles -->
+  <path d="M10 140l1.5 4 4 1.5-4 1.5-1.5 4-1.5-4-4-1.5 4-1.5z" fill="#EAAE87" opacity="0.6"/>
+  <path d="M305 50l1.2 3.2 3.2 1.2-3.2 1.2-1.2 3.2-1.2-3.2-3.2-1.2 3.2-1.2z" fill="#7C61D4" opacity="0.5"/>
+</svg>
