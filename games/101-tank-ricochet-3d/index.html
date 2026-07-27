@@ -1,0 +1,2106 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#04070B">
+<title>Ricochet Tank 3D</title>
+<link rel="stylesheet" href="../shared/game-frame.css">
+<style>
+/* ============================================================
+   RICOCHET TANK 3D (Game 101)
+   Single-file Three.js neon-arcade tank duel.
+   UI layer spec: tank-ricochet-ui-design.html (swarm-f8f23b80)
+   Palette  #04070B bg / #BBF351 player / #00BCFF aim
+            #FF4D8F enemy / #D97706 barrels / #DC2626 danger
+   ============================================================ */
+:root{
+  --bg:#04070B; --floor:#060C13; --panel:#0D1622; --panel2:#0D1826;
+  --lime:#BBF351; --cyan:#00BCFF; --mag:#FF4D8F;
+  --orange:#D97706; --red:#DC2626;
+  --ink:#CFE2EE; --dim:#5F7688; --grid:#0E1B2A;
+  --mono:ui-monospace,'JetBrains Mono','SF Mono',Menlo,Consolas,'Liberation Mono',monospace;
+  --ui:'Inter',-apple-system,BlinkMacSystemFont,'PingFang SC','Microsoft YaHei',sans-serif;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html,body{
+  width:100%;height:100%;overflow:hidden;
+  background:var(--bg);            /* zero white screen: dark before any asset */
+  color:var(--ink);font-family:var(--ui);
+  touch-action:none;user-select:none;-webkit-user-select:none;
+  -webkit-tap-highlight-color:transparent;
+}
+button{font-family:inherit;border:none;background:none;color:inherit;cursor:pointer}
+#gl{position:fixed;inset:0;z-index:1}
+#gl canvas{display:block}
+.overlay{position:fixed;inset:0;z-index:20;display:none}
+.overlay.on{display:block}
+
+/* ───────────── ① BOOT · loading (visible before three.js) ───────────── */
+#boot{display:flex;z-index:50;background:var(--bg)}
+#boot.off{display:none}
+.boot-in{margin:auto;text-align:center;padding:0 24px;width:min(88vw,340px)}
+.boot-ring{position:relative;width:96px;height:96px;margin:0 auto 18px}
+.boot-ring::before,.boot-ring::after{
+  content:"";position:absolute;inset:0;border-radius:50%;
+  border:1px solid rgba(0,188,255,.55);animation:radar 1.8s ease-out infinite;
+}
+.boot-ring::after{animation-delay:.9s}
+@keyframes radar{0%{transform:scale(.42);opacity:.9}100%{transform:scale(1.25);opacity:0}}
+.boot-tank{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%)}
+.boot-word{font:italic 800 30px/1 var(--mono);letter-spacing:.14em;color:var(--lime)}
+.boot-sub{margin-top:6px;font:600 12px/1 var(--mono);letter-spacing:.9em;text-indent:.9em;color:var(--dim)}
+.boot-bar{position:relative;height:6px;margin:22px auto 8px;border:1px solid rgba(0,188,255,.35);background:rgba(0,188,255,.06)}
+.boot-fill{position:absolute;inset:0;right:auto;width:0%;background:linear-gradient(90deg,rgba(0,188,255,.5),var(--cyan));transition:width .18s linear}
+.boot-ticks{position:absolute;inset:0;background:repeating-linear-gradient(90deg,transparent 0 calc(10% - 1px),var(--bg) calc(10% - 1px) 10%)}
+.boot-meta{display:flex;justify-content:space-between;font:600 10px/1 var(--mono);letter-spacing:.12em;color:var(--dim)}
+.boot-status{margin-top:14px;font:600 11px/1.6 var(--mono);letter-spacing:.18em;color:var(--cyan);min-height:18px}
+.boot-hint{margin-top:26px;font:450 11px/1.6 var(--ui);color:var(--dim)}
+.boot-retry{display:none;margin:14px auto 0;padding:12px 26px;font:700 12px/1 var(--mono);letter-spacing:.2em;color:var(--bg);background:var(--lime)}
+.boot-retry.on{display:block}
+
+/* ───────────── ② MENU ───────────── */
+#menu{z-index:40;background:radial-gradient(120% 90% at 50% 110%,#0A1420 0%,var(--bg) 55%)}
+.menu-floor{position:absolute;left:0;right:0;bottom:0;height:34%;background:linear-gradient(180deg,transparent,rgba(0,188,255,.05));border-top:1px solid rgba(0,188,255,.14)}
+.menu-shot{position:absolute;inset:0;width:100%;height:100%}
+.rico-dot{position:absolute;width:8px;height:8px;border-radius:50%;background:var(--cyan);
+  box-shadow:0 0 12px var(--cyan);left:88%;top:88%;animation:ricopath 3.6s linear infinite}
+@keyframes ricopath{
+  0%{left:88%;top:88%;opacity:0}6%{opacity:1}
+  46%{left:13%;top:48%}50%{left:12%;top:47%}
+  92%{left:86%;top:24%;opacity:1}96%{opacity:0}100%{left:88%;top:22%;opacity:0}
+}
+.menu-mid{position:absolute;left:0;right:0;top:23%;text-align:center}
+.menu-title{font:italic 800 clamp(40px,13vw,54px)/1 var(--mono);letter-spacing:.08em;color:var(--lime);text-shadow:0 0 24px rgba(187,243,81,.35)}
+.menu-sub{margin-top:10px;font:600 12px/1 var(--mono);letter-spacing:.42em;text-indent:.42em;color:var(--cyan)}
+.menu-records{margin-top:22px;display:flex;justify-content:center;gap:18px;font:600 11px/1 var(--mono);letter-spacing:.1em;color:var(--dim)}
+.menu-records b{color:var(--ink);font-weight:700}
+.menu-cta{position:absolute;left:0;right:0;bottom:19%;display:flex;justify-content:center}
+.btn-start{
+  min-height:58px;padding:14px 44px;text-align:center;
+  font:italic 800 17px/1.2 var(--mono);letter-spacing:.14em;color:var(--bg);
+  background:var(--lime);clip-path:polygon(14px 0,100% 0,100% calc(100% - 14px),calc(100% - 14px) 100%,0 100%,0 14px);
+  box-shadow:0 0 28px rgba(187,243,81,.35);
+}
+.btn-start small{display:block;font:600 10px/1 var(--mono);letter-spacing:.5em;text-indent:.5em;color:rgba(4,7,11,.65);margin-top:4px}
+.btn-start:active{transform:scale(.97)}
+.menu-foot{position:absolute;left:0;right:0;bottom:max(18px,env(safe-area-inset-bottom));display:flex;justify-content:center;gap:10px;font:600 10px/1 var(--mono);letter-spacing:.14em;color:var(--dim)}
+.snd{display:inline-flex;align-items:center;gap:6px;min-height:44px;min-width:44px;justify-content:center;color:var(--ink)}
+.snd i{width:7px;height:7px;border-radius:50%;background:var(--lime);box-shadow:0 0 8px var(--lime)}
+.snd.muted{color:var(--dim)}
+.snd.muted i{background:var(--dim);box-shadow:none}
+
+/* ───────────── ③ GAME HUD ───────────── */
+#hud{z-index:30;pointer-events:none}
+#hud.on{display:block}
+.hud-top{
+  position:absolute;left:50%;transform:translateX(-50%);
+  top:calc(44px + env(safe-area-inset-top));
+  display:flex;gap:8px;align-items:center;white-space:nowrap;
+}
+.hud-chip{
+  height:30px;display:inline-flex;align-items:center;gap:7px;padding:0 11px;
+  background:rgba(13,22,34,.78);border:1px solid rgba(0,188,255,.28);
+  font:600 10px/1 var(--mono);letter-spacing:.14em;color:var(--dim);
+}
+.hud-chip b{color:var(--ink);font-weight:700}
+.hp-label{color:var(--dim)}
+.hp-cells{display:inline-flex;gap:3px}
+.hp-cell{width:11px;height:15px;background:var(--lime);box-shadow:0 0 6px rgba(187,243,81,.5);transition:background .15s,box-shadow .15s}
+.hp-cell.off{background:rgba(187,243,81,.12);box-shadow:none}
+.hp-cell.hurt{background:var(--red);box-shadow:0 0 6px rgba(220,38,38,.6)}
+.score-chip{font:700 13px/1 var(--mono);letter-spacing:.12em;color:var(--ink);font-variant-numeric:tabular-nums}
+.kill-banner{
+  position:absolute;left:50%;top:26%;transform:translate(-50%,-50%) scale(.8);
+  padding:10px 22px;text-align:center;opacity:0;
+  background:rgba(13,22,34,.85);border:1px solid var(--lime);
+  font:italic 800 15px/1.4 var(--mono);letter-spacing:.1em;color:var(--lime);
+  transition:opacity .18s,transform .18s;
+}
+.kill-banner small{display:block;font:600 10px/1 var(--mono);letter-spacing:.4em;color:var(--cyan);margin-top:3px}
+.kill-banner.on{opacity:1;transform:translate(-50%,-50%) scale(1)}
+.wave-banner{
+  position:absolute;left:50%;top:42%;transform:translate(-50%,-50%);
+  opacity:0;text-align:center;font:italic 800 34px/1 var(--mono);letter-spacing:.2em;color:var(--cyan);
+  text-shadow:0 0 22px rgba(0,188,255,.5);transition:opacity .25s;
+}
+.wave-banner small{display:block;margin-top:8px;font:600 11px/1 var(--mono);letter-spacing:.5em;color:var(--dim)}
+.wave-banner.on{opacity:1}
+.ammo-tray{
+  position:absolute;left:50%;transform:translateX(-50%);
+  bottom:calc(16px + env(safe-area-inset-bottom));text-align:center;
+}
+.shells{display:flex;gap:6px;justify-content:center}
+.shell{width:8px;height:20px;background:var(--orange);box-shadow:0 0 6px rgba(217,119,6,.5);transition:background .15s,box-shadow .15s,transform .15s}
+.shell.off{background:rgba(217,119,6,.15);box-shadow:none}
+.ammo-tray.dry .shells{animation:dryshake .3s linear}
+@keyframes dryshake{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+.reload-bar{width:64px;height:3px;margin-top:6px;background:rgba(217,119,6,.15)}
+.reload-fill{height:100%;width:100%;background:var(--orange);transform-origin:left;transform:scaleX(1)}
+
+/* virtual joystick — 132px ring / 58px knob (spec S4) */
+.joy{
+  position:absolute;left:16px;bottom:calc(52px + env(safe-area-inset-bottom));
+  width:132px;height:132px;border-radius:50%;pointer-events:auto;
+  border:1.5px solid rgba(187,243,81,.35);background:rgba(187,243,81,.05);
+}
+.joy-knob{
+  position:absolute;left:50%;top:50%;width:58px;height:58px;margin:-29px 0 0 -29px;border-radius:50%;
+  background:rgba(187,243,81,.22);border:1.5px solid var(--lime);
+  transition:transform .06s linear;
+}
+.joy.active .joy-knob{transition:none}
+.joy-label,.fire-label{position:absolute;font:600 9px/1 var(--mono);letter-spacing:.24em;color:var(--dim)}
+.joy-label{left:16px;bottom:calc(38px + env(safe-area-inset-bottom));width:132px;text-align:center}
+.fire-btn{
+  position:absolute;right:16px;bottom:calc(52px + env(safe-area-inset-bottom));
+  width:92px;height:92px;border-radius:50%;pointer-events:auto;
+  border:1.5px solid rgba(187,243,81,.4);background:rgba(187,243,81,.06);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+}
+.fire-btn .fire-en{font:italic 800 13px/1 var(--mono);letter-spacing:.14em;color:var(--lime)}
+.fire-btn .fire-cn{font:600 9px/1 var(--mono);letter-spacing:.4em;text-indent:.4em;color:var(--dim)}
+.fire-btn.hot{background:rgba(0,188,255,.14);border-color:var(--cyan)}
+.fire-btn.pressed{transform:scale(.94)}
+.fire-label{right:16px;bottom:calc(38px + env(safe-area-inset-bottom));width:92px;text-align:center}
+.float-txt{
+  position:absolute;left:0;top:0;opacity:0;will-change:transform,opacity;
+  font:italic 800 15px/1 var(--mono);letter-spacing:.06em;color:var(--lime);
+  text-shadow:0 0 10px rgba(187,243,81,.6);pointer-events:none;
+}
+.float-txt.mag{color:var(--mag);text-shadow:0 0 10px rgba(255,77,143,.6)}
+#dmg-vig{
+  position:absolute;inset:0;opacity:0;pointer-events:none;
+  background:radial-gradient(120% 100% at 50% 50%,transparent 55%,rgba(220,38,38,.5) 100%);
+  transition:opacity .45s;
+}
+#dmg-vig.on{opacity:1;transition:opacity .05s}
+
+/* ───────────── ④⑤ RESULT (win / lose dual state) ───────────── */
+#result{z-index:45;background:rgba(4,7,11,.88);display:none}
+#result.on{display:flex}
+.res-in{margin:auto;width:min(88vw,340px);text-align:center;padding:24px 0}
+.res-kicker{font:600 11px/1 var(--mono);letter-spacing:.4em;color:var(--dim)}
+.res-title{margin-top:12px;font:italic 800 44px/1 var(--mono);letter-spacing:.06em;color:var(--lime);text-shadow:0 0 26px rgba(187,243,81,.4)}
+#result.lose .res-title{color:var(--mag);text-shadow:0 0 26px rgba(255,77,143,.4);animation:glitch .5s steps(2) 2}
+@keyframes glitch{0%{transform:translate(0)}25%{transform:translate(-3px,1px)}50%{transform:translate(2px,-2px)}75%{transform:translate(-1px,2px)}100%{transform:translate(0)}}
+.res-cn{margin-top:8px;font:600 11px/1 var(--mono);letter-spacing:.8em;text-indent:.8em;color:var(--dim)}
+.res-score{margin-top:26px}
+.res-score-label{font:600 10px/1 var(--mono);letter-spacing:.3em;color:var(--dim)}
+.res-score-num{margin-top:8px;font:700 40px/1 var(--mono);letter-spacing:.1em;color:var(--ink);font-variant-numeric:tabular-nums}
+.res-stats{margin-top:24px;display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.stat{padding:12px 8px;background:var(--panel);border:1px solid rgba(0,188,255,.16)}
+.stat.hot{border-color:rgba(187,243,81,.5);background:rgba(187,243,81,.07)}
+.stat-k{font:600 9px/1.4 var(--mono);letter-spacing:.14em;color:var(--dim)}
+.stat-v{margin-top:6px;font:italic 800 20px/1 var(--mono);color:var(--ink)}
+.stat.hot .stat-v{color:var(--lime)}
+.res-actions{margin-top:28px;display:flex;flex-direction:column;gap:10px;align-items:center}
+.btn-restart{
+  width:100%;min-height:56px;font:italic 800 15px/1 var(--mono);letter-spacing:.16em;color:var(--bg);
+  background:var(--lime);clip-path:polygon(12px 0,100% 0,100% calc(100% - 12px),calc(100% - 12px) 100%,0 100%,0 12px);
+}
+#result.lose .btn-restart{background:none;border:1.5px solid var(--red);color:var(--red);clip-path:none}
+.btn-ghost{width:100%;min-height:48px;font:600 12px/1 var(--mono);letter-spacing:.3em;color:var(--dim);border:1px solid rgba(95,118,136,.4);text-decoration:none;display:flex;align-items:center;justify-content:center}
+
+/* ≤360px chat-window viewport: keep targets ≥44px, tighten layout */
+@media (max-width:360px){
+  .hud-chip{height:28px;padding:0 8px;gap:5px}
+  .hud-chip .hp-cell{width:9px;height:13px}
+  .score-chip{font-size:12px}
+  .joy{left:10px}
+  .fire-btn{right:10px}
+  .joy-label{left:10px}
+  .fire-label{right:10px}
+}
+@media (max-height:560px){
+  .menu-mid{top:14%}
+  .menu-cta{bottom:12%}
+}
+</style>
+</head>
+<body>
+
+<!-- 3D layer (canvas appended by three.js) -->
+<div id="gl"></div>
+
+<!-- ① BOOT — inline dark frame shown before any CDN asset -->
+<div id="boot" class="on">
+  <div class="boot-in">
+    <div class="boot-ring">
+      <svg class="boot-tank" width="52" height="52" viewBox="0 0 58 58" fill="none" aria-hidden="true">
+        <rect x="14" y="20" width="30" height="30" rx="6" stroke="#00BCFF" stroke-width="2"/>
+        <circle cx="29" cy="33" r="7.5" stroke="#00BCFF" stroke-width="2"/>
+        <line x1="29" y1="26" x2="29" y2="7" stroke="#00BCFF" stroke-width="3.4" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <div class="boot-word">RICOCHET</div>
+    <div class="boot-sub">弹射坦克</div>
+    <div class="boot-bar"><div class="boot-fill" id="boot-fill"></div><div class="boot-ticks"></div></div>
+    <div class="boot-meta"><span>ASSETS 67KB</span><span id="boot-pct">0%</span></div>
+    <div class="boot-status" id="boot-status">BOOT · 零白屏</div>
+    <button class="boot-retry" id="boot-retry" type="button">重 试 RETRY</button>
+    <div class="boot-hint" id="boot-hint">WECHAT / QQ 聊天窗口即开 · 免安装</div>
+  </div>
+</div>
+
+<!-- ② MENU -->
+<div id="menu" class="overlay">
+  <div class="menu-floor"></div>
+  <svg class="menu-shot" viewBox="0 0 340 680" preserveAspectRatio="none" aria-hidden="true">
+    <path d="M300 620 L44 360 L298 180" fill="none" stroke="rgba(0,188,255,.22)" stroke-width="1.4" stroke-dasharray="7 9"/>
+    <rect x="32" y="332" width="12" height="56" rx="2" fill="#0D1826" stroke="rgba(0,188,255,.35)"/>
+  </svg>
+  <span class="rico-dot"></span>
+  <div class="menu-mid">
+    <div class="menu-title">RICOCHET</div>
+    <div class="menu-sub">弹射坦克 · BOUNCE TO KILL</div>
+    <div class="menu-records">
+      <span>最佳连弹 <b id="rec-bounce">×0</b></span>
+      <span>最高分 <b id="rec-score">000000</b></span>
+    </div>
+  </div>
+  <div class="menu-cta">
+    <button class="btn-start" id="btn-start" type="button">TAP TO START<small>点击开始</small></button>
+  </div>
+  <div class="menu-foot">
+    <button class="snd" id="snd-toggle" type="button"><i></i><span id="snd-label">音效 ON</span></button>
+    <span>·</span><span>链接即玩 · 零安装</span>
+  </div>
+</div>
+
+<!-- ③ GAME HUD -->
+<div id="hud" class="overlay">
+  <div class="hud-top">
+    <div class="hud-chip">
+      <span class="hp-label">HP</span>
+      <span class="hp-cells" id="hp-cells">
+        <span class="hp-cell"></span><span class="hp-cell"></span><span class="hp-cell"></span><span class="hp-cell"></span><span class="hp-cell"></span>
+      </span>
+    </div>
+    <div class="hud-chip" id="wave-chip">WAVE <b id="wave-num">01</b> · 敌 <b id="enemy-num">×2</b></div>
+    <div class="hud-chip score-chip" id="score-chip">000000</div>
+  </div>
+  <div class="kill-banner" id="kill-banner">RICOCHET KILL<small>反弹击杀 +150</small></div>
+  <div class="wave-banner" id="wave-banner">WAVE 01<small>敌军来袭 ENEMY INBOUND</small></div>
+  <div class="ammo-tray" id="ammo-tray">
+    <div class="shells" id="shells"><span class="shell"></span><span class="shell"></span><span class="shell"></span></div>
+    <div class="reload-bar"><div class="reload-fill" id="reload-fill"></div></div>
+  </div>
+  <div class="joy" id="joy"><div class="joy-knob" id="joy-knob"></div></div>
+  <div class="joy-label">MOVE · 移动</div>
+  <div class="fire-btn" id="fire-btn" type="button">
+    <svg width="24" height="24" viewBox="0 0 26 26" fill="none" aria-hidden="true">
+      <circle cx="13" cy="13" r="8.5" stroke="#BBF351" stroke-width="1.6"/>
+      <circle cx="13" cy="13" r="2" fill="#BBF351"/>
+      <line x1="13" y1="1" x2="13" y2="6" stroke="#BBF351" stroke-width="1.6" stroke-linecap="round"/>
+      <line x1="13" y1="20" x2="13" y2="25" stroke="#BBF351" stroke-width="1.6" stroke-linecap="round"/>
+      <line x1="1" y1="13" x2="6" y2="13" stroke="#BBF351" stroke-width="1.6" stroke-linecap="round"/>
+      <line x1="20" y1="13" x2="25" y2="13" stroke="#BBF351" stroke-width="1.6" stroke-linecap="round"/>
+    </svg>
+    <span class="fire-en">FIRE</span><span class="fire-cn">开火</span>
+  </div>
+  <div class="fire-label">HOLD · 瞄准</div>
+  <div id="dmg-vig"></div>
+  <div id="floats"></div>
+</div>
+
+<!-- ④⑤ RESULT -->
+<div id="result" class="overlay">
+  <div class="res-in">
+    <div class="res-kicker" id="res-kicker">WAVE 05 CLEAR</div>
+    <div class="res-title" id="res-title">VICTORY</div>
+    <div class="res-cn" id="res-cn">胜利结算</div>
+    <div class="res-score">
+      <div class="res-score-label">SCORE 本局得分</div>
+      <div class="res-score-num" id="res-score">000000</div>
+    </div>
+    <div class="res-stats">
+      <div class="stat"><div class="stat-k" id="k1">击杀 KILLS</div><div class="stat-v" id="v1">0</div></div>
+      <div class="stat hot"><div class="stat-k" id="k2">反弹击杀 RICOCHET</div><div class="stat-v" id="v2">×0</div></div>
+      <div class="stat hot"><div class="stat-k" id="k3">最大连弹 MAX BOUNCE</div><div class="stat-v" id="v3">×0</div></div>
+      <div class="stat"><div class="stat-k" id="k4">命中率 ACCURACY</div><div class="stat-v" id="v4">0%</div></div>
+    </div>
+    <div class="res-actions">
+      <button class="btn-restart" id="btn-restart" type="button">再来一局 · RESTART</button>
+      <a class="btn-ghost" id="btn-home" href="/hub/">返 回 大 厅</a>
+    </div>
+  </div>
+</div>
+
+<a class="back-to-hub" href="/hub/" aria-label="Back to hub">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>
+  Hub
+</a>
+
+<script>
+/* ── Boot watchdog (classic script — runs BEFORE the CDN module loads) ──
+   Drives the segmented progress bar while three.module.js (~600KB) is
+   fetched, and shows a visible fallback if the CDN never arrives. */
+(function () {
+  'use strict';
+  var fill = document.getElementById('boot-fill');
+  var pctEl = document.getElementById('boot-pct');
+  var stEl = document.getElementById('boot-status');
+  var retry = document.getElementById('boot-retry');
+  var hint = document.getElementById('boot-hint');
+  var STAGES = ['BOOT · 零白屏', 'LOADING THREE.JS …', 'PREPARING ARENA …'];
+  var p = 0, si = 0;
+  function render() {
+    fill.style.width = Math.floor(p) + '%';
+    pctEl.textContent = Math.floor(p) + '%';
+  }
+  var iv = setInterval(function () {
+    p = Math.min(88, p + (88 - p) * 0.055 + 0.35);
+    si = (si + 1) % 26;
+    if (si % 9 === 0) stEl.textContent = STAGES[Math.min(STAGES.length - 1, Math.floor(p / 40))];
+    render();
+  }, 120);
+  function fail(msg) {
+    if (window.__RICOCHET_BOOTED__) return;
+    clearInterval(iv);
+    stEl.textContent = msg;
+    stEl.style.color = '#DC2626';
+    retry.classList.add('on');
+    hint.textContent = '需要访问 cdn.jsdelivr.net · 请检查网络后重试';
+  }
+  window.__bootDone = function () {
+    if (window.__RICOCHET_BOOTED__ === 'done') return;
+    window.__RICOCHET_BOOTED__ = 'done';
+    clearInterval(iv);
+    p = 100; render();
+    stEl.style.color = '#BBF351';
+    stEl.textContent = 'READY · 出击';
+    var boot = document.getElementById('boot');
+    setTimeout(function () { boot.classList.add('off'); }, 340);
+  };
+  retry.addEventListener('click', function () { location.reload(); });
+  setTimeout(function () {
+    if (!window.__RICOCHET_BOOTED__) fail('加载失败 · CDN 不可达');
+  }, 15000);
+  window.addEventListener('error', function () {
+    if (!window.__RICOCHET_BOOTED__) fail('加载失败 · 资源错误');
+  }, true);
+})();
+</script>
+
+<!-- importmap: three.js pinned to an exact version (permanent chat links) -->
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+window.__RICOCHET_BOOTED__ = window.__RICOCHET_BOOTED__ || 'module';
+
+/* ============================================================
+   Constants — the hard constraints from the analyst consensus
+   ============================================================ */
+const SUBSTEP = 1 / 120;          /* fixed 120 Hz physics substep (022 template) */
+const MAX_BOUNCES = 10;           /* hard bounce cap: no infinite wall-to-wall loops */
+const DT_CLAMP = 0.033;           /* 33ms dt clamp — slow-mo only below ~20 FPS */
+const DPR_CAP = 1.5;              /* renderer pixel-ratio ceiling (fillrate budget) */
+const MAX_PARTICLES = 200;        /* particle pool hard cap */
+const MAX_BULLETS = 24;
+const TRAIL_N = 16;               /* trail points per bullet slot */
+
+const AX = 12, AZ = 18;           /* arena half-extents (x, z) */
+const WALL_T = 0.8, WALL_H = 1.8;
+const PLAY_X = AX - WALL_T / 2, PLAY_Z = AZ - WALL_T / 2;
+
+const BULLET_SPEED = 14;          /* world units / second (dt-scaled, always) */
+const BULLET_RANGE = 30;          /* range-decay budget in world units */
+const BULLET_R = 0.16, BULLET_Y = 0.62;
+const TANK_R = 0.85;
+const PLAYER_SPEED = 6.2, PLAYER_HULL_TURN = 8, PLAYER_TUR_TURN = 16;
+const ENEMY_SPEED = 3.4, ENEMY_TURN = 2.6;
+const MAX_HP = 5, AMMO_MAX = 3, RELOAD_T = 1.5;
+const MAX_WAVES = 5;
+const ENEMY_FIRE_CD = 1.7, TELEGRAPH_T = 0.25;
+const STUCK_TIME = 0.5;           /* stuck verdict via ACCUMULATED dt, never frames */
+const HITSTOP_T = 0.06;           /* 60 ms micro hit-stop on ricochet */
+const EXPLODE_R_BARREL = 2.4, EXPLODE_R_MINE = 1.7, CHAIN_R = 2.6;
+const SAFE_SPAWN_R = 5;           /* red line: no mines/barrels at player spawn */
+
+const C_BG = 0x04070B, C_FLOOR = 0x060C13, C_GRID = 0x0E1B2A;
+const C_WALL = 0x16283C, C_WALLTOP = 0x1E3A5F;
+const C_LIME = 0xBBF351, C_CYAN = 0x00BCFF, C_MAG = 0xFF4D8F;
+const C_ORANGE = 0xD97706, C_RED = 0xDC2626;
+const C_BULLET_P = 0xDDFF9A, C_BULLET_E = 0xFF8FBB;
+
+const LS_BEST = 'ricochet-tank.best';
+const LS_BOUNCE = 'ricochet-tank.bestBounce';
+const LS_MUTED = 'ricochet-tank.muted';
+const REDUCED = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ============================================================
+   Safe storage + DOM refs
+   ============================================================ */
+const safeLS = {
+  get(k) { try { return localStorage.getItem(k); } catch (_) { return null; } },
+  set(k, v) { try { localStorage.setItem(k, String(v)); } catch (_) { /* private mode */ } },
+};
+const $ = (id) => document.getElementById(id);
+const el = {
+  gl: $('gl'), boot: $('boot'),
+  menu: $('menu'), btnStart: $('btn-start'), sndToggle: $('snd-toggle'), sndLabel: $('snd-label'),
+  recBounce: $('rec-bounce'), recScore: $('rec-score'),
+  hud: $('hud'), hpCells: Array.from(document.querySelectorAll('.hp-cell')),
+  waveNum: $('wave-num'), enemyNum: $('enemy-num'), scoreChip: $('score-chip'),
+  killBanner: $('kill-banner'), waveBanner: $('wave-banner'),
+  ammoTray: $('ammo-tray'), shells: Array.from(document.querySelectorAll('.shell')),
+  reloadFill: $('reload-fill'),
+  joy: $('joy'), joyKnob: $('joy-knob'), fireBtn: $('fire-btn'),
+  dmgVig: $('dmg-vig'), floatsWrap: $('floats'),
+  result: $('result'), resKicker: $('res-kicker'), resTitle: $('res-title'), resCn: $('res-cn'),
+  resScore: $('res-score'),
+  k1: $('k1'), k2: $('k2'), k3: $('k3'), k4: $('k4'),
+  v1: $('v1'), v2: $('v2'), v3: $('v3'), v4: $('v4'),
+  btnRestart: $('btn-restart'),
+};
+
+/* ============================================================
+   Audio — tiny WebAudio synth, unlocked on first gesture
+   ============================================================ */
+let AC = null, masterGain = null;
+let muted = safeLS.get(LS_MUTED) === '1';
+function unlockAudio() {
+  if (!AC) {
+    try {
+      AC = new (window.AudioContext || window.webkitAudioContext)();
+      masterGain = AC.createGain();
+      masterGain.gain.value = muted ? 0 : 0.5;
+      masterGain.connect(AC.destination);
+    } catch (_) { AC = null; }
+  }
+  if (AC && AC.state === 'suspended') AC.resume();
+}
+function tone(freq0, freq1, dur, type, vol) {
+  if (!AC || muted) return;
+  const t0 = AC.currentTime;
+  const o = AC.createOscillator(), g = AC.createGain();
+  o.type = type;
+  o.frequency.setValueAtTime(freq0, t0);
+  o.frequency.exponentialRampToValueAtTime(Math.max(20, freq1), t0 + dur);
+  g.gain.setValueAtTime(vol, t0);
+  g.gain.exponentialRampToValueAtTime(0.001, t0 + dur);
+  o.connect(g); g.connect(masterGain);
+  o.start(t0); o.stop(t0 + dur + 0.02);
+}
+function noise(dur, vol) {
+  if (!AC || muted) return;
+  const t0 = AC.currentTime, n = Math.floor(AC.sampleRate * dur);
+  const buf = AC.createBuffer(1, n, AC.sampleRate);
+  const d = buf.getChannelData(0);
+  for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / n);
+  const src = AC.createBufferSource(); src.buffer = buf;
+  const g = AC.createGain();
+  g.gain.setValueAtTime(vol, t0);
+  g.gain.exponentialRampToValueAtTime(0.001, t0 + dur);
+  src.connect(g); g.connect(masterGain);
+  src.start(t0);
+}
+const sfxFire = () => tone(300, 70, 0.14, 'square', 0.35);
+const sfxBounce = () => tone(880, 1400, 0.06, 'triangle', 0.28);
+const sfxExplode = () => { noise(0.4, 0.5); tone(160, 40, 0.35, 'sawtooth', 0.3); };
+const sfxHit = () => tone(220, 90, 0.18, 'sawtooth', 0.3);
+const sfxKill = () => { tone(520, 1040, 0.12, 'square', 0.3); tone(780, 1560, 0.16, 'square', 0.22); };
+const sfxWave = () => { tone(392, 392, 0.1, 'square', 0.25); setTimeout(() => tone(523, 523, 0.1, 'square', 0.25), 110); setTimeout(() => tone(659, 659, 0.16, 'square', 0.25), 220); };
+const sfxDry = () => tone(140, 100, 0.05, 'square', 0.2);
+function buzz(p) { try { if (navigator.vibrate) navigator.vibrate(p); } catch (_) { /* unsupported */ } }
+function setMuted(m) {
+  muted = m;
+  safeLS.set(LS_MUTED, m ? '1' : '0');
+  if (masterGain) masterGain.gain.value = m ? 0 : 0.5;
+  el.sndToggle.classList.toggle('muted', m);
+  el.sndLabel.textContent = m ? '音效 OFF' : '音效 ON';
+}
+
+/* ============================================================
+   Game state
+   ============================================================ */
+const state = {
+  phase: 'boot',            /* boot | menu | playing | result */
+  hp: MAX_HP, invuln: 0,
+  ammo: AMMO_MAX, reloadT: 0,
+  score: 0, displayScore: 0,
+  wave: 1, kills: 0, ricoKills: 0, maxBounce: 0,
+  shots: 0, hits: 0,
+  runTime: 0,
+  hitstop: 0, shakeT: 0, shakeMag: 0,
+  best: parseInt(safeLS.get(LS_BEST) || '0', 10) || 0,
+  bestBounce: parseInt(safeLS.get(LS_BOUNCE) || '0', 10) || 0,
+  waveClearTimer: 0, pendingWave: false,
+  resultShown: false,
+};
+
+/* ============================================================
+   Pre-allocated scratch objects — the main loop performs ZERO
+   per-frame heap allocations (GC stalls cause dt spikes, and
+   dt spikes are the ricochet tunneling risk).
+   ============================================================ */
+const v3A = new THREE.Vector3(), v3B = new THREE.Vector3(), v3C = new THREE.Vector3();
+const dummy = new THREE.Object3D();
+const traceOut = { dist: 0, x: 0, z: 0, nx: 0, nz: 0, kind: 'none', ref: null };
+const predOut = { dist: 0, x: 0, z: 0, nx: 0, nz: 0, kind: 'none', ref: null };
+
+/* ============================================================
+   Three.js scene — renderer budget: DPR ≤ 1.5, no realtime
+   shadows (fake baked blob shadows), instanced repeat geometry.
+   ============================================================ */
+let renderer;
+try {
+  renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: 'high-performance' });
+} catch (_) {
+  window.__bootFail ? window.__bootFail('设备不支持 WebGL') : (document.getElementById('boot-status').textContent = '设备不支持 WebGL');
+  throw new Error('WebGL unavailable');
+}
+renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, DPR_CAP));
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setClearColor(C_BG, 1);
+el.gl.appendChild(renderer.domElement);
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(C_BG);
+scene.fog = new THREE.Fog(C_BG, 34, 62);
+
+const camera = new THREE.PerspectiveCamera(52, window.innerWidth / window.innerHeight, 0.1, 90);
+camera.position.set(0, 13.2, 23.6);
+
+scene.add(new THREE.HemisphereLight(0xBFD9FF, 0x0A0F16, 1.0));
+const sun = new THREE.DirectionalLight(0xFFFFFF, 0.85);
+sun.position.set(8, 16, 6);
+scene.add(sun);
+
+/* floor + grid */
+const floor = new THREE.Mesh(
+  new THREE.PlaneGeometry(AX * 2, AZ * 2),
+  new THREE.MeshBasicMaterial({ color: C_FLOOR })
+);
+floor.rotation.x = -Math.PI / 2;
+scene.add(floor);
+{
+  const pts = [];
+  for (let x = -AX; x <= AX; x += 2) pts.push(x, 0.012, -AZ, x, 0.012, AZ);
+  for (let z = -AZ; z <= AZ; z += 2) pts.push(-AX, 0.012, z, AX, 0.012, z);
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
+  scene.add(new THREE.LineSegments(g, new THREE.LineBasicMaterial({ color: C_GRID, transparent: true, opacity: 0.85 })));
+}
+
+/* blob shadow texture (fake baked shadow — no realtime shadow maps) */
+const blobTex = (() => {
+  const cv = document.createElement('canvas'); cv.width = cv.height = 64;
+  const cx = cv.getContext('2d');
+  const grd = cx.createRadialGradient(32, 32, 4, 32, 32, 30);
+  grd.addColorStop(0, 'rgba(0,0,0,0.42)');
+  grd.addColorStop(1, 'rgba(0,0,0,0)');
+  cx.fillStyle = grd; cx.fillRect(0, 0, 64, 64);
+  return new THREE.CanvasTexture(cv);
+})();
+const blobGeo = new THREE.PlaneGeometry(1, 1);
+function addBlob(parent, size) {
+  const m = new THREE.Mesh(blobGeo, new THREE.MeshBasicMaterial({ map: blobTex, transparent: true, depthWrite: false }));
+  m.rotation.x = -Math.PI / 2;
+  m.scale.set(size, size, size);
+  m.position.y = 0.02;
+  parent.add(m);
+  return m;
+}
+
+/* ============================================================
+   Instanced geometry pools
+   ============================================================ */
+const MAX_WALLS = 14, MAX_BARRELS = 8, MAX_MINES = 6;
+const wallBody = new THREE.InstancedMesh(
+  new THREE.BoxGeometry(1, 1, 1),
+  new THREE.MeshLambertMaterial({ color: C_WALL }),
+  MAX_WALLS
+);
+const wallTop = new THREE.InstancedMesh(
+  new THREE.BoxGeometry(1, 1, 1),
+  new THREE.MeshBasicMaterial({ color: C_WALLTOP }),
+  MAX_WALLS
+);
+wallBody.count = wallTop.count = 0;
+scene.add(wallBody, wallTop);
+
+const barrelBody = new THREE.InstancedMesh(
+  new THREE.CylinderGeometry(0.5, 0.56, 1.05, 12),
+  new THREE.MeshLambertMaterial({ color: C_ORANGE }),
+  MAX_BARRELS
+);
+const barrelCap = new THREE.InstancedMesh(
+  new THREE.CylinderGeometry(0.34, 0.34, 0.12, 12),
+  new THREE.MeshBasicMaterial({ color: 0xF59E0B }),
+  MAX_BARRELS
+);
+barrelBody.count = barrelCap.count = 0;
+scene.add(barrelBody, barrelCap);
+
+const mineBase = new THREE.InstancedMesh(
+  new THREE.CylinderGeometry(0.5, 0.56, 0.14, 12),
+  new THREE.MeshLambertMaterial({ color: 0x450A0A }),
+  MAX_MINES
+);
+const mineCore = new THREE.InstancedMesh(
+  new THREE.CylinderGeometry(0.2, 0.2, 0.18, 10),
+  new THREE.MeshBasicMaterial({ color: C_RED }),
+  MAX_MINES
+);
+mineBase.count = mineCore.count = 0;
+scene.add(mineBase, mineCore);
+
+/* bullets — one InstancedMesh, per-instance color (player lime / enemy magenta) */
+const bulletMesh = new THREE.InstancedMesh(
+  new THREE.SphereGeometry(BULLET_R * 1.6, 10, 8),
+  new THREE.MeshBasicMaterial({ color: 0xFFFFFF }),
+  MAX_BULLETS
+);
+bulletMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+scene.add(bulletMesh);
+{
+  const cols = new Float32Array(MAX_BULLETS * 3);
+  bulletMesh.instanceColor = new THREE.InstancedBufferAttribute(cols, 3);
+}
+
+/* bullet trails — one Points cloud, MAX_BULLETS × TRAIL_N pre-allocated verts */
+const TRAIL_TOTAL = MAX_BULLETS * TRAIL_N;
+const trailPos = new Float32Array(TRAIL_TOTAL * 3);
+const trailCol = new Float32Array(TRAIL_TOTAL * 3);
+trailPos.fill(-999);
+const trailGeo = new THREE.BufferGeometry();
+trailGeo.setAttribute('position', new THREE.BufferAttribute(trailPos, 3).setUsage(THREE.DynamicDrawUsage));
+trailGeo.setAttribute('color', new THREE.BufferAttribute(trailCol, 3).setUsage(THREE.DynamicDrawUsage));
+const trailPts = new THREE.Points(trailGeo, new THREE.PointsMaterial({
+  size: 0.2, sizeAttenuation: true, vertexColors: true, transparent: true,
+  blending: THREE.AdditiveBlending, depthWrite: false,
+}));
+trailPts.frustumCulled = false;
+scene.add(trailPts);
+
+/* explosion particles — pooled, ≤ 200 active (additive: black = invisible) */
+const partPos = new Float32Array(MAX_PARTICLES * 3);
+const partCol = new Float32Array(MAX_PARTICLES * 3);
+partPos.fill(-999);
+const partVel = new Float32Array(MAX_PARTICLES * 3);
+const partLife = new Float32Array(MAX_PARTICLES);
+const partMax = new Float32Array(MAX_PARTICLES);
+const partBaseCol = new Float32Array(MAX_PARTICLES * 3);
+let partCursor = 0;
+const partGeo = new THREE.BufferGeometry();
+partGeo.setAttribute('position', new THREE.BufferAttribute(partPos, 3).setUsage(THREE.DynamicDrawUsage));
+partGeo.setAttribute('color', new THREE.BufferAttribute(partCol, 3).setUsage(THREE.DynamicDrawUsage));
+const partPts = new THREE.Points(partGeo, new THREE.PointsMaterial({
+  size: 0.26, sizeAttenuation: true, vertexColors: true, transparent: true,
+  blending: THREE.AdditiveBlending, depthWrite: false,
+}));
+partPts.frustumCulled = false;
+scene.add(partPts);
+
+const tmpColor = new THREE.Color();
+function spawnBurst(x, z, hex, n, speed, life) {
+  tmpColor.setHex(hex);
+  for (let i = 0; i < n; i++) {
+    const k = partCursor; partCursor = (partCursor + 1) % MAX_PARTICLES;
+    const a = Math.random() * Math.PI * 2;
+    const sp = speed * (0.35 + Math.random() * 0.75);
+    const vy = speed * (0.5 + Math.random() * 0.9);
+    partPos[k * 3] = x; partPos[k * 3 + 1] = 0.6; partPos[k * 3 + 2] = z;
+    partVel[k * 3] = Math.cos(a) * sp;
+    partVel[k * 3 + 1] = vy;
+    partVel[k * 3 + 2] = Math.sin(a) * sp;
+    partBaseCol[k * 3] = tmpColor.r; partBaseCol[k * 3 + 1] = tmpColor.g; partBaseCol[k * 3 + 2] = tmpColor.b;
+    partMax[k] = life * (0.6 + Math.random() * 0.7);
+    partLife[k] = partMax[k];
+  }
+}
+function updateParticles(dt) {
+  for (let k = 0; k < MAX_PARTICLES; k++) {
+    if (partLife[k] <= 0) continue;
+    partLife[k] -= dt;
+    if (partLife[k] <= 0) {
+      partCol[k * 3] = partCol[k * 3 + 1] = partCol[k * 3 + 2] = 0;
+      partPos[k * 3 + 1] = -999;
+      continue;
+    }
+    partVel[k * 3 + 1] -= 9 * dt;
+    partPos[k * 3] += partVel[k * 3] * dt;
+    partPos[k * 3 + 1] += partVel[k * 3 + 1] * dt;
+    partPos[k * 3 + 2] += partVel[k * 3 + 2] * dt;
+    if (partPos[k * 3 + 1] < 0.05) { partPos[k * 3 + 1] = 0.05; partVel[k * 3 + 1] *= -0.35; }
+    const f = partLife[k] / partMax[k];
+    partCol[k * 3] = partBaseCol[k * 3] * f;
+    partCol[k * 3 + 1] = partBaseCol[k * 3 + 1] * f;
+    partCol[k * 3 + 2] = partBaseCol[k * 3 + 2] * f;
+  }
+  partGeo.attributes.position.needsUpdate = true;
+  partGeo.attributes.color.needsUpdate = true;
+}
+
+/* ============================================================
+   Aim prediction line — first segment only (022 design rule:
+   never spoil multi-bounce paths). Shares traceSegment() with
+   the live ballistics; dash 10/8 → world 0.45/0.36, vertex
+   alpha 0.95 → 0.40 visualizes the range-decay budget.
+   ============================================================ */
+const predGeo = new THREE.BufferGeometry();
+predGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(6), 3).setUsage(THREE.DynamicDrawUsage));
+predGeo.setAttribute('color', new THREE.BufferAttribute(new Float32Array([
+  0 * 0.95 + 0.0, 0.737 * 0.95, 1.0 * 0.95,
+  0.0, 0.737 * 0.40, 1.0 * 0.40,
+]), 3));
+predGeo.setAttribute('lineDistance', new THREE.BufferAttribute(new Float32Array(2), 1).setUsage(THREE.DynamicDrawUsage));
+const predLine = new THREE.Line(predGeo, new THREE.LineDashedMaterial({
+  vertexColors: true, dashSize: 0.45, gapSize: 0.36, transparent: true,
+  blending: THREE.AdditiveBlending, depthWrite: false,
+}));
+predLine.frustumCulled = false;
+predLine.visible = false;
+scene.add(predLine);
+
+/* bounce marker: 12px-class diamond + pulsing halo at the impact point */
+const diamond = new THREE.Mesh(
+  new THREE.PlaneGeometry(0.62, 0.62),
+  new THREE.MeshBasicMaterial({ color: C_CYAN, transparent: true, opacity: 0.95, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide })
+);
+diamond.rotation.order = 'YXZ';
+diamond.rotation.x = -Math.PI / 2;
+diamond.rotation.y = Math.PI / 4;
+diamond.visible = false;
+scene.add(diamond);
+const halo = new THREE.Mesh(
+  new THREE.RingGeometry(0.34, 0.42, 20),
+  new THREE.MeshBasicMaterial({ color: C_CYAN, transparent: true, opacity: 0.6, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide })
+);
+halo.rotation.x = -Math.PI / 2;
+halo.visible = false;
+scene.add(halo);
+
+/* ============================================================
+   Tank factory — unified for player & enemies (084 precedent,
+   lifted to 3D): root group → hull group → turret group with
+   independent rotation → muzzle Object3D anchor so the bullet
+   always spawns exactly where the barrel points.
+   Only materials differ between sides.
+   ============================================================ */
+function createTank(bodyHex, turretHex) {
+  const root = new THREE.Group();
+  const hull = new THREE.Group();
+  const bodyMat = new THREE.MeshLambertMaterial({ color: bodyHex });
+  const darkMat = new THREE.MeshLambertMaterial({ color: 0x101820 });
+
+  const body = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.5, 1.85), bodyMat);
+  body.position.y = 0.45;
+  hull.add(body);
+  const trackL = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.44, 2.0), darkMat);
+  trackL.position.set(-0.72, 0.26, 0);
+  const trackR = trackL.clone();
+  trackR.position.x = 0.72;
+  hull.add(trackL, trackR);
+  addBlob(hull, 2.5);
+
+  const turret = new THREE.Group();
+  turret.position.y = 0.78;
+  const dome = new THREE.Mesh(new THREE.CylinderGeometry(0.46, 0.56, 0.38, 14), new THREE.MeshLambertMaterial({ color: turretHex }));
+  dome.position.y = 0.1;
+  turret.add(dome);
+  const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.13, 1.35, 10), darkMat);
+  barrel.rotation.x = Math.PI / 2;
+  barrel.position.set(0, 0.12, 0.78);
+  turret.add(barrel);
+
+  /* muzzle anchor — empty Object3D at the barrel tip; the ballistics
+     system reads its world transform as the trajectory origin */
+  const muzzle = new THREE.Object3D();
+  muzzle.position.set(0, 0.12, 1.5);
+  turret.add(muzzle);
+
+  const flash = new THREE.Mesh(
+    new THREE.PlaneGeometry(1.0, 1.0),
+    new THREE.MeshBasicMaterial({ color: 0xFFE9A8, transparent: true, opacity: 0.95, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide })
+  );
+  flash.position.copy(muzzle.position);
+  flash.visible = false;
+  turret.add(flash);
+
+  hull.add(turret);
+  root.add(hull);
+  scene.add(root);
+  return { root, hull, turret, muzzle, flash, flashT: 0, bodyMat, domeMat: turret.material };
+}
+
+/* ============================================================
+   Colliders — one flat list consumed by traceSegment().
+   Static AABB walls + destructible circles (barrels, mines).
+   Destructibles are swap-removed from this list when they blow.
+   ============================================================ */
+const colliders = [];      /* {kind:'aabb',minX,maxX,minZ,maxZ} | {kind:'circle',x,z,r,ctype:'barrel'|'mine',ref} */
+const wallsList = [];      /* plain AABBs for cheap tank-vs-wall resolution */
+const barrels = [];        /* {x,z,alive,inst,chainT} */
+const mines = [];          /* {x,z,alive,inst} */
+
+const PLAYER_SPAWN = { x: 0, z: 13.5 };
+
+function hideInstance(mesh, idx) {
+  dummy.position.set(0, -50, 0);
+  dummy.scale.set(0.0001, 0.0001, 0.0001);
+  dummy.rotation.set(0, 0, 0);
+  dummy.updateMatrix();
+  mesh.setMatrixAt(idx, dummy.matrix);
+  mesh.instanceMatrix.needsUpdate = true;
+}
+function placeWallBox(i, x, z, w, d) {
+  dummy.rotation.set(0, 0, 0);
+  dummy.position.set(x, WALL_H / 2, z);
+  dummy.scale.set(w, WALL_H, d);
+  dummy.updateMatrix();
+  wallBody.setMatrixAt(i, dummy.matrix);
+  dummy.position.set(x, WALL_H + 0.035, z);
+  dummy.scale.set(w + 0.08, 0.07, d + 0.08);
+  dummy.updateMatrix();
+  wallTop.setMatrixAt(i, dummy.matrix);
+}
+
+/* ============================================================
+   Random map — regenerated every run. Fairness red lines:
+   player spawn keeps a SAFE_SPAWN_R bubble free of mines and
+   barrels; wave-1 gets a teaching barrel at the spawn's vision
+   edge so "shoot barrel → boom" happens once, safely.
+   ============================================================ */
+function clearMap() {
+  colliders.length = 0;
+  wallsList.length = 0;
+  barrels.length = 0;
+  mines.length = 0;
+  wallBody.count = wallTop.count = 0;
+  barrelBody.count = barrelCap.count = 0;
+  mineBase.count = mineCore.count = 0;
+}
+function aabbOverlapsCircle(minX, maxX, minZ, maxZ, cx, cz, r) {
+  const nx = Math.max(minX, Math.min(cx, maxX));
+  const nz = Math.max(minZ, Math.min(cz, maxZ));
+  const dx = cx - nx, dz = cz - nz;
+  return dx * dx + dz * dz < r * r;
+}
+function buildMap(wave) {
+  clearMap();
+
+  /* boundary walls (always present — bullets ricochet off them) */
+  const B = [
+    [0, -AZ, AX * 2 + WALL_T, WALL_T],
+    [0, AZ, AX * 2 + WALL_T, WALL_T],
+    [-AX, 0, WALL_T, AZ * 2 + WALL_T],
+    [AX, 0, WALL_T, AZ * 2 + WALL_T],
+  ];
+  for (const [x, z, w, d] of B) {
+    const i = wallsList.length;
+    wallsList.push({ minX: x - w / 2, maxX: x + w / 2, minZ: z - d / 2, maxZ: z + d / 2 });
+    colliders.push({ kind: 'aabb', ...wallsList[i] });
+    placeWallBox(i, x, z, w, d);
+  }
+  wallBody.count = wallTop.count = wallsList.length;
+
+  /* interior walls — rejected until they clear spawn bubbles & each other */
+  const nWalls = 5 + Math.floor(Math.random() * 3);   /* 5..7 */
+  let guard = 0;
+  while (wallsList.length < 4 + nWalls && guard++ < 240) {
+    const w = 2 + Math.random() * 4;
+    const d = 1 + Math.random() * 3;
+    const x = (Math.random() * 2 - 1) * (PLAY_X - w / 2 - 1);
+    const z = (Math.random() * 2 - 1) * (PLAY_Z - d / 2 - 1);
+    const minX = x - w / 2 - 1.1, maxX = x + w / 2 + 1.1;
+    const minZ = z - d / 2 - 1.1, maxZ = z + d / 2 + 1.1;
+    if (aabbOverlapsCircle(minX, maxX, minZ, maxZ, PLAYER_SPAWN.x, PLAYER_SPAWN.z, 4.2)) continue;
+    if (Math.abs(z + (AZ - 2)) < 3.4 && minX < PLAY_X && maxX > -PLAY_X) continue;   /* keep enemy spawn row open */
+    let ok = true;
+    for (let i = 4; i < wallsList.length; i++) {
+      const o = wallsList[i];
+      if (minX < o.maxX && maxX > o.minX && minZ < o.maxZ && maxZ > o.minZ) { ok = false; break; }
+    }
+    if (!ok) continue;
+    const tight = { minX: x - w / 2, maxX: x + w / 2, minZ: z - d / 2, maxZ: z + d / 2 };
+    wallsList.push(tight);
+    colliders.push({ kind: 'aabb', ...tight });
+    placeWallBox(wallsList.length - 1, x, z, w, d);
+  }
+  wallBody.count = wallTop.count = wallsList.length;
+  wallBody.instanceMatrix.needsUpdate = true;
+  wallTop.instanceMatrix.needsUpdate = true;
+
+  /* barrels (destructible, chain-reactive) */
+  const nBarrels = 4 + Math.floor(Math.random() * 3);   /* 4..6 */
+  guard = 0;
+  while (barrels.length < nBarrels && guard++ < 200) {
+    const x = (Math.random() * 2 - 1) * (PLAY_X - 1.4);
+    const z = (Math.random() * 2 - 1) * (PLAY_Z - 1.4);
+    if (Math.hypot(x - PLAYER_SPAWN.x, z - PLAYER_SPAWN.z) < SAFE_SPAWN_R) continue;
+    if (pointNearWalls(x, z, 1.2)) continue;
+    if (barrels.some(b => Math.hypot(b.x - x, b.z - z) < 2)) continue;
+    addBarrel(x, z);
+  }
+  if (wave === 1) addBarrel(2.3, 10.6);   /* teaching barrel at spawn's vision edge */
+
+  /* mines — never inside the player spawn safety bubble */
+  const nMines = 3 + Math.floor(Math.random() * 3);   /* 3..5 */
+  guard = 0;
+  while (mines.length < nMines && guard++ < 200) {
+    const x = (Math.random() * 2 - 1) * (PLAY_X - 1.4);
+    const z = (Math.random() * 2 - 1) * (PLAY_Z - 1.4);
+    if (Math.hypot(x - PLAYER_SPAWN.x, z - PLAYER_SPAWN.z) < SAFE_SPAWN_R + 1.5) continue;
+    if (z < -AZ + 4.5) continue;                        /* off the enemy spawn row */
+    if (pointNearWalls(x, z, 1.1)) continue;
+    if (barrels.some(b => Math.hypot(b.x - x, b.z - z) < 1.8)) continue;
+    if (mines.some(m => Math.hypot(m.x - x, m.z - z) < 2.4)) continue;
+    addMine(x, z);
+  }
+}
+function pointNearWalls(x, z, pad) {
+  for (let i = 4; i < wallsList.length; i++) {
+    const w = wallsList[i];
+    if (x > w.minX - pad && x < w.maxX + pad && z > w.minZ - pad && z < w.maxZ + pad) return true;
+  }
+  return false;
+}
+function addBarrel(x, z) {
+  const inst = barrels.length;
+  const b = { x, z, alive: true, inst, chainT: -1 };
+  barrels.push(b);
+  colliders.push({ kind: 'circle', x, z, r: 0.58, ctype: 'barrel', ref: b });
+  dummy.rotation.set(0, 0, 0);
+  dummy.scale.set(1, 1, 1);
+  dummy.position.set(x, 0.53, z);
+  dummy.updateMatrix();
+  barrelBody.setMatrixAt(inst, dummy.matrix);
+  dummy.position.set(x, 1.1, z);
+  dummy.updateMatrix();
+  barrelCap.setMatrixAt(inst, dummy.matrix);
+  barrelBody.count = barrelCap.count = barrels.length;
+  barrelBody.instanceMatrix.needsUpdate = true;
+  barrelCap.instanceMatrix.needsUpdate = true;
+  return b;
+}
+function addMine(x, z) {
+  const inst = mines.length;
+  const m = { x, z, alive: true, inst };
+  mines.push(m);
+  colliders.push({ kind: 'circle', x, z, r: 0.52, ctype: 'mine', ref: m });
+  dummy.rotation.set(0, 0, 0);
+  dummy.scale.set(1, 1, 1);
+  dummy.position.set(x, 0.07, z);
+  dummy.updateMatrix();
+  mineBase.setMatrixAt(inst, dummy.matrix);
+  dummy.position.set(x, 0.12, z);
+  dummy.updateMatrix();
+  mineCore.setMatrixAt(inst, dummy.matrix);
+  mineBase.count = mineCore.count = mines.length;
+  mineBase.instanceMatrix.needsUpdate = true;
+  mineCore.instanceMatrix.needsUpdate = true;
+  return m;
+}
+
+/* ============================================================
+   traceSegment — THE shared segment intersection routine.
+   Both the 120Hz bullet integrator and the aim prediction line
+   call this exact function, so what you preview is what flies.
+   Ray (ox,oz)+t*(dx,dz) against every collider; writes the
+   earliest impact (world distance, point, outward normal,
+   kind) into `out`. Returns true on hit within `len`.
+   ============================================================ */
+function traceSegment(ox, oz, dx, dz, len, out) {
+  let best = Infinity, bx = 0, bz = 0, bnx = 0, bnz = 0, bkind = 'none', bref = null;
+
+  for (let i = 0; i < colliders.length; i++) {
+    const c = colliders[i];
+    if (c.kind === 'aabb') {
+      /* slab ray-vs-AABB in the XZ plane */
+      let tmin = 1e-4, tmax = len;
+      let nx = 0, nz = 0;
+      if (Math.abs(dx) < 1e-9) {
+        if (ox <= c.minX || ox >= c.maxX) continue;
+      } else {
+        let t1 = (c.minX - ox) / dx, t2 = (c.maxX - ox) / dx;
+        let s = dx > 0 ? -1 : 1;
+        if (t1 > t2) { const tt = t1; t1 = t2; t2 = tt; s = -s; }
+        if (t1 > tmin) { tmin = t1; nx = s; nz = 0; }
+        if (t2 < tmax) tmax = t2;
+        if (tmin > tmax) continue;
+      }
+      if (Math.abs(dz) < 1e-9) {
+        if (oz <= c.minZ || oz >= c.maxZ) continue;
+      } else {
+        let t1 = (c.minZ - oz) / dz, t2 = (c.maxZ - oz) / dz;
+        let s = dz > 0 ? -1 : 1;
+        if (t1 > t2) { const tt = t1; t1 = t2; t2 = tt; s = -s; }
+        if (t1 > tmin) { tmin = t1; nx = 0; nz = s; }
+        if (t2 < tmax) tmax = t2;
+        if (tmin > tmax) continue;
+      }
+      if (tmin < best) {
+        best = tmin; bx = ox + dx * tmin; bz = oz + dz * tmin;
+        bnx = nx; bnz = nz; bkind = 'wall'; bref = c;
+      }
+    } else {
+      /* ray vs circle (barrels / mines) */
+      const fx = ox - c.x, fz = oz - c.z;
+      const a = dx * dx + dz * dz;
+      const b = 2 * (fx * dx + fz * dz);
+      const cc = fx * fx + fz * fz - c.r * c.r;
+      const disc = b * b - 4 * a * cc;
+      if (disc < 0) continue;
+      let t = (-b - Math.sqrt(disc)) / (2 * a);
+      if (t < 1e-4) t = (-b + Math.sqrt(disc)) / (2 * a);
+      if (t < 1e-4 || t > len) continue;
+      if (t < best) {
+        best = t;
+        bx = ox + dx * t; bz = oz + dz * t;
+        const il = 1 / c.r;
+        bnx = (bx - c.x) * il; bnz = (bz - c.z) * il;
+        bkind = c.ctype; bref = c.ref;
+      }
+    }
+  }
+  if (best === Infinity) return false;
+  out.dist = best; out.x = bx; out.z = bz;
+  out.nx = bnx; out.nz = bnz; out.kind = bkind; out.ref = bref;
+  return true;
+}
+
+/* earliest intersection distance of a segment against a circle, or Infinity */
+function segCircleDist(ox, oz, dx, dz, cx, cz, r) {
+  const fx = ox - cx, fz = oz - cz;
+  const a = dx * dx + dz * dz;
+  const b = 2 * (fx * dx + fz * dz);
+  const c = fx * fx + fz * fz - r * r;
+  const disc = b * b - 4 * a * c;
+  if (disc < 0) return Infinity;
+  let t = (-b - Math.sqrt(disc)) / (2 * a);
+  if (t < 0) t = (-b + Math.sqrt(disc)) / (2 * a);
+  return t >= 0 ? t : Infinity;
+}
+
+/* ============================================================
+   Tanks — player + enemy pool. Identical factory structure;
+   enemies carry the lightweight AI state object from the spec:
+   { decisionTimer, moveDir, preferredEngageDist, stuckTimer,
+     lastX/lastZ } — NO state machine.
+   ============================================================ */
+const player = {
+  x: PLAYER_SPAWN.x, z: PLAYER_SPAWN.z, hullAng: Math.PI, turAng: Math.PI,
+  alive: true, tank: null,
+};
+player.tank = createTank(C_LIME, 0x9CD43E);
+
+const MAX_ENEMIES = 6;
+const enemies = [];
+for (let i = 0; i < MAX_ENEMIES; i++) {
+  const t = createTank(C_MAG, 0xD6336C);
+  t.root.visible = false;
+  enemies.push({
+    tank: t, alive: false, x: 0, z: 0, hp: 2,
+    hullAng: 0, turAng: 0,
+    /* per-enemy lightweight AI state — timer-driven decisions */
+    decisionTimer: 0,
+    moveDirX: 0, moveDirZ: 1,
+    preferredEngageDist: 9,
+    stuckTimer: 0,
+    lastX: 0, lastZ: 0,
+    telegraphT: 0, cooldown: 0, spawnT: 0, hurtT: 0,
+  });
+}
+
+/* enemy aim-intent telegraph lines (shown during the 0.25s lock) */
+const telegraphs = enemies.map(() => {
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(6), 3).setUsage(THREE.DynamicDrawUsage));
+  const ln = new THREE.Line(g, new THREE.LineBasicMaterial({ color: C_MAG, transparent: true, opacity: 0.4, blending: THREE.AdditiveBlending, depthWrite: false }));
+  ln.frustumCulled = false;
+  ln.visible = false;
+  scene.add(ln);
+  return ln;
+});
+
+/* ============================================================
+   Bullets — fixed 120Hz substep integrator. Each substep pulls
+   a segment from the current position toward the next, runs it
+   through traceSegment(), and on wall impact reflects with
+   v' = v - 2(v·n)n followed by SPEED RENORMALIZATION (022:869 —
+   repeated reflections must never drift). Range decays with
+   distance travelled; MAX_BOUNCES is the hard stop.
+   ============================================================ */
+const bullets = [];
+for (let i = 0; i < MAX_BULLETS; i++) {
+  bullets.push({
+    alive: false, inst: i, owner: 'player',
+    x: 0, z: 0, dirX: 0, dirZ: 1,
+    range: 0, bounces: 0, trailHead: 0, trailCount: 0,
+  });
+}
+const bulletColorP = new THREE.Color(C_BULLET_P);
+const bulletColorE = new THREE.Color(C_BULLET_E);
+
+function spawnBullet(x, z, dirX, dirZ, owner) {
+  let b = null;
+  for (let i = 0; i < MAX_BULLETS; i++) if (!bullets[i].alive) { b = bullets[i]; break; }
+  if (!b) return null;
+  b.alive = true; b.owner = owner;
+  b.x = x; b.z = z; b.dirX = dirX; b.dirZ = dirZ;
+  b.range = BULLET_RANGE; b.bounces = 0;
+  b.trailHead = 0; b.trailCount = 0;
+  const base = b.inst * TRAIL_N * 3;
+  for (let k = 0; k < TRAIL_N * 3; k += 3) {
+    trailPos[base + k] = x; trailPos[base + k + 1] = -999; trailPos[base + k + 2] = z;
+    trailCol[base + k] = trailCol[base + k + 1] = trailCol[base + k + 2] = 0;
+  }
+  const col = owner === 'player' ? bulletColorP : bulletColorE;
+  bulletMesh.setColorAt(b.inst, col);
+  bulletMesh.instanceColor.needsUpdate = true;
+  return b;
+}
+function killBullet(b, silent) {
+  b.alive = false;
+  const base = b.inst * TRAIL_N * 3;
+  for (let k = 0; k < TRAIL_N * 3; k += 3) trailCol[base + k] = trailCol[base + k + 1] = trailCol[base + k + 2] = 0;
+  if (!silent) spawnBurst(b.x, b.z, 0x8FA8B8, 4, 2.4, 0.3);
+  dummy.position.set(0, -50, 0);
+  dummy.scale.set(0.0001, 0.0001, 0.0001);
+  dummy.updateMatrix();
+  bulletMesh.setMatrixAt(b.inst, dummy.matrix);
+  bulletMesh.instanceMatrix.needsUpdate = true;
+}
+
+function stepBullet(b, sdt) {
+  let left = BULLET_SPEED * sdt;
+  let guard = 0;
+  while (left > 1e-6 && guard++ < 4) {
+    /* tank hits are tested against the same segment, racing the wall hit */
+    let tankD = Infinity, tankRef = null;
+    if (b.owner === 'player') {
+      for (let i = 0; i < enemies.length; i++) {
+        const e = enemies[i];
+        if (!e.alive || e.spawnT > 0) continue;
+        const d = segCircleDist(b.x, b.z, b.dirX, b.dirZ, e.x, e.z, TANK_R + BULLET_R);
+        if (d < tankD) { tankD = d; tankRef = e; }
+      }
+    } else {
+      if (player.alive) {
+        const d = segCircleDist(b.x, b.z, b.dirX, b.dirZ, player.x, player.z, TANK_R + BULLET_R);
+        if (d < tankD) { tankD = d; tankRef = 'player'; }
+      }
+    }
+
+    const hasHit = traceSegment(b.x, b.z, b.dirX, b.dirZ, left, traceOut);
+    const wallD = hasHit ? traceOut.dist : Infinity;
+
+    if (tankRef && tankD < wallD && tankD < left) {
+      b.x += b.dirX * tankD; b.z += b.dirZ * tankD;
+      b.range -= tankD;
+      state.hits++;
+      if (tankRef === 'player') damagePlayer();
+      else damageEnemy(tankRef, b);
+      killBullet(b, true);
+      return;
+    }
+
+    if (hasHit && wallD < left) {
+      b.x += b.dirX * wallD; b.z += b.dirZ * wallD;
+      left -= wallD; b.range -= wallD;
+      if (traceOut.kind === 'barrel' || traceOut.kind === 'mine') {
+        explodeDestructible(traceOut.kind, traceOut.ref, b.owner);
+        killBullet(b, true);
+        return;
+      }
+      /* reflect v' = v - 2(v·n)n ... */
+      const dot = b.dirX * traceOut.nx + b.dirZ * traceOut.nz;
+      b.dirX -= 2 * dot * traceOut.nx;
+      b.dirZ -= 2 * dot * traceOut.nz;
+      /* ... then RENORMALIZE so repeated reflections never drift */
+      const il = 1 / Math.hypot(b.dirX, b.dirZ);
+      b.dirX *= il; b.dirZ *= il;
+      b.x += traceOut.nx * 0.004; b.z += traceOut.nz * 0.004;
+      b.bounces++;
+      onBounce(b, traceOut.x, traceOut.z);
+      if (b.bounces >= MAX_BOUNCES) { killBullet(b, false); return; }   /* hard cap */
+    } else {
+      b.x += b.dirX * left; b.z += b.dirZ * left;
+      b.range -= left; left = 0;
+    }
+    if (b.range <= 0) { killBullet(b, false); return; }   /* range decay exhausted */
+  }
+}
+
+function onBounce(b, x, z) {
+  spawnBurst(x, z, b.owner === 'player' ? C_CYAN : C_MAG, 6, 3.4, 0.35);
+  if (b.owner === 'player') {
+    sfxBounce();
+    buzz(12);
+    if (!REDUCED) state.hitstop = Math.max(state.hitstop, HITSTOP_T);
+  }
+}
+
+function updateBullets(sdt) {
+  for (let i = 0; i < MAX_BULLETS; i++) {
+    const b = bullets[i];
+    if (!b.alive) continue;
+    stepBullet(b, sdt);
+    if (!b.alive) continue;
+    /* instance matrix + trail ring buffer (writes into pre-allocated arrays) */
+    dummy.position.set(b.x, BULLET_Y, b.z);
+    dummy.scale.set(1, 1, 1);
+    dummy.rotation.set(0, 0, 0);
+    dummy.updateMatrix();
+    bulletMesh.setMatrixAt(b.inst, dummy.matrix);
+    const head = b.trailHead;
+    const base = (b.inst * TRAIL_N + head) * 3;
+    trailPos[base] = b.x; trailPos[base + 1] = BULLET_Y; trailPos[base + 2] = b.z;
+    b.trailHead = (head + 1) % TRAIL_N;
+    b.trailCount = Math.min(TRAIL_N, b.trailCount + 1);
+  }
+  bulletMesh.instanceMatrix.needsUpdate = true;
+  /* trail fade — alpha tracks remaining range (decay as readable resource) */
+  for (let i = 0; i < MAX_BULLETS; i++) {
+    const b = bullets[i];
+    const col = b.owner === 'player' ? bulletColorP : bulletColorE;
+    const baseInst = b.inst * TRAIL_N;
+    for (let k = 0; k < TRAIL_N; k++) {
+      const idx = (baseInst + k) * 3;
+      if (!b.alive) { trailCol[idx] = trailCol[idx + 1] = trailCol[idx + 2] = 0; continue; }
+      const age = (b.trailHead - 1 - k + TRAIL_N * 2) % TRAIL_N;   /* 0 = newest */
+      if (age >= b.trailCount) { trailCol[idx] = trailCol[idx + 1] = trailCol[idx + 2] = 0; continue; }
+      const f = (1 - age / TRAIL_N) * 0.55 * Math.max(0.25, b.range / BULLET_RANGE);
+      trailCol[idx] = col.r * f; trailCol[idx + 1] = col.g * f; trailCol[idx + 2] = col.b * f;
+    }
+  }
+  trailGeo.attributes.position.needsUpdate = true;
+  trailGeo.attributes.color.needsUpdate = true;
+}
+
+/* ============================================================
+   Explosions — destructibles leave the collider list the moment
+   they blow; barrels chain-detonate on a tiny delay queue.
+   ============================================================ */
+const chainQueue = [];
+function explodeDestructible(kind, ref, owner) {
+  if (kind === 'barrel') {
+    if (!ref.alive) return;
+    ref.alive = false;
+    removeCollider(ref);
+    hideInstance(barrelBody, ref.inst);
+    hideInstance(barrelCap, ref.inst);
+    bigBoom(ref.x, ref.z, EXPLODE_R_BARREL, owner, 'barrel');
+    for (const b of barrels) {
+      if (b.alive && b.chainT < 0 && Math.hypot(b.x - ref.x, b.z - ref.z) < CHAIN_R) b.chainT = 0.13;
+    }
+  } else {
+    if (!ref.alive) return;
+    ref.alive = false;
+    removeCollider(ref);
+    hideInstance(mineBase, ref.inst);
+    hideInstance(mineCore, ref.inst);
+    bigBoom(ref.x, ref.z, EXPLODE_R_MINE, owner, 'mine');
+  }
+}
+function removeCollider(ref) {
+  for (let i = 0; i < colliders.length; i++) {
+    if (colliders[i].ref === ref) {
+      colliders[i] = colliders[colliders.length - 1];
+      colliders.pop();
+      return;
+    }
+  }
+}
+function bigBoom(x, z, radius, owner, src) {
+  sfxExplode();
+  buzz(30);
+  if (!REDUCED) { state.shakeT = 0.28; state.shakeMag = 0.4; }
+  spawnBurst(x, z, C_ORANGE, 26, 7, 0.7);
+  spawnBurst(x, z, 0xFFE9A8, 12, 4, 0.45);
+  spawnBurst(x, z, 0x55606E, 10, 2.5, 0.9);
+  for (const e of enemies) {
+    if (!e.alive || e.spawnT > 0) continue;
+    if (Math.hypot(e.x - x, e.z - z) < radius + TANK_R) {
+      e.hp -= 2;
+      if (e.hp <= 0) killEnemy(e, { bounces: 0, viaBoom: true, owner });
+      else e.hurtT = 0.2;
+    }
+  }
+  if (player.alive && src !== 'player-self' && Math.hypot(player.x - x, player.z - z) < radius + TANK_R) {
+    damagePlayer();
+  }
+}
+function updateChainQueue(dt) {
+  for (const b of barrels) {
+    if (b.alive && b.chainT >= 0) {
+      b.chainT -= dt;
+      if (b.chainT <= 0) explodeDestructible('barrel', b, 'chain');
+    }
+  }
+}
+function updateMineProximity() {
+  for (const m of mines) {
+    if (!m.alive) continue;
+    let near = player.alive && Math.hypot(player.x - m.x, player.z - m.z) < 1.0;
+    if (!near) {
+      for (const e of enemies) {
+        if (e.alive && Math.hypot(e.x - m.x, e.z - m.z) < 1.0) { near = true; break; }
+      }
+    }
+    if (near) explodeDestructible('mine', m, 'proximity');
+  }
+}
+
+/* ============================================================
+   Damage + scoring
+   ============================================================ */
+function addScore(n) { state.score += n; }
+function damageEnemy(e, b) {
+  e.hp--;
+  e.hurtT = 0.15;
+  spawnBurst(e.x, e.z, C_MAG, 8, 4, 0.4);
+  sfxHit();
+  if (e.hp > 0) { addScore(25); floatText(e.x, e.z, '+25', true); return; }
+  killEnemy(e, { bounces: b.bounces, viaBoom: false, owner: b.owner });
+}
+function killEnemy(e, ctx) {
+  if (!e.alive) return;
+  e.alive = false;
+  e.tank.root.visible = false;
+  telegraphs[enemies.indexOf(e)].visible = false;
+  state.kills++;
+  sfxExplode();
+  buzz(24);
+  if (!REDUCED) { state.shakeT = 0.3; state.shakeMag = 0.45; }
+  spawnBurst(e.x, e.z, C_MAG, 30, 7, 0.75);
+  spawnBurst(e.x, e.z, 0xFFE9A8, 14, 4.5, 0.5);
+  if (ctx.viaBoom) {
+    addScore(75); floatText(e.x, e.z, '+75', true);
+  } else if (ctx.bounces >= 1) {
+    /* the game formally acknowledges the trick shot */
+    state.ricoKills++;
+    state.maxBounce = Math.max(state.maxBounce, ctx.bounces);
+    if (state.maxBounce > state.bestBounce) {
+      state.bestBounce = state.maxBounce;
+      safeLS.set(LS_BOUNCE, state.bestBounce);
+    }
+    addScore(150); floatText(e.x, e.z, '+150', false);
+    sfxKill();
+    showKillBanner(ctx.bounces);
+  } else {
+    addScore(100); floatText(e.x, e.z, '+100', true);
+  }
+}
+function damagePlayer() {
+  if (!player.alive || state.invuln > 0) return;
+  state.hp--;
+  state.invuln = 1.0;
+  sfxHit();
+  buzz(60);
+  if (!REDUCED) { state.shakeT = 0.35; state.shakeMag = 0.6; }
+  el.dmgVig.classList.add('on');
+  setTimeout(() => el.dmgVig.classList.remove('on'), 120);
+  syncHp();
+  if (state.hp <= 0) playerDie();
+}
+function playerDie() {
+  player.alive = false;
+  player.tank.root.visible = false;
+  sfxExplode();
+  buzz([40, 60, 80]);
+  if (!REDUCED) { state.shakeT = 0.6; state.shakeMag = 0.8; }
+  spawnBurst(player.x, player.z, C_LIME, 34, 7.5, 0.85);
+  setTimeout(() => endRun(false), 900);
+}
+
+/* ============================================================
+   Enemy AI — NO state machine. One plain state object per
+   enemy; when decisionTimer expires it measures distance to the
+   player and whether it is stuck, then picks advance / retreat
+   / strafe. Stuck verdict = 0.5s of no displacement measured
+   by ACCUMULATED dt, never frame count, so behaviour is
+   identical on 25 FPS chat-window WebViews and 120 FPS desktops.
+   Fairness rules: the AI only ever aims the direct shot (never
+   a trick shot) and telegraphs 0.25s before firing.
+   ============================================================ */
+function spawnEnemy(e, x, z, hp, speedMul) {
+  e.alive = true; e.x = x; e.z = z; e.hp = hp;
+  e.hullAng = 0; e.turAng = 0;
+  e.decisionTimer = 0.4 + Math.random() * 0.5;
+  e.moveDirX = 0; e.moveDirZ = 1;
+  e.preferredEngageDist = 7 + Math.random() * 4;
+  e.stuckTimer = 0; e.lastX = x; e.lastZ = z;
+  e.telegraphT = 0; e.cooldown = 1.2 + Math.random();
+  e.spawnT = 1.0; e.hurtT = 0;
+  e.speedMul = speedMul;
+  e.tank.root.visible = true;
+  spawnBurst(x, z, C_CYAN, 10, 3, 0.5);
+}
+function hasLineOfSight(fx, fz, tx, tz) {
+  const dx = tx - fx, dz = tz - fz;
+  const len = Math.hypot(dx, dz);
+  if (len < 0.001) return true;
+  const hit = traceSegment(fx, fz, dx / len, dz / len, len - TANK_R, predOut);
+  return !hit || (predOut.kind !== 'wall' && predOut.kind !== 'barrel');
+}
+function decideEnemy(e) {
+  const dx = player.x - e.x, dz = player.z - e.z;
+  const d = Math.hypot(dx, dz) || 1;
+  const los = player.alive && hasLineOfSight(e.x, e.z, player.x, player.z);
+  let mx, mz;
+  if (!los) {
+    /* lost sight — close distance on a slightly randomized bearing */
+    const j = (Math.random() - 0.5) * 0.9;
+    const cs = Math.cos(j), sn = Math.sin(j);
+    mx = (dx / d) * cs - (dz / d) * sn;
+    mz = (dx / d) * sn + (dz / d) * cs;
+  } else if (d > e.preferredEngageDist + 2) {
+    mx = dx / d; mz = dz / d;                                  /* advance */
+  } else if (d < e.preferredEngageDist - 2) {
+    mx = -dx / d; mz = -dz / d;                                 /* retreat */
+  } else {
+    const s = Math.random() < 0.5 ? 1 : -1;
+    mx = (-dz / d) * s * 0.85 + (dx / d) * 0.3;                 /* strafe */
+    mz = (dx / d) * s * 0.85 + (dz / d) * 0.3;
+    const il = 1 / Math.hypot(mx, mz); mx *= il; mz *= il;
+  }
+  e.moveDirX = mx; e.moveDirZ = mz;
+  e.decisionTimer = 0.55 + Math.random() * 0.65;
+}
+function resolveTankMove(nx, nz) {
+  /* per-axis slide against wall AABBs expanded by TANK_R */
+  let x = nx, z = nz;
+  for (const w of wallsList) {
+    if (x > w.minX - TANK_R && x < w.maxX + TANK_R && z > w.minZ - TANK_R && z < w.maxZ + TANK_R) {
+      const pl = x - (w.minX - TANK_R), pr = (w.maxX + TANK_R) - x;
+      const pt = z - (w.minZ - TANK_R), pb = (w.maxZ + TANK_R) - z;
+      const m = Math.min(pl, pr, pt, pb);
+      if (m === pl) x = w.minX - TANK_R;
+      else if (m === pr) x = w.maxX + TANK_R;
+      else if (m === pt) z = w.minZ - TANK_R;
+      else z = w.maxZ + TANK_R;
+    }
+  }
+  /* push out of live barrels */
+  for (const b of barrels) {
+    if (!b.alive) continue;
+    const dx = x - b.x, dz = z - b.z;
+    const d = Math.hypot(dx, dz), min = TANK_R + 0.58;
+    if (d > 1e-6 && d < min) { x = b.x + dx / d * min; z = b.z + dz / d * min; }
+  }
+  x = Math.max(-PLAY_X + TANK_R, Math.min(PLAY_X - TANK_R, x));
+  z = Math.max(-PLAY_Z + TANK_R, Math.min(PLAY_Z - TANK_R, z));
+  return { x, z };
+}
+function lerpAngle(a, b, t) {
+  let d = (b - a) % (Math.PI * 2);
+  if (d > Math.PI) d -= Math.PI * 2;
+  if (d < -Math.PI) d += Math.PI * 2;
+  return a + d * Math.min(1, t);
+}
+function updateEnemy(e, dt, idx) {
+  if (!e.alive) return;
+  if (e.spawnT > 0) {
+    e.spawnT -= dt;
+    e.tank.root.visible = Math.floor(e.spawnT * 8) % 2 === 0;   /* spawn blink */
+    syncTankVisual(e);
+    return;
+  }
+  e.tank.root.visible = true;
+  e.cooldown -= dt;
+  if (e.hurtT > 0) e.hurtT -= dt;
+
+  /* timer-driven decision (not per-frame) */
+  e.decisionTimer -= dt;
+  if (e.decisionTimer <= 0 && player.alive) decideEnemy(e);
+
+  /* move + collide */
+  const sp = ENEMY_SPEED * (e.speedMul || 1);
+  const raw = resolveTankMove(e.x + e.moveDirX * sp * dt, e.z + e.moveDirZ * sp * dt);
+  e.x = raw.x; e.z = raw.z;
+
+  /* separation from siblings */
+  for (let i = 0; i < enemies.length; i++) {
+    const o = enemies[i];
+    if (o === e || !o.alive) continue;
+    const dx = e.x - o.x, dz = e.z - o.z;
+    const d = Math.hypot(dx, dz);
+    if (d > 1e-6 && d < 1.9) { e.x += dx / d * (1.9 - d) * 0.5; e.z += dz / d * (1.9 - d) * 0.5; }
+  }
+
+  /* stuck verdict — accumulated dt, 0.5s threshold */
+  const moved = Math.hypot(e.x - e.lastX, e.z - e.lastZ);
+  if (moved < 0.02 * dt * 60) e.stuckTimer += dt; else e.stuckTimer = 0;
+  e.lastX = e.x; e.lastZ = e.z;
+  if (e.stuckTimer >= STUCK_TIME) {
+    const a = (Math.random() < 0.5 ? 1 : -1) * (Math.PI / 2 + Math.random() * Math.PI / 2);
+    const cs = Math.cos(a), sn = Math.sin(a);
+    const nx = e.moveDirX * cs - e.moveDirZ * sn;
+    const nz = e.moveDirX * sn + e.moveDirZ * cs;
+    e.moveDirX = nx; e.moveDirZ = nz;
+    e.stuckTimer = 0;
+    e.decisionTimer = Math.min(e.decisionTimer, 0.25);
+    spawnBurst(e.x, e.z, 0x55606E, 5, 1.6, 0.5);   /* reroute dust — make it visible */
+  }
+
+  /* hull faces travel direction; turret tracks the player */
+  if (Math.hypot(e.moveDirX, e.moveDirZ) > 0.1) {
+    e.hullAng = lerpAngle(e.hullAng, Math.atan2(e.moveDirX, e.moveDirZ), ENEMY_TURN * dt);
+  }
+  const wantTur = Math.atan2(player.x - e.x, player.z - e.z);
+  e.turAng = lerpAngle(e.turAng, wantTur, ENEMY_TURN * 1.4 * dt);
+
+  /* firing: direct shot only, needs LOS + alignment + telegraph (fairness) */
+  const los = player.alive && hasLineOfSight(e.x, e.z, player.x, player.z);
+  let ad = Math.abs(((wantTur - e.turAng) % (Math.PI * 2) + Math.PI * 3) % (Math.PI * 2) - Math.PI);
+  const aligned = los && ad < 0.07;
+  if (aligned && e.cooldown <= 0) {
+    if (e.telegraphT === 0) e.telegraphT = TELEGRAPH_T;
+    e.telegraphT -= dt;
+    if (e.telegraphT <= 0) {
+      e.telegraphT = 0;
+      e.cooldown = ENEMY_FIRE_CD + Math.random() * 0.8;
+      enemyFire(e);
+    }
+  } else {
+    e.telegraphT = 0;
+  }
+
+  /* telegraph line + muzzle glow */
+  const tg = telegraphs[idx];
+  if (e.telegraphT > 0 && player.alive) {
+    const arr = tg.geometry.attributes.position.array;
+    arr[0] = e.x; arr[1] = 0.7; arr[2] = e.z;
+    arr[3] = player.x; arr[4] = 0.7; arr[5] = player.z;
+    tg.geometry.attributes.position.needsUpdate = true;
+    tg.visible = true;
+    e.tank.flash.visible = true;
+    e.tank.flash.material.color.setHex(C_MAG);
+    e.tank.flash.material.opacity = 0.5;
+    e.tank.flash.scale.set(0.6, 0.6, 0.6);
+  } else {
+    tg.visible = false;
+  }
+  syncTankVisual(e);
+}
+function enemyFire(e) {
+  const t = e.tank;
+  t.muzzle.getWorldPosition(v3A);
+  const dirX = Math.sin(e.turAng), dirZ = Math.cos(e.turAng);
+  spawnBullet(v3A.x + dirX * 0.3, v3A.z + dirZ * 0.3, dirX, dirZ, 'enemy');
+  muzzleFlash(t);
+  sfxFire();
+}
+function syncTankVisual(e) {
+  e.tank.root.position.set(e.x, 0, e.z);
+  e.tank.hull.rotation.y = e.hullAng;
+  e.tank.turret.rotation.y = e.turAng - e.hullAng;
+  const s = e.hurtT > 0 ? 1.08 : (e.spawnT > 0 ? 0.9 + 0.1 * Math.sin(e.spawnT * 30) : 1);
+  e.tank.hull.scale.set(s, s, s);
+}
+
+/* ============================================================
+   Player control — dual virtual sticks (left move 132px, right
+   aim+fire 92px zone; both ≥44px, semi-transparent over the
+   scene) plus desktop mouse+keyboard fallback.
+   Screen-up maps to world -Z: the follow camera looks down -Z.
+   ============================================================ */
+const input = {
+  moveX: 0, moveZ: 0, joyId: null,
+  aimId: null, aimX: 0, aimZ: -1, aiming: false,
+  fireQueued: false,
+  keys: new Set(),
+  mouseAim: false, mouseX: 0, mouseY: 0, mouseDown: false,
+};
+const joyBox = { cx: 0, cy: 0, r: 66 };
+const fireBox = { cx: 0, cy: 0 };
+function cacheBoxes() {
+  const j = el.joy.getBoundingClientRect();
+  joyBox.cx = j.left + j.width / 2; joyBox.cy = j.top + j.height / 2; joyBox.r = j.width / 2;
+  const f = el.fireBtn.getBoundingClientRect();
+  fireBox.cx = f.left + f.width / 2; fireBox.cy = f.top + f.height / 2;
+}
+function applyJoy(cx, cy) {
+  let dx = cx - joyBox.cx, dy = cy - joyBox.cy;
+  const d = Math.hypot(dx, dy);
+  const cl = Math.min(d, joyBox.r - 8);
+  if (d > 1e-4) { dx = dx / d * cl; dy = dy / d * cl; }
+  el.joyKnob.style.transform = `translate(${dx}px,${dy}px)`;
+  const k = Math.min(1, cl / (joyBox.r * 0.7));
+  input.moveX = (dx / joyBox.r) * Math.min(1, k + 0.001) * (k > 0.08 ? 1 : 0);
+  input.moveZ = (dy / joyBox.r) * Math.min(1, k + 0.001) * (k > 0.08 ? 1 : 0);
+}
+function applyAim(cx, cy) {
+  const dx = cx - fireBox.cx, dy = cy - fireBox.cy;
+  if (Math.hypot(dx, dy) < 6) return;
+  input.aimX = dx; input.aimZ = dy;   /* screen dy → world z, screen dx → world x */
+}
+window.addEventListener('pointerdown', (ev) => {
+  if (state.phase !== 'playing') return;
+  cacheBoxes();
+  const half = window.innerWidth / 2;
+  if (ev.clientX < half && input.joyId === null) {
+    input.joyId = ev.pointerId;
+    el.joy.classList.add('active');
+    applyJoy(ev.clientX, ev.clientY);
+  } else if (ev.clientX >= half && input.aimId === null) {
+    input.aimId = ev.pointerId;
+    input.aiming = true;
+    el.fireBtn.classList.add('hot', 'pressed');
+    applyAim(ev.clientX, ev.clientY);
+  }
+}, { passive: true });
+window.addEventListener('pointermove', (ev) => {
+  if (ev.pointerId === input.joyId) applyJoy(ev.clientX, ev.clientY);
+  else if (ev.pointerId === input.aimId) applyAim(ev.clientX, ev.clientY);
+  if (ev.pointerType === 'mouse') { input.mouseX = ev.clientX; input.mouseY = ev.clientY; input.mouseAim = true; }
+}, { passive: true });
+function pointerRelease(ev) {
+  if (ev.pointerId === input.joyId) {
+    input.joyId = null;
+    input.moveX = input.moveZ = 0;
+    el.joy.classList.remove('active');
+    el.joyKnob.style.transform = 'translate(0px,0px)';
+  } else if (ev.pointerId === input.aimId) {
+    input.aimId = null;
+    el.fireBtn.classList.remove('hot', 'pressed');
+    if (input.aiming && player.alive) playerFire();
+    input.aiming = false;
+  }
+}
+window.addEventListener('pointerup', pointerRelease, { passive: true });
+window.addEventListener('pointercancel', pointerRelease, { passive: true });
+
+/* FIRE button taps flow through the right-half aim zone: hold to aim
+   with the prediction line, release (or quick tap) to fire. */
+
+/* keyboard + mouse (desktop fallback — ≥2 input methods) */
+window.addEventListener('keydown', (ev) => {
+  input.keys.add(ev.code);
+  if (ev.code === 'Space' && state.phase === 'playing') { ev.preventDefault(); playerFire(); }
+  if (ev.code === 'Enter') {
+    if (state.phase === 'menu') startRun();
+    else if (state.phase === 'result') startRun();
+  }
+});
+window.addEventListener('keyup', (ev) => input.keys.delete(ev.code));
+window.addEventListener('mousedown', (ev) => {
+  if (state.phase === 'playing' && ev.button === 0) { input.mouseDown = true; playerFire(); }
+});
+window.addEventListener('mouseup', () => { input.mouseDown = false; });
+
+function keyboardMove() {
+  let x = 0, z = 0;
+  const k = input.keys;
+  if (k.has('KeyW') || k.has('ArrowUp')) z -= 1;
+  if (k.has('KeyS') || k.has('ArrowDown')) z += 1;
+  if (k.has('KeyA') || k.has('ArrowLeft')) x -= 1;
+  if (k.has('KeyD') || k.has('ArrowRight')) x += 1;
+  if (x !== 0 || z !== 0) {
+    const il = 1 / Math.hypot(x, z);
+    input.moveX = x * il; input.moveZ = z * il;
+  } else if (input.joyId === null) {
+    input.moveX = input.moveZ = 0;
+  }
+}
+function mouseAimUpdate() {
+  if (!input.mouseAim || input.aimId !== null) return;
+  v3A.set(player.x, 0.8, player.z).project(camera);
+  const sx = (v3A.x * 0.5 + 0.5) * window.innerWidth;
+  const sy = (-v3A.y * 0.5 + 0.5) * window.innerHeight;
+  const dx = input.mouseX - sx, dy = input.mouseY - sy;
+  if (Math.hypot(dx, dy) > 4) { input.aimX = dx; input.aimZ = dy; }
+}
+
+function playerFire() {
+  if (!player.alive || state.phase !== 'playing') return;
+  if (state.ammo <= 0) {
+    sfxDry();
+    buzz(20);
+    el.ammoTray.classList.remove('dry');
+    void el.ammoTray.offsetWidth;
+    el.ammoTray.classList.add('dry');
+    return;
+  }
+  state.ammo--;
+  state.shots++;
+  const t = player.tank;
+  /* fire may come from an input event between frames — refresh the
+     muzzle world matrix so the shell spawns where the barrel points */
+  t.root.position.set(player.x, 0, player.z);
+  t.hull.rotation.y = player.hullAng;
+  t.turret.rotation.y = player.turAng - player.hullAng;
+  t.root.updateMatrixWorld(true);
+  t.muzzle.getWorldPosition(v3A);
+  const dirX = Math.sin(player.turAng), dirZ = Math.cos(player.turAng);
+  spawnBullet(v3A.x + dirX * 0.3, v3A.z + dirZ * 0.3, dirX, dirZ, 'player');
+  muzzleFlash(t);
+  sfxFire();
+  buzz(8);
+  syncAmmo();
+}
+function muzzleFlash(t) {
+  t.flash.visible = true;
+  t.flash.material.color.setHex(0xFFE9A8);
+  t.flash.material.opacity = 0.95;
+  t.flashT = 0.08;
+}
+
+function updatePlayer(dt) {
+  if (!player.alive) return;
+  keyboardMove();
+  mouseAimUpdate();
+
+  const mx = input.moveX, mz = input.moveZ;
+  const ml = Math.hypot(mx, mz);
+  if (ml > 0.15) {
+    player.hullAng = lerpAngle(player.hullAng, Math.atan2(mx, mz), PLAYER_HULL_TURN * dt);
+    const raw = resolveTankMove(player.x + mx * PLAYER_SPEED * dt, player.z + mz * PLAYER_SPEED * dt);
+    player.x = raw.x; player.z = raw.z;
+  }
+  const wantTur = Math.atan2(input.aimX, input.aimZ);
+  player.turAng = lerpAngle(player.turAng, wantTur, PLAYER_TUR_TURN * dt);
+  if (state.invuln > 0) {
+    state.invuln -= dt;
+    player.tank.root.visible = Math.floor(state.invuln * 10) % 2 === 0;
+  } else player.tank.root.visible = true;
+
+  /* reload — shells regenerate one at a time */
+  if (state.ammo < AMMO_MAX) {
+    state.reloadT += dt;
+    if (state.reloadT >= RELOAD_T) { state.reloadT = 0; state.ammo++; syncAmmo(); }
+  } else state.reloadT = 0;
+
+  syncTankVisual({ tank: player.tank, x: player.x, z: player.z, hullAng: player.hullAng, turAng: player.turAng, hurtT: 0, spawnT: 0 });
+}
+
+/* ============================================================
+   Aim prediction render — first segment only, via the SAME
+   traceSegment() the bullets fly through (what you see is what
+   you get). Diamond + halo mark the bounce point; the path
+   after the bounce is deliberately never drawn.
+   ============================================================ */
+function updatePrediction(t) {
+  const showPred = player.alive && state.phase === 'playing' && (input.aiming || input.mouseAim);
+  if (!showPred) {
+    predLine.visible = diamond.visible = halo.visible = false;
+    return;
+  }
+  player.tank.muzzle.getWorldPosition(v3A);
+  const dx = Math.sin(player.turAng), dz = Math.cos(player.turAng);
+  const hit = traceSegment(v3A.x, v3A.z, dx, dz, BULLET_RANGE, predOut);
+  const endD = hit ? predOut.dist : BULLET_RANGE;
+  const arr = predGeo.attributes.position.array;
+  arr[0] = v3A.x; arr[1] = BULLET_Y; arr[2] = v3A.z;
+  arr[3] = v3A.x + dx * endD; arr[4] = BULLET_Y; arr[5] = v3A.z + dz * endD;
+  predGeo.attributes.position.needsUpdate = true;
+  const ld = predGeo.attributes.lineDistance.array;
+  ld[0] = 0; ld[1] = endD;
+  predGeo.attributes.lineDistance.needsUpdate = true;
+  predLine.visible = true;
+
+  const bounce = hit && (predOut.kind === 'wall' || predOut.kind === 'barrel' || predOut.kind === 'mine');
+  if (bounce) {
+    diamond.position.set(predOut.x, 0.1, predOut.z);
+    halo.position.set(predOut.x, 0.09, predOut.z);
+    const pulse = 1 + 0.2 * Math.sin(t * 9);
+    diamond.scale.set(pulse, pulse, pulse);
+    const hs = 1 + ((t * 1.4) % 1) * 0.9;
+    halo.scale.set(hs, hs, hs);
+    halo.material.opacity = 0.55 * (1 - ((t * 1.4) % 1));
+    diamond.visible = halo.visible = true;
+  } else {
+    diamond.visible = halo.visible = false;
+  }
+}
+
+/* ============================================================
+   HUD — textContent / transform / class only, never re-rendered
+   ============================================================ */
+function syncHp() {
+  for (let i = 0; i < el.hpCells.length; i++) {
+    el.hpCells[i].classList.toggle('off', i >= state.hp);
+    el.hpCells[i].classList.toggle('hurt', i === state.hp && state.hp > 0);
+  }
+}
+function syncAmmo() {
+  for (let i = 0; i < el.shells.length; i++) el.shells[i].classList.toggle('off', i >= state.ammo);
+}
+function syncHud() {
+  el.scoreChip.textContent = String(Math.floor(state.displayScore)).padStart(6, '0');
+  el.waveNum.textContent = String(state.wave).padStart(2, '0');
+  let alive = 0;
+  for (const e of enemies) if (e.alive) alive++;
+  el.enemyNum.textContent = '×' + alive;
+  el.reloadFill.style.transform = `scaleX(${state.ammo < AMMO_MAX ? state.reloadT / RELOAD_T : 1})`;
+}
+let bannerT = 0;
+function showKillBanner(bounces) {
+  el.killBanner.classList.add('on');
+  el.killBanner.innerHTML = `RICOCHET KILL<small>反弹击杀 ×${bounces} +150</small>`;
+  bannerT = 1.1;
+}
+function showWaveBanner(wave, sub) {
+  el.waveBanner.innerHTML = `WAVE ${String(wave).padStart(2, '0')}<small>${sub}</small>`;
+  el.waveBanner.classList.add('on');
+  setTimeout(() => el.waveBanner.classList.remove('on'), 1500);
+}
+/* floating combat text — pooled DOM nodes, transform-driven */
+const floats = [];
+for (let i = 0; i < 8; i++) {
+  const d = document.createElement('div');
+  d.className = 'float-txt';
+  el.floatsWrap.appendChild(d);
+  floats.push({ el: d, t: 0, x: 0, y: 0 });
+}
+function floatText(wx, wz, text, mag) {
+  let f = null;
+  for (const c of floats) if (c.t <= 0) { f = c; break; }
+  if (!f) f = floats[0];
+  v3B.set(wx, 1.4, wz).project(camera);
+  f.x = (v3B.x * 0.5 + 0.5) * window.innerWidth;
+  f.y = (-v3B.y * 0.5 + 0.5) * window.innerHeight;
+  f.t = 0.9;
+  f.el.textContent = text;
+  f.el.classList.toggle('mag', !!mag);
+}
+function updateFloats(dt) {
+  for (const f of floats) {
+    if (f.t <= 0) { f.el.style.opacity = '0'; continue; }
+    f.t -= dt; f.y -= 34 * dt;
+    f.el.style.opacity = String(Math.max(0, f.t / 0.9));
+    f.el.style.transform = `translate(${f.x}px,${f.y}px) translate(-50%,-50%)`;
+  }
+}
+
+/* ============================================================
+   Waves & run flow — 5 waves to VICTORY; random map per run
+   ============================================================ */
+function spawnWave(wave) {
+  const count = Math.min(1 + wave, MAX_ENEMIES);
+  const hp = wave >= 4 ? 3 : 2;
+  const speedMul = 1 + (wave - 1) * 0.08;
+  const slots = [];
+  for (let i = 0; i < count; i++) {
+    const x = -PLAY_X + 2.5 + (i * (PLAY_X * 2 - 5)) / Math.max(1, count - 1) + (Math.random() - 0.5) * 1.6;
+    const z = -PLAY_Z + 2 + Math.random() * 2;
+    slots.push([x, z]);
+  }
+  for (let i = 0; i < count; i++) {
+    spawnEnemy(enemies[i], slots[i][0], slots[i][1], hp, speedMul);
+  }
+  showWaveBanner(wave, wave === 1 ? '敌军来袭 ENEMY INBOUND' : '新一波攻势 NEXT WAVE');
+  sfxWave();
+}
+function updateWaveFlow(dt) {
+  if (state.pendingWave) {
+    state.waveClearTimer -= dt;
+    if (state.waveClearTimer <= 0) {
+      state.pendingWave = false;
+      state.wave++;
+      if (state.wave > MAX_WAVES) { endRun(true); return; }
+      spawnWave(state.wave);
+    }
+    return;
+  }
+  let alive = 0;
+  for (const e of enemies) if (e.alive) alive++;
+  if (alive === 0) {
+    state.pendingWave = true;
+    state.waveClearTimer = 1.9;
+    if (state.wave < MAX_WAVES) showWaveBanner(state.wave, '波次肃清 WAVE CLEAR');
+  }
+}
+function startRun() {
+  unlockAudio();
+  state.phase = 'playing';
+  state.hp = MAX_HP; state.invuln = 1.2;
+  state.ammo = AMMO_MAX; state.reloadT = 0;
+  state.score = 0; state.displayScore = 0;
+  state.wave = 1; state.kills = 0; state.ricoKills = 0; state.maxBounce = 0;
+  state.shots = 0; state.hits = 0; state.runTime = 0;
+  state.hitstop = 0; state.shakeT = 0;
+  state.pendingWave = false; state.resultShown = false;
+  for (const b of bullets) if (b.alive) killBullet(b, true);
+  for (const e of enemies) { e.alive = false; e.tank.root.visible = false; }
+  for (const tg of telegraphs) tg.visible = false;
+  player.x = PLAYER_SPAWN.x; player.z = PLAYER_SPAWN.z;
+  player.hullAng = Math.PI; player.turAng = Math.PI;
+  player.alive = true;
+  player.tank.root.visible = true;
+  input.moveX = input.moveZ = 0;
+  input.aimX = 0; input.aimZ = -1;
+  el.menu.classList.remove('on');
+  el.result.classList.remove('on');
+  el.hud.classList.add('on');
+  buildMap(1);
+  syncHp(); syncAmmo(); syncHud();
+  spawnWave(1);
+}
+function endRun(win) {
+  if (state.phase !== 'playing') return;
+  state.phase = 'result';
+  el.hud.classList.remove('on');
+  if (state.score > state.best) {
+    state.best = state.score;
+    safeLS.set(LS_BEST, state.best);
+  }
+  el.resKicker.textContent = win
+    ? `WAVE ${String(Math.min(state.wave, MAX_WAVES)).padStart(2, '0')} CLEAR`
+    : `WAVE ${String(state.wave).padStart(2, '0')} · ${fmtTime(state.runTime)}`;
+  el.resTitle.textContent = win ? 'VICTORY' : 'DESTROYED';
+  el.resCn.textContent = win ? '胜利结算' : '坦克损毁';
+  el.result.classList.toggle('lose', !win);
+  el.k1.textContent = '击杀 KILLS'; el.v1.textContent = String(state.kills);
+  el.k2.textContent = '反弹击杀 RICOCHET'; el.v2.textContent = '×' + state.ricoKills;
+  if (win) {
+    el.k3.textContent = '最大连弹 MAX BOUNCE'; el.v3.textContent = '×' + state.maxBounce;
+    el.k4.textContent = '命中率 ACCURACY';
+    el.v4.textContent = (state.shots > 0 ? Math.round(state.hits / state.shots * 100) : 0) + '%';
+  } else {
+    el.k3.textContent = '存活时间 SURVIVED'; el.v3.textContent = fmtTime(state.runTime);
+    el.k4.textContent = '历史最佳 BEST'; el.v4.textContent = String(state.best).padStart(6, '0');
+  }
+  state.displayScore = 0;
+  el.resScore.textContent = '000000';
+  el.result.classList.add('on');
+}
+function fmtTime(s) {
+  const m = Math.floor(s / 60), ss = Math.floor(s % 60);
+  return m + ':' + String(ss).padStart(2, '0');
+}
+
+/* ============================================================
+   Camera — third-person follow with screen shake. All math on
+   scratch vectors (zero allocation).
+   ============================================================ */
+const camTarget = new THREE.Vector3();
+function updateCamera(dt, t) {
+  const px = player.alive ? player.x : 0;
+  const pz = player.alive ? player.z : 0;
+  camTarget.set(px, 13.2, pz + 9.6);
+  const k = 1 - Math.exp(-5 * dt);
+  camera.position.x += (camTarget.x - camera.position.x) * k;
+  camera.position.y += (camTarget.y - camera.position.y) * k;
+  camera.position.z += (camTarget.z - camera.position.z) * k;
+  if (state.shakeT > 0 && !REDUCED) {
+    state.shakeT -= dt;
+    const m = state.shakeMag * Math.max(0, state.shakeT / 0.35);
+    camera.position.x += (Math.random() * 2 - 1) * m;
+    camera.position.y += (Math.random() * 2 - 1) * m * 0.5;
+  }
+  camera.lookAt(px, 0.4, pz - 1.5);
+  void t;
+}
+
+/* ============================================================
+   Main loop — logic & render in ONE requestAnimationFrame
+   callback, no workers, no secondary threads. dt is clamped to
+   33ms; ballistics run on the fixed 120Hz accumulator so bullet
+   speed never couples to frame rate.
+   ============================================================ */
+let lastT = performance.now();
+let physAcc = 0;
+let minePulseT = 0;
+function frame(now) {
+  requestAnimationFrame(frame);
+  let dt = (now - lastT) / 1000;
+  lastT = now;
+  if (dt > DT_CLAMP) dt = DT_CLAMP;            /* 33ms clamp */
+  if (dt < 0) dt = 0;
+  const t = now / 1000;
+
+  if (state.phase === 'playing') {
+    let gdt = dt;
+    if (state.hitstop > 0) { state.hitstop -= dt; gdt = dt * 0.06; }   /* 60ms micro hit-stop */
+    state.runTime += gdt;
+
+    updatePlayer(gdt);
+    for (let i = 0; i < enemies.length; i++) updateEnemy(enemies[i], gdt, i);
+
+    /* fixed-step ballistics */
+    physAcc += gdt;
+    if (physAcc > 0.1) physAcc = 0.1;
+    while (physAcc >= SUBSTEP) {
+      updateBullets(SUBSTEP);
+      physAcc -= SUBSTEP;
+    }
+    updateChainQueue(gdt);
+    updateMineProximity();
+    updateWaveFlow(gdt);
+    updatePrediction(t);
+
+    if (bannerT > 0) { bannerT -= dt; if (bannerT <= 0) el.killBanner.classList.remove('on'); }
+    state.displayScore += (state.score - state.displayScore) * Math.min(1, 8 * dt);
+    if (Math.abs(state.score - state.displayScore) < 0.6) state.displayScore = state.score;
+    syncHud();
+    updateFloats(dt);
+  } else if (state.phase === 'result') {
+    state.displayScore += (state.score - state.displayScore) * Math.min(1, 6 * dt);
+    if (Math.abs(state.score - state.displayScore) < 0.6) state.displayScore = state.score;
+    el.resScore.textContent = String(Math.floor(state.displayScore)).padStart(6, '0');
+    updateFloats(dt);
+  }
+
+  /* muzzle flashes + tank flash timers */
+  const tanks = [player.tank, ...enemies.map(e => e.tank)];
+  for (const tk of tanks) {
+    if (tk.flashT > 0) {
+      tk.flashT -= dt;
+      if (tk.flashT <= 0) tk.flash.visible = false;
+      else tk.flash.quaternion.copy(camera.quaternion);
+    } else if (tk.flash.visible && tk.flash.material.opacity < 0.6) {
+      tk.flash.visible = false;
+    }
+  }
+  /* mine core pulse (≤6 instances — cheap matrix writes) */
+  minePulseT += dt;
+  const mp = 1 + 0.25 * Math.sin(minePulseT * 6);
+  for (const m of mines) {
+    if (!m.alive) continue;
+    dummy.position.set(m.x, 0.12, m.z);
+    dummy.scale.set(mp, 1, mp);
+    dummy.rotation.set(0, 0, 0);
+    dummy.updateMatrix();
+    mineCore.setMatrixAt(m.inst, dummy.matrix);
+  }
+  if (mines.length) mineCore.instanceMatrix.needsUpdate = true;
+
+  updateParticles(dt);
+  updateCamera(dt, t);
+  renderer.render(scene, camera);
+}
+
+/* ============================================================
+   Wiring — menu / restart / mute / resize / visibility pause
+   ============================================================ */
+el.btnStart.addEventListener('click', () => startRun());
+el.btnRestart.addEventListener('click', () => startRun());
+el.sndToggle.addEventListener('click', () => { unlockAudio(); setMuted(!muted); });
+setMuted(muted);
+el.recBounce.textContent = '×' + state.bestBounce;
+el.recScore.textContent = String(state.best).padStart(6, '0');
+
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) lastT = performance.now();   /* avoid a dt spike on resume (clamp covers the rest) */
+});
+
+/* boot complete — fade to menu */
+function showMenu() {
+  state.phase = 'menu';
+  el.menu.classList.add('on');
+  el.recBounce.textContent = '×' + state.bestBounce;
+  el.recScore.textContent = String(state.best).padStart(6, '0');
+}
+window.__bootDone();
+setTimeout(showMenu, 420);
+requestAnimationFrame((n) => { lastT = n; frame(n); });
+</script>
+</body>
+</html>

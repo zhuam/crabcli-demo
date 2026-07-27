@@ -18,7 +18,7 @@
       "players": "1",
       "version": "1.0.0",
       "featured": true,
-      "rating": 4.0
+      "rating": 4
     },
     {
       "id": "color-sort-balls",
@@ -38,7 +38,7 @@
       "players": "1",
       "version": "1.0.0",
       "featured": true,
-      "rating": 4.0
+      "rating": 4
     },
     {
       "id": "cooking-marathon",
@@ -75,7 +75,7 @@
       "players": "1",
       "version": "1.0.0",
       "featured": true,
-      "rating": 4.0
+      "rating": 4
     },
     {
       "id": "trivia-royale",
@@ -189,7 +189,7 @@
       "players": "1",
       "version": "1.0.0",
       "featured": true,
-      "rating": 4.0
+      "rating": 4
     },
     {
       "id": "cube-labyrinth-roll",
@@ -290,7 +290,7 @@
       "players": "1-2",
       "version": "1.0.0",
       "featured": true,
-      "rating": 4.0
+      "rating": 4
     },
     {
       "id": "punch-monkey-cafe",
@@ -310,7 +310,7 @@
       "players": "1",
       "version": "1.0.0",
       "featured": true,
-      "rating": 4.0
+      "rating": 4
     },
     {
       "id": "sort-till-you-cant",
@@ -330,7 +330,7 @@
       "players": "1",
       "version": "1.0.0",
       "featured": false,
-      "rating": 4.0
+      "rating": 4
     },
     {
       "id": "garden-keeper",
@@ -369,7 +369,7 @@
       "players": "1",
       "version": "1.0.0",
       "featured": true,
-      "rating": 4.0
+      "rating": 4
     },
     {
       "id": "connect-four-online",
@@ -505,7 +505,7 @@
       "hasServer": false,
       "players": "1",
       "version": "1.0.0",
-      "rating": 4.0
+      "rating": 4
     },
     {
       "id": "word-ladder-climb",
@@ -557,7 +557,7 @@
       "hasServer": false,
       "players": "1",
       "version": "1.0.0",
-      "rating": 4.0
+      "rating": 4
     },
     {
       "id": "word-guess",
@@ -574,7 +574,7 @@
       "hasServer": false,
       "players": "1",
       "version": "1.0.0",
-      "rating": 4.0
+      "rating": 4
     },
     {
       "id": "pet-run-io",
@@ -590,7 +590,7 @@
       "hasServer": false,
       "players": "1",
       "version": "1.0.0",
-      "rating": 4.0
+      "rating": 4
     },
     {
       "id": "solar-snake",
@@ -606,7 +606,7 @@
       "hasServer": false,
       "players": "1",
       "version": "1.0.0",
-      "rating": 4.0
+      "rating": 4
     },
     {
       "id": "idle-lemonade-stand",
@@ -622,7 +622,7 @@
       "hasServer": false,
       "players": "1",
       "version": "1.0.0",
-      "rating": 4.0
+      "rating": 4
     },
     {
       "id": "sushi-master",
@@ -641,7 +641,7 @@
       "hasServer": false,
       "players": "1",
       "version": "1.0.0",
-      "rating": 4.0
+      "rating": 4
     },
     {
       "id": "hyper-casual-hop",
@@ -681,7 +681,7 @@
       "players": "1",
       "version": "1.0.0",
       "featured": true,
-      "rating": 4.0
+      "rating": 4
     },
     {
       "id": "bubble-tea-maker",
@@ -701,7 +701,7 @@
       "players": "1",
       "version": "1.0.0",
       "featured": true,
-      "rating": 4.0
+      "rating": 4
     },
     {
       "id": "tank-battalion-2d",
@@ -721,7 +721,7 @@
       "players": "1",
       "version": "1.0.0",
       "featured": false,
-      "rating": 4.0
+      "rating": 4
     },
     {
       "id": "cupid-ricochet",
@@ -761,7 +761,28 @@
       "players": "1",
       "version": "1.0.0",
       "featured": true,
-      "rating": 4.0
+      "rating": 4
+    },
+    {
+      "id": "tank-ricochet-3d",
+      "name": "Ricochet Tank 3D",
+      "description": "弹射坦克 — 炮弹会在墙上反弹！找角度绕墙背刺。Three.js 单文件 3D 对战：随机地图、油桶连锁爆炸、地雷、轻量 AI，微信/QQ 聊天窗口即开即玩",
+      "category": "action",
+      "tags": [
+        "singleplayer",
+        "action",
+        "3d",
+        "physics",
+        "bounce",
+        "short-session"
+      ],
+      "thumbnail": "/games/101-tank-ricochet-3d/thumb.svg",
+      "path": "/games/101-tank-ricochet-3d/",
+      "hasServer": false,
+      "players": "1",
+      "version": "1.0.0",
+      "featured": false,
+      "rating": 4.5
     }
   ],
   "categories": [
