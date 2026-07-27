@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Chat Master · 聊天恋爱模拟</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -11,8 +11,8 @@ body{font-family:-apple-system,'Segoe UI','Noto Sans SC',sans-serif;background:v
 #app{width:100%;max-width:480px;min-height:100dvh;display:flex;flex-direction:column;background:var(--surface);position:relative;overflow:hidden}
 .screen{display:none;flex-direction:column;height:100dvh;position:absolute;inset:0}.screen.active{display:flex}
 /* Header */
-.header{padding:12px 16px;background:var(--surface);border-bottom:1px solid rgba(0,0,0,.04);display:flex;align-items:center;gap:10px;z-index:10}
-.header .back{font-size:20px;cursor:pointer;padding:4px 8px;border:none;background:none;color:var(--text)}
+.header{padding:6px 16px;background:var(--surface);border-bottom:1px solid rgba(0,0,0,.04);display:flex;align-items:center;gap:10px;z-index:10}
+.header .back{font-size:20px;cursor:pointer;width:44px;height:44px;flex:none;display:flex;align-items:center;justify-content:center;border:none;background:none;color:var(--text)}
 .header h2{flex:1;font-size:16px;font-weight:600;text-align:center;color:var(--text)}
 .affinity-bar{height:4px;background:#f0e0d8;border-radius:2px;margin:0 16px 4px;overflow:hidden;position:relative}
 .affinity-fill{height:100%;background:linear-gradient(90deg,var(--accent2),var(--accent));border-radius:2px;transition:width .6s cubic-bezier(.34,1.56,.64,1)}
@@ -28,6 +28,12 @@ body{font-family:-apple-system,'Segoe UI','Noto Sans SC',sans-serif;background:v
 .msg .name{font-size:12px;font-weight:600;color:var(--accent);margin-bottom:4px}
 .msg.self .name{color:rgba(255,255,255,.8)}
 @keyframes msgIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+/* Typing indicator (E2) — shown during the NPC reply wait windows */
+.typing{align-self:flex-start;display:flex;align-items:center;gap:5px;width:max-content;padding:13px 16px;background:var(--bubble-other);border-radius:var(--radius);border-bottom-left-radius:4px;animation:msgIn .3s ease}
+.typing i{width:6px;height:6px;border-radius:50%;background:var(--accent2);animation:tdot 1s ease-in-out infinite}
+.typing i:nth-child(2){animation-delay:.15s}
+.typing i:nth-child(3){animation-delay:.3s}
+@keyframes tdot{0%,100%{transform:translateY(0);opacity:.45}40%{transform:translateY(-5px);opacity:1}}
 /* Options */
 .options{display:flex;flex-direction:column;gap:8px;padding:12px 16px 20px;border-top:1px solid rgba(0,0,0,.04);background:var(--surface)}
 .opt{background:var(--surface);border:1.5px solid #e8ddd5;border-radius:14px;padding:14px 18px;font-size:14px;color:var(--text);cursor:pointer;transition:all .2s;text-align:left;line-height:1.5}
@@ -50,6 +56,8 @@ body{font-family:-apple-system,'Segoe UI','Noto Sans SC',sans-serif;background:v
 .btn{background:var(--accent);color:#fff;border:none;border-radius:30px;padding:14px 40px;font-size:16px;cursor:pointer;transition:all .2s}
 .btn:active{transform:scale(.95)}
 .btn-outline{background:transparent;color:var(--accent);border:1.5px solid var(--accent);border-radius:30px;padding:14px 40px;font-size:16px;cursor:pointer}
+.btn small{display:block;font-size:10.5px;font-weight:500;opacity:.82;margin-top:2px;letter-spacing:.04em}
+.end-actions{display:flex;flex-direction:column;gap:10px;width:100%;max-width:250px}
 /* splash */
 .splash{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px}
 .splash h1{font-size:28px;color:var(--text)}.splash p{color:var(--text2);font-size:14px}
@@ -105,9 +113,11 @@ body{font-family:-apple-system,'Segoe UI','Noto Sans SC',sans-serif;background:v
     <div class="icon">💕</div>
     <h2 id="ending-title">Happy End</h2>
     <p id="ending-text">你们终于走到了一起……</p>
-    <button class="btn" onclick="resetGame()">再来一局</button>
-    <br><br>
-    <div style="font-size:13px;color:var(--text2)" id="score-display"></div>
+    <div class="end-actions">
+      <button class="btn" id="victory-replay" onclick="startGame(state.char)">再来一局<small>同一角色 · 直开新局</small></button>
+      <button class="btn-outline" onclick="backToChar()">换个角色攻略 →</button>
+    </div>
+    <div style="font-size:13px;color:var(--text2);margin-top:18px" id="score-display"></div>
   </div>
 </div>
 
@@ -117,9 +127,11 @@ body{font-family:-apple-system,'Segoe UI','Noto Sans SC',sans-serif;background:v
     <div class="icon">😔</div>
     <h2>缘尽于此</h2>
     <p>好感度未能达标，故事到此结束。<br>下次试试不同的选择吧！</p>
-    <button class="btn" onclick="resetGame()">再来一局</button>
-    <br><br>
-    <div style="font-size:13px;color:var(--text2)" id="defeat-score"></div>
+    <div class="end-actions">
+      <button class="btn" id="defeat-replay" onclick="startGame(state.char)">再来一局<small>同一角色 · 直开新局</small></button>
+      <button class="btn-outline" onclick="backToChar()">换个角色攻略 →</button>
+    </div>
+    <div style="font-size:13px;color:var(--text2);margin-top:18px" id="defeat-score"></div>
   </div>
 </div>
 
@@ -333,8 +345,7 @@ let state = {
   node: 'start',
   affinity: 10,
   maxAffinity: 100,
-  gameOver: false,
-  usedNodes: new Set()
+  gameOver: false
 };
 
 // ===== Sound =====
@@ -389,7 +400,6 @@ function startGame(charId) {
   state.node = 'start';
   state.affinity = 10;
   state.gameOver = false;
-  state.usedNodes = new Set();
   // Clear leftover DOM from previous game (Major-5)
   document.getElementById('chat-area').innerHTML = '';
   document.getElementById('options').innerHTML = '';
@@ -424,7 +434,8 @@ function renderChat() {
   // Check for ending
   if (node && node.ending) {
     state.gameOver = true;
-    setTimeout(() => endGame(node.ending), 800);
+    const round = state._round;
+    setTimeout(() => { if (state._round === round) endGame(node.ending); }, 800);
     optionsDiv.innerHTML = '';
     return;
   }
@@ -432,7 +443,6 @@ function renderChat() {
   // Render options
   if (node && node.options) {
     optionsDiv.innerHTML = '';
-    // Filter out nodes that would revisit the same state
     node.options.forEach((opt, i) => {
       const btn = document.createElement('button');
       btn.className = 'opt';
@@ -449,6 +459,20 @@ function renderChat() {
   }
 
   updateAffinity();
+}
+
+function showTyping() {
+  const chatArea = document.getElementById('chat-area');
+  const t = document.createElement('div');
+  t.className = 'typing';
+  t.setAttribute('aria-hidden', 'true');
+  t.innerHTML = '<i></i><i></i><i></i>';
+  chatArea.appendChild(t);
+  chatArea.scrollTop = chatArea.scrollHeight;
+}
+function hideTyping() {
+  const t = document.querySelector('#chat-area .typing');
+  if (t) t.remove();
 }
 
 function chooseOption(opt, idx, btn) {
@@ -468,17 +492,18 @@ function chooseOption(opt, idx, btn) {
   // Apply affinity
   state.affinity = Math.max(0, Math.min(100, state.affinity + opt.affinity));
   state.node = opt.next;
-  state.usedNodes.add(opt.next);
   updateAffinity();
 
   playNote(440 + idx * 80, 60);
   vibrate(15);
 
-  // Show response message if present
+  // Show response message if present; the typing indicator marks each wait
   const round = state._round;
+  showTyping();
   if (opt.msg) {
     setTimeout(() => {
       if (state._round !== round) return; // stale — player already reset
+      hideTyping();
       const resp = document.createElement('div');
       resp.className = 'msg system';
       resp.textContent = opt.msg;
@@ -488,10 +513,11 @@ function chooseOption(opt, idx, btn) {
       resp.style.maxWidth = '90%';
       chatArea.appendChild(resp);
       chatArea.scrollTop = chatArea.scrollHeight;
-      setTimeout(() => { if (state._round === round) renderChat(); }, 400);
+      showTyping();
+      setTimeout(() => { if (state._round === round) { hideTyping(); renderChat(); } }, 400);
     }, 400);
   } else {
-    setTimeout(() => { if (state._round === round) renderChat(); }, 400);
+    setTimeout(() => { if (state._round === round) { hideTyping(); renderChat(); } }, 400);
   }
 
   chatArea.scrollTop = chatArea.scrollHeight;
@@ -519,6 +545,11 @@ function endGame(endingType) {
   const ending = story.endings[endingType];
   const isWin = state.affinity >= story.targetAffinity;
 
+  // Name both replay buttons after the played character (E1)
+  const replayLabel = `再来一局 · ${story.name}<small>同一角色 · 直开新局</small>`;
+  document.getElementById('victory-replay').innerHTML = replayLabel;
+  document.getElementById('defeat-replay').innerHTML = replayLabel;
+
   // Save high score (AC6 — both win and loss)
   const key = 'chatmaster_hs';
   const prev = parseInt(lsSafeGet(key, '0'), 10);
@@ -538,15 +569,6 @@ function endGame(endingType) {
       `最终好感度: ${state.affinity} / ${story.targetAffinity}  「${ending.title}」`;
     setTimeout(() => { show('defeat'); playNote(330,150); }, 300);
   }
-}
-
-// ===== Reset =====
-function resetGame() {
-  state = { char: null, node: 'start', affinity: 10, maxAffinity: 100, gameOver: false, usedNodes: new Set() };
-  document.getElementById('chat-area').innerHTML = '';
-  document.getElementById('options').innerHTML = '';
-  document.getElementById('char-select').querySelector('.char-grid').style.display = 'flex';
-  show('splash');
 }
 
 // ===== Keyboard support =====

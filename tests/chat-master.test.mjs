@@ -55,7 +55,8 @@ assert(/Escape|Escape/.test(html), "Escape key for back navigation");
 
 section("🔄 AC4: Restart button on result screens");
 assert(/再来一局/.test(html), "Restart button text found");
-assert(/resetGame/.test(html), "resetGame() function exists");
+assert(/startGame\(state\.char\)/.test(html), "Same-character replay wired to startGame(state.char)");
+assert(/换个角色攻略/.test(html) && /backToChar\(\)/.test(html), "Character-switch button wired to backToChar()");
 
 section("🔊 AC5: Sound & vibration");
 assert(/playNote/.test(html), "playNote sound function present");

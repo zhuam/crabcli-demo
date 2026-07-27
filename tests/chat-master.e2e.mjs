@@ -232,9 +232,9 @@ try {
     await waitForResult(page);
     check(await page.locator("#victory.active").count() === 1, "digit keys 1-9 select options through to ending");
     await page.locator("#victory .btn").click();
-    await page.locator("#splash.active").waitFor({ timeout: 5000 });
-    await page.locator("#splash").click();
-    await startChar(page, "shuo");
+    await page.locator("#game.active").waitFor({ timeout: 5000 });
+    await waitForEnabledOptions(page);
+    check(true, "play-again restarts a fresh same-character round directly");
     await page.keyboard.press("Escape");
     await page.locator("#char-select.active").waitFor({ timeout: 5000 });
     check(true, "Escape returns from game to character select");
@@ -257,29 +257,34 @@ try {
     await context.close();
   }
 
-  /* ===== S6 — AC4: play-again on victory fully resets ===== */
-  scenario("S6", "AC4", "victory screen play-again resets state");
+  /* ===== S6 — AC4: victory screen dual restart path ===== */
+  scenario("S6", "AC4", "victory screen offers same-character replay and character switch");
   {
     const { context, page } = await newGamePage(browser);
     await page.locator("#splash").click();
     await startChar(page, "shuo");
     await playPath(page, [1, 1, 1, 1, 1]);
     await waitForResult(page);
-    const btn = page.locator("#victory.active .btn", { hasText: "再来一局" });
-    check(await btn.count() === 1, "victory screen has a 再来一局 button");
-    await btn.click();
-    await page.locator("#splash.active").waitFor({ timeout: 5000 });
-    check(true, "再来一局 returns to splash");
-    await page.locator("#splash").click();
-    await startChar(page, "xing");
+    const replay = page.locator("#victory.active .btn", { hasText: "再来一局" });
+    check(await replay.count() === 1, "victory screen has a 再来一局 primary button");
+    const replayText = await replay.textContent();
+    check(replayText.includes("再来一局 · 朔"), "replay button names the played character", replayText);
+    check(
+      await page.locator("#victory.active .btn-outline", { hasText: "换个角色攻略" }).count() === 1,
+      "victory screen has a 换个角色攻略 secondary button",
+    );
+    await replay.click();
+    await page.locator("#game.active").waitFor({ timeout: 5000 });
+    check(true, "再来一局 restarts directly into a new round (skips splash)");
     const affinity = await page.locator("#affinity-text").textContent();
     check(affinity.includes("好感度: 10"), `affinity reset to 10 after replay`, affinity);
-    check(await page.locator("#chat-area .msg").count() === 1, "chat area cleared on new game (1 fresh message)");
+    check(await page.locator("#chat-area .msg").count() === 1, "chat area cleared on replay (1 fresh message)");
+    check(await page.locator("#char-name").textContent() === "朔 🎭", "replay keeps the same character (朔)");
     await context.close();
   }
 
-  /* ===== S7 — AC4: play-again on defeat ===== */
-  scenario("S7", "AC4", "defeat screen play-again resets state");
+  /* ===== S7 — AC4: defeat screen dual restart path ===== */
+  scenario("S7", "AC4", "defeat screen offers same-character replay and character switch");
   {
     const { context, page } = await newGamePage(browser);
     await page.locator("#splash").click();
@@ -287,11 +292,28 @@ try {
     await playPath(page, [2, 2, 2, 2, 2]);
     await waitForResult(page);
     check(await page.locator("#defeat.active").count() === 1, "all-low choices reach defeat screen");
-    const btn = page.locator("#defeat.active .btn", { hasText: "再来一局" });
-    check(await btn.count() === 1, "defeat screen has a 再来一局 button");
-    await btn.click();
-    await page.locator("#splash.active").waitFor({ timeout: 5000 });
-    check(true, "再来一局 returns to splash from defeat");
+    const replay = page.locator("#defeat.active .btn", { hasText: "再来一局" });
+    check(await replay.count() === 1, "defeat screen has a 再来一局 primary button");
+    check(
+      await page.locator("#defeat.active .btn-outline", { hasText: "换个角色攻略" }).count() === 1,
+      "defeat screen has a 换个角色攻略 secondary button",
+    );
+    await replay.click();
+    await page.locator("#game.active").waitFor({ timeout: 5000 });
+    check(true, "再来一局 restarts directly into a new round from defeat (skips splash)");
+    check(
+      (await page.locator("#affinity-text").textContent()).includes("好感度: 10"),
+      "affinity reset to 10 after defeat replay",
+    );
+    // lose the replayed round too, then take the secondary path
+    await playPath(page, [2, 2, 2, 2, 2]);
+    await waitForResult(page);
+    check(await page.locator("#defeat.active").count() === 1, "replayed round reaches defeat again");
+    await page.locator("#defeat.active .btn-outline", { hasText: "换个角色攻略" }).click();
+    await page.locator("#char-select.active").waitFor({ timeout: 5000 });
+    check(true, "换个角色攻略 returns to character select");
+    await startChar(page, "xing");
+    check(await page.locator("#char-name").textContent() === "星 🎸", "a different character starts after switching");
     await context.close();
   }
 
@@ -310,8 +332,7 @@ try {
     check(vibs.filter((v) => v === 15).length >= 5, `choice vibration 15ms fired per choice (${vibs.filter((v) => v === 15).length}x)`);
     // replay in the same session: context count must NOT grow (leak regression)
     await page.locator("#victory .btn").click();
-    await page.locator("#splash").click();
-    await startChar(page, "shuo");
+    await page.locator("#game.active").waitFor({ timeout: 5000 });
     await playPath(page, [1, 1, 1, 1, 1]);
     await waitForResult(page);
     const ac2 = await page.evaluate(() => window.__acCount);
