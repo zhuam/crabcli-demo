@@ -722,6 +722,26 @@
       "version": "1.0.0",
       "featured": false,
       "rating": 4.0
+    },
+    {
+      "id": "cupid-ricochet",
+      "name": "Cupid Ricochet",
+      "description": "Drag, release, ricochet — pierce every heart with a single arrow. 10 pastel physics puzzles with mirrors, portals and moving targets",
+      "category": "puzzle",
+      "tags": [
+        "singleplayer",
+        "puzzle",
+        "physics",
+        "bounce",
+        "short-session"
+      ],
+      "thumbnail": "/games/022-cupid-ricochet/thumb.svg",
+      "path": "/games/022-cupid-ricochet/",
+      "hasServer": false,
+      "players": "1",
+      "version": "1.0.0",
+      "featured": false,
+      "rating": 4.5
     }
   ],
   "categories": [

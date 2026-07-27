@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 180" width="320" height="180" role="img" aria-label="Cupid Ricochet thumbnail: rose heart pierced by an arrow over a dashed ricochet path">
+  <defs>
+    <radialGradient id="bg" cx="78%" cy="12%" r="90%">
+      <stop offset="0%" stop-color="#f7c8d8"/>
+      <stop offset="42%" stop-color="#f8f1e6"/>
+      <stop offset="100%" stop-color="#f1e5d3"/>
+    </radialGradient>
+  </defs>
+  <rect width="320" height="180" fill="url(#bg)"/>
+  <!-- dot grid -->
+  <g fill="#e9d9c6">
+    <circle cx="30" cy="30" r="1.6"/><circle cx="70" cy="30" r="1.6"/><circle cx="110" cy="30" r="1.6"/><circle cx="150" cy="30" r="1.6"/><circle cx="190" cy="30" r="1.6"/><circle cx="230" cy="30" r="1.6"/><circle cx="270" cy="30" r="1.6"/>
+    <circle cx="30" cy="70" r="1.6"/><circle cx="70" cy="70" r="1.6"/><circle cx="230" cy="70" r="1.6"/><circle cx="270" cy="70" r="1.6"/>
+    <circle cx="30" cy="110" r="1.6"/><circle cx="70" cy="110" r="1.6"/><circle cx="270" cy="110" r="1.6"/>
+    <circle cx="30" cy="150" r="1.6"/><circle cx="70" cy="150" r="1.6"/><circle cx="110" cy="150" r="1.6"/><circle cx="150" cy="150" r="1.6"/><circle cx="190" cy="150" r="1.6"/><circle cx="230" cy="150" r="1.6"/><circle cx="270" cy="150" r="1.6"/>
+  </g>
+  <!-- dashed ricochet path with bounce points -->
+  <path d="M36 150 L96 52 L212 52 L252 96" fill="none" stroke="#e2537f" stroke-width="2.4" stroke-dasharray="6 8" stroke-linecap="round" opacity="0.5"/>
+  <circle cx="96" cy="52" r="4" fill="#e2537f" opacity="0.65"/>
+  <circle cx="212" cy="52" r="4" fill="#e2537f" opacity="0.65"/>
+  <circle cx="96" cy="52" r="8" fill="none" stroke="#e2537f" stroke-width="1.6" opacity="0.35"/>
+  <!-- small heart already pierced -->
+  <path d="M128 128c-6.6-9.6-22.4-7.4-22.4 4.4 0 10.6 22.4 21.6 22.4 21.6s22.4-11 22.4-21.6c0-11.8-15.8-14-22.4-4.4z" fill="#f7c8d8" stroke="#ffffff" stroke-width="2"/>
+  <!-- arrow -->
+  <line x1="196" y1="30" x2="288" y2="122" stroke="#472c33" stroke-width="4" stroke-linecap="round"/>
+  <path d="M288 122l-13-3.6 M288 122l-4.4-12.4" stroke="#472c33" stroke-width="4" stroke-linecap="round" fill="none"/>
+  <path d="M196 30l9.6 2.2 M196 30l2.8 9.4 M205 32.4l8.2 2.4 M205 32.4l2.9 8.6" stroke="#c23a66" stroke-width="3.2" stroke-linecap="round" fill="none"/>
+  <!-- hero heart on the arrow tip -->
+  <path d="M246 116C246 116 218 97.4 218 77.6 218 67.4 225.8 60.4 234.4 60.4c5.3 0 9.5 2.8 11.6 6.9 2.1-4.1 6.3-6.9 11.6-6.9 8.6 0 16.4 7 16.4 17.2C274 97.4 246 116 246 116z"
+        fill="#e2537f" stroke="#ffffff" stroke-width="3"/>
+  <ellipse cx="233.5" cy="75.5" rx="6" ry="3.6" fill="#ffffff" opacity="0.6" transform="rotate(-24 233.5 75.5)"/>
+  <!-- sparkles -->
+  <path d="M52 96l2.2 6 6 2.2-6 2.2-2.2 6-2.2-6-6-2.2 6-2.2z" fill="#e8a94e" opacity="0.85"/>
+  <path d="M290 42l1.7 4.6 4.6 1.7-4.6 1.7-1.7 4.6-1.7-4.6-4.6-1.7 4.6-1.7z" fill="#9f86e0" opacity="0.8"/>
+</svg>

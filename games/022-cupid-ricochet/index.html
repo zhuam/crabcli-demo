@@ -1,0 +1,1583 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Cupid Ricochet — one arrow, every heart</title>
+<link rel="stylesheet" href="/games/shared/game-frame.css" />
+<style>
+/* ============================================================
+   TOKENS — pastel romantic kit (mirrors cupid-ricochet-design.html)
+   ============================================================ */
+:root{
+  --stage:#1f1713;
+  --cream:#f8f1e6;
+  --cream-2:#f1e5d3;
+  --line:#e2d2bd;
+  --ink:#472c33;
+  --ink-soft:#93766c;
+  --rose:#e2537f;
+  --rose-deep:#c23a66;
+  --petal:#f7c8d8;
+  --lav:#9f86e0;
+  --lav-soft:#e6dcf7;
+  --gold:#e8a94e;
+  --taupe:#e0c9b2;
+  --wall-hi:#e7d1ba;
+  --wall-lo:#dcc2a6;
+  --wall-line:#cdb195;
+  --dot:#e9d9c6;
+  --wood:#b9825b;
+  --wood-2:#a4714c;
+  --card:#fffdf8;
+  --scrim:rgba(52,32,38,.36);
+  --f-disp:'Fraunces',Georgia,'Times New Roman',serif;
+  --f-body:'Inter','Geist',system-ui,-apple-system,sans-serif;
+  --f-mono:'JetBrains Mono','Geist Mono',ui-monospace,'SF Mono',monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%}
+body{
+  font-family:var(--f-body);
+  background:
+    radial-gradient(900px 520px at 50% -120px, rgba(226,83,127,.14), transparent 60%),
+    radial-gradient(700px 460px at 90% 8%, rgba(159,134,224,.10), transparent 60%),
+    var(--stage);
+  color:var(--cream);
+  -webkit-font-smoothing:antialiased;
+  overflow:hidden;
+}
+
+/* ============================================================
+   LAYOUT — centered phone-like play column
+   ============================================================ */
+#app{
+  position:relative;
+  width:100%;height:100vh;height:100dvh;
+  display:flex;align-items:center;justify-content:center;
+}
+#stage{
+  position:relative;
+  height:100vh;
+  height:100dvh;
+  aspect-ratio:9/16;
+  max-width:100vw;
+  overflow:hidden;
+  background:var(--stage);
+  box-shadow:0 0 0 1px rgba(255,255,255,.05);
+}
+canvas#game{
+  position:absolute;inset:0;width:100%;height:100%;
+  display:block;touch-action:none;user-select:none;-webkit-user-select:none;
+  cursor:crosshair;
+}
+
+/* ============================================================
+   HUD
+   ============================================================ */
+#hud{
+  position:absolute;top:0;left:0;right:0;z-index:5;
+  display:flex;align-items:center;gap:8px;
+  padding:10px 12px;pointer-events:none;
+}
+#hud[hidden], #hintbar[hidden]{display:none}
+.hud-lv{
+  font-family:var(--f-mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--ink);background:rgba(255,255,255,.78);
+  border:1px solid var(--line);border-radius:999px;padding:6px 11px;
+  white-space:nowrap;
+}
+#hudHearts{
+  flex:1;display:flex;align-items:center;justify-content:center;gap:5px;
+}
+#hudHearts svg{width:16px;height:15px;display:block}
+#hudHearts .hf{fill:var(--rose);filter:drop-shadow(0 2px 3px rgba(226,83,127,.35))}
+#hudHearts .ho{fill:none;stroke:var(--taupe);stroke-width:2}
+#hudHearts .cnt{font-family:var(--f-mono);font-size:11px;font-weight:600;color:var(--rose-deep);margin-left:2px}
+#soundBtn{
+  pointer-events:auto;
+  width:36px;height:36px;border-radius:50%;border:1.5px solid var(--line);
+  background:rgba(255,255,255,.66);display:inline-flex;align-items:center;justify-content:center;
+  color:var(--ink);cursor:pointer;transition:transform .2s,border-color .2s,color .2s;
+}
+#soundBtn:hover{transform:translateY(-2px);border-color:var(--rose);color:var(--rose-deep)}
+#soundBtn svg{width:16px;height:16px}
+#soundBtn .slash{display:none}
+#soundBtn[data-state="off"] .waves{display:none}
+#soundBtn[data-state="off"] .slash{display:block}
+#hintbar{
+  position:absolute;left:0;right:0;bottom:8px;z-index:5;
+  display:flex;align-items:center;justify-content:center;gap:9px;flex-wrap:wrap;
+  padding:0 14px;pointer-events:none;opacity:.9;
+}
+#hintbar .ht{font-family:var(--f-mono);font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink-soft)}
+#hintbar kbd{
+  font-family:var(--f-mono);font-size:9px;color:var(--ink);
+  border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;
+  background:rgba(255,255,255,.85);padding:2.5px 5px;min-width:16px;text-align:center;display:inline-block;
+}
+#hintbar .sep{width:1px;height:12px;background:var(--line)}
+
+/* ============================================================
+   OVERLAYS — splash + result
+   ============================================================ */
+.overlay{
+  position:absolute;inset:0;z-index:8;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  text-align:center;
+}
+#splash{
+  background:
+    radial-gradient(340px 280px at 82% 10%, rgba(247,200,216,.75), transparent 70%),
+    radial-gradient(280px 250px at 10% 36%, rgba(230,220,247,.7), transparent 70%),
+    radial-gradient(240px 220px at 70% 88%, rgba(247,200,216,.5), transparent 70%),
+    var(--cream);
+  cursor:pointer;
+  transition:opacity .35s ease, visibility .35s;
+}
+#splash[hidden]{opacity:0;visibility:hidden}
+.splash-traj{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.splash-traj .tline{fill:none;stroke:var(--rose);stroke-width:2;stroke-dasharray:5 8;stroke-linecap:round;opacity:.4;animation:dashmarch 1.4s linear infinite}
+.splash-traj .bping{fill:none;stroke:var(--rose);stroke-width:1.5;opacity:0;transform-origin:center;transform-box:fill-box;animation:bping 2.4s ease-out infinite}
+.splash-best{
+  position:absolute;top:14px;right:14px;
+  font-family:var(--f-mono);font-size:9px;letter-spacing:.16em;color:var(--ink-soft);
+  border:1px solid var(--line);border-radius:999px;padding:5px 10px;background:rgba(255,255,255,.6);
+}
+.hero-heart{width:150px;height:138px;position:relative;margin-bottom:16px}
+.hero-heart .beat{transform-origin:50% 55%;animation:beat 2.6s ease-in-out infinite}
+.hero-heart .glow{
+  position:absolute;inset:-30px;border-radius:50%;
+  background:radial-gradient(closest-side, rgba(226,83,127,.30), transparent 72%);
+  animation:beat 2.6s ease-in-out infinite;
+}
+.hero-heart .spk{position:absolute;color:var(--gold);animation:twinkle 2.8s ease-in-out infinite}
+.hero-heart .spk svg{width:100%;height:100%;display:block}
+.hero-heart .k1{width:15px;height:15px;left:-6px;top:18px}
+.hero-heart .k2{width:10px;height:10px;right:-4px;top:2px;animation-delay:-1.3s}
+.eyebrow{
+  display:inline-flex;align-items:center;gap:6px;margin-bottom:14px;
+  font-family:var(--f-mono);font-size:9px;letter-spacing:.2em;text-transform:uppercase;
+  color:var(--rose-deep);border:1px solid rgba(226,83,127,.4);
+  border-radius:999px;padding:5px 11px;background:rgba(255,255,255,.55);
+}
+.splash-title{line-height:.98;margin-bottom:12px}
+.splash-title .t1{
+  display:block;font-family:var(--f-disp);font-style:italic;font-weight:500;
+  font-size:44px;color:var(--rose);letter-spacing:.01em;
+}
+.splash-title .t2{
+  display:block;font-family:var(--f-disp);font-weight:600;font-size:58px;
+  color:var(--ink);letter-spacing:-.015em;margin-top:2px;
+}
+.splash-tag{font-size:14px;color:var(--ink-soft);letter-spacing:.02em}
+.splash-cta{
+  margin-top:38px;display:flex;flex-direction:column;align-items:center;gap:14px;
+}
+.rings{position:relative;width:70px;height:70px;display:flex;align-items:center;justify-content:center}
+.rings .core{
+  width:44px;height:44px;border-radius:50%;background:var(--rose);z-index:2;color:#fff;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 8px 18px -6px rgba(226,83,127,.65);
+  transition:transform .25s;
+}
+#splash:hover .core{transform:scale(1.12)}
+.rings .core svg{width:18px;height:18px}
+.rings .ring{position:absolute;inset:0;border-radius:50%;border:1.5px solid var(--rose);opacity:0;animation:ringout 2.4s ease-out infinite}
+.rings .ring.r2{animation-delay:1.2s}
+.cta-hint{font-family:var(--f-mono);font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:var(--ink-soft)}
+.splash-teaser{
+  position:absolute;bottom:16px;left:0;right:0;
+  display:flex;align-items:center;justify-content:space-between;padding:12px 22px 0;
+  border-top:1px dashed var(--line);margin:0 18px;
+}
+.teaser-path{display:flex;align-items:center;gap:7px}
+.teaser-path .mini{width:14px;height:13px;color:var(--rose)}
+.teaser-path .mini.off{color:var(--taupe)}
+.teaser-path .mini svg{width:100%;height:100%;display:block}
+.teaser-path .dashline{width:26px;border-top:2px dotted var(--line)}
+.teaser-meta{font-family:var(--f-mono);font-size:9px;letter-spacing:.16em;color:var(--ink-soft);text-transform:uppercase}
+
+/* result card */
+#result{background:var(--scrim);backdrop-filter:blur(2px);transition:opacity .3s ease, visibility .3s}
+#result[hidden]{opacity:0;visibility:hidden}
+.rcard{
+  position:relative;width:min(84%,330px);
+  background:var(--card);border-radius:26px;padding:26px 22px 22px;
+  border:1px solid var(--line);
+  box-shadow:0 24px 50px -16px rgba(71,44,51,.45);
+  text-align:center;overflow:hidden;
+  animation:popin .45s cubic-bezier(.3,1.5,.5,1) both;
+}
+.rcard .conf{position:absolute;color:var(--rose);animation:confetti 3.4s ease-in-out infinite;z-index:1}
+.rcard .conf svg{width:100%;height:100%;display:block}
+.rcard .c1{width:11px;height:10px;left:12%;top:10%}
+.rcard .c2{width:8px;height:8px;left:26%;top:4%;color:var(--gold);animation-delay:-1.1s}
+.rcard .c3{width:9px;height:9px;right:20%;top:7%;color:var(--lav);animation-delay:-2s}
+.rcard .c4{width:7px;height:7px;right:9%;top:14%;animation-delay:-.6s}
+.r-hearts{display:flex;justify-content:center;gap:10px;margin-bottom:14px;position:relative;z-index:2}
+.r-hearts svg{width:30px;height:28px;display:block;filter:drop-shadow(0 4px 8px rgba(226,83,127,.38))}
+.r-hearts .h{fill:var(--rose);transform-origin:center;transform-box:fill-box;animation:popin .6s cubic-bezier(.3,1.6,.5,1) both}
+.r-hearts .h2{animation-delay:.12s}.r-hearts .h3{animation-delay:.24s}
+.r-hearts .down{fill:none;stroke:var(--taupe);stroke-width:2;filter:none}
+.r-title{font-family:var(--f-disp);font-weight:600;font-size:31px;line-height:1.05;color:var(--ink);position:relative;z-index:2}
+.r-title em{font-style:italic;color:var(--rose)}
+.r-sub{font-size:12.5px;color:var(--ink-soft);margin-top:7px;position:relative;z-index:2}
+.r-stats{display:flex;justify-content:center;margin:18px 0 4px;position:relative;z-index:2}
+.r-stats .st{padding:0 16px;border-right:1px solid var(--line)}
+.r-stats .st:last-child{border-right:none}
+.r-stats .v{font-family:var(--f-mono);font-size:17px;font-weight:700;color:var(--ink)}
+.r-stats .l{font-family:var(--f-mono);font-size:7.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink-soft);margin-top:3px}
+.r-stars{display:flex;justify-content:center;gap:7px;margin:12px 0 18px;position:relative;z-index:2;min-height:22px}
+.r-stars svg{width:22px;height:22px;display:block;color:var(--gold);transform-origin:center;transform-box:fill-box;animation:starin .5s cubic-bezier(.3,1.6,.5,1) both}
+.r-stars .s2{animation-delay:.14s}.r-stars .s3{animation-delay:.28s}
+.r-stars .fillp{fill:currentColor}
+.r-stars .off{color:var(--line)}
+.r-btns{display:flex;flex-direction:column;gap:9px;position:relative;z-index:2}
+.pillbtn{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;width:100%;
+  font-family:var(--f-body);font-weight:600;font-size:14px;letter-spacing:.02em;
+  border-radius:999px;padding:13px 26px;border:none;cursor:pointer;
+  transition:transform .22s, box-shadow .22s, background .22s, border-color .22s;
+}
+.pillbtn svg{width:15px;height:15px}
+.pillbtn.primary{background:var(--rose);color:#fff;box-shadow:0 10px 22px -8px rgba(226,83,127,.6)}
+.pillbtn.primary:hover{transform:translateY(-2px);background:var(--rose-deep);box-shadow:0 14px 26px -8px rgba(226,83,127,.7)}
+.pillbtn.ghost{background:transparent;color:var(--ink);border:1.5px solid var(--line)}
+.pillbtn.ghost:hover{border-color:var(--rose);color:var(--rose-deep);transform:translateY(-2px)}
+.r-best{
+  position:absolute;top:16px;right:-28px;transform:rotate(9deg);z-index:3;
+  font-family:var(--f-mono);font-size:8.5px;letter-spacing:.2em;text-transform:uppercase;
+  color:var(--rose-deep);border:1.5px dashed var(--rose);border-radius:6px;
+  padding:4px 32px;background:rgba(247,200,216,.4);
+  animation:popin .5s .5s cubic-bezier(.3,1.6,.5,1) both;
+}
+.r-best[hidden]{display:none}
+
+/* ============================================================
+   keyframes
+   ============================================================ */
+@keyframes dashmarch{to{stroke-dashoffset:-26}}
+@keyframes bping{0%{opacity:.7;transform:scale(.4)}80%{opacity:0;transform:scale(1.9)}100%{opacity:0;transform:scale(1.9)}}
+@keyframes beat{0%,100%{transform:scale(1)}12%{transform:scale(1.07)}24%{transform:scale(1)}36%{transform:scale(1.045)}48%{transform:scale(1)}}
+@keyframes ringout{0%{opacity:.6;transform:scale(.55)}100%{opacity:0;transform:scale(1.75)}}
+@keyframes twinkle{0%,100%{opacity:.15;transform:scale(.75)}50%{opacity:.95;transform:scale(1.15)}}
+@keyframes popin{0%{opacity:0;transform:scale(.4)}100%{opacity:1;transform:scale(1)}}
+@keyframes starin{0%{opacity:0;transform:scale(0) rotate(-40deg)}100%{opacity:1;transform:scale(1) rotate(0)}}
+@keyframes confetti{0%,100%{transform:translateY(0) rotate(-8deg)}50%{transform:translateY(9px) rotate(10deg)}}
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation-duration:.01ms !important;animation-iteration-count:1 !important;transition-duration:.01ms !important}
+}
+@media (max-width:520px){
+  #hintbar .keys{display:none}
+}
+</style>
+</head>
+<body>
+<a href="/" class="back-to-hub" onclick="window.recordPlayed && window.recordPlayed('cupid-ricochet')">← Arcade</a>
+
+<div id="app">
+  <div id="stage">
+    <canvas id="game" aria-label="Cupid Ricochet play field"></canvas>
+
+    <!-- HUD -->
+    <div id="hud" hidden>
+      <span class="hud-lv" id="hudLevel">LV 1</span>
+      <span id="hudHearts" aria-live="polite"></span>
+      <button id="soundBtn" type="button" aria-label="Toggle sound" aria-pressed="true" data-state="on">
+        <svg viewBox="0 0 24 24" fill="none">
+          <path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor"/>
+          <g class="waves"><path d="M16.5 8.5a5 5 0 0 1 0 7M18.8 6a8.5 8.5 0 0 1 0 12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" fill="none"/></g>
+          <g class="slash"><path d="M16 9.5l5 5M21 9.5l-5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></g>
+        </svg>
+      </button>
+    </div>
+    <div id="hintbar" hidden>
+      <span class="ht">Drag back · release</span>
+      <span class="sep"></span>
+      <span class="keys"><kbd>←</kbd><kbd>→</kbd><kbd>↑</kbd><kbd>↓</kbd><kbd>space</kbd><kbd>R</kbd></span>
+    </div>
+
+    <!-- SPLASH -->
+    <div id="splash" class="overlay" role="button" tabindex="0" aria-label="Start Cupid Ricochet">
+      <svg class="splash-traj" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+        <path class="tline" d="M84 96 L14 74 L14 22 L62 12"/>
+        <circle class="bping" cx="14" cy="74" r="2.4"/>
+        <circle class="bping" cx="14" cy="22" r="2.4" style="animation-delay:-1.2s"/>
+      </svg>
+      <span class="splash-best" id="splashBest">Best · LV 1</span>
+      <div class="hero-heart">
+        <span class="glow"></span>
+        <svg viewBox="0 0 128 118" width="150" height="138" class="beat" aria-hidden="true">
+          <line x1="14" y1="18" x2="112" y2="98" stroke="#472c33" stroke-width="3" stroke-linecap="round"/>
+          <path d="M112 98 l-11 -3.5 M112 98 l-4 -10.5" stroke="#472c33" stroke-width="3" stroke-linecap="round" fill="none"/>
+          <path d="M14 18 l8 2 M14 18 l2.5 8 M22 20 l7 2.2 M22 20 l2.6 7.4" stroke="#c23a66" stroke-width="2.6" stroke-linecap="round" fill="none"/>
+          <path d="M64 92C64 92 38 74.6 38 56.2 38 46.8 45.2 40.4 53.2 40.4c4.9 0 8.8 2.6 10.8 6.4 2-3.8 5.9-6.4 10.8-6.4 8 0 15.2 6.4 15.2 15.8C90 74.6 64 92 64 92z"
+                fill="#e2537f" stroke="#ffffff" stroke-width="2.5"/>
+          <ellipse cx="52" cy="54" rx="5.5" ry="3.4" fill="#ffffff" opacity=".6" transform="rotate(-24 52 54)"/>
+        </svg>
+        <span class="spk k1"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 2l2.1 7.9L22 12l-7.9 2.1L12 22l-2.1-7.9L2 12l7.9-2.1z"/></svg></span>
+        <span class="spk k2"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 2l2.1 7.9L22 12l-7.9 2.1L12 22l-2.1-7.9L2 12l7.9-2.1z"/></svg></span>
+      </div>
+      <span class="eyebrow">Game 022 · Physics puzzle</span>
+      <h1 class="splash-title">
+        <span class="t1">Cupid</span>
+        <span class="t2">Ricochet</span>
+      </h1>
+      <p class="splash-tag">One arrow. Every heart.</p>
+      <div class="splash-cta">
+        <span class="rings">
+          <span class="ring"></span><span class="ring r2"></span>
+          <span class="core">
+            <svg viewBox="0 0 24 24"><path d="M6 3C13 6 13 18 6 21" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M6 3l9 9-9 9" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+          </span>
+        </span>
+        <span class="cta-hint">Tap to draw your bow</span>
+      </div>
+      <div class="splash-teaser">
+        <span class="teaser-path">
+          <span class="mini"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 21C12 21 4 15.6 4 9.9 4 7 6.2 5 8.7 5c1.5 0 2.7.8 3.3 2 .6-1.2 1.8-2 3.3-2C17.8 5 20 7 20 9.9 20 15.6 12 21 12 21z"/></svg></span>
+          <span class="mini"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 21C12 21 4 15.6 4 9.9 4 7 6.2 5 8.7 5c1.5 0 2.7.8 3.3 2 .6-1.2 1.8-2 3.3-2C17.8 5 20 7 20 9.9 20 15.6 12 21 12 21z"/></svg></span>
+          <span class="dashline"></span>
+          <span class="mini off"><svg viewBox="0 0 24 24"><path d="M12 21C12 21 4 15.6 4 9.9 4 7 6.2 5 8.7 5c1.5 0 2.7.8 3.3 2 .6-1.2 1.8-2 3.3-2C17.8 5 20 7 20 9.9 20 15.6 12 21 12 21z" fill="none" stroke="currentColor" stroke-width="2"/></svg></span>
+        </span>
+        <span class="teaser-meta">10 levels · ~3 min</span>
+      </div>
+    </div>
+
+    <!-- RESULT -->
+    <div id="result" class="overlay" hidden>
+      <div class="rcard" role="dialog" aria-modal="true" aria-labelledby="rTitle">
+        <span class="r-best" id="rBest" hidden>New best</span>
+        <span class="conf c1"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 21C12 21 4 15.6 4 9.9 4 7 6.2 5 8.7 5c1.5 0 2.7.8 3.3 2 .6-1.2 1.8-2 3.3-2C17.8 5 20 7 20 9.9 20 15.6 12 21 12 21z"/></svg></span>
+        <span class="conf c2"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 21C12 21 4 15.6 4 9.9 4 7 6.2 5 8.7 5c1.5 0 2.7.8 3.3 2 .6-1.2 1.8-2 3.3-2C17.8 5 20 7 20 9.9 20 15.6 12 21 12 21z"/></svg></span>
+        <span class="conf c3"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 21C12 21 4 15.6 4 9.9 4 7 6.2 5 8.7 5c1.5 0 2.7.8 3.3 2 .6-1.2 1.8-2 3.3-2C17.8 5 20 7 20 9.9 20 15.6 12 21 12 21z"/></svg></span>
+        <span class="conf c4"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 21C12 21 4 15.6 4 9.9 4 7 6.2 5 8.7 5c1.5 0 2.7.8 3.3 2 .6-1.2 1.8-2 3.3-2C17.8 5 20 7 20 9.9 20 15.6 12 21 12 21z"/></svg></span>
+
+        <div class="r-hearts" id="rHearts"></div>
+        <h3 class="r-title" id="rTitle">Level <em>clear</em></h3>
+        <p class="r-sub" id="rSub"></p>
+
+        <div class="r-stats">
+          <div class="st"><div class="v" id="stBounces">0</div><div class="l">Bounces</div></div>
+          <div class="st"><div class="v" id="stArrows">1</div><div class="l">Arrow</div></div>
+          <div class="st"><div class="v" id="stTime">0:00</div><div class="l">Time</div></div>
+        </div>
+        <div class="r-stars" id="rStars"></div>
+        <div class="r-btns">
+          <button class="pillbtn primary" id="btnAgain" type="button">
+            <svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 5V2L7 6l5 4V7a5 5 0 1 1-5 5H5a7 7 0 1 0 7-7z"/></svg>
+            Play again
+          </button>
+          <button class="pillbtn ghost" id="btnNext" type="button">
+            Next level
+            <svg viewBox="0 0 24 24"><path d="M9.5 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+'use strict';
+/* ============================================================
+   CUPID RICOCHET (Game 022, Issue #22)
+   Single-file Canvas 2D ricochet puzzler.
+   Physics: fixed 120 Hz substeps with continuous segment tests
+   (slab ray-vs-AABB, ray-vs-segment mirrors, ray-vs-circle for
+   hearts and portals) so the arrow can never tunnel a wall.
+   Aim preview renders ONLY the first ray segment to the first
+   impact point (deliberate design rule, no multi-bounce spoilers);
+   portal mouths truncate the preview.
+   ============================================================ */
+
+/* ---------- constants ---------- */
+const FIELD_W = 360, FIELD_H = 640;
+const SUBSTEP = 1 / 120;                 /* physics substep in seconds */
+const MAX_BOUNCES = 10;                  /* bounce cap per arrow */
+const FLIGHT_CAP = 8;                    /* seconds before the arrow expires */
+const MAX_DRAW = 150;                    /* slingshot draw distance for full power */
+const MIN_SPEED = 220, MAX_SPEED = 640;
+const HEART_R = 13, HIT_R = 17;          /* generous 1.3x pickup radius */
+const PORTAL_R = 18;
+const EPS = 1e-6;
+
+const C = {
+  stage:'#1f1713', cream:'#f8f1e6', line:'#e2d2bd',
+  ink:'#472c33', inkSoft:'#93766c',
+  rose:'#e2537f', roseDeep:'#c23a66', petal:'#f7c8d8',
+  lav:'#9f86e0', lavSoft:'#e6dcf7', gold:'#e8a94e', taupe:'#e0c9b2',
+  wallHi:'#e7d1ba', wallLo:'#dcc2a6', wallLine:'#cdb195', dot:'#e9d9c6',
+  wood:'#b9825b', wood2:'#a4714c'
+};
+
+const REDUCED = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ---------- storage (safe JSON helpers, repo convention) ---------- */
+const LS_BEST = 'cupid-ricochet-best';
+const LS_SETTINGS = 'cupid-ricochet-settings';
+
+function lsGet(key, fallback) {
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ? Object.assign({}, fallback, JSON.parse(raw)) : fallback;
+  } catch (err) { return fallback; }
+}
+function lsSet(key, value) {
+  try { localStorage.setItem(key, JSON.stringify(value)); } catch (err) { /* storage unavailable */ }
+}
+
+let best = lsGet(LS_BEST, { unlocked: 0, clears: 0, stars: {}, bestBounces: {} });
+let settings = lsGet(LS_SETTINGS, { muted: false });
+
+/* ============================================================
+   LEVELS — 10 hand-tuned layouts. `sol` is the verified solution
+   (direction, speed, seconds to wait before firing for movers);
+   the static test suite simulates each sol to prove solvability.
+   ============================================================ */
+const LEVELS = [
+  {
+    id: 1, name: 'First Flutter', par: 0, teach: 'hand',
+    launch: { x: 52, y: 520 },
+    walls: [], mirrors: [], portals: [], movers: [],
+    hearts: [{ x: 180, y: 520 }, { x: 300, y: 520 }],
+    hint: null,
+    sol: { dx: 1, dy: 0, spd: 500, wait: 0 }
+  },
+  {
+    id: 2, name: 'Bank Shot', par: 1, teach: 'bounce',
+    launch: { x: 52, y: 540 },
+    walls: [{ x: 196, y: 300, w: 24, h: 340 }],
+    mirrors: [], portals: [], movers: [],
+    hearts: [{ x: 290, y: 560 }],
+    hint: { edges: ['top'], walls: [] },
+    sol: { dx: 0.2116, dy: -0.9774, spd: 500, wait: 0 }
+  },
+  {
+    id: 3, name: 'Two of Hearts', par: 1, teach: null,
+    launch: { x: 56, y: 580 },
+    walls: [{ x: 180, y: 300, w: 70, h: 110 }],
+    mirrors: [], portals: [], movers: [],
+    hearts: [{ x: 300, y: 233 }, { x: 340, y: 367 }],
+    hint: null,
+    sol: { dx: 0.2873, dy: -0.9578, spd: 520, wait: 0 }
+  },
+  {
+    id: 4, name: 'Mirror, Mirror', par: 1, teach: 'mirror',
+    launch: { x: 52, y: 540 },
+    walls: [],
+    mirrors: [{ x1: 200, y1: 560, x2: 250, y2: 510 }],
+    portals: [], movers: [],
+    hearts: [{ x: 220, y: 180 }],
+    hint: null,
+    sol: { dx: 1, dy: 0, spd: 480, wait: 0 }
+  },
+  {
+    id: 5, name: 'Silver Lining', par: 3, teach: null,
+    launch: { x: 52, y: 580 },
+    walls: [],
+    mirrors: [
+      { x1: 240, y1: 600, x2: 300, y2: 540 },
+      { x1: 220, y1: 120, x2: 320, y2: 120 }
+    ],
+    portals: [], movers: [],
+    hearts: [{ x: 260, y: 420 }, { x: 260, y: 510 }],
+    hint: null,
+    sol: { dx: 1, dy: 0, spd: 500, wait: 0 }
+  },
+  {
+    id: 6, name: 'Through the Heart', par: 0, teach: 'portal',
+    launch: { x: 52, y: 540 },
+    walls: [{ x: 220, y: 0, w: 24, h: 640 }],
+    mirrors: [],
+    portals: [{ a: { x: 140, y: 540, dx: -1, dy: 0 }, b: { x: 310, y: 540, dx: 1, dy: 0 } }],
+    movers: [],
+    hearts: [{ x: 100, y: 540 }, { x: 338, y: 540 }],
+    hint: null,
+    sol: { dx: 1, dy: 0, spd: 500, wait: 0 }
+  },
+  {
+    id: 7, name: 'Warp and Bounce', par: 1, teach: null,
+    launch: { x: 52, y: 540 },
+    walls: [{ x: 200, y: 0, w: 24, h: 640 }],
+    mirrors: [],
+    portals: [{ a: { x: 140, y: 300, dx: -1, dy: 0 }, b: { x: 300, y: 200, dx: 0, dy: -1 } }],
+    movers: [],
+    hearts: [{ x: 96, y: 420 }, { x: 300, y: 430 }],
+    hint: null,
+    sol: { dx: 0.3447, dy: -0.9387, spd: 500, wait: 0 }
+  },
+  {
+    id: 8, name: 'Beating Hearts', par: 0, teach: 'mover',
+    launch: { x: 52, y: 320 },
+    walls: [], mirrors: [], portals: [],
+    movers: [{ x1: 250, y1: 150, x2: 250, y2: 490, speed: 140 }],
+    hearts: [{ x: 140, y: 320 }],
+    hint: null,
+    sol: { dx: 1, dy: 0, spd: 520, wait: 0.833 }
+  },
+  {
+    id: 9, name: 'Warp Chase', par: 0, teach: null,
+    launch: { x: 52, y: 560 },
+    walls: [{ x: 180, y: 0, w: 24, h: 640 }],
+    mirrors: [],
+    portals: [{ a: { x: 120, y: 400, dx: -1, dy: 0 }, b: { x: 280, y: 400, dx: 1, dy: 0 } }],
+    movers: [{ x1: 320, y1: 200, x2: 320, y2: 560, speed: 120 }],
+    hearts: [{ x: 86, y: 480 }],
+    hint: null,
+    sol: { dx: 0.3904, dy: -0.9206, spd: 500, wait: 1.283 }
+  },
+  {
+    id: 10, name: "Cupid's Gauntlet", par: 2, teach: null,
+    launch: { x: 52, y: 580 },
+    walls: [{ x: 250, y: 300, w: 24, h: 200 }],
+    mirrors: [{ x1: 290, y1: 180, x2: 340, y2: 130 }],
+    portals: [{ a: { x: 330, y: 580, dx: -1, dy: 0 }, b: { x: 60, y: 140, dx: 1, dy: 0 } }],
+    movers: [{ x1: 200, y1: 60, x2: 200, y2: 220, speed: 90 }],
+    hearts: [{ x: 200, y: 580 }, { x: 330, y: 70 }],
+    hint: null,
+    sol: { dx: 1, dy: 0, spd: 520, wait: 0.127 }
+  }
+];
+
+/* ============================================================
+   PURE PHYSICS HELPERS (unit-tested by tests/static.test.cjs)
+   ============================================================ */
+
+/* Ray vs axis-aligned box via slab test. Returns {t, nx, ny} of
+   first entry (t in units of |dir|), or null. */
+function segVsAABB(ox, oy, dx, dy, rx, ry, rw, rh) {
+  let tmin = -Infinity, tmax = Infinity;
+  let nxMin = 0, nyMin = 0;
+  if (dx !== 0) {
+    let t1 = (rx - ox) / dx, t2 = (rx + rw - ox) / dx;
+    let n1 = dx > 0 ? -1 : 1;
+    if (t1 > t2) { const tmp = t1; t1 = t2; t2 = tmp; n1 = -n1; }
+    if (t1 > tmin) { tmin = t1; nxMin = n1; nyMin = 0; }
+    tmax = Math.min(tmax, t2);
+  } else if (ox < rx || ox > rx + rw) { return null; }
+  if (dy !== 0) {
+    let t1 = (ry - oy) / dy, t2 = (ry + rh - oy) / dy;
+    let n1 = dy > 0 ? -1 : 1;
+    if (t1 > t2) { const tmp = t1; t1 = t2; t2 = tmp; n1 = -n1; }
+    if (t1 > tmin) { tmin = t1; nxMin = 0; nyMin = n1; }
+    tmax = Math.min(tmax, t2);
+  } else if (oy < ry || oy > ry + rh) { return null; }
+  if (tmin > tmax || tmax < EPS) return null;
+  return { t: tmin >= EPS ? tmin : null, nx: nxMin, ny: nyMin };
+}
+
+/* Ray vs finite segment (mirrors). Returns {t, nx, ny} with the
+   normal flipped against the ray, or null. */
+function segVsSeg(ox, oy, dx, dy, x1, y1, x2, y2) {
+  const ex = x2 - x1, ey = y2 - y1;
+  const denom = dx * ey - dy * ex;
+  if (Math.abs(denom) < EPS) return null;               /* parallel */
+  const px = x1 - ox, py = y1 - oy;
+  const t = (px * ey - py * ex) / denom;
+  const u = (px * dy - py * dx) / denom;
+  if (t < EPS || u < -EPS || u > 1 + EPS) return null;
+  const len = Math.hypot(ex, ey);
+  let nx = -ey / len, ny = ex / len;
+  if (nx * dx + ny * dy > 0) { nx = -nx; ny = -ny; }
+  return { t, nx, ny };
+}
+
+/* Ray vs circle. Returns {t} of first entry, or null. */
+function segVsCircle(ox, oy, dx, dy, cx, cy, r) {
+  const fx = ox - cx, fy = oy - cy;
+  const a = dx * dx + dy * dy;
+  if (a < EPS) return null;
+  const b = 2 * (fx * dx + fy * dy);
+  const c = fx * fx + fy * fy - r * r;
+  const disc = b * b - 4 * a * c;
+  if (disc < 0) return null;
+  const sq = Math.sqrt(disc);
+  let t = (-b - sq) / (2 * a);
+  if (t < EPS) t = (-b + sq) / (2 * a);                 /* origin inside */
+  if (t < EPS) return null;
+  return { t };
+}
+
+/* Mirror reflection v' = v - 2(v.n)n for a unit normal. */
+function reflectVec(vx, vy, nx, ny) {
+  const d = vx * nx + vy * ny;
+  return { vx: vx - 2 * d * nx, vy: vy - 2 * d * ny };
+}
+
+/* Ping-pong position along a mover path at absolute time tau. */
+function moverPos(m, tau) {
+  const L = Math.hypot(m.x2 - m.x1, m.y2 - m.y1);
+  if (L < EPS) return { x: m.x1, y: m.y1 };
+  const period = (2 * L) / m.speed;
+  const ph = (((tau % period) + period) % period) / period;   /* 0..1 */
+  const s = ph < 0.5 ? ph * 2 : 2 - ph * 2;                    /* triangle wave */
+  return { x: m.x1 + (m.x2 - m.x1) * s, y: m.y1 + (m.y2 - m.y1) * s };
+}
+
+/* ---------- level-aware ray trace (first segment only) ---------- */
+/* Returns the earliest impact of the ray against bounds, walls,
+   mirrors and portal mouths. Hearts are deliberately NOT included:
+   the arrow pierces them, and the preview must stop at the first
+   solid impact. Portals truncate the preview (never continue). */
+function traceRay(ox, oy, dx, dy, level) {
+  let bestT = Infinity, kind = 'none', nx = 0, ny = 0, portal = null;
+
+  /* field bounds as four planes */
+  if (dx > 0) { const t = (FIELD_W - ox) / dx; if (t < bestT) { bestT = t; kind = 'edge'; nx = -1; ny = 0; } }
+  else if (dx < 0) { const t = -ox / dx; if (t < bestT) { bestT = t; kind = 'edge'; nx = 1; ny = 0; } }
+  if (dy > 0) { const t = (FIELD_H - oy) / dy; if (t < bestT) { bestT = t; kind = 'edge'; nx = 0; ny = -1; } }
+  else if (dy < 0) { const t = -oy / dy; if (t < bestT) { bestT = t; kind = 'edge'; nx = 0; ny = 1; } }
+
+  for (const w of level.walls) {
+    const hit = segVsAABB(ox, oy, dx, dy, w.x, w.y, w.w, w.h);
+    if (hit && hit.t !== null && hit.t < bestT) { bestT = hit.t; kind = 'wall'; nx = hit.nx; ny = hit.ny; }
+  }
+  for (const m of level.mirrors) {
+    const hit = segVsSeg(ox, oy, dx, dy, m.x1, m.y1, m.x2, m.y2);
+    if (hit && hit.t < bestT) { bestT = hit.t; kind = 'mirror'; nx = hit.nx; ny = hit.ny; }
+  }
+  for (const pr of level.portals) {
+    for (const mouth of [pr.a, pr.b]) {
+      const hit = segVsCircle(ox, oy, dx, dy, mouth.x, mouth.y, PORTAL_R);
+      if (hit && hit.t < bestT) { bestT = hit.t; kind = 'portal'; nx = 0; ny = 0; portal = mouth; }
+    }
+  }
+  return { t: bestT, x: ox + dx * bestT, y: oy + dy * bestT, kind, nx, ny, portal };
+}
+
+/* ============================================================
+   AUDIO — WebAudio synth, first-gesture unlock, persisted mute
+   ============================================================ */
+let audioCtx = null;
+function ensureAudio() {
+  if (settings.muted) return;
+  try {
+    if (!audioCtx) {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return;
+      audioCtx = new AC();
+    }
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+  } catch (err) { /* audio unavailable */ }
+}
+function tone(freq, dur, type, vol, freqEnd, delay) {
+  if (settings.muted || !audioCtx) return;
+  try {
+    const t0 = audioCtx.currentTime + (delay || 0);
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = type || 'sine';
+    osc.frequency.setValueAtTime(freq, t0);
+    if (freqEnd) osc.frequency.exponentialRampToValueAtTime(freqEnd, t0 + dur);
+    gain.gain.setValueAtTime(0.0001, t0);
+    gain.gain.exponentialRampToValueAtTime(vol || 0.2, t0 + 0.012);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+    osc.connect(gain); gain.connect(audioCtx.destination);
+    osc.start(t0); osc.stop(t0 + dur + 0.05);
+  } catch (err) { /* keep playing silently */ }
+}
+function sfxLaunch() { tone(560, 0.16, 'sawtooth', 0.14, 150); }
+function sfxBounce() { tone(440, 0.07, 'sine', 0.16); }
+function sfxHeart() { tone(660, 0.1, 'sine', 0.2); tone(880, 0.14, 'sine', 0.2, null, 0.09); }
+function sfxPortal() { tone(300, 0.18, 'triangle', 0.16, 720); }
+function sfxWin() { tone(523, 0.12, 'sine', 0.2); tone(659, 0.12, 'sine', 0.2, null, 0.1); tone(784, 0.2, 'sine', 0.22, null, 0.2); }
+function sfxLose() { tone(330, 0.22, 'sine', 0.18, 220); }
+function buzz(pattern) {
+  if (navigator.vibrate) { try { navigator.vibrate(pattern); } catch (err) { /* unsupported */ } }
+}
+
+/* ============================================================
+   GAME STATE
+   ============================================================ */
+const state = {
+  phase: 'splash',            /* splash | aiming | flying | result */
+  levelIndex: 0,
+  level: LEVELS[0],
+  /* aim */
+  dragging: false,
+  pointer: { x: 0, y: 0 },
+  aimDir: { x: 1, y: 0 },
+  aimPower: 0.65,             /* 0..1 */
+  interacted: false,          /* hides the ghost hand after first drag */
+  /* arrow in flight */
+  arrow: null,                /* {x, y, vx, vy} */
+  bounces: 0,
+  flightTime: 0,
+  acc: 0,                     /* fixed-step accumulator */
+  portalsUsed: new Set(),     /* each pair warps once per arrow */
+  /* hearts */
+  hearts: [],                 /* runtime copies with hit flag */
+  movers: [],                 /* runtime mover snapshots */
+  /* fx */
+  particles: [],
+  shakeT: 0,
+  resultTimer: 0,
+  won: false,
+  levelStart: 0,
+  lastDrawTick: 0
+};
+
+const particlePool = [];
+function spawnParticle(x, y, vx, vy, life, color, size) {
+  if (REDUCED && state.particles.length > 24) return;
+  const p = particlePool.pop() || {};
+  p.x = x; p.y = y; p.vx = vx; p.vy = vy;
+  p.life = life; p.max = life; p.color = color; p.size = size;
+  state.particles.push(p);
+}
+function burst(x, y, color, n) {
+  for (let i = 0; i < n; i++) {
+    const a = (i / n) * Math.PI * 2 + Math.random() * 0.6;
+    const s = 60 + Math.random() * 130;
+    spawnParticle(x, y, Math.cos(a) * s, Math.sin(a) * s, 0.5 + Math.random() * 0.3, color, 2 + Math.random() * 2.5);
+  }
+}
+
+/* ---------- level lifecycle ---------- */
+function loadLevel(idx) {
+  state.levelIndex = idx;
+  state.level = LEVELS[idx];
+  const lv = state.level;
+  state.hearts = lv.hearts.map(h => ({ x: h.x, y: h.y, hit: false, mover: -1 }));
+  state.movers = lv.movers.map((m, mi) => {
+    state.hearts.push({ x: m.x1, y: m.y1, hit: false, mover: mi });
+    return { def: m, x: m.x1, y: m.y1 };
+  });
+  state.arrow = null;
+  state.bounces = 0;
+  state.flightTime = 0;
+  state.acc = 0;
+  state.portalsUsed = new Set();
+  state.particles.length = 0;
+  state.shakeT = 0;
+  state.interacted = false;
+  state.won = false;
+  /* aim toward the first static heart by default */
+  const target = lv.hearts[0] || { x: FIELD_W / 2, y: FIELD_H / 2 };
+  const ddx = target.x - lv.launch.x, ddy = target.y - lv.launch.y;
+  const dl = Math.hypot(ddx, ddy) || 1;
+  state.aimDir = { x: ddx / dl, y: ddy / dl };
+  state.aimPower = 0.65;
+  state.phase = 'aiming';
+  state.levelStart = performance.now();
+  updateHud();
+}
+
+function heartsLeft() { return state.hearts.reduce((n, h) => n + (h.hit ? 0 : 1), 0); }
+
+function fire() {
+  if (state.phase !== 'aiming') return;
+  const speed = MIN_SPEED + (MAX_SPEED - MIN_SPEED) * state.aimPower;
+  const lv = state.level;
+  state.arrow = {
+    x: lv.launch.x + state.aimDir.x * 26,
+    y: lv.launch.y + state.aimDir.y * 26,
+    vx: state.aimDir.x * speed,
+    vy: state.aimDir.y * speed
+  };
+  state.bounces = 0;
+  state.flightTime = 0;
+  state.acc = 0;
+  state.phase = 'flying';
+  sfxLaunch();
+  buzz(12);
+}
+
+/* ---------- arrow physics: continuous within each substep ---------- */
+function onBounce(x, y) {
+  state.bounces++;
+  sfxBounce();
+  buzz(8);
+  state.shakeT = 0.05;
+  burst(x, y, C.petal, 5);
+}
+
+function stepArrow(dt) {
+  const a = state.arrow;
+  if (!a) return;
+  let remaining = dt;
+  let guard = 0;
+  while (remaining > EPS && guard++ < 12) {
+    let bestT = remaining, kind = 'none', nx = 0, ny = 0, hitIdx = -1, portalPair = null, mouth = null;
+
+    /* bounds */
+    if (a.vx > 0) { const t = (FIELD_W - a.x) / a.vx; if (t < bestT) { bestT = t; kind = 'edge'; nx = -1; ny = 0; } }
+    else if (a.vx < 0) { const t = -a.x / a.vx; if (t < bestT) { bestT = t; kind = 'edge'; nx = 1; ny = 0; } }
+    if (a.vy > 0) { const t = (FIELD_H - a.y) / a.vy; if (t < bestT) { bestT = t; kind = 'edge'; nx = 0; ny = -1; } }
+    else if (a.vy < 0) { const t = -a.y / a.vy; if (t < bestT) { bestT = t; kind = 'edge'; nx = 0; ny = 1; } }
+
+    /* walls */
+    for (const w of state.level.walls) {
+      const hit = segVsAABB(a.x, a.y, a.vx, a.vy, w.x, w.y, w.w, w.h);
+      if (hit && hit.t !== null && hit.t < bestT) { bestT = hit.t; kind = 'wall'; nx = hit.nx; ny = hit.ny; }
+    }
+    /* mirrors */
+    for (const m of state.level.mirrors) {
+      const hit = segVsSeg(a.x, a.y, a.vx, a.vy, m.x1, m.y1, m.x2, m.y2);
+      if (hit && hit.t < bestT) { bestT = hit.t; kind = 'mirror'; nx = hit.nx; ny = hit.ny; }
+    }
+    /* portals — each pair warps the arrow at most once, so a bounce
+       can never send it back through the exit mouth it just left */
+    state.level.portals.forEach((pr, pi) => {
+      if (state.portalsUsed.has(pi)) return;
+      for (const [mouthRef, other] of [[pr.a, pr.b], [pr.b, pr.a]]) {
+        const hit = segVsCircle(a.x, a.y, a.vx, a.vy, mouthRef.x, mouthRef.y, PORTAL_R);
+        if (hit && hit.t < bestT) { bestT = hit.t; kind = 'portal'; mouth = mouthRef; portalPair = other; hitIdx = pi; }
+      }
+    });
+    /* hearts (pierced, never block) */
+    state.hearts.forEach((h, i) => {
+      if (h.hit) return;
+      const hx = h.mover >= 0 ? state.movers[h.mover].x : h.x;
+      const hy = h.mover >= 0 ? state.movers[h.mover].y : h.y;
+      const hit = segVsCircle(a.x, a.y, a.vx, a.vy, hx, hy, HIT_R);
+      if (hit && hit.t < bestT) { bestT = hit.t; kind = 'heart'; hitIdx = i; }
+    });
+
+    /* advance */
+    a.x += a.vx * bestT;
+    a.y += a.vy * bestT;
+    remaining -= bestT;
+
+    if (kind === 'heart') {
+      state.hearts[hitIdx].hit = true;
+      sfxHeart();
+      buzz(18);
+      burst(state.hearts[hitIdx].mover >= 0 ? state.movers[state.hearts[hitIdx].mover].x : state.hearts[hitIdx].x,
+            state.hearts[hitIdx].mover >= 0 ? state.movers[state.hearts[hitIdx].mover].y : state.hearts[hitIdx].y,
+            C.rose, 12);
+      updateHud();
+      if (heartsLeft() === 0) { winLevel(); return; }
+      kind = 'none';   /* arrow pierces through */
+    } else if (kind === 'portal') {
+      state.portalsUsed.add(hitIdx);
+      sfxPortal();
+      buzz([10, 30, 14]);
+      burst(mouth.x, mouth.y, C.lav, 8);
+      const speed = Math.hypot(a.vx, a.vy);
+      a.x = portalPair.x + portalPair.dx * (PORTAL_R + 6);
+      a.y = portalPair.y + portalPair.dy * (PORTAL_R + 6);
+      a.vx = portalPair.dx * speed;
+      a.vy = portalPair.dy * speed;
+      burst(a.x, a.y, C.lavSoft, 8);
+      kind = 'none';
+    } else if (kind === 'wall' || kind === 'edge' || kind === 'mirror') {
+      const r = reflectVec(a.vx, a.vy, nx, ny);
+      a.vx = r.vx; a.vy = r.vy;
+      /* re-normalize speed so repeated reflections never drift */
+      const speed = Math.hypot(a.vx, a.vy);
+      const target = MIN_SPEED + (MAX_SPEED - MIN_SPEED) * state.aimPower;
+      a.vx = a.vx / speed * target;
+      a.vy = a.vy / speed * target;
+      onBounce(a.x, a.y);
+      if (state.bounces >= MAX_BOUNCES) { expireArrow(); return; }
+    }
+  }
+
+  state.flightTime += dt;
+  /* particle trail */
+  if (!REDUCED || Math.random() < 0.3) {
+    spawnParticle(a.x, a.y, (Math.random() - 0.5) * 14, (Math.random() - 0.5) * 14, 0.4, C.petal, 2.2);
+  }
+  if (state.flightTime > FLIGHT_CAP) expireArrow();
+}
+
+function expireArrow() {
+  if (state.phase !== 'flying') return;
+  state.arrow = null;
+  if (heartsLeft() === 0) { winLevel(); return; }
+  sfxLose();
+  buzz([60, 40, 60]);
+  state.won = false;
+  state.phase = 'result';
+  state.resultTimer = 0.45;
+}
+
+function winLevel() {
+  state.arrow = null;
+  state.won = true;
+  sfxWin();
+  buzz([20, 40, 20, 40, 60]);
+  const key = String(state.level.id);
+  const prevBest = best.bestBounces[key];
+  best.clearedLevels = best.clearedLevels || {};
+  if (!best.clearedLevels[key]) { best.clearedLevels[key] = true; best.clears++; }
+  best.unlocked = Math.max(best.unlocked || 0, Math.min(state.levelIndex + 1, LEVELS.length - 1));
+  const isBestBounce = prevBest === undefined || state.bounces < prevBest;
+  if (isBestBounce) best.bestBounces[key] = state.bounces;
+  const stars = state.bounces <= state.level.par ? 3 : (state.bounces <= state.level.par + 2 ? 2 : 1);
+  best.stars[key] = Math.max(best.stars[key] || 0, stars);
+  lsSet(LS_BEST, best);
+  state.pendingNewBest = isBestBounce;
+  state.pendingStars = stars;
+  state.phase = 'result';
+  state.resultTimer = 0.6;
+}
+
+/* ============================================================
+   RENDERING
+   ============================================================ */
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+let viewScale = 1, viewOffX = 0, viewOffY = 0, dpr = 1;
+
+function resize() {
+  const stage = document.getElementById('stage');
+  const rect = stage.getBoundingClientRect();
+  dpr = Math.min(window.devicePixelRatio || 1, 2.5);
+  canvas.width = Math.round(rect.width * dpr);
+  canvas.height = Math.round(rect.height * dpr);
+  viewScale = Math.min(rect.width / FIELD_W, rect.height / FIELD_H);
+  viewOffX = (rect.width - FIELD_W * viewScale) / 2;
+  viewOffY = (rect.height - FIELD_H * viewScale) / 2;
+}
+window.addEventListener('resize', resize);
+
+function heartPath(c, x, y, r) {
+  const s = r / 13;
+  c.beginPath();
+  c.moveTo(x, y + 9.5 * s);
+  c.bezierCurveTo(x - 11 * s, y + 1.5 * s, x - 9.5 * s, y - 8.5 * s, x - 4.6 * s, y - 8.5 * s);
+  c.bezierCurveTo(x - 1.8 * s, y - 8.5 * s, x, y - 6.6 * s, x, y - 4.7 * s);
+  c.bezierCurveTo(x, y - 6.6 * s, x + 1.8 * s, y - 8.5 * s, x + 4.6 * s, y - 8.5 * s);
+  c.bezierCurveTo(x + 9.5 * s, y - 8.5 * s, x + 11 * s, y + 1.5 * s, x, y + 9.5 * s);
+  c.closePath();
+}
+
+function drawBackground() {
+  /* stage */
+  ctx.fillStyle = C.stage;
+  ctx.fillRect(-viewOffX / viewScale - 4, -viewOffY / viewScale - 4, canvas.width / viewScale + 8, canvas.height / viewScale + 8);
+  /* cream field with rounded corners */
+  const r = 18;
+  ctx.fillStyle = C.cream;
+  ctx.beginPath();
+  ctx.moveTo(r, 0);
+  ctx.lineTo(FIELD_W - r, 0); ctx.quadraticCurveTo(FIELD_W, 0, FIELD_W, r);
+  ctx.lineTo(FIELD_W, FIELD_H - r); ctx.quadraticCurveTo(FIELD_W, FIELD_H, FIELD_W - r, FIELD_H);
+  ctx.lineTo(r, FIELD_H); ctx.quadraticCurveTo(0, FIELD_H, 0, FIELD_H - r);
+  ctx.lineTo(0, r); ctx.quadraticCurveTo(0, 0, r, 0);
+  ctx.closePath();
+  ctx.fill();
+  ctx.strokeStyle = C.line;
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+  /* dot grid */
+  ctx.fillStyle = C.dot;
+  for (let gx = 22; gx < FIELD_W; gx += 22) {
+    for (let gy = 22; gy < FIELD_H; gy += 22) {
+      ctx.fillRect(gx - 1, gy - 1, 2, 2);
+    }
+  }
+}
+
+function drawWalls(now) {
+  const lv = state.level;
+  lv.walls.forEach((w, i) => {
+    const grad = ctx.createLinearGradient(0, w.y, 0, w.y + w.h);
+    grad.addColorStop(0, C.wallHi);
+    grad.addColorStop(1, C.wallLo);
+    ctx.fillStyle = grad;
+    roundRect(w.x, w.y, w.w, w.h, 8);
+    ctx.fill();
+    ctx.strokeStyle = C.wallLine;
+    ctx.lineWidth = 1.4;
+    ctx.stroke();
+    ctx.fillStyle = 'rgba(71,44,51,0.08)';
+    roundRect(w.x, w.y + w.h - 4, w.w, 4, 2);
+    ctx.fill();
+  });
+  /* teaching: breathing highlight on hint walls/edges */
+  if (lv.hint && !state.interacted && !REDUCED) {
+    const pulse = 0.5 + 0.5 * Math.sin(now / 350);
+    ctx.save();
+    ctx.strokeStyle = 'rgba(226,83,127,' + (0.25 + 0.45 * pulse) + ')';
+    ctx.lineWidth = 5 + 3 * pulse;
+    ctx.lineCap = 'round';
+    for (const edge of (lv.hint.edges || [])) {
+      ctx.beginPath();
+      if (edge === 'top') { ctx.moveTo(24, 4); ctx.lineTo(FIELD_W - 24, 4); }
+      else if (edge === 'bottom') { ctx.moveTo(24, FIELD_H - 4); ctx.lineTo(FIELD_W - 24, FIELD_H - 4); }
+      else if (edge === 'left') { ctx.moveTo(4, 24); ctx.lineTo(4, FIELD_H - 24); }
+      else if (edge === 'right') { ctx.moveTo(FIELD_W - 4, 24); ctx.lineTo(FIELD_W - 4, FIELD_H - 24); }
+      ctx.stroke();
+    }
+    for (const wi of (lv.hint.walls || [])) {
+      const w = lv.walls[wi];
+      if (!w) continue;
+      roundRect(w.x - 3, w.y - 3, w.w + 6, w.h + 6, 10);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+}
+
+function roundRect(x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y); ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r); ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h); ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r); ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
+}
+
+function drawMirrors(now) {
+  const lv = state.level;
+  const intro = lv.teach === 'mirror' && !state.interacted;
+  for (const m of lv.mirrors) {
+    if (intro && !REDUCED) {
+      const pulse = 0.5 + 0.5 * Math.sin(now / 300);
+      ctx.strokeStyle = 'rgba(159,134,224,' + (0.3 + 0.5 * pulse) + ')';
+      ctx.lineWidth = 11;
+      ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(m.x1, m.y1); ctx.lineTo(m.x2, m.y2); ctx.stroke();
+    }
+    ctx.strokeStyle = '#c9cfe0';
+    ctx.lineWidth = 6;
+    ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(m.x1, m.y1); ctx.lineTo(m.x2, m.y2); ctx.stroke();
+    ctx.strokeStyle = '#f4f7ff';
+    ctx.lineWidth = 2.4;
+    ctx.beginPath(); ctx.moveTo(m.x1, m.y1); ctx.lineTo(m.x2, m.y2); ctx.stroke();
+    /* end caps */
+    ctx.fillStyle = C.roseDeep;
+    for (const [px, py] of [[m.x1, m.y1], [m.x2, m.y2]]) {
+      ctx.beginPath(); ctx.arc(px, py, 4.4, 0, Math.PI * 2); ctx.fill();
+    }
+  }
+}
+
+function drawPortals(now) {
+  for (const pr of state.level.portals) {
+    for (const mouth of [pr.a, pr.b]) {
+      const t = now / 900;
+      ctx.save();
+      ctx.translate(mouth.x, mouth.y);
+      /* outer dashed ring */
+      ctx.strokeStyle = C.lav;
+      ctx.lineWidth = 2.4;
+      ctx.setLineDash([7, 6]);
+      ctx.lineDashOffset = (now / 40) % 26;
+      ctx.beginPath(); ctx.arc(0, 0, PORTAL_R, 0, Math.PI * 2); ctx.stroke();
+      ctx.setLineDash([]);
+      /* inner glow */
+      const g = ctx.createRadialGradient(0, 0, 2, 0, 0, PORTAL_R);
+      g.addColorStop(0, 'rgba(159,134,224,0.5)');
+      g.addColorStop(1, 'rgba(159,134,224,0.05)');
+      ctx.fillStyle = g;
+      ctx.beginPath(); ctx.arc(0, 0, PORTAL_R - 3, 0, Math.PI * 2); ctx.fill();
+      /* swirl */
+      ctx.rotate(t * 2);
+      ctx.strokeStyle = 'rgba(230,220,247,0.85)';
+      ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(0, 0, 8, 0, Math.PI * 1.3); ctx.stroke();
+      ctx.rotate(-t * 2);
+      /* exit chevron pointing where arrows leave */
+      ctx.strokeStyle = C.lavSoft;
+      ctx.lineWidth = 2.6;
+      ctx.lineCap = 'round';
+      const ang = Math.atan2(mouth.dy, mouth.dx);
+      ctx.rotate(ang);
+      const nudge = REDUCED ? 0 : Math.sin(now / 260) * 2.2;
+      ctx.beginPath();
+      ctx.moveTo(PORTAL_R + 5 + nudge, -5);
+      ctx.lineTo(PORTAL_R + 10 + nudge, 0);
+      ctx.lineTo(PORTAL_R + 5 + nudge, 5);
+      ctx.stroke();
+      ctx.restore();
+    }
+  }
+}
+
+function drawHearts(now) {
+  state.hearts.forEach(h => {
+    const hx = h.mover >= 0 ? state.movers[h.mover].x : h.x;
+    const hy = h.mover >= 0 ? state.movers[h.mover].y : h.y;
+    if (h.hit) {
+      ctx.save();
+      ctx.globalAlpha = 0.28;
+      ctx.strokeStyle = C.taupe;
+      ctx.lineWidth = 2;
+      heartPath(ctx, hx, hy, HEART_R);
+      ctx.stroke();
+      ctx.restore();
+      return;
+    }
+    const beatScale = REDUCED ? 1 : 1 + 0.06 * Math.sin(now / 420 + hx * 0.05);
+    ctx.save();
+    ctx.translate(hx, hy);
+    ctx.scale(beatScale, beatScale);
+    ctx.shadowColor = 'rgba(226,83,127,0.4)';
+    ctx.shadowBlur = 8;
+    ctx.fillStyle = C.rose;
+    heartPath(ctx, 0, 0, HEART_R);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.strokeStyle = 'rgba(255,255,255,0.9)';
+    ctx.lineWidth = 1.6;
+    ctx.stroke();
+    /* gloss */
+    ctx.fillStyle = 'rgba(255,255,255,0.55)';
+    ctx.beginPath();
+    ctx.ellipse(-3.4, -3.6, 3.2, 2, -0.42, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+    /* sparkle */
+    if (!REDUCED) {
+      const sp = (Math.sin(now / 500 + hy) + 1) / 2;
+      ctx.fillStyle = 'rgba(232,169,78,' + (0.25 + 0.6 * sp) + ')';
+      drawSpark(hx + 12, hy - 12, 3 + 2 * sp);
+    }
+  });
+  /* mover path chevrons (visual teaching, no words) */
+  if (state.level.teach === 'mover' && !state.interacted && !REDUCED) {
+    const pulse = 0.5 + 0.5 * Math.sin(now / 280);
+    ctx.fillStyle = 'rgba(194,58,102,' + (0.35 + 0.4 * pulse) + ')';
+    for (const m of state.level.movers) {
+      const dx = m.x2 - m.x1, dy = m.y2 - m.y1;
+      const len = Math.hypot(dx, dy) || 1;
+      for (const end of [0, 1]) {
+        const ex = end === 0 ? m.x1 : m.x2;
+        const ey = end === 0 ? m.y1 : m.y2;
+        const sgn = end === 0 ? 1 : -1;
+        ctx.beginPath();
+        ctx.moveTo(ex + sgn * dx / len * 18, ey + sgn * dy / len * 18 - 5 * Math.abs(dy / len) + 5 * sgn * (dy / len));
+        ctx.lineTo(ex + sgn * dx / len * 24, ey + sgn * dy / len * 24);
+        ctx.lineTo(ex + sgn * dx / len * 18 + 5 * Math.abs(dx / len) * (dy !== 0 ? 1 : 0) - 5 * (dx / len !== 0 ? 0 : 1), ey + sgn * dy / len * 18);
+        ctx.closePath();
+        ctx.fill();
+      }
+    }
+  }
+}
+
+function drawSpark(x, y, r) {
+  ctx.beginPath();
+  ctx.moveTo(x, y - r);
+  ctx.quadraticCurveTo(x + r * 0.22, y - r * 0.22, x + r, y);
+  ctx.quadraticCurveTo(x + r * 0.22, y + r * 0.22, x, y + r);
+  ctx.quadraticCurveTo(x - r * 0.22, y + r * 0.22, x - r, y);
+  ctx.quadraticCurveTo(x - r * 0.22, y - r * 0.22, x, y - r);
+  ctx.closePath();
+  ctx.fill();
+}
+
+function drawLauncher(now) {
+  const lv = state.level;
+  const lx = lv.launch.x, ly = lv.launch.y;
+  const dir = state.aimDir;
+  const ang = Math.atan2(dir.y, dir.x);
+  const draw = state.dragging ? state.aimPower * 34 : 10 + state.aimPower * 24;
+  const bob = REDUCED ? 0 : Math.sin(now / 600) * 1.6;
+
+  ctx.save();
+  ctx.translate(lx, ly + bob * 0.3);
+  ctx.rotate(ang + Math.PI / 2);
+  /* bow limbs */
+  ctx.strokeStyle = C.wood;
+  ctx.lineWidth = 5;
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(-20, 16);
+  ctx.quadraticCurveTo(0, -26, 20, 16);
+  ctx.stroke();
+  /* string drawn back */
+  ctx.strokeStyle = C.wood2;
+  ctx.lineWidth = 1.6;
+  ctx.beginPath();
+  ctx.moveTo(-20, 16);
+  ctx.lineTo(0, 16 + draw);
+  ctx.lineTo(20, 16);
+  ctx.stroke();
+  /* arrow nocked on the string, pointing forward */
+  ctx.strokeStyle = C.ink;
+  ctx.lineWidth = 2.4;
+  ctx.beginPath();
+  ctx.moveTo(0, 16 + draw);
+  ctx.lineTo(0, -30);
+  ctx.stroke();
+  /* fletching */
+  ctx.strokeStyle = C.roseDeep;
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(0, 10 + draw); ctx.lineTo(-5.5, 17 + draw);
+  ctx.moveTo(0, 10 + draw); ctx.lineTo(5.5, 17 + draw);
+  ctx.stroke();
+  /* heart tip */
+  ctx.fillStyle = C.rose;
+  heartPath(ctx, 0, -36, 6.4);
+  ctx.fill();
+  ctx.restore();
+
+  /* draw-strength ring while dragging */
+  if (state.dragging) {
+    ctx.strokeStyle = 'rgba(226,83,127,0.5)';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(lx, ly, 26, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * state.aimPower);
+    ctx.stroke();
+  }
+}
+
+function drawPreview(now) {
+  if (state.phase !== 'aiming') return;
+  const lv = state.level;
+  const ox = lv.launch.x + state.aimDir.x * 26;
+  const oy = lv.launch.y + state.aimDir.y * 26;
+  const ray = traceRay(ox, oy, state.aimDir.x, state.aimDir.y, lv);
+  /* single first segment — never continues past the impact */
+  ctx.strokeStyle = C.rose;
+  ctx.lineWidth = 2.4;
+  ctx.lineCap = 'round';
+  ctx.setLineDash([6, 8]);
+  ctx.lineDashOffset = REDUCED ? 0 : -(now / 42) % 28;
+  ctx.globalAlpha = 0.85;
+  ctx.beginPath();
+  ctx.moveTo(ox, oy);
+  ctx.lineTo(ray.x, ray.y);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.globalAlpha = 1;
+  /* impact pulse */
+  const color = ray.kind === 'portal' ? C.lav : C.rose;
+  ctx.fillStyle = color;
+  ctx.beginPath(); ctx.arc(ray.x, ray.y, 3.4, 0, Math.PI * 2); ctx.fill();
+  if (!REDUCED) {
+    const ping = (now / 1300) % 1;
+    ctx.strokeStyle = color;
+    ctx.globalAlpha = (1 - ping) * 0.7;
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(ray.x, ray.y, 4 + ping * 10, 0, Math.PI * 2); ctx.stroke();
+    ctx.globalAlpha = 1;
+  }
+}
+
+function drawGhostHand(now) {
+  const lv = state.level;
+  if (!lv.teach || state.interacted || REDUCED) return;
+  if (state.phase !== 'aiming') return;
+  const t = (now / 2600) % 1;
+  const reach = Math.sin(Math.min(t / 0.72, 1) * Math.PI) * 58;
+  const gx = lv.launch.x - state.aimDir.x * (16 + reach);
+  const gy = lv.launch.y - state.aimDir.y * (16 + reach);
+  ctx.save();
+  ctx.globalAlpha = 0.9 * Math.min(1, t * 5) * (t > 0.8 ? (1 - t) * 5 : 1);
+  ctx.fillStyle = 'rgba(226,83,127,0.16)';
+  ctx.strokeStyle = C.rose;
+  ctx.lineWidth = 1.6;
+  ctx.setLineDash([3, 4]);
+  ctx.beginPath(); ctx.arc(gx, gy, 11, 0, Math.PI * 2);
+  ctx.fill(); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.restore();
+}
+
+function drawArrow() {
+  const a = state.arrow;
+  if (!a) return;
+  const ang = Math.atan2(a.vy, a.vx);
+  ctx.save();
+  ctx.translate(a.x, a.y);
+  ctx.rotate(ang + Math.PI / 2);
+  ctx.strokeStyle = C.ink;
+  ctx.lineWidth = 2.4;
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(0, 6);
+  ctx.lineTo(0, -16);
+  ctx.stroke();
+  ctx.strokeStyle = C.roseDeep;
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(0, 2); ctx.lineTo(-5, 9);
+  ctx.moveTo(0, 2); ctx.lineTo(5, 9);
+  ctx.stroke();
+  ctx.fillStyle = C.rose;
+  heartPath(ctx, 0, -21, 6);
+  ctx.fill();
+  ctx.restore();
+}
+
+function drawParticles(dt) {
+  for (let i = state.particles.length - 1; i >= 0; i--) {
+    const p = state.particles[i];
+    p.life -= dt;
+    if (p.life <= 0) {
+      state.particles.splice(i, 1);
+      particlePool.push(p);
+      continue;
+    }
+    p.x += p.vx * dt;
+    p.y += p.vy * dt;
+    p.vx *= 0.92; p.vy *= 0.92;
+    ctx.globalAlpha = (p.life / p.max) * 0.85;
+    ctx.fillStyle = p.color;
+    ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2); ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+}
+
+function render(now, dt) {
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  let shx = 0, shy = 0;
+  if (state.shakeT > 0 && !REDUCED) {
+    state.shakeT -= dt;
+    shx = (Math.random() - 0.5) * 5;
+    shy = (Math.random() - 0.5) * 5;
+  }
+  ctx.setTransform(dpr * viewScale, 0, 0, dpr * viewScale, dpr * (viewOffX + shx), dpr * (viewOffY + shy));
+  if (state.phase === 'splash') {
+    drawBackground();
+    return;
+  }
+  /* movers advance on real time */
+  const tau = (now - state.levelStart) / 1000;
+  state.movers.forEach(m => {
+    const p = moverPos(m.def, tau);
+    m.x = p.x; m.y = p.y;
+  });
+  drawBackground();
+  drawWalls(now);
+  drawMirrors(now);
+  drawPortals(now);
+  drawHearts(now);
+  drawLauncher(now);
+  drawPreview(now);
+  drawGhostHand(now);
+  drawParticles(dt);
+  drawArrow();
+}
+
+/* ============================================================
+   MAIN LOOP — fixed-step physics, interpolated render
+   ============================================================ */
+let lastFrame = performance.now();
+function frame(now) {
+  requestAnimationFrame(frame);
+  let dt = (now - lastFrame) / 1000;
+  lastFrame = now;
+  if (dt > 0.05) dt = 0.05;              /* tab-switch clamp */
+  if (state.phase === 'flying' && state.arrow) {
+    state.acc += dt;
+    while (state.acc >= SUBSTEP && state.arrow) {
+      stepArrow(SUBSTEP);
+      state.acc -= SUBSTEP;
+    }
+  }
+  if (state.phase === 'result' && state.resultTimer > 0) {
+    state.resultTimer -= dt;
+    if (state.resultTimer <= 0) showResult();
+  }
+  render(now, dt);
+}
+requestAnimationFrame(frame);
+
+/* ============================================================
+   INPUT — pointer drag (mouse + touch) and keyboard
+   ============================================================ */
+function toField(e) {
+  const rect = canvas.getBoundingClientRect();
+  return {
+    x: (e.clientX - rect.left - viewOffX) / viewScale,
+    y: (e.clientY - rect.top - viewOffY) / viewScale
+  };
+}
+
+canvas.addEventListener('pointerdown', e => {
+  ensureAudio();
+  if (state.phase !== 'aiming') return;
+  e.preventDefault();
+  canvas.setPointerCapture(e.pointerId);
+  state.dragging = true;
+  state.interacted = true;
+  state.pointer = toField(e);
+});
+canvas.addEventListener('pointermove', e => {
+  if (!state.dragging || state.phase !== 'aiming') return;
+  const p = toField(e);
+  state.pointer = p;
+  const lv = state.level;
+  const dx = lv.launch.x - p.x, dy = lv.launch.y - p.y;
+  const dist = Math.hypot(dx, dy);
+  if (dist > 8) {
+    state.aimDir = { x: dx / dist, y: dy / dist };
+    state.aimPower = Math.min(dist, MAX_DRAW) / MAX_DRAW;
+    const nowMs = performance.now();
+    if (nowMs - state.lastDrawTick > 70) {       /* tension blip while drawing */
+      state.lastDrawTick = nowMs;
+      tone(140 + state.aimPower * 260, 0.05, 'triangle', 0.06);
+    }
+  }
+});
+function endDrag(e) {
+  if (!state.dragging) return;
+  state.dragging = false;
+  if (state.phase !== 'aiming') return;
+  const p = toField(e);
+  const lv = state.level;
+  const dist = Math.hypot(lv.launch.x - p.x, lv.launch.y - p.y);
+  if (dist >= 14) fire();                        /* tiny taps do not loose the arrow */
+}
+canvas.addEventListener('pointerup', endDrag);
+canvas.addEventListener('pointercancel', () => { state.dragging = false; });
+
+document.addEventListener('keydown', e => {
+  if (state.phase === 'splash') {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); startFromSplash(); }
+    return;
+  }
+  if (state.phase === 'result') {
+    if (e.key === 'r' || e.key === 'R' || e.key === 'Enter') { e.preventDefault(); retryLevel(); }
+    return;
+  }
+  if (state.phase !== 'aiming') return;
+  ensureAudio();
+  const base = Math.atan2(state.aimDir.y, state.aimDir.x);
+  switch (e.key) {
+    case 'ArrowLeft':
+      e.preventDefault(); state.interacted = true;
+      setAimAngle(base - 0.028); break;
+    case 'ArrowRight':
+      e.preventDefault(); state.interacted = true;
+      setAimAngle(base + 0.028); break;
+    case 'ArrowUp':
+      e.preventDefault(); state.interacted = true;
+      state.aimPower = Math.min(1, state.aimPower + 0.03); break;
+    case 'ArrowDown':
+      e.preventDefault(); state.interacted = true;
+      state.aimPower = Math.max(0.12, state.aimPower - 0.03); break;
+    case ' ':
+      e.preventDefault(); state.interacted = true; fire(); break;
+    case 'r': case 'R':
+      e.preventDefault(); loadLevel(state.levelIndex); break;
+  }
+});
+function setAimAngle(a) {
+  state.aimDir = { x: Math.cos(a), y: Math.sin(a) };
+}
+
+/* ============================================================
+   UI — HUD, splash, result (DOM touched on events only)
+   ============================================================ */
+const el = id => document.getElementById(id);
+const HEART_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path class="HF" d="M12 21C12 21 4 15.6 4 9.9 4 7 6.2 5 8.7 5c1.5 0 2.7.8 3.3 2 .6-1.2 1.8-2 3.3-2C17.8 5 20 7 20 9.9 20 15.6 12 21 12 21z"/></svg>';
+
+function updateHud() {
+  el('hudLevel').textContent = 'LV ' + state.level.id + ' · ' + state.level.name;
+  const total = state.hearts.length;
+  const left = heartsLeft();
+  let html = '';
+  for (let i = 0; i < total; i++) {
+    html += HEART_SVG.replace('class="HF"', state.hearts[i].hit ? 'class="ho"' : 'class="hf"');
+  }
+  html += '<span class="cnt">x' + left + '</span>';
+  el('hudHearts').innerHTML = html;
+}
+
+function fmtTime(sec) {
+  const s = Math.max(0, Math.round(sec));
+  return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
+}
+
+function showResult() {
+  const overlay = el('result');
+  const win = state.won;
+  const elapsed = (performance.now() - state.levelStart) / 1000;
+  el('rTitle').innerHTML = win
+    ? (state.levelIndex === LEVELS.length - 1 ? 'Every heart <em>won</em>' : 'Level <em>clear</em>')
+    : 'Arrow <em>spent</em>';
+  el('rSub').textContent = win
+    ? state.hearts.length + (state.hearts.length === 1 ? ' heart' : ' hearts') + ' · one arrow · no misses'
+    : heartsLeft() + (heartsLeft() === 1 ? ' heart' : ' hearts') + ' still waiting — try another angle';
+  el('stBounces').textContent = String(state.bounces);
+  el('stArrows').textContent = '1';
+  el('stTime').textContent = fmtTime(elapsed);
+  /* hearts row */
+  let hh = '';
+  const shown = Math.min(state.hearts.length, 3);
+  for (let i = 0; i < shown; i++) hh += '<svg viewBox="0 0 24 24"><path class="h ' + (i === 1 ? 'h2' : i === 2 ? 'h3' : '') + (win ? '' : ' down') + '" d="M12 21C12 21 4 15.6 4 9.9 4 7 6.2 5 8.7 5c1.5 0 2.7.8 3.3 2 .6-1.2 1.8-2 3.3-2C17.8 5 20 7 20 9.9 20 15.6 12 21 12 21z"/></svg>';
+  el('rHearts').innerHTML = hh;
+  /* stars (win only) */
+  let stars = '';
+  if (win) {
+    const n = state.pendingStars || 1;
+    for (let i = 0; i < 3; i++) {
+      stars += '<svg class="' + (i + 1 <= n ? 's' + (i + 1) : 'off') + '" viewBox="0 0 24 24"><path class="fillp" d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8-6.1-3.4-6.1 3.4 1.4-6.8L2.2 9.1l6.9-.8z"/></svg>';
+    }
+  }
+  el('rStars').innerHTML = stars;
+  el('rBest').hidden = !(win && state.pendingNewBest);
+  el('btnNext').style.display = win && state.levelIndex < LEVELS.length - 1 ? 'inline-flex' : 'none';
+  overlay.hidden = false;
+  el('btnAgain').focus({ preventScroll: true });
+}
+
+function hideResult() { el('result').hidden = true; }
+
+function retryLevel() {
+  hideResult();
+  loadLevel(state.levelIndex);
+}
+
+el('btnAgain').addEventListener('click', () => {
+  ensureAudio();
+  if (state.won && state.levelIndex === LEVELS.length - 1) {
+    hideResult();
+    showSplash();
+  } else {
+    retryLevel();
+  }
+});
+el('btnNext').addEventListener('click', () => {
+  ensureAudio();
+  hideResult();
+  loadLevel(Math.min(state.levelIndex + 1, LEVELS.length - 1));
+});
+
+/* sound toggle */
+const soundBtn = el('soundBtn');
+function paintSound() {
+  soundBtn.dataset.state = settings.muted ? 'off' : 'on';
+  soundBtn.setAttribute('aria-pressed', String(!settings.muted));
+  soundBtn.setAttribute('aria-label', settings.muted ? 'Unmute sound' : 'Mute sound');
+}
+soundBtn.addEventListener('click', () => {
+  settings.muted = !settings.muted;
+  lsSet(LS_SETTINGS, settings);
+  paintSound();
+  if (!settings.muted) { ensureAudio(); tone(660, 0.08, 'sine', 0.15); }
+});
+paintSound();
+
+/* splash */
+function showSplash() {
+  state.phase = 'splash';
+  const unlocked = Math.min(best.unlocked || 0, LEVELS.length - 1);
+  el('splashBest').textContent = 'Best · LV ' + (unlocked + 1);
+  el('splash').hidden = false;
+  el('hud').hidden = true;
+  el('hintbar').hidden = true;
+}
+function startFromSplash() {
+  ensureAudio();
+  const unlocked = Math.min(best.unlocked || 0, LEVELS.length - 1);
+  el('splash').hidden = true;
+  el('hud').hidden = false;
+  el('hintbar').hidden = false;
+  loadLevel(unlocked);
+}
+el('splash').addEventListener('click', startFromSplash);
+el('splash').addEventListener('keydown', e => {
+  if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); startFromSplash(); }
+});
+
+/* boot */
+resize();
+showSplash();
+</script>
+</body>
+</html>
