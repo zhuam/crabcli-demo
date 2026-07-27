@@ -74,8 +74,9 @@ ok('canvas touchstart handler with preventDefault and passive:false', /canvas\.a
 group('AC4 - win/lose settlement with replay');
 ok('shared gameover screen with win/lose title states', /go-title\.win/.test(html) && /go-title\.lose/.test(html) && /'go-title win'/.test(js) && /'go-title lose'/.test(js));
 ok('replay button exists', /id="replayBtn"/.test(html));
-ok('replay click returns to title screen', /getElementById\(['"]replayBtn['"]\)\.addEventListener\(['"]click['"][\s\S]{0,80}showScreen\(['"]titleScreen['"]\)/.test(js));
-ok('Space/Enter/Escape also leave gameover', /e\.key === 'Enter' \|\| e\.key === 'Escape'/.test(js));
+ok('replay button label is 再来一局 with aria-label', /id="replayBtn"[^>]*aria-label="Play again"[^>]*>再来一局</.test(html));
+ok('replay click restarts directly via startGame (no title detour)', /getElementById\(['"]replayBtn['"]\)\.addEventListener\(['"]click['"],\s*startGame\)/.test(js));
+ok('gameover Space/Enter restart directly, Escape returns to title', /if \(gameState === GAMEOVER\) \{ startGame\(\); return; \}/.test(js) && /e\.key === 'Enter' && gameState === GAMEOVER\)[\s\S]{0,40}startGame\(\);/.test(js) && /e\.key === 'Escape' && gameState === GAMEOVER\)[\s\S]{0,60}showScreen\(['"]titleScreen['"]\)/.test(js));
 
 group('AC5 - sound and vibration feedback');
 ok('WebAudio with webkit fallback, lazily created', /if \(!audioCtx\) audioCtx = new \(window\.AudioContext \|\| window\.webkitAudioContext\)/.test(js));

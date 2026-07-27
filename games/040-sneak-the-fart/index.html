@@ -104,8 +104,8 @@
     <span>Successful Releases: <span id="goReleases">0</span></span>
     <span id="goNewBest">🏆 New Best!</span>
   </div>
-  <button id="replayBtn" class="btn">Try Again</button>
-  <div style="font-size:0.75rem;color:var(--text-muted);margin-top:-4px">Space / Enter to continue</div>
+  <button id="replayBtn" class="btn" aria-label="Play again">再来一局</button>
+  <div style="font-size:0.75rem;color:var(--text-muted);margin-top:-4px">Space / Enter 再来一局 · Esc 返回大厅</div>
 </div>
 
 <button id="muteBtn" aria-label="Toggle sound" aria-pressed="false">🔊</button>
@@ -1035,9 +1035,12 @@ document.addEventListener('keydown', (e) => {
     e.preventDefault();
     if (gameState === TITLE) { startGame(); return; }
     if (gameState === PLAYING) { handleAction(); return; }
-    if (gameState === GAMEOVER) { showScreen('titleScreen'); gameState = TITLE; return; }
+    if (gameState === GAMEOVER) { startGame(); return; }
   }
-  if ((e.key === 'Enter' || e.key === 'Escape') && gameState === GAMEOVER) {
+  if (e.key === 'Enter' && gameState === GAMEOVER) {
+    startGame();
+  }
+  if (e.key === 'Escape' && gameState === GAMEOVER) {
     showScreen('titleScreen'); gameState = TITLE;
   }
 });
@@ -1053,10 +1056,7 @@ canvas.addEventListener('touchstart', (e) => {
 
 // Buttons
 document.getElementById('startBtn').addEventListener('click', startGame);
-document.getElementById('replayBtn').addEventListener('click', () => {
-  showScreen('titleScreen');
-  gameState = TITLE;
-});
+document.getElementById('replayBtn').addEventListener('click', startGame);
 document.getElementById('muteBtn').addEventListener('click', toggleMute);
 
 // Prevent context menu on canvas
