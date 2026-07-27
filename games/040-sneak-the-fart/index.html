@@ -127,7 +127,7 @@ const LEVELS = [
     desc: 'Tight quarters, 1 guard',
     target: 3,
     npcs: [
-      { x: 200, y: 120, patrol: { x1: 120, x2: 280 }, speed: 0.6, range: 3, dir: 1, lookDir: 1 }
+      { x: 260, y: 330, patrol: { x1: 200, x2: 320 }, speed: 0.5, range: 3, dir: -1, lookDir: -1 }
     ],
     bg: { fog: 'rgba(100,100,120,0.1)', wallColor: '#2a2a3e' }
   },
@@ -136,8 +136,8 @@ const LEVELS = [
     desc: 'Silent floors, 2 patrols',
     target: 4,
     npcs: [
-      { x: 100, y: 150, patrol: { x1: 60, x2: 200 }, speed: 0.5, range: 3, dir: 1, lookDir: 1 },
-      { x: 280, y: 200, patrol: { x1: 200, x2: 320 }, speed: 0.7, range: 3, dir: -1, lookDir: -1 }
+      { x: 100, y: 330, patrol: { x1: 60, x2: 160 }, speed: 0.5, range: 3, dir: 1, lookDir: 1 },
+      { x: 280, y: 320, patrol: { x1: 220, x2: 320 }, speed: 0.6, range: 3.5, dir: -1, lookDir: -1 }
     ],
     bg: { fog: 'rgba(80,60,40,0.08)', wallColor: '#3d2b1f' }
   },
@@ -148,8 +148,8 @@ const LEVELS = [
     npcs: [
       { x: 180, y: 80, patrol: { x1: 140, x2: 220 }, speed: 0.3, range: 3, dir: 1, lookDir: 1 },
       { x: 120, y: 180, patrol: { x1: 80, x2: 160 }, speed: 0.4, range: 2.5, dir: -1, lookDir: -1 },
-      { x: 260, y: 250, patrol: { x1: 200, x2: 300 }, speed: 0.5, range: 2.5, dir: 1, lookDir: 1 },
-      { x: 180, y: 320, patrol: { x1: 100, x2: 260 }, speed: 0.6, range: 3, dir: -1, lookDir: -1 }
+      { x: 280, y: 340, patrol: { x1: 220, x2: 330 }, speed: 0.5, range: 3, dir: -1, lookDir: -1 },
+      { x: 120, y: 340, patrol: { x1: 60, x2: 180 }, speed: 0.6, range: 3, dir: 1, lookDir: 1 }
     ],
     bg: { fog: 'rgba(60,80,100,0.06)', wallColor: '#1e3a5f' }
   },
@@ -161,7 +161,7 @@ const LEVELS = [
       { x: 60, y: 100, patrol: { x1: 40, x2: 160 }, speed: 0.7, range: 3, dir: 1, lookDir: 1 },
       { x: 300, y: 140, patrol: { x1: 220, x2: 340 }, speed: 0.6, range: 3, dir: -1, lookDir: -1 },
       { x: 180, y: 200, patrol: { x1: 100, x2: 260 }, speed: 0.5, range: 2.5, dir: 1, lookDir: 1 },
-      { x: 100, y: 300, patrol: { x1: 60, x2: 200 }, speed: 0.8, range: 3.5, dir: -1, lookDir: -1 },
+      { x: 100, y: 330, patrol: { x1: 40, x2: 160 }, speed: 0.8, range: 3.5, dir: 1, lookDir: 1 },
       { x: 280, y: 350, patrol: { x1: 200, x2: 340 }, speed: 0.5, range: 2.5, dir: 1, lookDir: 1 }
     ],
     bg: { fog: 'rgba(120,60,30,0.08)', wallColor: '#4a2a1a' }
@@ -175,8 +175,8 @@ const LEVELS = [
       { x: 270, y: 100, patrol: { x1: 200, x2: 320 }, speed: 0.6, range: 3, dir: -1, lookDir: -1 },
       { x: 140, y: 180, patrol: { x1: 80, x2: 220 }, speed: 0.5, range: 2.5, dir: 1, lookDir: 1 },
       { x: 240, y: 190, patrol: { x1: 180, x2: 300 }, speed: 0.5, range: 2.5, dir: -1, lookDir: -1 },
-      { x: 90, y: 280, patrol: { x1: 60, x2: 180 }, speed: 0.6, range: 3, dir: 1, lookDir: 1 },
-      { x: 280, y: 290, patrol: { x1: 200, x2: 340 }, speed: 0.8, range: 3.5, dir: -1, lookDir: -1 }
+      { x: 90, y: 330, patrol: { x1: 40, x2: 150 }, speed: 0.6, range: 3.5, dir: 1, lookDir: 1 },
+      { x: 280, y: 340, patrol: { x1: 230, x2: 340 }, speed: 0.8, range: 3.5, dir: -1, lookDir: -1 }
     ],
     bg: { fog: 'rgba(40,40,80,0.1)', wallColor: '#1e1e3a' }
   }
@@ -366,7 +366,7 @@ function initNPCs(levelData) {
     range: n.range,
     dir: n.dir,
     lookDir: n.lookDir,
-    visionAngle: 0.6,
+    visionAngle: 0.8,
     state: 'patrol',
     pauseTimer: 0,
     blinkTimer: Math.random() * 3,

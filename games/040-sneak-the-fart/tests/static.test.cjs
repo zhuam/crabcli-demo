@@ -9,7 +9,8 @@
  *  - the Issue #40 restore consensus: AC5 haptics gap closed with a
  *    guarded navigator.vibrate helper + call sites at success / caught /
  *    level-up / victory
- *  - LEVELS config unit-checked in a vm sandbox (5 levels, targets)
+ *  - LEVELS config unit-checked in a vm sandbox (5 levels, targets,
+ *    per-level vision-cone geometric coverage of the player spot)
  *  - registry integration (registry.json valid, entry present, files exist)
  *  - npm script wiring
  */
@@ -64,6 +65,25 @@ if (levelsSrc) {
   ok('every level has name/desc/target/npcs', ctx.LEVELS.every(l => l.name && l.desc && Number.isInteger(l.target) && Array.isArray(l.npcs) && l.npcs.length > 0));
   ok('release targets stay small (3..8) for short rounds', ctx.LEVELS.every(l => l.target >= 3 && l.target <= 8), JSON.stringify(ctx.LEVELS.map(l => l.target)));
   ok('level names Elevator/Library/Bus/Restaurant/Meeting Room', ['Elevator', 'Library', 'Bus', 'Restaurant', 'Meeting Room'].every(n => ctx.LEVELS.some(l => l.name === n)));
+  /* Issue #40 round-2 difficulty consensus: the fix is pure data, so lock it
+   * geometrically — every level must be losable. Some NPC, at some patrol
+   * sample point, must cover the fixed player spot (180, 400) under the
+   * visionAngle cone: dist <= range * 40 px and |atan2(dy, dx) - faceAngle|
+   * < visionAngle, faceAngle = 0 when looking right (lookDir > 0) else PI. */
+  ok('vision cone half-angle widened to 0.8 rad in initNPCs', /visionAngle:\s*0\.8/.test(js));
+  const PLAYER_X = 180, PLAYER_Y = 400, VISION_ANGLE = 0.8;
+  ctx.LEVELS.forEach((level, idx) => {
+    const canSpot = level.npcs.some(n => {
+      const faceAngle = n.lookDir > 0 ? 0 : Math.PI;
+      for (let x = n.patrol.x1; x <= n.patrol.x2; x += 5) {
+        const dx = PLAYER_X - x, dy = PLAYER_Y - n.y;
+        if (Math.hypot(dx, dy) <= n.range * 40 &&
+            Math.abs(Math.atan2(dy, dx) - faceAngle) < VISION_ANGLE) return true;
+      }
+      return false;
+    });
+    ok(`level ${idx + 1} (${level.name}) has a patrol point covering the player`, canSpot);
+  });
 }
 
 group('AC3 - at least two of keyboard / mouse / touch (all three shipped)');
