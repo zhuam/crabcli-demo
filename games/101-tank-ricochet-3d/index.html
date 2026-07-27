@@ -363,6 +363,7 @@ button{font-family:inherit;border:none;background:none;color:inherit;cursor:poin
     retry.classList.add('on');
     hint.textContent = '需要访问 cdn.jsdelivr.net · 请检查网络后重试';
   }
+  window.__bootFail = fail;   /* module-scope catch branches reuse the real fail screen */
   window.__bootDone = function () {
     if (window.__RICOCHET_BOOTED__ === 'done') return;
     window.__RICOCHET_BOOTED__ = 'done';
@@ -490,18 +491,22 @@ function tone(freq0, freq1, dur, type, vol) {
   o.connect(g); g.connect(masterGain);
   o.start(t0); o.stop(t0 + dur + 0.02);
 }
+let noiseBuf = null;   /* one shared decay-noise buffer — chain detonations reuse it */
 function noise(dur, vol) {
   if (!AC || muted) return;
-  const t0 = AC.currentTime, n = Math.floor(AC.sampleRate * dur);
-  const buf = AC.createBuffer(1, n, AC.sampleRate);
-  const d = buf.getChannelData(0);
-  for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / n);
-  const src = AC.createBufferSource(); src.buffer = buf;
+  if (!noiseBuf) {
+    const n = Math.floor(AC.sampleRate * 0.4);
+    noiseBuf = AC.createBuffer(1, n, AC.sampleRate);
+    const d = noiseBuf.getChannelData(0);
+    for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / n);
+  }
+  const t0 = AC.currentTime;
+  const src = AC.createBufferSource(); src.buffer = noiseBuf;
   const g = AC.createGain();
   g.gain.setValueAtTime(vol, t0);
   g.gain.exponentialRampToValueAtTime(0.001, t0 + dur);
   src.connect(g); g.connect(masterGain);
-  src.start(t0);
+  src.start(t0); src.stop(t0 + dur + 0.02);
 }
 const sfxFire = () => tone(300, 70, 0.14, 'square', 0.35);
 const sfxBounce = () => tone(880, 1400, 0.06, 'triangle', 0.28);
@@ -546,6 +551,8 @@ const v3A = new THREE.Vector3(), v3B = new THREE.Vector3(), v3C = new THREE.Vect
 const dummy = new THREE.Object3D();
 const traceOut = { dist: 0, x: 0, z: 0, nx: 0, nz: 0, kind: 'none', ref: null };
 const predOut = { dist: 0, x: 0, z: 0, nx: 0, nz: 0, kind: 'none', ref: null };
+const flashTanks = [];   /* refilled in place each frame — never reallocated */
+const playerView = { tank: null, x: 0, z: 0, hullAng: 0, turAng: 0, hurtT: 0, spawnT: 0 };
 
 /* ============================================================
    Three.js scene — renderer budget: DPR ≤ 1.5, no realtime
@@ -555,7 +562,13 @@ let renderer;
 try {
   renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: 'high-performance' });
 } catch (_) {
-  window.__bootFail ? window.__bootFail('设备不支持 WebGL') : (document.getElementById('boot-status').textContent = '设备不支持 WebGL');
+  if (window.__bootFail) {
+    window.__RICOCHET_BOOTED__ = null;      /* boot did NOT succeed — let the real fail screen take over */
+    window.__bootFail('设备不支持 WebGL');  /* red message + retry button + network hint */
+    window.__RICOCHET_BOOTED__ = 'failed';  /* re-guard so the generic window error handler can't overwrite it */
+  } else {
+    document.getElementById('boot-status').textContent = '设备不支持 WebGL';
+  }
   throw new Error('WebGL unavailable');
 }
 renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, DPR_CAP));
@@ -854,6 +867,7 @@ function hideInstance(mesh, idx) {
   mesh.instanceMatrix.needsUpdate = true;
 }
 function placeWallBox(i, x, z, w, d) {
+  if (i >= MAX_WALLS) { console.warn('[ricochet] wall instance overflow — placement skipped', i); return; }
   dummy.rotation.set(0, 0, 0);
   dummy.position.set(x, WALL_H / 2, z);
   dummy.scale.set(w, WALL_H, d);
@@ -967,7 +981,8 @@ function pointNearWalls(x, z, pad) {
 }
 function addBarrel(x, z) {
   const inst = barrels.length;
-  const b = { x, z, alive: true, inst, chainT: -1 };
+  if (inst >= MAX_BARRELS) { console.warn('[ricochet] barrel instance overflow — placement skipped'); return null; }
+  const b = { x, z, alive: true, inst, chainT: -1, chainOwner: null };
   barrels.push(b);
   colliders.push({ kind: 'circle', x, z, r: 0.58, ctype: 'barrel', ref: b });
   dummy.rotation.set(0, 0, 0);
@@ -985,6 +1000,7 @@ function addBarrel(x, z) {
 }
 function addMine(x, z) {
   const inst = mines.length;
+  if (inst >= MAX_MINES) { console.warn('[ricochet] mine instance overflow — placement skipped'); return null; }
   const m = { x, z, alive: true, inst };
   mines.push(m);
   colliders.push({ kind: 'circle', x, z, r: 0.52, ctype: 'mine', ref: m });
@@ -1024,7 +1040,7 @@ function traceSegment(ox, oz, dx, dz, len, out) {
       } else {
         let t1 = (c.minX - ox) / dx, t2 = (c.maxX - ox) / dx;
         let s = dx > 0 ? -1 : 1;
-        if (t1 > t2) { const tt = t1; t1 = t2; t2 = tt; s = -s; }
+        if (t1 > t2) { const tt = t1; t1 = t2; t2 = tt; }
         if (t1 > tmin) { tmin = t1; nx = s; nz = 0; }
         if (t2 < tmax) tmax = t2;
         if (tmin > tmax) continue;
@@ -1034,7 +1050,7 @@ function traceSegment(ox, oz, dx, dz, len, out) {
       } else {
         let t1 = (c.minZ - oz) / dz, t2 = (c.maxZ - oz) / dz;
         let s = dz > 0 ? -1 : 1;
-        if (t1 > t2) { const tt = t1; t1 = t2; t2 = tt; s = -s; }
+        if (t1 > t2) { const tt = t1; t1 = t2; t2 = tt; }
         if (t1 > tmin) { tmin = t1; nx = 0; nz = s; }
         if (t2 < tmax) tmax = t2;
         if (tmin > tmax) continue;
@@ -1198,9 +1214,8 @@ function stepBullet(b, sdt) {
     if (tankRef && tankD < wallD && tankD < left) {
       b.x += b.dirX * tankD; b.z += b.dirZ * tankD;
       b.range -= tankD;
-      state.hits++;
       if (tankRef === 'player') damagePlayer();
-      else damageEnemy(tankRef, b);
+      else { if (b.owner === 'player') state.hits++; damageEnemy(tankRef, b); }   /* hits = player shells landed only */
       killBullet(b, true);
       return;
     }
@@ -1284,15 +1299,20 @@ function updateBullets(sdt) {
    ============================================================ */
 const chainQueue = [];
 function explodeDestructible(kind, ref, owner) {
+  /* blasts the player started (direct hit or chain) never damage the player */
+  const src = owner === 'player' ? 'player-self' : kind;
   if (kind === 'barrel') {
     if (!ref.alive) return;
     ref.alive = false;
     removeCollider(ref);
     hideInstance(barrelBody, ref.inst);
     hideInstance(barrelCap, ref.inst);
-    bigBoom(ref.x, ref.z, EXPLODE_R_BARREL, owner, 'barrel');
+    bigBoom(ref.x, ref.z, EXPLODE_R_BARREL, owner, src);
     for (const b of barrels) {
-      if (b.alive && b.chainT < 0 && Math.hypot(b.x - ref.x, b.z - ref.z) < CHAIN_R) b.chainT = 0.13;
+      if (b.alive && b.chainT < 0 && Math.hypot(b.x - ref.x, b.z - ref.z) < CHAIN_R) {
+        b.chainT = 0.13;
+        b.chainOwner = owner;   /* chain blasts inherit the instigator (self-immunity propagates) */
+      }
     }
   } else {
     if (!ref.alive) return;
@@ -1300,7 +1320,7 @@ function explodeDestructible(kind, ref, owner) {
     removeCollider(ref);
     hideInstance(mineBase, ref.inst);
     hideInstance(mineCore, ref.inst);
-    bigBoom(ref.x, ref.z, EXPLODE_R_MINE, owner, 'mine');
+    bigBoom(ref.x, ref.z, EXPLODE_R_MINE, owner, src);
   }
 }
 function removeCollider(ref) {
@@ -1335,7 +1355,7 @@ function updateChainQueue(dt) {
   for (const b of barrels) {
     if (b.alive && b.chainT >= 0) {
       b.chainT -= dt;
-      if (b.chainT <= 0) explodeDestructible('barrel', b, 'chain');
+      if (b.chainT <= 0) explodeDestructible('barrel', b, b.chainOwner || 'chain');
     }
   }
 }
@@ -1520,7 +1540,7 @@ function updateEnemy(e, dt, idx) {
   const raw = resolveTankMove(e.x + e.moveDirX * sp * dt, e.z + e.moveDirZ * sp * dt);
   e.x = raw.x; e.z = raw.z;
 
-  /* separation from siblings */
+  /* separation from siblings — the push can land inside walls/barrels, so re-resolve */
   for (let i = 0; i < enemies.length; i++) {
     const o = enemies[i];
     if (o === e || !o.alive) continue;
@@ -1528,9 +1548,11 @@ function updateEnemy(e, dt, idx) {
     const d = Math.hypot(dx, dz);
     if (d > 1e-6 && d < 1.9) { e.x += dx / d * (1.9 - d) * 0.5; e.z += dz / d * (1.9 - d) * 0.5; }
   }
+  const sepFix = resolveTankMove(e.x, e.z);
+  e.x = sepFix.x; e.z = sepFix.z;
 
-  /* stuck verdict — accumulated dt, 0.5s threshold */
-  const moved = Math.hypot(e.x - e.lastX, e.z - e.lastZ);
+  /* stuck verdict — own movement only (the separation push doesn't count), accumulated dt, 0.5s threshold */
+  const moved = Math.hypot(raw.x - e.lastX, raw.z - e.lastZ);
   if (moved < 0.02 * dt * 60) e.stuckTimer += dt; else e.stuckTimer = 0;
   e.lastX = e.x; e.lastZ = e.z;
   if (e.stuckTimer >= STUCK_TIME) {
@@ -1586,6 +1608,12 @@ function updateEnemy(e, dt, idx) {
 }
 function enemyFire(e) {
   const t = e.tank;
+  /* turAng/hullAng moved this frame but syncTankVisual has not run yet —
+     refresh world matrices so the shell spawns where the barrel points */
+  t.root.position.set(e.x, 0, e.z);
+  t.hull.rotation.y = e.hullAng;
+  t.turret.rotation.y = e.turAng - e.hullAng;
+  t.root.updateMatrixWorld(true);
   t.muzzle.getWorldPosition(v3A);
   const dirX = Math.sin(e.turAng), dirZ = Math.cos(e.turAng);
   spawnBullet(v3A.x + dirX * 0.3, v3A.z + dirZ * 0.3, dirX, dirZ, 'enemy');
@@ -1685,6 +1713,7 @@ window.addEventListener('keydown', (ev) => {
   }
 });
 window.addEventListener('keyup', (ev) => input.keys.delete(ev.code));
+window.addEventListener('blur', () => input.keys.clear());   /* keyup can be missed while unfocused */
 window.addEventListener('mousedown', (ev) => {
   if (state.phase === 'playing' && ev.button === 0) { input.mouseDown = true; playerFire(); }
 });
@@ -1772,7 +1801,11 @@ function updatePlayer(dt) {
     if (state.reloadT >= RELOAD_T) { state.reloadT = 0; state.ammo++; syncAmmo(); }
   } else state.reloadT = 0;
 
-  syncTankVisual({ tank: player.tank, x: player.x, z: player.z, hullAng: player.hullAng, turAng: player.turAng, hurtT: 0, spawnT: 0 });
+  playerView.tank = player.tank;
+  playerView.x = player.x; playerView.z = player.z;
+  playerView.hullAng = player.hullAng; playerView.turAng = player.turAng;
+  playerView.hurtT = 0; playerView.spawnT = 0;
+  syncTankVisual(playerView);
 }
 
 /* ============================================================
@@ -2043,9 +2076,11 @@ function frame(now) {
     updateFloats(dt);
   }
 
-  /* muzzle flashes + tank flash timers */
-  const tanks = [player.tank, ...enemies.map(e => e.tank)];
-  for (const tk of tanks) {
+  /* muzzle flashes + tank flash timers (refill the module-level list in place) */
+  flashTanks.length = 0;
+  flashTanks.push(player.tank);
+  for (let i = 0; i < enemies.length; i++) flashTanks.push(enemies[i].tank);
+  for (const tk of flashTanks) {
     if (tk.flashT > 0) {
       tk.flashT -= dt;
       if (tk.flashT <= 0) tk.flash.visible = false;
@@ -2085,6 +2120,7 @@ el.recScore.textContent = String(state.best).padStart(6, '0');
 window.addEventListener('resize', () => {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, DPR_CAP));   /* DPR can change (monitor drag / OS zoom) */
   renderer.setSize(window.innerWidth, window.innerHeight);
 });
 document.addEventListener('visibilitychange', () => {

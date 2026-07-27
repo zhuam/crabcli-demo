@@ -23,6 +23,7 @@
 
 import fs from "node:fs";
 import path from "node:path";
+import vm from "node:vm";
 import { fileURLToPath } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -164,6 +165,268 @@ assert(/btn-restart/.test(html) && /再来一局/.test(html), "Restart CTA on re
 assert(/addEventListener\(["']keydown["']/.test(html) && /addEventListener\(["']pointerdown["']/.test(html),
   "≥2 input methods (pointer + keyboard)");
 assert(/back-to-hub/.test(html), "Shared back-to-hub chrome referenced");
+
+/* ────────────── Behavior tests (review rework: C1 physics regression + M2) ──────────────
+ * The static regexes above prove constraints are DECLARED; this section runs the
+ * REAL physics code — traceSegment / stepBullet / explodeDestructible extracted
+ * verbatim from index.html into a vm sandbox with injected colliders and stubs —
+ * and proves it BEHAVES. Regression guard for the review P0 (C1: AABB entry-face
+ * normal flipped for negative-direction incidence) plus the reflection invariants.
+ *
+ *   B1. entry-face normal points into the arena — all 4 boundary walls × both
+ *       incidence directions (this is exactly what C1 broke)
+ *   B2. reflection angle == incidence angle (v' = v - 2(v·n)n)
+ *   B3. speed drift < 1e-9 after repeated reflections (renormalization)
+ *   B4. MAX_BOUNCES terminates the shell with ZERO phantom zero-normal bounces
+ *   B5. 120Hz boundary survival sim — west/north bounce & survive like east/south
+ *   B6. barrel/mine hit → explodes, leaves the collider list; self-immunity src
+ *   B7. hit counter counts player-owned shells only
+ */
+
+function extractFn(src, name) {
+  const m = src.match(new RegExp(`function\\s+${name}\\s*\\([^)]*\\)\\s*\\{`));
+  if (!m) return null;
+  let i = src.indexOf("{", m.index), depth = 1, end = i + 1;
+  while (depth && end < src.length) {
+    if (src[end] === "{") depth++;
+    else if (src[end] === "}") depth--;
+    end++;
+  }
+  return src.slice(m.index, end);
+}
+function numConst(src, name) {
+  const m = src.match(new RegExp(`(?:const|,)\\s*${name}\\s*=\\s*([\\d.]+(?:\\s*/\\s*[\\d.]+)?)`));
+  if (!m) throw new Error(`constant ${name} not found in index.html`);
+  return vm.runInContext(m[1], vm.createContext({}));
+}
+
+const SUBSTEP_V = numConst(html, "SUBSTEP");
+const MAX_BOUNCES_V = numConst(html, "MAX_BOUNCES");
+const AX_V = numConst(html, "AX"), AZ_V = numConst(html, "AZ"), WALL_T_V = numConst(html, "WALL_T");
+const PLAY_X_V = AX_V - WALL_T_V / 2, PLAY_Z_V = AZ_V - WALL_T_V / 2;   /* inner wall faces */
+
+section("⚙️ Behavior harness: extract real physics code into a vm sandbox");
+const PHYS_FNS = ["segCircleDist", "traceSegment", "removeCollider", "explodeDestructible", "stepBullet"];
+const extracted = {};
+for (const n of PHYS_FNS) {
+  extracted[n] = extractFn(html, n);
+  assert(!!extracted[n], `extracted ${n}() verbatim from index.html`);
+}
+const CONSTS = ["BULLET_SPEED", "BULLET_RANGE", "MAX_BOUNCES", "SUBSTEP", "TANK_R", "BULLET_R",
+  "EXPLODE_R_BARREL", "EXPLODE_R_MINE", "CHAIN_R", "AX", "AZ", "WALL_T"]
+  .map((n) => `const ${n} = ${numConst(html, n)};`).join("\n");
+
+const sandbox = { Math, Infinity, console };
+vm.createContext(sandbox);
+vm.runInContext(`
+${CONSTS}
+var colliders = [], barrels = [], mines = [], enemies = [];
+var player = { alive: false, x: 0, z: 0 };
+var state = { hits: 0 };
+var traceOut = { dist: 0, x: 0, z: 0, nx: 0, nz: 0, kind: 'none', ref: null };
+var __events = { bounces: [], kills: [], explosions: [], playerDamage: 0, enemyDamage: 0 };
+function resetEvents() {
+  __events.bounces.length = 0; __events.kills.length = 0; __events.explosions.length = 0;
+  __events.playerDamage = 0; __events.enemyDamage = 0;
+}
+function killBullet(b, silent) { b.alive = false; __events.kills.push({ silent, bounces: b.bounces }); }
+function onBounce(b, x, z) {
+  __events.bounces.push({ x, z, nx: traceOut.nx, nz: traceOut.nz, n: b.bounces, dx: b.dirX, dz: b.dirZ });
+}
+function damagePlayer() { __events.playerDamage++; }
+function damageEnemy(e, b) { __events.enemyDamage++; }
+function hideInstance() {}
+var barrelBody = {}, barrelCap = {}, mineBase = {}, mineCore = {};   /* hideInstance() arg stubs */
+function bigBoom(x, z, radius, owner, src) { __events.explosions.push({ x, z, radius, owner, src }); }
+function makeBullet(x, z, dirX, dirZ, owner) {
+  return { x, z, dirX, dirZ, range: BULLET_RANGE, bounces: 0, alive: true, owner };
+}
+${PHYS_FNS.map((n) => extracted[n]).join("\n")}
+`, sandbox, { filename: "extracted-physics.js" });
+
+/* the four boundary walls exactly as buildMap() constructs them */
+function walls4() {
+  const bx = AX_V + WALL_T_V / 2, bz = AZ_V + WALL_T_V / 2;
+  return [
+    { kind: "aabb", minX: -bx, maxX: bx, minZ: -bz, maxZ: -bz + WALL_T_V },   /* north (-z) */
+    { kind: "aabb", minX: -bx, maxX: bx, minZ: bz - WALL_T_V, maxZ: bz },     /* south (+z) */
+    { kind: "aabb", minX: -bx, maxX: -bx + WALL_T_V, minZ: -bz, maxZ: bz },   /* west  (-x) */
+    { kind: "aabb", minX: bx - WALL_T_V, maxX: bx, minZ: -bz, maxZ: bz },     /* east  (+x) */
+  ];
+}
+function trace(ox, oz, dx, dz, len) {
+  const t = sandbox.traceOut;
+  t.dist = 0; t.x = 0; t.z = 0; t.nx = 0; t.nz = 0; t.kind = "none"; t.ref = null;
+  return sandbox.traceSegment(ox, oz, dx, dz, len, t) ? { ...t } : null;
+}
+function runToDeath(b, maxSteps = 5000) {
+  let steps = 0;
+  while (b.alive && steps++ < maxSteps) sandbox.stepBullet(b, SUBSTEP_V);
+  return steps;
+}
+const unit = (nx, nz) => Math.hypot(nx, nz);
+const isPhantom = (e) => unit(e.nx, e.nz) < 0.5;   /* a real bounce normal is always unit length */
+
+section("🧭 B1: entry-face normal points into the arena (C1 regression)");
+sandbox.colliders = walls4();
+const b1cases = [
+  /* [label, ox, oz, dx, dz, expectNx, expectNz, expectDist] */
+  ["WEST wall, fired from inside (-x)", 0, 0, -1, 0, +1, 0, PLAY_X_V],
+  ["WEST wall, fired from outside (+x)", -bxOut(), 0, +1, 0, -1, 0, null],
+  ["EAST wall, fired from inside (+x)", 0, 0, +1, 0, -1, 0, PLAY_X_V],
+  ["EAST wall, fired from outside (-x)", +bxOut(), 0, -1, 0, +1, 0, null],
+  ["NORTH wall, fired from inside (-z)", 0, 0, 0, -1, 0, +1, PLAY_Z_V],
+  ["NORTH wall, fired from outside (+z)", 0, -bzOut(), 0, +1, 0, -1, null],
+  ["SOUTH wall, fired from inside (+z)", 0, 0, 0, +1, 0, -1, PLAY_Z_V],
+  ["SOUTH wall, fired from outside (-z)", 0, +bzOut(), 0, -1, 0, +1, null],
+];
+function bxOut() { return AX_V + 8; }
+function bzOut() { return AZ_V + 7; }
+for (const [label, ox, oz, dx, dz, ex, ez, eDist] of b1cases) {
+  const t = trace(ox, oz, dx, dz, 60);
+  assert(!!t, `${label}: hit registered`);
+  if (!t) continue;
+  assert(t.nx === ex && t.nz === ez, `${label}: normal = (${ex}, ${ez}), got (${t.nx}, ${t.nz})`);
+  assert(t.nx * dx + t.nz * dz < 0, `${label}: normal opposes incidence (dot < 0)`);
+  if (eDist !== null) assert(Math.abs(t.dist - eDist) < 1e-9, `${label}: hit distance ${eDist} (inner face)`);
+}
+{
+  /* oblique negative-direction incidence must also report the right face */
+  const t = trace(0, 0, -0.8, -0.6, 60);
+  assert(!!t && t.nx === 1 && t.nz === 0, `oblique (-0.8,-0.6): west face first, normal (+1, 0), got (${t && t.nx}, ${t && t.nz})`);
+}
+
+section("🪞 B2: reflection angle == incidence angle");
+{
+  sandbox.colliders = walls4();
+  sandbox.resetEvents();
+  const b = sandbox.makeBullet(0, 0, -0.8, -0.6, "player");
+  let steps = 0;
+  while (b.alive && sandbox.__events.bounces.length === 0 && steps++ < 5000) sandbox.stepBullet(b, SUBSTEP_V);
+  const ev = sandbox.__events.bounces[0];
+  assert(!!ev, "first bounce occurred");
+  if (ev) {
+    const n = { x: ev.nx, z: ev.nz };
+    const dIn = { x: -0.8, z: -0.6 }, dOut = { x: b.dirX, z: b.dirZ };
+    const dotIn = dIn.x * n.x + dIn.z * n.z, dotOut = dOut.x * n.x + dOut.z * n.z;
+    assert(Math.abs(dotOut + dotIn) < 1e-9, `normal component flips sign (in ${dotIn.toFixed(3)} → out ${dotOut.toFixed(3)})`);
+    /* tangent component (perpendicular to n) preserved → equal angles */
+    const tan = { x: -n.z, z: n.x };
+    const tIn = dIn.x * tan.x + dIn.z * tan.z, tOut = dOut.x * tan.x + dOut.z * tan.z;
+    assert(Math.abs(tOut - tIn) < 1e-9, "tangent component preserved (angle in == angle out)");
+    const rx = dIn.x - 2 * dotIn * n.x, rz = dIn.z - 2 * dotIn * n.z;
+    assert(Math.abs(dOut.x - rx) < 1e-9 && Math.abs(dOut.z - rz) < 1e-9, "v' = v - 2(v·n)n matches exactly");
+  }
+}
+
+section("♻️ B3+B4: renormalization drift < 1e-9 and MAX_BOUNCES termination, zero phantom bounces");
+{
+  /* narrow corridor (2u gap) forces many fast bounces — the phantom-bounce breeding ground */
+  sandbox.colliders = [
+    { kind: "aabb", minX: -1.4, maxX: -1.0, minZ: -5, maxZ: 5 },
+    { kind: "aabb", minX: 1.0, maxX: 1.4, minZ: -5, maxZ: 5 },
+  ];
+  sandbox.resetEvents();
+  const b = sandbox.makeBullet(0, 0, 1, 0, "player");
+  runToDeath(b);
+  const evs = sandbox.__events.bounces;
+  assert(!b.alive, "shell terminated");
+  assert(b.bounces === MAX_BOUNCES_V, `terminated by MAX_BOUNCES=${MAX_BOUNCES_V} (got ${b.bounces})`);
+  assert(evs.length === MAX_BOUNCES_V, `exactly ${MAX_BOUNCES_V} bounce events (got ${evs.length})`);
+  const phantoms = evs.filter(isPhantom).length;
+  assert(phantoms === 0, `zero phantom zero-normal bounces (got ${phantoms}) — C1 fixed`);
+  const maxDrift = Math.max(...evs.map((e) => Math.abs(unit(e.dx, e.dz) - 1)));
+  assert(maxDrift < 1e-9, `speed drift after ${evs.length} reflections < 1e-9 (max ${maxDrift.toExponential(3)})`);
+}
+
+section("🧪 B5: 120Hz boundary survival — west/north must bounce like east/south");
+{
+  const cases = [
+    ["WEST (-x)", -PLAY_X_V + 1, 0, -1, 0],
+    ["EAST (+x)", PLAY_X_V - 1, 0, +1, 0],
+    ["NORTH (-z)", 0, -PLAY_Z_V + 1, 0, -1],
+    ["SOUTH (+z)", 0, PLAY_Z_V - 1, 0, +1],
+  ];
+  for (const [label, x, z, dx, dz] of cases) {
+    sandbox.colliders = walls4();
+    sandbox.resetEvents();
+    const b = sandbox.makeBullet(x, z, dx, dz, "player");
+    for (let i = 0; i < 120 && b.alive; i++) sandbox.stepBullet(b, SUBSTEP_V);   /* 1.0s @120Hz */
+    const evs = sandbox.__events.bounces;
+    const phantoms = evs.filter(isPhantom).length;
+    assert(b.alive, `${label}: shell survives 1.0s (pre-fix: died at bounce ${MAX_BOUNCES_V} in ~67ms)`);
+    assert(evs.length === 1, `${label}: exactly 1 bounce (got ${evs.length})`);
+    assert(phantoms === 0, `${label}: zero phantom zero-normal bounces`);
+    assert(Math.abs(b.x) < PLAY_X_V && Math.abs(b.z) < PLAY_Z_V, `${label}: pushed OUT of the wall after bounce`);
+  }
+  /* oblique multi-surface flight across the full arena */
+  sandbox.colliders = walls4();
+  sandbox.resetEvents();
+  const ob = sandbox.makeBullet(0, 0, -0.8, -0.6, "player");
+  for (let i = 0; i < 240 && ob.alive; i++) sandbox.stepBullet(ob, SUBSTEP_V);   /* 2.0s */
+  assert(ob.alive && sandbox.__events.bounces.filter(isPhantom).length === 0,
+    "oblique (-0.8,-0.6) flight: alive, no phantom bounces");
+  assert(Math.abs(ob.x) < PLAY_X_V && Math.abs(ob.z) < PLAY_Z_V, "oblique flight stays inside the inner faces");
+}
+
+section("💥 B6: barrel/mine hit → explodes, leaves collider list, self-immunity src");
+{
+  const barrelObj = { x: 0, z: -5, alive: true, inst: 0, chainT: -1, chainOwner: null };
+  const barrelObj2 = { x: 3, z: 0, alive: true, inst: 1, chainT: -1, chainOwner: null };
+  const mineObj = { x: 0, z: 6, alive: true, inst: 0 };
+  sandbox.barrels = [barrelObj, barrelObj2];
+  sandbox.mines = [mineObj];
+  sandbox.enemies = [];
+  sandbox.player = { alive: false, x: 0, z: 0 };
+
+  sandbox.colliders = [...walls4(),
+    { kind: "circle", x: barrelObj.x, z: barrelObj.z, r: 0.58, ctype: "barrel", ref: barrelObj },
+    { kind: "circle", x: barrelObj2.x, z: barrelObj2.z, r: 0.58, ctype: "barrel", ref: barrelObj2 },
+    { kind: "circle", x: mineObj.x, z: mineObj.z, r: 0.52, ctype: "mine", ref: mineObj }];
+  sandbox.resetEvents();
+  const pb = sandbox.makeBullet(0, 0, 0, -1, "player");
+  runToDeath(pb);
+  assert(barrelObj.alive === false, "player shell: barrel exploded");
+  assert(!sandbox.colliders.some((c) => c.ref === barrelObj), "player shell: barrel removed from collider list");
+  assert(sandbox.__events.explosions.length === 1 && sandbox.__events.explosions[0].src === "player-self"
+    && sandbox.__events.explosions[0].owner === "player",
+    "player shell: bigBoom src='player-self' (self-explosion immunity)");
+
+  sandbox.resetEvents();
+  const mb = sandbox.makeBullet(0, 0, 0, 1, "player");
+  runToDeath(mb);
+  assert(mineObj.alive === false && !sandbox.colliders.some((c) => c.ref === mineObj),
+    "player shell: mine exploded and removed from collider list");
+  assert(sandbox.__events.explosions[0] && sandbox.__events.explosions[0].src === "player-self",
+    "player shell on mine: src='player-self'");
+
+  sandbox.resetEvents();
+  const eb = sandbox.makeBullet(-3, 0, 1, 0, "enemy");
+  runToDeath(eb);
+  assert(barrelObj2.alive === false, "enemy shell: barrel exploded");
+  assert(sandbox.__events.explosions[0] && sandbox.__events.explosions[0].src === "barrel",
+    "enemy shell: src='barrel' — enemy-started blasts still damage the player");
+}
+
+section("🎯 B7: hit counter counts player-owned shells only");
+{
+  sandbox.colliders = walls4();
+  sandbox.enemies = [{ alive: true, spawnT: 0, x: 0, z: -5 }];
+  sandbox.player = { alive: true, x: 0, z: 8 };
+  sandbox.state = { hits: 0 };
+  sandbox.resetEvents();
+  const p = sandbox.makeBullet(0, 0, 0, -1, "player");
+  runToDeath(p);
+  assert(sandbox.__events.enemyDamage === 1 && sandbox.state.hits === 1,
+    "player shell landing on enemy → hits = 1");
+  const e = sandbox.makeBullet(0, 0, 0, 1, "enemy");
+  runToDeath(e);
+  assert(sandbox.__events.playerDamage === 1 && sandbox.state.hits === 1,
+    "enemy shell landing on player → hits unchanged (accuracy stat not polluted)");
+  sandbox.state = { hits: 0 };
+  sandbox.enemies = [];
+  sandbox.player = { alive: false, x: 0, z: 0 };
+}
 
 /* ────────────── results ────────────── */
 console.log(`\n${"═".repeat(48)}`);
