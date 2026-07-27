@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <rect width="200" height="200" fill="#1a1a2e"/>
+  <text x="100" y="80" text-anchor="middle" font-size="48">💨</text>
+  <text x="100" y="130" text-anchor="middle" font-size="11" fill="#e94560" font-family="sans-serif" font-weight="bold">SNEAK THE FART</text>
+  <text x="100" y="155" text-anchor="middle" fill="rgba(255,255,255,0.5)" font-family="sans-serif" font-size="7">A Stealth Comedy Game</text>
+  <circle cx="45" cy="160" r="4" fill="#4CAF50" opacity="0.6"/>
+  <circle cx="60" cy="162" r="3" fill="#FF6B35" opacity="0.6"/>
+  <circle cx="140" cy="158" r="4" fill="#4CAF50" opacity="0.6"/>
+  <circle cx="155" cy="161" r="3" fill="#FF6B35" opacity="0.6"/>
+</svg>

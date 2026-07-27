@@ -762,6 +762,26 @@
       "version": "1.0.0",
       "featured": true,
       "rating": 4.0
+    },
+    {
+      "id": "sneak-the-fart",
+      "name": "Sneak the Fart",
+      "description": "Timing stealth comedy — fart in public without getting caught. Watch NPC sightlines and release when safe across 5 locations",
+      "category": "casual",
+      "tags": [
+        "singleplayer",
+        "stealth",
+        "timing",
+        "comedy",
+        "short-session"
+      ],
+      "thumbnail": "/games/040-sneak-the-fart/thumb.svg",
+      "path": "/games/040-sneak-the-fart/",
+      "hasServer": false,
+      "players": "1",
+      "version": "1.0.0",
+      "featured": false,
+      "rating": 4.0
     }
   ],
   "categories": [
