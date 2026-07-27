@@ -14,6 +14,7 @@
     "test:word-ladder": "node games/096-word-ladder-climb/tests/static.test.cjs",
     "test:cupid-ricochet": "node games/022-cupid-ricochet/tests/static.test.cjs",
     "test:magic-bubble-shooter": "node games/013-magic-bubble-shooter/tests/static.test.cjs && node games/013-magic-bubble-shooter/tests/behavior.test.cjs",
+    "test:sneak-the-fart": "node games/040-sneak-the-fart/tests/static.test.cjs",
     "test:pet-run-io": "node games/097-pet-run-io/tests/static.test.cjs && node games/097-pet-run-io/tests/behavior.test.cjs && node games/097-pet-run-io/tests/regression.test.cjs",
     "test:login-rate-limit": "node tests/login-rate-limit-unit.test.mjs",
     "test:login-rate-limit:integration": "node tests/login-rate-limit.test.mjs",
