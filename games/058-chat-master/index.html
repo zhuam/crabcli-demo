@@ -6,55 +6,133 @@
 <title>Chat Master · 聊天恋爱模拟</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-:root{--bg:#fef8f3;--surface:#fffaf5;--accent:#c1694f;--accent2:#e8a87c;--text:#3d2c2a;--text2:#7a5a4e;--bubble-self:#fce9de;--bubble-other:#fff0e6;--golden:#d4a05a;--radius:20px;--shadow:0 2px 12px rgba(0,0,0,.06)}
-body{font-family:-apple-system,'Segoe UI','Noto Sans SC',sans-serif;background:var(--bg);color:var(--text);display:flex;justify-content:center;min-height:100dvh}
-#app{width:100%;max-width:480px;min-height:100dvh;display:flex;flex-direction:column;background:var(--surface);position:relative;overflow:hidden}
+:root{--bg:#0d0b14;--ink:#f2eef8;--ink2:#9d93b3;--glass:rgba(255,255,255,.055);--line:rgba(255,255,255,.09);
+  --c1:#ff9a76;--c2:#ff5e8e;--glow:rgba(255,94,142,.38);--char-emoji:'🎭';--radius:20px}
+#app[data-char="xing"]{--c1:#7dd8ff;--c2:#a78bfa;--glow:rgba(167,139,250,.4);--char-emoji:'🎸'}
+body{font-family:-apple-system,'Segoe UI','Noto Sans SC',sans-serif;background:#060509;color:var(--ink);display:flex;justify-content:center;min-height:100dvh}
+#app{width:100%;max-width:480px;min-height:100dvh;display:flex;flex-direction:column;position:relative;overflow:hidden;
+  background:radial-gradient(120% 55% at 50% -8%,var(--glow),transparent 62%),
+             radial-gradient(90% 40% at 100% 108%,rgba(125,216,255,.10),transparent 60%),var(--bg);
+  transition:background .6s}
 .screen{display:none;flex-direction:column;height:100dvh;position:absolute;inset:0}.screen.active{display:flex}
-/* Header */
-.header{padding:12px 16px;background:var(--surface);border-bottom:1px solid rgba(0,0,0,.04);display:flex;align-items:center;gap:10px;z-index:10}
-.header .back{font-size:20px;cursor:pointer;padding:4px 8px;border:none;background:none;color:var(--text)}
-.header h2{flex:1;font-size:16px;font-weight:600;text-align:center;color:var(--text)}
-.affinity-bar{height:4px;background:#f0e0d8;border-radius:2px;margin:0 16px 4px;overflow:hidden;position:relative}
-.affinity-fill{height:100%;background:linear-gradient(90deg,var(--accent2),var(--accent));border-radius:2px;transition:width .6s cubic-bezier(.34,1.56,.64,1)}
-.affinity-label{font-size:11px;color:var(--text2);text-align:right;padding:0 16px 8px;display:flex;justify-content:space-between}
-/* Chat area */
-.chat-area{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px;scroll-behavior:smooth}
-.chat-area::-webkit-scrollbar{width:4px}
-.chat-area::-webkit-scrollbar-thumb{background:#ddd;border-radius:2px}
-.msg{max-width:82%;padding:12px 16px;border-radius:var(--radius);font-size:15px;line-height:1.6;animation:msgIn .3s ease;word-break:break-word}
-.msg.other{align-self:flex-start;background:var(--bubble-other);border-bottom-left-radius:4px;color:var(--text)}
-.msg.self{align-self:flex-end;background:var(--accent);color:#fff;border-bottom-right-radius:4px}
-.msg.system{align-self:center;background:rgba(0,0,0,.03);color:var(--text2);font-size:13px;padding:6px 16px;border-radius:30px;max-width:90%}
-.msg .name{font-size:12px;font-weight:600;color:var(--accent);margin-bottom:4px}
-.msg.self .name{color:rgba(255,255,255,.8)}
-@keyframes msgIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
-/* Options */
-.options{display:flex;flex-direction:column;gap:8px;padding:12px 16px 20px;border-top:1px solid rgba(0,0,0,.04);background:var(--surface)}
-.opt{background:var(--surface);border:1.5px solid #e8ddd5;border-radius:14px;padding:14px 18px;font-size:14px;color:var(--text);cursor:pointer;transition:all .2s;text-align:left;line-height:1.5}
-.opt:active{transform:scale(.97);border-color:var(--accent2)}
-.opt:hover{border-color:var(--accent2)}
-.opt.selected{background:var(--accent);color:#fff;border-color:var(--accent)}
-.opt:disabled{opacity:.4;cursor:default}
-/* Characters */
-.char-grid{display:flex;gap:16px;padding:24px 16px;flex:1;align-items:center}
-.char-card{flex:1;background:var(--surface);border:2px solid #e8ddd5;border-radius:var(--radius);padding:24px 12px;text-align:center;cursor:pointer;transition:all .2s}
-.char-card:active{transform:scale(.95);border-color:var(--accent2)}
-.char-card .avatar{width:80px;height:80px;border-radius:50%;margin:0 auto 12px;display:flex;align-items:center;justify-content:center;font-size:36px}
-.char-card h3{font-size:16px;color:var(--text);margin-bottom:4px}
-.char-card p{font-size:13px;color:var(--text2);line-height:1.5}
-/* Result */
-.result{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 24px;text-align:center}
-.result .icon{font-size:64px;margin-bottom:16px}
-.result h2{font-size:24px;margin-bottom:8px}
-.result p{color:var(--text2);margin-bottom:24px;font-size:15px;line-height:1.6}
-.btn{background:var(--accent);color:#fff;border:none;border-radius:30px;padding:14px 40px;font-size:16px;cursor:pointer;transition:all .2s}
-.btn:active{transform:scale(.95)}
-.btn-outline{background:transparent;color:var(--accent);border:1.5px solid var(--accent);border-radius:30px;padding:14px 40px;font-size:16px;cursor:pointer}
-/* splash */
-.splash{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px}
-.splash h1{font-size:28px;color:var(--text)}.splash p{color:var(--text2);font-size:14px}
-.tap-start{animation:pulse 2s ease infinite;margin-top:24px;font-size:14px;color:var(--accent)}
-@keyframes pulse{0%,100%{opacity:.6}50%{opacity:1}}
+/* ── 拟真状态栏（纯装饰） ── */
+.statusbar{display:flex;justify-content:space-between;align-items:center;padding:10px 22px 2px;
+  font-size:12.5px;font-weight:600;color:var(--ink2);letter-spacing:.5px;user-select:none}
+.statusbar .sb-r{display:flex;gap:5px;align-items:center;font-size:11px}
+/* ── Header ── */
+.header{padding:10px 14px;display:flex;align-items:center;gap:12px;z-index:10;
+  background:rgba(255,255,255,.028);backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
+.header .back{font-size:17px;cursor:pointer;padding:6px 10px;border:none;background:var(--glass);
+  border-radius:10px;color:var(--ink2);line-height:1}
+.hd-ava{width:38px;height:38px;border-radius:50%;flex-shrink:0;position:relative;display:flex;align-items:center;justify-content:center;
+  font-size:19px;background:linear-gradient(135deg,var(--c1),var(--c2));box-shadow:0 0 14px var(--glow)}
+.hd-ava::before{content:var(--char-emoji)}
+.hd-ava::after{content:'';position:absolute;right:-1px;bottom:-1px;width:11px;height:11px;border-radius:50%;
+  background:#3ddc84;border:2.5px solid var(--bg)}
+.hd-meta{flex:1;display:flex;flex-direction:column;gap:1px}
+.header h2{font-size:15.5px;font-weight:650;color:var(--ink);text-align:left}
+.hd-sub{font-size:11px;color:#3ddc84;letter-spacing:.4px}
+/* ── 好感度 ── */
+.affinity-wrap{padding:10px 16px 8px;display:flex;align-items:center;gap:10px}
+.affinity-wrap .hearts{font-size:14px;filter:drop-shadow(0 0 6px var(--glow))}
+.affinity-bar{flex:1;height:7px;background:rgba(255,255,255,.07);border-radius:99px;overflow:hidden;position:relative}
+.affinity-fill{height:100%;background:linear-gradient(90deg,var(--c1),var(--c2));border-radius:99px;
+  box-shadow:0 0 12px var(--glow);transition:width .6s cubic-bezier(.34,1.56,.64,1)}
+.affinity-label{font-size:11px;color:var(--ink2);padding:0 16px 8px;display:flex;justify-content:space-between;letter-spacing:.3px}
+.affinity-label #affinity-text{color:var(--ink);font-weight:600}
+/* ── 聊天区 ── */
+.chat-area{flex:1;overflow-y:auto;padding:16px 14px;display:flex;flex-direction:column;gap:13px;scroll-behavior:smooth}
+.chat-area::-webkit-scrollbar{width:3px}.chat-area::-webkit-scrollbar-thumb{background:rgba(255,255,255,.14);border-radius:2px}
+.msg{max-width:80%;padding:12px 16px;border-radius:var(--radius);font-size:14.5px;line-height:1.65;
+  animation:msgIn .34s cubic-bezier(.21,1.02,.55,1);word-break:break-word;position:relative}
+.msg.other{align-self:flex-start;margin-left:38px;background:var(--glass);border:1px solid var(--line);
+  border-bottom-left-radius:5px;color:var(--ink);backdrop-filter:blur(10px)}
+.msg.other::before{content:var(--char-emoji);position:absolute;left:-38px;bottom:0;width:30px;height:30px;
+  border-radius:50%;background:linear-gradient(135deg,var(--c1),var(--c2));display:flex;align-items:center;justify-content:center;
+  font-size:15px;box-shadow:0 0 10px var(--glow)}
+.msg.self{align-self:flex-end;background:linear-gradient(135deg,var(--c1),var(--c2));color:#fff;
+  border-bottom-right-radius:5px;box-shadow:0 4px 18px var(--glow);font-weight:500}
+.msg.system{align-self:center;background:rgba(255,255,255,.04);border:1px dashed rgba(255,255,255,.12);
+  color:var(--ink2);font-size:12.5px;padding:7px 18px;border-radius:30px;max-width:92%}
+.msg .name{font-size:11.5px;font-weight:600;background:linear-gradient(90deg,var(--c1),var(--c2));
+  -webkit-background-clip:text;background-clip:text;color:transparent;margin-bottom:4px}
+.msg.self .name{color:rgba(255,255,255,.85);-webkit-background-clip:unset;background:none}
+@keyframes msgIn{from{opacity:0;transform:translateY(14px) scale(.96)}to{opacity:1;transform:translateY(0) scale(1)}}
+/* ── 选项 ── */
+.options{display:flex;flex-direction:column;gap:9px;padding:12px 14px calc(16px + env(safe-area-inset-bottom));
+  border-top:1px solid var(--line);background:rgba(255,255,255,.025);backdrop-filter:blur(14px)}
+.opt{background:var(--glass);border:1px solid var(--line);border-radius:14px;padding:13px 18px;font-size:14px;
+  color:var(--ink);cursor:pointer;transition:all .18s;text-align:left;line-height:1.55;backdrop-filter:blur(8px)}
+.opt:hover{border-color:var(--c2);box-shadow:0 0 0 1px var(--c2),0 4px 20px var(--glow);transform:translateY(-1px)}
+.opt:active{transform:scale(.97)}
+.opt.selected{background:linear-gradient(135deg,var(--c1),var(--c2));color:#fff;border-color:transparent;box-shadow:0 4px 18px var(--glow)}
+.opt:disabled{opacity:.35;cursor:default}
+/* ── 角色选择 ── */
+.cs-head{padding:34px 24px 6px;text-align:center}
+.cs-head h2{font-size:22px;font-weight:750;letter-spacing:1px}
+.cs-head p{font-size:12.5px;color:var(--ink2);margin-top:6px;letter-spacing:.4px}
+.char-grid{display:flex;gap:16px;padding:26px 20px 40px;flex:1;align-items:center}
+.char-card{flex:1;background:var(--glass);border:1px solid var(--line);border-radius:22px;padding:30px 14px 26px;
+  text-align:center;cursor:pointer;transition:all .22s;backdrop-filter:blur(12px);position:relative;overflow:hidden}
+.char-card::before{content:'';position:absolute;inset:0;background:radial-gradient(80% 55% at 50% 0%,var(--cc-glow,rgba(255,94,142,.16)),transparent 70%);pointer-events:none}
+.char-card.xing{--cc-glow:rgba(167,139,250,.18)}
+.char-card:hover{transform:translateY(-4px);border-color:rgba(255,255,255,.22);box-shadow:0 18px 44px rgba(0,0,0,.5)}
+.char-card:active{transform:scale(.96)}
+.char-card .avatar{width:84px;height:84px;border-radius:50%;margin:0 auto 14px;display:flex;align-items:center;justify-content:center;
+  font-size:38px;background:linear-gradient(135deg,#ff9a76,#ff5e8e);box-shadow:0 0 26px rgba(255,94,142,.4);position:relative}
+.char-card.xing .avatar{background:linear-gradient(135deg,#7dd8ff,#a78bfa);box-shadow:0 0 26px rgba(167,139,250,.45)}
+.char-card h3{font-size:17px;margin-bottom:6px;letter-spacing:2px}
+.char-card p{font-size:12.5px;color:var(--ink2);line-height:1.7}
+.char-card .tagline{display:inline-block;margin-top:12px;font-size:11px;padding:4px 12px;border-radius:99px;
+  border:1px solid var(--line);color:var(--ink2);letter-spacing:.5px}
+/* ── 结局屏 ── */
+.result{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 28px;text-align:center;position:relative;z-index:1}
+#victory{background:radial-gradient(130% 70% at 50% 110%,rgba(255,94,142,.30),transparent 60%),
+  radial-gradient(100% 50% at 50% -10%,rgba(167,139,250,.22),transparent 65%),#0a0812}
+#defeat{background:radial-gradient(120% 60% at 50% 115%,rgba(90,110,160,.22),transparent 62%),#0a0a10}
+#victory::before,#defeat::before{content:'';position:absolute;inset:0;pointer-events:none;opacity:.9;
+  background-image:radial-gradient(1.6px 1.6px at 12% 22%,rgba(255,255,255,.9),transparent 60%),
+   radial-gradient(1.2px 1.2px at 32% 12%,rgba(255,255,255,.7),transparent 60%),
+   radial-gradient(1.8px 1.8px at 55% 28%,rgba(255,255,255,.85),transparent 60%),
+   radial-gradient(1.2px 1.2px at 71% 15%,rgba(255,255,255,.6),transparent 60%),
+   radial-gradient(1.5px 1.5px at 86% 32%,rgba(255,255,255,.8),transparent 60%),
+   radial-gradient(1.2px 1.2px at 22% 44%,rgba(255,255,255,.55),transparent 60%),
+   radial-gradient(1.4px 1.4px at 64% 48%,rgba(255,255,255,.6),transparent 60%),
+   radial-gradient(1.1px 1.1px at 91% 55%,rgba(255,255,255,.5),transparent 60%)}
+#defeat::before{opacity:.35}
+.result .icon{font-size:74px;margin-bottom:18px;animation:heartFloat 2.6s ease-in-out infinite;filter:drop-shadow(0 0 26px var(--glow))}
+@keyframes heartFloat{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-10px) scale(1.06)}}
+.result h2{font-size:30px;font-weight:800;margin-bottom:12px;letter-spacing:2px;
+  background:linear-gradient(120deg,#ffd9a0,var(--c2) 55%,#c9a0ff);-webkit-background-clip:text;background-clip:text;color:transparent}
+#defeat .result h2{background:linear-gradient(120deg,#aab3cc,#7c88aa);-webkit-background-clip:text;background-clip:text;color:transparent}
+.result p{color:var(--ink2);margin-bottom:30px;font-size:14.5px;line-height:1.85;max-width:300px}
+.btn{background:linear-gradient(135deg,var(--c1),var(--c2));color:#fff;border:none;border-radius:99px;
+  padding:15px 46px;font-size:16px;font-weight:650;cursor:pointer;transition:all .2s;box-shadow:0 8px 28px var(--glow);letter-spacing:1px}
+.btn:hover{transform:translateY(-2px)}.btn:active{transform:scale(.95)}
+.btn-outline{background:transparent;color:var(--ink);border:1px solid var(--line);border-radius:99px;padding:15px 46px;font-size:16px;cursor:pointer}
+/* ── Splash ── */
+#splash{background:radial-gradient(120% 60% at 50% -5%,rgba(255,94,142,.28),transparent 60%),
+  radial-gradient(110% 55% at 85% 108%,rgba(125,216,255,.16),transparent 60%),
+  radial-gradient(90% 45% at 8% 100%,rgba(167,139,250,.18),transparent 62%),#0a0812}
+#splash::before{content:'';position:absolute;inset:0;pointer-events:none;
+  background-image:radial-gradient(1.5px 1.5px at 15% 18%,rgba(255,255,255,.8),transparent 60%),
+   radial-gradient(1.2px 1.2px at 42% 9%,rgba(255,255,255,.55),transparent 60%),
+   radial-gradient(1.8px 1.8px at 68% 22%,rgba(255,255,255,.75),transparent 60%),
+   radial-gradient(1.2px 1.2px at 88% 12%,rgba(255,255,255,.5),transparent 60%),
+   radial-gradient(1.3px 1.3px at 25% 78%,rgba(255,255,255,.4),transparent 60%),
+   radial-gradient(1.6px 1.6px at 79% 84%,rgba(255,255,255,.5),transparent 60%)}
+.splash{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;position:relative;z-index:1}
+.sp-logo{width:104px;height:104px;border-radius:32px;display:flex;align-items:center;justify-content:center;font-size:52px;
+  background:linear-gradient(135deg,#ff9a76,#ff5e8e 55%,#a78bfa);box-shadow:0 16px 48px rgba(255,94,142,.45),inset 0 1px 0 rgba(255,255,255,.35);
+  margin-bottom:18px;animation:logoBreath 3.2s ease-in-out infinite}
+@keyframes logoBreath{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+.splash h1{font-size:34px;font-weight:800;letter-spacing:1.5px;
+  background:linear-gradient(115deg,#ffd9a0,#ff5e8e 50%,#c9a0ff);-webkit-background-clip:text;background-clip:text;color:transparent}
+.splash p{color:var(--ink2);font-size:13.5px;letter-spacing:3px;margin-top:2px}
+.tap-start{margin-top:38px;font-size:14px;color:var(--ink);border:1px solid rgba(255,255,255,.22);
+  padding:13px 44px;border-radius:99px;letter-spacing:4px;animation:pulse 2.2s ease infinite;
+  background:rgba(255,255,255,.05);backdrop-filter:blur(8px)}
+@keyframes pulse{0%,100%{opacity:.65;box-shadow:0 0 0 0 rgba(255,94,142,.35)}50%{opacity:1;box-shadow:0 0 26px 2px rgba(255,94,142,.35)}}
 </style>
 </head>
 <body>
@@ -63,7 +141,7 @@ body{font-family:-apple-system,'Segoe UI','Noto Sans SC',sans-serif;background:v
 <!-- Splash -->
 <div id="splash" class="screen active" data-comp-id="splash-screen">
   <div class="splash">
-    <div style="font-size:48px">💬</div>
+    <div class="sp-logo">💬</div>
     <h1>Chat Master</h1>
     <p>聊天恋爱模拟 · 用心跳选择</p>
     <div class="tap-start">点击开始</div>
@@ -72,28 +150,32 @@ body{font-family:-apple-system,'Segoe UI','Noto Sans SC',sans-serif;background:v
 
 <!-- Character Select -->
 <div id="char-select" class="screen" data-comp-id="char-select">
-  <div class="header"><h2>选择攻略对象</h2></div>
+  <div class="cs-head"><h2>选择攻略对象</h2><p>今晚，想和谁聊到心动？</p></div>
   <div class="char-grid">
-    <div class="char-card" onclick="startGame('shuo')">
+    <div class="char-card shuo" onclick="startGame('shuo')">
       <div class="avatar">🎭</div>
       <h3>朔</h3>
       <p>温柔学长<br>图书馆偶遇</p>
+      <span class="tagline">春日午后的风</span>
     </div>
-    <div class="char-card" onclick="startGame('xing')">
+    <div class="char-card xing" onclick="startGame('xing')">
       <div class="avatar">🎸</div>
       <h3>星</h3>
       <p>酷飒社团人<br>天台初遇</p>
+      <span class="tagline">天台上的和弦</span>
     </div>
   </div>
 </div>
 
 <!-- Game -->
 <div id="game" class="screen" data-comp-id="game-screen">
+  <div class="statusbar"><span>21:34</span><span class="sb-r">●●● 5G ▮▮▮▯</span></div>
   <div class="header">
     <button class="back" onclick="backToChar()">✕</button>
-    <h2 id="char-name">朔</h2>
+    <div class="hd-ava"></div>
+    <div class="hd-meta"><h2 id="char-name">朔</h2><span class="hd-sub">在线 · 正在和你聊天</span></div>
   </div>
-  <div class="affinity-bar"><div class="affinity-fill" id="affinity-fill" style="width:10%"></div></div>
+  <div class="affinity-wrap"><span class="hearts">💗</span><div class="affinity-bar"><div class="affinity-fill" id="affinity-fill" style="width:10%"></div></div></div>
   <div class="affinity-label"><span id="affinity-text">好感度: 10</span><span id="target-text">目标: 80</span></div>
   <div class="chat-area" id="chat-area"></div>
   <div class="options" id="options"></div>
@@ -385,6 +467,7 @@ document.getElementById('splash').addEventListener('click', () => {
 
 // ===== Game =====
 function startGame(charId) {
+  document.getElementById('app').dataset.char = charId;   // 角色主题色（纯视觉）
   state.char = charId;
   state.node = 'start';
   state.affinity = 10;
