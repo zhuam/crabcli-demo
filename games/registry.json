@@ -783,6 +783,23 @@
       "version": "1.0.0",
       "featured": false,
       "rating": 4.5
+    },
+    {
+      "id": "sneak-the-fart",
+      "name": "Sneak the Fart",
+      "description": "偷偷在公共场合释放💨不被发现 — 时机选择 → 释放 → 隐藏，集齐释放数过关！",
+      "category": "casual",
+      "tags": [
+        "singleplayer",
+        "stealth",
+        "humor",
+        "short-session"
+      ],
+      "path": "/games/040-sneak-the-fart/",
+      "hasServer": false,
+      "players": "1",
+      "version": "0.1.0",
+      "rating": 3
     }
   ],
   "categories": [
