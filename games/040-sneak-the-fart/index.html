@@ -1,0 +1,1203 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#1a1a2e">
+  <title>Sneak the Fart 🍑💨</title>
+  <link rel="stylesheet" href="/games/shared/game-frame.css">
+  <style>
+    :root {
+      --bg-deep: #1a1a2e;
+      --bg-room: #f5e6d3;
+      --bg-floor: #c4956a;
+      --bg-wall: #e8d5b7;
+      --color-accent: #FF6B6B;
+      --color-success: #51CF66;
+      --color-warning: #FFD43B;
+      --text-light: #f0e6d3;
+      --text-dark: #2d2d2d;
+      --font-display: 'Arial Rounded MT Bold', 'Rounded Mplus 1c', system-ui, sans-serif;
+      --font-body: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      width: 100%; height: 100%;
+      background: var(--bg-deep);
+      overflow: hidden;
+      font-family: var(--font-body);
+      -webkit-user-select: none; user-select: none;
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
+    }
+
+    /* ─── Screens ─── */
+    .screen {
+      position: fixed; inset: 0;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      z-index: 10;
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.35s ease-out, transform 0.35s ease-out;
+      transform: scale(0.96);
+    }
+    .screen.active {
+      opacity: 1; pointer-events: all;
+      transform: scale(1);
+    }
+
+    /* ─── Title Screen ─── */
+    #screen-start {
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+      gap: 12px;
+      text-align: center;
+    }
+    .start-badge {
+      font-size: 11px; font-weight: 700; letter-spacing: 0.25em;
+      color: rgba(255,255,255,0.4); text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+    .start-title {
+      font-family: var(--font-display);
+      font-size: clamp(36px, 8vw, 64px);
+      font-weight: 800;
+      background: linear-gradient(135deg, #FF6B6B, #FFD43B, #51CF66);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+      line-height: 1.1;
+      letter-spacing: 0.02em;
+    }
+    .start-emoji {
+      font-size: clamp(48px, 10vw, 80px);
+      margin: 4px 0 8px;
+      animation: float-emoji 2s ease-in-out infinite;
+    }
+    @keyframes float-emoji {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+    }
+    .start-subtitle {
+      font-size: clamp(13px, 2.5vw, 16px);
+      color: rgba(255,255,255,0.6);
+      max-width: 280px;
+      line-height: 1.5;
+      margin-bottom: 4px;
+    }
+    .start-hint {
+      font-size: clamp(15px, 2.8vw, 19px);
+      font-weight: 700;
+      color: rgba(255,255,255,0.8);
+      letter-spacing: 0.1em;
+      margin-top: 16px;
+    }
+    @media (prefers-reduced-motion: no-preference) {
+      .start-hint { animation: pulse-hint 1.5s ease-in-out infinite alternate; }
+    }
+    @keyframes pulse-hint {
+      0% { opacity: 0.3; transform: translateY(0); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+    .start-controls {
+      font-size: 11px; color: rgba(255,255,255,0.3);
+      letter-spacing: 0.05em; margin-top: 4px;
+    }
+    .start-best {
+      margin-top: 16px;
+      font-size: 13px; color: rgba(255,215,0,0.6);
+      font-family: var(--font-display);
+    }
+    .start-best span { color: #FFD43B; font-weight: 700; }
+
+    /* ─── Game Screen ─── */
+    #screen-game {
+      background: var(--bg-deep);
+      padding: 0;
+      justify-content: center;
+    }
+    .game-container {
+      position: relative;
+      width: min(100vw, 480px);
+      height: min(100vh, 800px);
+      max-height: 100vh;
+      overflow: hidden;
+      border-radius: 12px;
+      box-shadow: 0 0 60px rgba(0,0,0,0.5);
+    }
+    #gameCanvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      touch-action: none;
+    }
+
+    /* ─── HUD ─── */
+    .hud {
+      position: absolute; top: 0; left: 0; right: 0;
+      padding: 8px 12px;
+      display: flex; align-items: center; justify-content: space-between;
+      pointer-events: none; z-index: 5;
+      background: linear-gradient(180deg, rgba(0,0,0,0.5) 0%, transparent 100%);
+    }
+    .hud-left { display: flex; align-items: center; gap: 10px; }
+    .hud-score-box {
+      background: rgba(0,0,0,0.5); border-radius: 8px;
+      padding: 4px 12px; text-align: center;
+      backdrop-filter: blur(4px);
+    }
+    .hud-score-label {
+      font-size: 8px; letter-spacing: 0.15em;
+      color: rgba(255,255,255,0.5); text-transform: uppercase;
+    }
+    .hud-score-value {
+      font-family: var(--font-display);
+      font-size: 20px; font-weight: 700; color: #fff;
+      line-height: 1.2;
+    }
+    .hud-status {
+      font-size: 13px; font-weight: 700;
+      padding: 6px 14px; border-radius: 20px;
+      background: rgba(0,0,0,0.5); backdrop-filter: blur(4px);
+      transition: all 0.3s ease;
+      text-align: center; min-width: 100px;
+    }
+    .hud-status.safe { color: #51CF66; border: 1px solid rgba(81,207,102,0.3); }
+    .hud-status.warning { color: #FFD43B; border: 1px solid rgba(255,212,59,0.3); }
+    .hud-status.danger { color: #FF6B6B; border: 1px solid rgba(255,107,107,0.3); animation: pulse-danger 0.8s ease-in-out infinite alternate; }
+    @keyframes pulse-danger { 0% { opacity: 0.7; } 100% { opacity: 1; } }
+    .hud-right { display: flex; align-items: center; gap: 8px; }
+    .hud-gas-box {
+      background: rgba(0,0,0,0.5); border-radius: 8px;
+      padding: 4px 10px; backdrop-filter: blur(4px);
+      display: flex; flex-direction: column; align-items: center; gap: 2px;
+      min-width: 70px;
+    }
+    .hud-gas-label {
+      font-size: 7px; letter-spacing: 0.1em;
+      color: rgba(255,255,255,0.4); text-transform: uppercase;
+    }
+    .hud-gas-track {
+      width: 100%; height: 4px; border-radius: 2px;
+      background: rgba(255,255,255,0.15);
+      overflow: hidden;
+    }
+    .hud-gas-fill {
+      height: 100%; border-radius: 2px;
+      transition: width 0.15s ease, background 0.3s ease;
+      width: 0%;
+    }
+    .hud-gas-fill.low { background: #51CF66; }
+    .hud-gas-fill.medium { background: #FFD43B; }
+    .hud-gas-fill.high { background: #FF6B6B; }
+    .hud-gas-fill.critical { background: #FF4444; animation: gas-pulse 0.3s ease-in-out infinite alternate; }
+    @keyframes gas-pulse { from { opacity: 0.7; } to { opacity: 1; } }
+
+    /* ─── Result Screens ─── */
+    #screen-win, #screen-lose {
+      gap: 10px;
+      padding: 40px 24px;
+      text-align: center;
+    }
+    #screen-win {
+      background: radial-gradient(ellipse at center, #1a3a2e 0%, #0a1a12 100%);
+    }
+    #screen-lose {
+      background: radial-gradient(ellipse at center, #3a1a1a 0%, #1a0a0a 100%);
+    }
+    .result-icon { font-size: clamp(60px, 14vw, 100px); }
+    .result-title {
+      font-family: var(--font-display);
+      font-size: clamp(32px, 7vw, 52px);
+      font-weight: 800;
+      letter-spacing: 0.08em;
+    }
+    #screen-win .result-title { color: #51CF66; text-shadow: 0 0 30px rgba(81,207,102,0.4); }
+    #screen-lose .result-title { color: #FF6B6B; text-shadow: 0 0 30px rgba(255,107,107,0.4); }
+    .result-subtitle {
+      font-size: clamp(14px, 3vw, 18px);
+      color: rgba(255,255,255,0.6);
+      margin-bottom: 8px;
+    }
+    .result-detail {
+      font-size: 13px; color: rgba(255,255,255,0.4);
+      margin-bottom: 4px;
+    }
+    .result-score {
+      font-family: var(--font-display);
+      font-size: clamp(20px, 4vw, 28px);
+      color: rgba(255,255,255,0.8);
+      margin: 8px 0 16px;
+    }
+    .result-score span { color: #FFD43B; font-weight: 700; }
+    .result-best {
+      font-size: 12px; color: rgba(255,255,255,0.3);
+      margin-bottom: 4px;
+    }
+    .result-best span { color: rgba(255,215,0,0.6); }
+
+    .btn-play-again {
+      font-family: var(--font-display);
+      font-size: clamp(16px, 3.5vw, 20px);
+      font-weight: 700; letter-spacing: 0.08em;
+      padding: 14px 48px;
+      border: none; border-radius: 9999px;
+      cursor: pointer;
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+      min-height: 48px; min-width: 200px;
+      margin-top: 8px;
+    }
+    #screen-win .btn-play-again {
+      background: linear-gradient(135deg, #51CF66, #2F9E44);
+      color: #fff;
+      box-shadow: 0 4px 24px rgba(81,207,102,0.3);
+    }
+    #screen-lose .btn-play-again {
+      background: linear-gradient(135deg, #FF6B6B, #C92A2A);
+      color: #fff;
+      box-shadow: 0 4px 24px rgba(255,107,107,0.3);
+    }
+    .btn-play-again:hover { transform: scale(1.05); }
+    .btn-play-again:active { transform: scale(0.97); }
+    .btn-play-again:focus-visible { outline: 2px solid #fff; outline-offset: 4px; }
+
+    /* ─── Responsive ─── */
+    @media (max-height: 600px) {
+      .game-container { width: 100vw; height: 100vh; border-radius: 0; }
+      .hud { padding: 4px 8px; }
+      .hud-score-box { padding: 2px 8px; }
+      .hud-score-value { font-size: 16px; }
+      .hud-status { font-size: 11px; padding: 4px 10px; min-width: 80px; }
+      .hud-gas-box { padding: 2px 6px; min-width: 50px; }
+    }
+    @media (min-width: 600px) {
+      .game-container { border: 2px solid rgba(255,255,255,0.06); }
+    }
+
+    /* ─── Fart Particles ─── */
+    .particle-container {
+      position: absolute; inset: 0;
+      pointer-events: none; z-index: 4;
+      overflow: hidden;
+    }
+    .fart-particle {
+      position: absolute;
+      font-size: clamp(16px, 4vw, 32px);
+      opacity: 0;
+      animation: float-up 1.2s ease-out forwards;
+      pointer-events: none;
+    }
+    @keyframes float-up {
+      0% { opacity: 0.8; transform: translateY(0) scale(0.5); }
+      30% { opacity: 1; transform: translateY(-30px) scale(1.2); }
+      100% { opacity: 0; transform: translateY(-120px) scale(0.3); }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ═══ START SCREEN ═══ -->
+<div id="screen-start" class="screen active">
+  <div class="start-badge">🎮 Astrocade Original</div>
+  <div class="start-title">Sneak the Fart</div>
+  <div class="start-emoji">🍑💨</div>
+  <div class="start-subtitle">在公共场合偷偷释放&hellip;别被任何人发现！</div>
+  <div class="start-hint">▶  Press SPACE  or  Tap to Start</div>
+  <div class="start-controls">⌨️ SPACE &nbsp;|&nbsp; 🖱️ Click &nbsp;|&nbsp; 📱 Tap</div>
+  <div class="start-best" id="startBest">🏆 Best: <span>0</span></div>
+</div>
+
+<!-- ═══ GAME SCREEN ═══ -->
+<div id="screen-game" class="screen">
+  <div class="game-container" id="gameContainer">
+    <canvas id="gameCanvas"></canvas>
+
+    <!-- HUD -->
+    <div class="hud">
+      <div class="hud-left">
+        <div class="hud-score-box">
+          <div class="hud-score-label">Score</div>
+          <div class="hud-score-value" id="hudScore">0/5</div>
+        </div>
+      </div>
+      <div class="hud-status" id="hudStatus">😶 安全</div>
+      <div class="hud-right">
+        <div class="hud-gas-box">
+          <div class="hud-gas-label">💨 Pressure</div>
+          <div class="hud-gas-track">
+            <div class="hud-gas-fill" id="gasFill"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Particle container -->
+    <div class="particle-container" id="particleContainer"></div>
+  </div>
+</div>
+
+<!-- ═══ WIN SCREEN ═══ -->
+<div id="screen-win" class="screen">
+  <div class="result-icon">🎉</div>
+  <div class="result-title">CLEAN GETAWAY!</div>
+  <div class="result-subtitle">没有人发现你的小秘密&hellip; 😏</div>
+  <div class="result-detail">你成功释放了💨 × <span id="winTotal">5</span></div>
+  <div class="result-score">Score: <span id="winScore">5</span></div>
+  <div class="result-best" id="winBest">🏆 Best: <span>0</span></div>
+  <button class="btn-play-again" onclick="restartGame()">🔄 再来一局</button>
+</div>
+
+<!-- ═══ LOSE SCREEN ═══ -->
+<div id="screen-lose" class="screen">
+  <div class="result-icon">😱</div>
+  <div class="result-title">CAUGHT!</div>
+  <div class="result-subtitle">所有人都听到了&hellip; 太尴尬了 💀</div>
+  <div class="result-detail">你成功释放了💨 × <span id="loseTotal">3</span></div>
+  <div class="result-score">Score: <span id="loseScore">3</span></div>
+  <div class="result-best" id="loseBest">🏆 Best: <span>0</span></div>
+  <button class="btn-play-again" onclick="restartGame()">🔄 再来一局</button>
+</div>
+
+<!-- ════════════════════════════════════════════════ -->
+<!-- ═══ GAME SCRIPT ═══ -->
+<!-- ════════════════════════════════════════════════ -->
+<script>
+(function() {
+  'use strict';
+
+  // ── Constants ──
+  const TARGET_SCORE = 5;
+  const MAX_PRESSURE = 100;
+  const FILL_RATE = 5.5;  // per second → ~18s to full
+  const MIN_RELEASE = 18;  // minimum pressure to release
+  const WIN_RELEASES = TARGET_SCORE;
+
+  // ── DOM refs ──
+  const canvas = document.getElementById('gameCanvas');
+  const ctx = canvas.getContext('2d');
+  const container = document.getElementById('gameContainer');
+  const particleEl = document.getElementById('particleContainer');
+
+  const screens = {
+    start: document.getElementById('screen-start'),
+    game: document.getElementById('screen-game'),
+    win: document.getElementById('screen-win'),
+    lose: document.getElementById('screen-lose'),
+  };
+
+  const hudScore = document.getElementById('hudScore');
+  const hudStatus = document.getElementById('hudStatus');
+  const gasFill = document.getElementById('gasFill');
+  const startBest = document.getElementById('startBest');
+  const winBest = document.getElementById('winBest');
+  const loseBest = document.getElementById('loseBest');
+  const winTotal = document.getElementById('winTotal');
+  const loseTotal = document.getElementById('loseTotal');
+
+  // ── Canvas sizing ──
+  const VIRTUAL_W = 400;
+  const VIRTUAL_H = 700;
+
+  function resizeCanvas() {
+    const rect = container.getBoundingClientRect();
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const w = rect.width || VIRTUAL_W;
+    const h = rect.height || VIRTUAL_H;
+    canvas.width = w * dpr;
+    canvas.height = h * dpr;
+    canvas.style.width = w + 'px';
+    canvas.style.height = h + 'px';
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.scale(dpr, dpr);
+    // Store logical size for drawing
+    canvas._w = w;
+    canvas._h = h;
+  }
+
+  // ── Game State ──
+  let state = 'menu'; // menu | playing | win | lose
+  let score = 0;
+  let pressure = 0;
+  let npcs = [];
+  let playerExpr = 'normal'; // normal | nervous | relieved | caught
+  let caughtBy = null;
+  let successTimer = 0;    // brief celebration after success
+  let caughtTimer = 0;
+  let winTimer = 0;
+  let gameTime = 0;
+  let lastTime = 0;
+  let bestScore = parseInt(localStorage.getItem('sneakFart_best') || '0');
+  let shakeAmount = 0;
+
+  // ── NPCs ──
+  const NPC_COLORS = ['#E17055', '#6C5CE7', '#00B894', '#FDCB6E'];
+  const NPC_EMOJIS = ['🧑', '👩', '🧑‍🦰', '👨‍🦱'];
+  const NPC_POSITIONS = [
+    { x: 0.22, y: 0.18 },
+    { x: 0.78, y: 0.18 },
+    { x: 0.18, y: 0.70 },
+    { x: 0.82, y: 0.70 },
+  ];
+
+  function createNPCs() {
+    npcs = NPC_POSITIONS.map((pos, i) => ({
+      x: pos.x,
+      y: pos.y,
+      color: NPC_COLORS[i % NPC_COLORS.length],
+      emoji: NPC_EMOJIS[i % NPC_EMOJIS.length],
+      isLooking: true,
+      lookTimer: 0.5 + Math.random() * 1.0,  // seconds until next look change
+      lookDuration: 0,
+      state: 'looking',
+      alertness: 0.3 + Math.random() * 0.4,  // how often they look (0-1)
+      blinkTimer: Math.random() * 3,
+      confused: false,
+      confusedTimer: 0,
+    }));
+  }
+
+  function updateNPCs(dt) {
+    npcs.forEach(npc => {
+      // Blink timer (purely visual)
+      npc.blinkTimer -= dt;
+      if (npc.blinkTimer <= 0) {
+        npc.blinkTimer = 2 + Math.random() * 4;
+      }
+
+      // Confused timer after a successful fart
+      if (npc.confused) {
+        npc.confusedTimer -= dt;
+        if (npc.confusedTimer <= 0) {
+          npc.confused = false;
+        }
+        return; // Don't change look state while confused
+      }
+
+      // Look state changes
+      npc.lookTimer -= dt;
+      if (npc.lookTimer <= 0) {
+        // Switch state
+        if (npc.state === 'looking') {
+          npc.state = 'away';
+          npc.lookDuration = 1.5 + Math.random() * 3.0;
+        } else {
+          // Decide whether to look back based on alertness
+          if (Math.random() < npc.alertness) {
+            npc.state = 'looking';
+            npc.lookDuration = 1.0 + Math.random() * 2.5;
+          } else {
+            npc.state = 'away';
+            npc.lookDuration = 1.0 + Math.random() * 2.0;
+          }
+        }
+        npc.isLooking = npc.state === 'looking';
+        npc.lookTimer = npc.lookDuration;
+      }
+    });
+  }
+
+  // ── Drawing ──
+  const W = () => canvas._w || VIRTUAL_W;
+  const H = () => canvas._h || VIRTUAL_H;
+
+  function drawRoom() {
+    const w = W(), h = H();
+
+    // Wall
+    const wallGrad = ctx.createLinearGradient(0, 0, 0, h * 0.65);
+    wallGrad.addColorStop(0, '#f0dcc0');
+    wallGrad.addColorStop(1, '#e8d0b0');
+    ctx.fillStyle = wallGrad;
+    ctx.fillRect(0, 0, w, h * 0.65);
+
+    // Floor
+    const floorGrad = ctx.createLinearGradient(0, h * 0.65, 0, h);
+    floorGrad.addColorStop(0, '#c4956a');
+    floorGrad.addColorStop(1, '#b08050');
+    ctx.fillStyle = floorGrad;
+    ctx.fillRect(0, h * 0.65, w, h * 0.35);
+
+    // Floor planks
+    ctx.strokeStyle = 'rgba(160,110,70,0.25)';
+    ctx.lineWidth = 1;
+    for (let i = 0; i < 8; i++) {
+      const y = h * 0.65 + (h * 0.35 / 8) * i;
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(w, y);
+      ctx.stroke();
+    }
+
+    // Baseboard
+    ctx.fillStyle = '#a08060';
+    ctx.fillRect(0, h * 0.65 - 4, w, 4);
+
+    // Window on left wall
+    const winX = w * 0.08, winY = h * 0.06, winW = w * 0.2, winH = h * 0.22;
+    ctx.fillStyle = 'rgba(180, 220, 255, 0.3)';
+    ctx.fillRect(winX, winY, winW, winH);
+    ctx.strokeStyle = 'rgba(160,120,80,0.6)';
+    ctx.lineWidth = 3;
+    ctx.strokeRect(winX, winY, winW, winH);
+    // Window cross
+    ctx.beginPath();
+    ctx.moveTo(winX + winW/2, winY);
+    ctx.lineTo(winX + winW/2, winY + winH);
+    ctx.moveTo(winX, winY + winH/2);
+    ctx.lineTo(winX + winW, winY + winH/2);
+    ctx.stroke();
+    // Curtains
+    ctx.fillStyle = 'rgba(200,160,120,0.4)';
+    ctx.fillRect(winX - 4, winY, 6, winH);
+    ctx.fillRect(winX + winW - 2, winY, 6, winH);
+    // Sky through window
+    ctx.fillStyle = 'rgba(150, 200, 255, 0.15)';
+    ctx.fillRect(winX + 4, winY + 4, winW - 8, winH - 8);
+
+    // Picture frame on right wall
+    const picX = w * 0.74, picY = h * 0.05, picW = w * 0.18, picH = h * 0.16;
+    ctx.fillStyle = '#d4a574';
+    ctx.fillRect(picX, picY, picW, picH);
+    ctx.strokeStyle = 'rgba(140,100,60,0.7)';
+    ctx.lineWidth = 3;
+    ctx.strokeRect(picX, picY, picW, picH);
+    // Simple landscape inside
+    ctx.fillStyle = 'rgba(100,180,100,0.5)';
+    ctx.beginPath();
+    ctx.moveTo(picX, picY + picH);
+    ctx.lineTo(picX + picW/3, picY + picH/2);
+    ctx.lineTo(picX + picW*2/3, picY + picH*0.6);
+    ctx.lineTo(picX + picW, picY + picH/3);
+    ctx.lineTo(picX + picW, picY + picH);
+    ctx.fill();
+    ctx.fillStyle = 'rgba(255,200,100,0.4)';
+    ctx.beginPath();
+    ctx.arc(picX + picW*0.8, picY + picH*0.3, picW*0.12, 0, Math.PI*2);
+    ctx.fill();
+  }
+
+  function drawCharacter(cx, cy, config) {
+    // config: { color, expression, isLooking, isBlinking, emoji, scale, confused, isPlayer, isNPC }
+    const s = config.scale || 1;
+    const headR = 22 * s;
+    const bodyH = 50 * s;
+    const bodyW = 30 * s;
+
+    // Shadow
+    ctx.fillStyle = 'rgba(0,0,0,0.10)';
+    ctx.beginPath();
+    ctx.ellipse(cx, cy + bodyH * 0.5 + 4, bodyW * 0.7, 5 * s, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Body
+    const bodyX = cx - bodyW/2;
+    const bodyY = cy - headR - 25*s;
+    const grad = ctx.createLinearGradient(bodyX, bodyY, bodyX, bodyY + bodyH);
+    if (config.isPlayer) {
+      grad.addColorStop(0, '#4A90D9');
+      grad.addColorStop(1, '#357ABD');
+    } else {
+      grad.addColorStop(0, config.color);
+      grad.addColorStop(1, darkenColor(config.color, 0.15));
+    }
+    roundRect(ctx, bodyX, bodyY, bodyW, bodyH, 6 * s);
+    ctx.fillStyle = grad;
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(0,0,0,0.15)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    // Collar
+    if (config.isPlayer) {
+      ctx.fillStyle = '#fff';
+      ctx.beginPath();
+      ctx.moveTo(cx - 8*s, bodyY + 2);
+      ctx.lineTo(cx, bodyY + 8*s);
+      ctx.lineTo(cx + 8*s, bodyY + 2);
+      ctx.fill();
+    }
+
+    // Arms
+    ctx.strokeStyle = 'rgba(0,0,0,0.12)';
+    ctx.lineWidth = 4 * s;
+    ctx.lineCap = 'round';
+    const armY = bodyY + 10*s;
+    // Left arm
+    ctx.beginPath();
+    ctx.moveTo(bodyX, armY);
+    ctx.lineTo(bodyX - 12*s, armY + 8*s);
+    ctx.stroke();
+    // Right arm
+    ctx.beginPath();
+    ctx.moveTo(bodyX + bodyW, armY);
+    ctx.lineTo(bodyX + bodyW + 12*s, armY + 8*s);
+    ctx.stroke();
+
+    // Head
+    const headY = cy - headR - 25*s + 6*s;
+    ctx.beginPath();
+    ctx.arc(cx, headY, headR, 0, Math.PI * 2);
+    ctx.fillStyle = config.isPlayer ? '#FFE0C0' : '#F5D6B8';
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(0,0,0,0.12)';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    // Hair for player
+    if (config.isPlayer) {
+      ctx.fillStyle = '#4a3728';
+      ctx.beginPath();
+      ctx.arc(cx, headY - 4*s, headR + 1, Math.PI * 1.05, Math.PI * 1.95);
+      ctx.fill();
+    } else if (config.isNPC) {
+      // Simple hair tufts for NPCs
+      ctx.fillStyle = darkenColor(config.color, 0.3);
+      const hairColors = ['#3d2b1f', '#6b3a2a', '#8b5a2b', '#2d2d2d'];
+      ctx.fillStyle = hairColors[NPC_POSITIONS.findIndex(p => Math.abs(p.x - config.npcX) < 0.01 && Math.abs(p.y - config.npcY) < 0.01) % hairColors.length];
+      ctx.beginPath();
+      ctx.arc(cx - 10*s, headY - 16*s, 6*s, 0, Math.PI * 2);
+      ctx.arc(cx + 10*s, headY - 16*s, 6*s, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Eyes
+    const eyeY = headY - 3*s;
+    const eyeSpacing = 9 * s;
+    const eyeR = 4 * s;
+    const pupilR = 2.2 * s;
+
+    if (config.isBlinking) {
+      // Closed eyes (line)
+      ctx.strokeStyle = '#5a4030';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(cx - eyeSpacing - eyeR, eyeY);
+      ctx.lineTo(cx - eyeSpacing + eyeR, eyeY);
+      ctx.moveTo(cx + eyeSpacing - eyeR, eyeY);
+      ctx.lineTo(cx + eyeSpacing + eyeR, eyeY);
+      ctx.stroke();
+    } else {
+      // Eye whites
+      ctx.fillStyle = '#fff';
+      ctx.beginPath();
+      ctx.arc(cx - eyeSpacing, eyeY, eyeR, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(cx + eyeSpacing, eyeY, eyeR, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Pupils - direction based on looking
+      let pOffX = 0, pOffY = 0;
+      if (config.isLooking === undefined || config.isLooking) {
+        // Looking at player (center) - pupils move toward center
+        pOffX = cx > cx ? 1.5 : -1.5; // This is always 0 relative... need different approach
+        // Actually, for NPCs looking at player vs away
+        pOffX = config.isLooking ? 1.5 : -1.5;
+      }
+      if (config.isLooking === false) {
+        pOffX = -1.5;
+      }
+
+      // NPCs looking at player vs away
+      if (config.isNPC) {
+        if (config.isLooking) {
+          // Looking toward center (player)
+          const dir = cx < W()/2 ? 1.8 : -1.8;
+          pOffX = dir;
+        } else {
+          // Looking to the side (away)
+          const dir = cx < W()/2 ? -1.8 : 1.8;
+          pOffX = dir;
+        }
+      }
+
+      ctx.fillStyle = '#3a2a1a';
+      ctx.beginPath();
+      ctx.arc(cx - eyeSpacing + pOffX, eyeY + pOffY, pupilR, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(cx + eyeSpacing + pOffX, eyeY + pOffY, pupilR, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Expression / Mouth
+    const mouthY = headY + 8*s;
+    const mouthW = 8 * s;
+
+    if (config.expression === 'nervous') {
+      // Nervous wavy mouth
+      ctx.strokeStyle = '#5a4030';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(cx - mouthW, mouthY);
+      ctx.quadraticCurveTo(cx - mouthW/2, mouthY - 3*s, cx, mouthY);
+      ctx.quadraticCurveTo(cx + mouthW/2, mouthY + 3*s, cx + mouthW, mouthY);
+      ctx.stroke();
+      // Sweat drop
+      ctx.fillStyle = 'rgba(100,180,255,0.5)';
+      ctx.beginPath();
+      ctx.ellipse(cx + 14*s, headY - 12*s, 2.5*s, 4*s, 0, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (config.expression === 'caught' || config.expression === 'shocked') {
+      // Shocked O mouth
+      ctx.fillStyle = '#3a2a1a';
+      ctx.beginPath();
+      ctx.ellipse(cx, mouthY + 2, 5*s, 6*s, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#8a2020';
+      ctx.beginPath();
+      ctx.ellipse(cx, mouthY, 4*s, 4*s, 0, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (config.expression === 'relieved' || config.expression === 'happy') {
+      // Smile
+      ctx.strokeStyle = '#5a4030';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.arc(cx, mouthY, mouthW, 0.1, Math.PI - 0.1);
+      ctx.stroke();
+      // Blush
+      ctx.fillStyle = 'rgba(255,100,100,0.15)';
+      ctx.beginPath();
+      ctx.ellipse(cx - 12*s, mouthY + 2*s, 4*s, 3*s, 0, 0, Math.PI * 2);
+      ctx.ellipse(cx + 12*s, mouthY + 2*s, 4*s, 3*s, 0, 0, Math.PI * 2);
+      ctx.fill();
+    } else {
+      // Normal expression - slight smile
+      ctx.strokeStyle = '#5a4030';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.arc(cx, headY + 6*s, 4*s, 0.2, Math.PI - 0.2);
+      ctx.stroke();
+    }
+
+    // Confused indicator
+    if (config.confused) {
+      ctx.font = `${20*s}px sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.fillText('❓', cx + 22*s, headY - 22*s);
+    }
+  }
+
+  function drawPlayer() {
+    const px = W() / 2;
+    const py = H() * 0.46;
+
+    let expr = playerExpr;
+    if (successTimer > 0) expr = 'relieved';
+    else if (caughtTimer > 0) expr = 'caught';
+    else if (pressure > 65) expr = 'nervous';
+    else expr = 'normal';
+
+    const isBlinking = Math.sin(gameTime * 2) < -0.85;
+
+    drawCharacter(px, py, {
+      isPlayer: true,
+      expression: expr,
+      isBlinking: isBlinking,
+      scale: 1.1,
+    });
+
+    // "!" warning when pressure is high
+    if (pressure > 75 && caughtTimer <= 0) {
+      const pulse = Math.sin(gameTime * 8) * 0.3 + 0.7;
+      ctx.globalAlpha = pulse;
+      ctx.font = '28px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('❗', px + 28, py - 55);
+      ctx.globalAlpha = 1;
+    }
+  }
+
+  function drawNPCs() {
+    const w = W(), h = H();
+    npcs.forEach((npc, i) => {
+      const nx = npc.x * w;
+      const ny = npc.y * h;
+      drawCharacter(nx, ny, {
+        color: npc.color,
+        expression: caughtTimer > 0 ? 'shocked' : 'normal',
+        isLooking: npc.isLooking,
+        isBlinking: npc.blinkTimer < 0.12,
+        isNPC: true,
+        npcX: npc.x,
+        npcY: npc.y,
+        confused: npc.confused,
+        scale: 0.85,
+      });
+
+      // Look direction indicator
+      if (npc.isLooking) {
+        ctx.fillStyle = 'rgba(255,60,60,0.7)';
+        ctx.font = '12px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('👀', nx, ny - 52);
+      } else if (!npc.isLooking) {
+        ctx.fillStyle = 'rgba(100,100,100,0.4)';
+        ctx.font = '12px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('💭', nx, ny - 52);
+      }
+    });
+  }
+
+  function drawGasMeterVisual() {
+    const w = W(), h = H();
+    // Side gas meter (visual)
+    const barX = w * 0.04;
+    const barY = h * 0.25;
+    const barW = 14;
+    const barH = h * 0.35;
+
+    // Background
+    ctx.fillStyle = 'rgba(0,0,0,0.15)';
+    roundRect(ctx, barX, barY, barW, barH, 6);
+    ctx.fill();
+
+    // Fill
+    const fillH = (pressure / MAX_PRESSURE) * barH;
+    if (fillH > 0) {
+      const fillY = barY + barH - fillH;
+      let color;
+      if (pressure < 35) color = '#51CF66';
+      else if (pressure < 60) color = '#FFD43B';
+      else if (pressure < 80) color = '#FF922B';
+      else color = '#FF6B6B';
+      ctx.fillStyle = color;
+      roundRect(ctx, barX + 2, fillY + 2, barW - 4, fillH - 4, 4);
+      ctx.fill();
+    }
+
+    // Label
+    ctx.fillStyle = 'rgba(255,255,255,0.3)';
+    ctx.font = '7px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('💨', barX + barW/2, barY + barH + 16);
+  }
+
+  // ── Helpers ──
+  function roundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + w - r, y);
+    ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+    ctx.lineTo(x + w, y + h - r);
+    ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    ctx.lineTo(x + r, y + h);
+    ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+    ctx.lineTo(x, y + r);
+    ctx.quadraticCurveTo(x, y, x + r, y);
+    ctx.closePath();
+  }
+
+  function darkenColor(hex, amount) {
+    const num = parseInt(hex.slice(1), 16);
+    const r = Math.max(0, (num >> 16) - Math.round(255 * amount));
+    const g = Math.max(0, ((num >> 8) & 0x00FF) - Math.round(255 * amount));
+    const b = Math.max(0, (num & 0x0000FF) - Math.round(255 * amount));
+    return `rgb(${r},${g},${b})`;
+  }
+
+  // ── Particles ──
+  function spawnFartParticles() {
+    const px = W() / 2;
+    const py = H() * 0.46;
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = rect.width / (canvas._w || VIRTUAL_W);
+    const scaleY = rect.height / (canvas._h || VIRTUAL_H);
+    const cx = px * scaleX;
+    const cy = py * scaleY + 20;
+
+    const emojis = ['💨', '💨', '🌪️', '💨', '💨'];
+    for (let i = 0; i < 5; i++) {
+      const el = document.createElement('div');
+      el.className = 'fart-particle';
+      el.textContent = emojis[i % emojis.length];
+      el.style.left = (cx + (Math.random() - 0.5) * 60) + 'px';
+      el.style.top = (cy + (Math.random() - 0.5) * 20) + 'px';
+      el.style.animationDuration = (0.8 + Math.random() * 0.6) + 's';
+      el.style.animationDelay = (i * 0.07) + 's';
+      particleEl.appendChild(el);
+      setTimeout(() => el.remove(), 2000);
+    }
+  }
+
+  // ── Screen Management ──
+  function showScreen(name) {
+    Object.keys(screens).forEach(key => {
+      screens[key].classList.toggle('active', key === name);
+    });
+  }
+
+  function startGame() {
+    score = 0;
+    pressure = 0;
+    playerExpr = 'normal';
+    caughtBy = null;
+    successTimer = 0;
+    caughtTimer = 0;
+    winTimer = 0;
+    gameTime = 0;
+    shakeAmount = 0;
+    createNPCs();
+    state = 'playing';
+    showScreen('game');
+    updateHUD();
+    particleEl.innerHTML = '';
+  }
+
+  function gameOver(reason) {
+    state = 'lose';
+    caughtTimer = 1.5;
+    playerExpr = 'caught';
+    shakeAmount = 8;
+
+    // Update best
+    if (score > bestScore) {
+      bestScore = score;
+      localStorage.setItem('sneakFart_best', String(bestScore));
+    }
+
+    // Update lose screen
+    loseTotal.textContent = score;
+    document.getElementById('loseScore').textContent = score;
+    loseBest.querySelector('span').textContent = bestScore;
+
+    // Delay showing lose screen
+    setTimeout(() => {
+      showScreen('lose');
+    }, 1200);
+  }
+
+  function gameWin() {
+    state = 'win';
+    winTimer = 1.0;
+
+    // Update best
+    if (score > bestScore) {
+      bestScore = score;
+      localStorage.setItem('sneakFart_best', String(bestScore));
+    }
+
+    // Update win screen
+    winTotal.textContent = score;
+    document.getElementById('winScore').textContent = score;
+    winBest.querySelector('span').textContent = bestScore;
+
+    // Brief celebration then show win
+    setTimeout(() => {
+      showScreen('win');
+    }, 600);
+  }
+
+  window.restartGame = function() {
+    startGame();
+  };
+
+  // ── HUD Update ──
+  function updateHUD() {
+    hudScore.textContent = `${score}/${WIN_RELEASES}`;
+
+    // Gas fill
+    const pct = Math.min(pressure / MAX_PRESSURE * 100, 100);
+    gasFill.style.width = pct + '%';
+    gasFill.className = 'hud-gas-fill';
+    if (pressure < 35) gasFill.classList.add('low');
+    else if (pressure < 60) gasFill.classList.add('medium');
+    else if (pressure < 80) gasFill.classList.add('high');
+    else gasFill.classList.add('critical');
+
+    // Status
+    const allSafe = npcs.every(n => !n.isLooking || n.confused);
+    if (caughtTimer > 0) {
+      hudStatus.textContent = '😱 被发现了！';
+      hudStatus.className = 'hud-status danger';
+    } else if (successTimer > 0) {
+      hudStatus.textContent = '😏 释放成功！';
+      hudStatus.className = 'hud-status safe';
+    } else if (pressure < MIN_RELEASE) {
+      hudStatus.textContent = '😶 积蓄中...';
+      hudStatus.className = 'hud-status';
+    } else if (allSafe) {
+      hudStatus.textContent = '✅ 安全！上！';
+      hudStatus.className = 'hud-status safe';
+    } else {
+      const lookingCount = npcs.filter(n => n.isLooking && !n.confused).length;
+      if (lookingCount === 1) {
+        hudStatus.textContent = '👀 有人在看！';
+        hudStatus.className = 'hud-status warning';
+      } else {
+        hudStatus.textContent = '👀👀 有人在看！';
+        hudStatus.className = 'hud-status danger';
+      }
+    }
+  }
+
+  // ── Action (space / click / tap) ──
+  function performAction() {
+    if (state === 'menu') {
+      startGame();
+      return;
+    }
+    if (state !== 'playing') return;
+    if (successTimer > 0 || caughtTimer > 0) return;
+
+    const allSafe = npcs.every(n => !n.isLooking || n.confused);
+
+    if (pressure < MIN_RELEASE) {
+      // Not enough pressure - show subtle hint
+      shakeAmount = 3;
+      return;
+    }
+
+    if (allSafe) {
+      // SUCCESS!
+      score++;
+      pressure = 0;
+      successTimer = 0.8;
+      playerExpr = 'relieved';
+      spawnFartParticles();
+
+      // NPCs get briefly confused
+      npcs.forEach(npc => {
+        npc.confused = true;
+        npc.confusedTimer = 0.8 + Math.random() * 0.6;
+        npc.isLooking = false;
+      });
+
+      updateHUD();
+
+      if (score >= WIN_RELEASES) {
+        setTimeout(gameWin, 500);
+      }
+    } else {
+      // CAUGHT!
+      shakeAmount = 12;
+      gameOver('caught');
+    }
+  }
+
+  // ── Input ──
+  document.addEventListener('keydown', (e) => {
+    if (e.code === 'Space' || e.code === 'Enter') {
+      e.preventDefault();
+      performAction();
+    }
+  });
+
+  document.addEventListener('click', (e) => {
+    // Don't trigger on button clicks
+    if (e.target.closest('.btn-play-again')) return;
+    performAction();
+  });
+
+  document.addEventListener('touchstart', (e) => {
+    if (e.target.closest('.btn-play-again')) return;
+    e.preventDefault();
+    performAction();
+  }, { passive: false });
+
+  // ── Game Loop ──
+  function gameLoop(timestamp) {
+    const now = timestamp / 1000;
+    const dt = Math.min(lastTime ? now - lastTime : 0.016, 0.05);
+    lastTime = now;
+
+    if (state === 'playing') {
+      gameTime += dt;
+      update(dt);
+    }
+
+    render();
+    requestAnimationFrame(gameLoop);
+  }
+
+  function update(dt) {
+    // Update gas pressure
+    if (successTimer > 0) {
+      successTimer -= dt;
+      if (successTimer <= 0) {
+        successTimer = 0;
+        playerExpr = 'normal';
+      }
+    } else if (caughtTimer > 0) {
+      caughtTimer -= dt;
+      shakeAmount *= 0.9;
+    } else {
+      pressure = Math.min(pressure + FILL_RATE * dt, MAX_PRESSURE);
+
+      // Auto-fail if pressure maxes out
+      if (pressure >= MAX_PRESSURE) {
+        gameOver('overflow');
+        return;
+      }
+    }
+
+    // Update NPCs
+    updateNPCs(dt);
+
+    // Update HUD
+    updateHUD();
+
+    // Shake decay
+    if (shakeAmount > 0) shakeAmount *= 0.88;
+    if (shakeAmount < 0.1) shakeAmount = 0;
+  }
+
+  function render() {
+    const w = W(), h = H();
+
+    ctx.save();
+
+    // Screen shake
+    if (shakeAmount > 0.1) {
+      const sx = (Math.random() - 0.5) * shakeAmount;
+      const sy = (Math.random() - 0.5) * shakeAmount;
+      ctx.translate(sx, sy);
+    }
+
+    // Clear
+    ctx.clearRect(-5, -5, w + 10, h + 10);
+
+    if (state === 'playing') {
+      // Draw room
+      drawRoom();
+
+      // Draw NPCs
+      drawNPCs();
+
+      // Draw player
+      drawPlayer();
+
+      // Draw gas meter visualization
+      drawGasMeterVisual();
+
+      // "Ready to release" indicator glow
+      const allSafe = npcs.every(n => !n.isLooking || n.confused);
+      if (allSafe && pressure >= MIN_RELEASE && successTimer <= 0 && caughtTimer <= 0) {
+        ctx.fillStyle = `rgba(81, 207, 102, ${0.06 + Math.sin(gameTime * 4) * 0.04})`;
+        ctx.beginPath();
+        ctx.arc(w/2, H()*0.46, 60, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    ctx.restore();
+  }
+
+  // ── Initialization ──
+  function init() {
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+
+    createNPCs();
+
+    // Show best score on start
+    startBest.querySelector('span').textContent = bestScore;
+
+    showScreen('start');
+    requestAnimationFrame(gameLoop);
+  }
+
+  init();
+})();
+</script>
+</body>
+</html>
