@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
+  <meta name="theme-color" content="#2D1B69" />
+  <title>[G040] Sneak the Fart · 偷偷放屁</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="/games/shared/game-frame.css" />
+</head>
+<body>
+
+<a href="/" class="back-to-hub" onclick="window.recordPlayed&&window.recordPlayed('sneak-the-fart')">← Arcade</a>
+
+<div id="app" class="stage">
+  <!-- ===== TITLE SCREEN ===== -->
+  <div id="screen-title" class="screen active">
+    <div class="title-bg"></div>
+    <div class="title-content">
+      <div class="title-badge">😈 潜行挑战</div>
+      <h1 class="title-main">
+        Sneak the Fart
+        <span class="title-sub">偷偷放屁</span>
+      </h1>
+      <div class="title-divider"></div>
+      <p class="title-desc">在公共场合偷偷放屁<br/>不要被任何人发现！</p>
+      <div class="title-controls">
+        <span>⌨ 按 <kbd>空格</kbd> 或</span>
+        <span>👆 点击屏幕释放</span>
+      </div>
+      <button class="btn-primary" id="btnStart">开始游戏</button>
+      <div class="title-best" id="titleBest"></div>
+    </div>
+  </div>
+
+  <!-- ===== SCENE INTRO ===== -->
+  <div id="screen-intro" class="screen">
+    <div class="intro-card">
+      <div class="intro-icon" id="introIcon">🏢</div>
+      <h2 class="intro-name" id="introName">办公室</h2>
+      <p class="intro-task" id="introTask">偷偷放屁 <strong id="introTarget">3</strong> 次</p>
+      <p class="intro-note">等没人看你的时候下手...</p>
+      <div class="intro-preview" id="introPreview">
+        <span class="intro-npc-preview">👩‍💼</span>
+        <span class="intro-npc-preview">👨‍💼</span>
+        <span class="intro-npc-preview">👩‍🔧</span>
+      </div>
+      <button class="btn-primary" id="btnBegin">准备好了！</button>
+    </div>
+  </div>
+
+  <!-- ===== GAME SCREEN ===== -->
+  <div id="screen-game" class="screen">
+    <!-- HUD -->
+    <div id="hud">
+      <div class="hud-left">
+        <span class="hud-scene-icon" id="hudSceneIcon">🏢</span>
+        <span class="hud-scene-name" id="hudSceneName">办公室</span>
+      </div>
+      <div class="hud-center">
+        <div class="hud-progress-wrap" id="hudProgressWrap">
+          <div class="hud-progress-fill" id="hudProgressFill"></div>
+        </div>
+        <span class="hud-progress-text" id="hudProgressText">0/3</span>
+      </div>
+      <div class="hud-right">
+        <span class="hud-life" id="hudLives">❤️❤️❤️</span>
+        <button class="hud-sfx-btn" id="sfxBtn" aria-label="音效开关">🔊</button>
+      </div>
+    </div>
+
+    <!-- Scene area -->
+    <div id="scene-area">
+      <!-- Scene background decorations -->
+      <div id="sceneDecor"></div>
+      <!-- NPCs rendered here by JS -->
+      <div id="npc-container"></div>
+      <!-- Player character -->
+      <div id="player-area">
+        <div class="player-char" id="playerChar">😬</div>
+        <div class="player-shadow"></div>
+      </div>
+      <!-- Fart cloud (animated) -->
+      <div id="fartCloud" class="fart-cloud">💨</div>
+      <!-- Caught overlay -->
+      <div id="caughtOverlay" class="caught-overlay">
+        <div class="caught-face">😱</div>
+        <div class="caught-text">被发现了！！！</div>
+      </div>
+    </div>
+
+    <!-- Bottom bar -->
+    <div id="bottom-bar">
+      <div class="risk-indicator" id="riskIndicator">
+        <span class="risk-dot" id="riskDot">🟢</span>
+        <span class="risk-label" id="riskLabel">安全</span>
+      </div>
+      <button class="btn-action" id="actionBtn">
+        <span class="btn-action-icon">💨</span>
+        <span class="btn-action-text">释放</span>
+      </button>
+      <div class="hint-text" id="hintText">等待时机...</div>
+    </div>
+  </div>
+
+  <!-- ===== SCENE COMPLETE ===== -->
+  <div id="screen-scene-done" class="screen">
+    <div class="result-card">
+      <div class="result-big-icon" id="sceneDoneIcon">🎉</div>
+      <h2 id="sceneDoneTitle">过关！</h2>
+      <p id="sceneDoneDesc">没有被任何人发现！</p>
+      <button class="btn-primary" id="btnNextScene">下一关</button>
+    </div>
+  </div>
+
+  <!-- ===== VICTORY ===== -->
+  <div id="screen-victory" class="screen">
+    <div class="result-card victory">
+      <div class="victory-fireworks">🎆🎇✨</div>
+      <h2 class="victory-title">全部通关！</h2>
+      <p class="victory-sub">你是个潜行大师！🕵️</p>
+      <div class="victory-stats" id="victoryStats"></div>
+      <button class="btn-primary" id="btnReplay">再来一局</button>
+    </div>
+  </div>
+
+  <!-- ===== GAME OVER ===== -->
+  <div id="screen-gameover" class="screen">
+    <div class="result-card gameover">
+      <div class="gameover-icon">💀</div>
+      <h2 class="gameover-title">社死了...</h2>
+      <p class="gameover-sub">你被所有人发现了...😳</p>
+      <div class="victory-stats" id="gameoverStats"></div>
+      <button class="btn-primary" id="btnRetry">再试一次</button>
+    </div>
+  </div>
+
+  <!-- ===== SETTINGS ===== -->
+  <div id="screen-settings" class="screen">
+    <div class="settings-card">
+      <h2 class="settings-title">设置</h2>
+      <div class="settings-row">
+        <span>🔊 音效</span>
+        <label class="toggle">
+          <input type="checkbox" id="toggleSfx" checked />
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+      <div class="settings-row">
+        <span>📳 震动</span>
+        <label class="toggle">
+          <input type="checkbox" id="toggleHaptic" checked />
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+      <button class="btn-primary" id="btnCloseSettings">返回</button>
+    </div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
