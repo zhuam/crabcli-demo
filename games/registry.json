@@ -353,6 +353,46 @@
       "rating": 4.2
     },
     {
+      "id": "enchanted-garden-match",
+      "name": "Enchanted Garden Match",
+      "description": "魔法花园三消 — 匹配花朵充能法术，击溃暗影领主！触屏/鼠标/键盘全支持",
+      "category": "puzzle",
+      "tags": [
+        "singleplayer",
+        "puzzle",
+        "match-3",
+        "magic",
+        "short-session"
+      ],
+      "thumbnail": "/games/044-enchanted-garden-match/thumb.svg",
+      "path": "/games/044-enchanted-garden-match/",
+      "hasServer": false,
+      "players": "1",
+      "version": "1.0.0",
+      "featured": true,
+      "rating": 4.3
+    },
+    {
+      "id": "gridlock-garden",
+      "name": "Gridlock Garden",
+      "description": "植物按网格规则种入花园解开谜题 — 拖放种植，满足相邻规则，通关所有关卡",
+      "category": "puzzle",
+      "tags": [
+        "singleplayer",
+        "puzzle",
+        "garden",
+        "drag",
+        "short-session"
+      ],
+      "thumbnail": "/games/042-gridlock-garden/thumb.svg",
+      "path": "/games/042-gridlock-garden/",
+      "hasServer": false,
+      "players": "1",
+      "version": "1.0.0",
+      "featured": true,
+      "rating": 4.0
+    },
+    {
       "id": "chat-master",
       "name": "Chat Master",
       "description": "聊天恋爱模拟 — 选择回复推进剧情，达成目标好感度通关",
@@ -783,6 +823,26 @@
       "version": "1.0.0",
       "featured": false,
       "rating": 4.5
+    },
+    {
+      "id": "sneak-the-fart",
+      "name": "Sneak the Fart",
+      "description": "偷偷放屁不被发现 — 时机选择→释放→隐藏，在四个场景中完成潜行挑战",
+      "category": "casual",
+      "tags": [
+        "singleplayer",
+        "casual",
+        "stealth",
+        "timing",
+        "humor",
+        "short-session"
+      ],
+      "path": "/games/040-sneak-the-fart/",
+      "hasServer": false,
+      "players": "1",
+      "version": "1.0.0",
+      "featured": true,
+      "rating": 4
     }
   ],
   "categories": [

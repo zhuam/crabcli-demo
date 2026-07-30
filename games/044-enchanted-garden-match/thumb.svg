@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1a0a2e"/>
+      <stop offset="100%" stop-color="#0d001a"/>
+    </linearGradient>
+    <linearGradient id="glow" cx="50%" cy="50%" r="50%" gradientUnits="objectBoundingBox">
+      <stop offset="0%" stop-color="#b44aff" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#b44aff" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <rect width="128" height="128" fill="url(#bg)" rx="16"/>
+  <!-- Stars -->
+  <circle cx="20" cy="15" r="1" fill="#fff" opacity="0.6"/>
+  <circle cx="108" cy="25" r="1" fill="#fff" opacity="0.4"/>
+  <circle cx="95" cy="10" r="0.8" fill="#fff" opacity="0.5"/>
+  <circle cx="30" cy="30" r="0.8" fill="#fff" opacity="0.3"/>
+  <!-- Board background -->
+  <rect x="24" y="40" width="80" height="80" rx="6" fill="rgba(180,74,255,0.08)" stroke="rgba(180,74,255,0.2)" stroke-width="1"/>
+  <!-- Flower icons on board -->
+  <text x="34" y="58" font-size="14">🌸</text>
+  <text x="54" y="58" font-size="14">🌻</text>
+  <text x="74" y="58" font-size="14">🌺</text>
+  <text x="34" y="78" font-size="14">💜</text>
+  <text x="54" y="78" font-size="14">🌿</text>
+  <text x="74" y="78" font-size="14">💎</text>
+  <text x="34" y="98" font-size="14">🌹</text>
+  <text x="54" y="98" font-size="14">🌸</text>
+  <text x="74" y="98" font-size="14">🌻</text>
+  <!-- Boss silhouette -->
+  <circle cx="110" cy="20" r="10" fill="rgba(255,255,255,0.05)" stroke="rgba(255,0,100,0.3)" stroke-width="1"/>
+  <text x="103" y="25" font-size="14">👹</text>
+  <!-- Spell glow -->
+  <circle cx="64" cy="30" r="18" fill="url(#glow)"/>
+  <text x="53" y="36" font-size="20">✨</text>
+  <!-- Title -->
+  <text x="64" y="132" text-anchor="middle" font-size="8" fill="rgba(255,255,255,0.5)" font-family="system-ui">Enchanted Garden</text>
+</svg>
