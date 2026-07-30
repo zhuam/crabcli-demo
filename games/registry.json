@@ -783,6 +783,26 @@
       "version": "1.0.0",
       "featured": false,
       "rating": 4.5
+    },
+    {
+      "id": "sneak-the-fart",
+      "name": "Sneak the Fart",
+      "description": "偷偷放屁不被发现 — 时机选择→释放→隐藏，在四个场景中完成潜行挑战",
+      "category": "casual",
+      "tags": [
+        "singleplayer",
+        "casual",
+        "stealth",
+        "timing",
+        "humor",
+        "short-session"
+      ],
+      "path": "/games/040-sneak-the-fart/",
+      "hasServer": false,
+      "players": "1",
+      "version": "1.0.0",
+      "featured": true,
+      "rating": 4
     }
   ],
   "categories": [
