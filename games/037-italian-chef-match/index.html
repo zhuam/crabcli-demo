@@ -903,7 +903,6 @@
       applyGravity(state.grid);
       renderGrid();
 
-      var self = this;
       setTimeout(function() {
         var newMatches = findMatches(state.grid);
         if (newMatches.length > 0) {
@@ -944,7 +943,6 @@
     vibrate(20);
     renderGrid();
 
-    var self = this;
     setTimeout(function() {
       applyGravity(state.grid);
       renderGrid();
@@ -969,30 +967,35 @@
   }
 
   function shuffleGrid() {
-    // Collect all values
-    var vals = [];
-    for (var r = 0; r < ROWS; r++) {
-      for (var c = 0; c < COLS; c++) {
-        vals.push(state.grid[r][c]);
+    var attempts = 0;
+    while (attempts++ < 20) {
+      // Collect all values
+      var vals = [];
+      for (var r = 0; r < ROWS; r++) {
+        for (var c = 0; c < COLS; c++) {
+          vals.push(state.grid[r][c]);
+        }
+      }
+      // Fisher-Yates shuffle
+      for (var i = vals.length - 1; i > 0; i--) {
+        var j = Math.floor(Math.random() * (i + 1));
+        var tmp = vals[i]; vals[i] = vals[j]; vals[j] = tmp;
+      }
+      // Refill grid
+      var idx = 0;
+      for (var r2 = 0; r2 < ROWS; r2++) {
+        for (var c2 = 0; c2 < COLS; c2++) {
+          state.grid[r2][c2] = vals[idx++];
+        }
+      }
+      // Check if clean
+      if (findMatches(state.grid).length === 0 && hasValidMoves(state.grid)) {
+        renderGrid();
+        return;
       }
     }
-    // Fisher-Yates shuffle
-    for (var i = vals.length - 1; i > 0; i--) {
-      var j = Math.floor(Math.random() * (i + 1));
-      var tmp = vals[i]; vals[i] = vals[j]; vals[j] = tmp;
-    }
-    // Refill grid
-    var idx = 0;
-    for (var r2 = 0; r2 < ROWS; r2++) {
-      for (var c2 = 0; c2 < COLS; c2++) {
-        state.grid[r2][c2] = vals[idx++];
-      }
-    }
-    // If still has matches or no valid moves, reshuffle
-    if (findMatches(state.grid).length > 0 || !hasValidMoves(state.grid)) {
-      shuffleGrid();
-      return;
-    }
+    // Fallback: rebuild from scratch to guarantee a valid board
+    state.grid = createGrid();
     renderGrid();
   }
 
