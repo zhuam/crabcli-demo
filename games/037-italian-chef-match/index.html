@@ -1,0 +1,1116 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no">
+  <meta name="theme-color" content="#8B0000">
+  <title>Italian Chef Match</title>
+  <link rel="stylesheet" href="/games/shared/game-frame.css">
+  <style>
+    :root {
+      --red: #8B0000;
+      --red-light: #CD5C5C;
+      --cream: #FFF8DC;
+      --cream-dark: #F5DEB3;
+      --olive: #556B2F;
+      --olive-light: #8FBC8F;
+      --gold: #DAA520;
+      --gold-light: #FFD700;
+      --wood: #8B6914;
+      --brown: #654321;
+      --bg-deep: #2c1810;
+      --panel-bg: rgba(0,0,0,0.6);
+      --panel-border: rgba(255,255,255,0.12);
+      --text-primary: #FFF8DC;
+      --text-muted: rgba(255,248,220,0.5);
+      --danger: #ff4444;
+      --success: #44cc44;
+      --font-display: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      --font-body: system-ui, -apple-system, sans-serif;
+      --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+      --ingredients: 6;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg-deep);
+      color: var(--text-primary);
+      font-family: var(--font-body);
+      overflow: hidden;
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+    .screen { display: none; flex-direction: column; align-items: center; width: 100%; height: 100vh; position: fixed; inset: 0; }
+    .screen.active { display: flex; }
+
+    /* ── Title Screen ── */
+    .title-screen {
+      justify-content: center; gap: 16px; text-align: center; z-index: 1;
+      background: linear-gradient(180deg, var(--red) 0%, #5c1a1a 50%, var(--bg-deep) 100%);
+    }
+    .title-icon { font-size: 64px; line-height: 1; filter: drop-shadow(0 4px 16px rgba(0,0,0,0.4)); animation: title-bounce 2s ease-in-out infinite alternate; }
+    @keyframes title-bounce { 0% { transform: translateY(0); } 100% { transform: translateY(-8px); } }
+    .title-text {
+      font-family: var(--font-display); font-size: 38px; font-weight: 800;
+      color: var(--cream); text-shadow: 0 2px 12px rgba(0,0,0,0.5);
+      letter-spacing: 0.04em; line-height: 1.15;
+    }
+    .title-sub {
+      font-size: 14px; color: var(--cream-dark);
+      text-shadow: 0 1px 4px rgba(0,0,0,0.3); max-width: 280px;
+    }
+    .title-best {
+      font-family: var(--font-mono); font-size: 14px;
+      color: var(--gold); text-shadow: 0 1px 4px rgba(0,0,0,0.3);
+    }
+    .btn-primary {
+      font-family: var(--font-display); font-size: 20px; font-weight: 700;
+      background: linear-gradient(135deg, var(--gold-light), var(--gold));
+      color: #3d1f00; border: 2px solid rgba(255,255,255,0.25); border-radius: 9999px;
+      padding: 14px 48px; min-height: 52px; cursor: pointer;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.4), 0 0 40px rgba(218,165,32,0.2);
+      transition: transform 150ms ease, box-shadow 150ms ease;
+    }
+    .btn-primary:hover { transform: scale(1.05); box-shadow: 0 4px 28px rgba(218,165,32,0.4); }
+    .btn-primary:active { transform: scale(0.97); }
+    .btn-primary:focus-visible { outline: 2px solid var(--cream); outline-offset: 4px; }
+
+    /* ── Game Screen ── */
+    .game-screen {
+      background: linear-gradient(180deg, #3d1a0a 0%, var(--bg-deep) 100%);
+      padding: 0; justify-content: flex-start;
+    }
+
+    /* ── HUD ── */
+    .hud {
+      width: 100%; padding: 8px 12px;
+      display: flex; align-items: center; justify-content: space-between;
+      background: rgba(0,0,0,0.4); backdrop-filter: blur(6px);
+      z-index: 10; flex-shrink: 0; gap: 6px;
+    }
+    .hud-group { display: flex; align-items: center; gap: 6px; }
+    .hud-stat {
+      display: flex; align-items: center; gap: 3px;
+      font-family: var(--font-mono); font-size: 14px; font-weight: 700;
+    }
+    .hud-stat .ico { font-size: 15px; }
+    .hud-stat .val { color: var(--gold-light); }
+    .hud-level {
+      background: rgba(255,255,255,0.1);
+      padding: 2px 8px; border-radius: 9999px;
+      font-size: 11px; font-weight: 600;
+    }
+
+    /* ── Orders Panel ── */
+    .orders-panel {
+      width: 100%; max-width: 420px; padding: 6px 10px;
+      display: flex; gap: 6px; overflow-x: auto;
+      flex-shrink: 0; margin: 0 auto;
+    }
+    .order-card {
+      flex: 1; min-width: 0;
+      background: var(--panel-bg); border: 1px solid var(--panel-border);
+      border-radius: 8px; padding: 6px 8px;
+      display: flex; flex-direction: column; gap: 3px;
+      position: relative; overflow: hidden;
+    }
+    .order-card.completed { border-color: var(--success); }
+    .order-card.completed::after {
+      content: '✓'; position: absolute; top: 2px; right: 4px;
+      font-size: 12px; color: var(--success);
+    }
+    .order-name { font-size: 11px; font-weight: 700; color: var(--gold); }
+    .order-ingredients { display: flex; gap: 3px; flex-wrap: wrap; }
+    .order-ing-item {
+      display: flex; align-items: center; gap: 2px;
+      font-size: 12px; background: rgba(255,255,255,0.08);
+      padding: 1px 5px; border-radius: 4px;
+    }
+    .order-ing-item .emoji { font-size: 14px; }
+    .order-ing-item .count { font-size: 10px; color: var(--text-muted); }
+    .order-ing-item.done { opacity: 0.5; }
+    .order-ing-item.done .count { color: var(--success); }
+    .order-reward {
+      font-size: 10px; color: var(--gold); font-weight: 600;
+    }
+
+    /* ── Game Grid ── */
+    .grid-container {
+      flex: 1; width: 100%; max-width: 420px;
+      display: flex; flex-direction: column; align-items: center;
+      padding: 4px 8px 8px; overflow: hidden;
+      justify-content: center;
+    }
+    .game-grid {
+      display: grid;
+      grid-template-columns: repeat(8, 1fr);
+      gap: 2px;
+      width: 100%; max-width: 380px;
+      aspect-ratio: 1;
+      background: rgba(0,0,0,0.25);
+      border-radius: 8px; padding: 3px;
+      border: 2px solid var(--wood);
+      box-shadow: inset 0 2px 12px rgba(0,0,0,0.5), 0 4px 20px rgba(0,0,0,0.3);
+    }
+    .tile {
+      aspect-ratio: 1;
+      border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: clamp(18px, 4.5vw, 30px);
+      cursor: pointer;
+      transition: transform 120ms ease, box-shadow 120ms ease;
+      touch-action: none;
+      position: relative;
+      background: radial-gradient(circle at 40% 35%, rgba(255,255,255,0.15), transparent 70%);
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+    .tile:active { transform: scale(0.92); }
+    .tile.selected {
+      transform: scale(1.08); z-index: 2;
+      box-shadow: 0 0 12px rgba(255,215,0,0.6), 0 0 24px rgba(255,215,0,0.3);
+      border-color: var(--gold);
+    }
+    .tile.matched {
+      animation: tile-pop 300ms ease forwards;
+    }
+    @keyframes tile-pop {
+      0% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.2); opacity: 0.7; }
+      100% { transform: scale(0); opacity: 0; }
+    }
+    .tile.falling {
+      animation: tile-drop 250ms ease forwards;
+    }
+    @keyframes tile-drop {
+      0% { transform: translateY(-100%); opacity: 0.5; }
+      100% { transform: translateY(0); opacity: 1; }
+    }
+    .tile.hint {
+      animation: hint-pulse 500ms ease-in-out infinite alternate;
+    }
+    @keyframes hint-pulse {
+      0% { box-shadow: 0 0 4px rgba(255,215,0,0.3); border-color: rgba(255,215,0,0.3); }
+      100% { box-shadow: 0 0 16px rgba(255,215,0,0.6); border-color: var(--gold); }
+    }
+
+    /* Tile count indicator */
+    .tile-count {
+      position: absolute; bottom: 1px; right: 3px;
+      font-size: 8px; color: rgba(255,255,255,0.3);
+      font-weight: 700;
+    }
+
+    /* ── Combo Toast ── */
+    .combo-toast {
+      position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%);
+      font-size: 32px; font-weight: 800; font-family: var(--font-display);
+      color: var(--gold-light); text-shadow: 0 2px 12px rgba(0,0,0,0.6);
+      pointer-events: none; z-index: 100;
+      animation: combo-fade 800ms ease forwards;
+    }
+    @keyframes combo-fade {
+      0% { opacity: 1; transform: translate(-50%,-50%) scale(0.5); }
+      50% { opacity: 1; transform: translate(-50%,-60%) scale(1.2); }
+      100% { opacity: 0; transform: translate(-50%,-80%) scale(1); }
+    }
+
+    /* ── Result Screen ── */
+    .result-overlay {
+      position: fixed; inset: 0; z-index: 50;
+      display: none; flex-direction: column; align-items: center; justify-content: center;
+      background: rgba(0,0,0,0.85); gap: 12px; padding: 20px;
+    }
+    .result-overlay.active { display: flex; }
+    .result-icon { font-size: 64px; }
+    .result-heading {
+      font-family: var(--font-display); font-size: 32px; font-weight: 800;
+      color: var(--cream); text-align: center;
+    }
+    .result-sub { font-size: 14px; color: var(--text-muted); }
+    .result-stars { font-size: 36px; letter-spacing: 4px; }
+    .result-score {
+      font-family: var(--font-mono); font-size: 28px; font-weight: 700;
+      color: var(--gold-light);
+    }
+    .result-detail {
+      display: flex; gap: 20px; font-size: 13px; color: var(--text-muted);
+      justify-content: center;
+    }
+    .result-detail strong { color: var(--cream); }
+    .result-new-best {
+      color: var(--gold); font-weight: 700; font-size: 16px;
+      animation: new-best-glow 1s ease-in-out infinite alternate;
+    }
+    @keyframes new-best-glow {
+      0% { text-shadow: 0 0 8px rgba(255,215,0,0.3); }
+      100% { text-shadow: 0 0 24px rgba(255,215,0,0.7); }
+    }
+    .btn-replay {
+      font-family: var(--font-display); font-size: 18px; font-weight: 700;
+      background: linear-gradient(135deg, var(--gold-light), var(--gold));
+      color: #3d1f00; border: 2px solid rgba(255,255,255,0.2);
+      border-radius: 9999px; padding: 12px 44px; cursor: pointer;
+      transition: transform 150ms ease;
+    }
+    .btn-replay:hover { transform: scale(1.05); }
+    .btn-replay:active { transform: scale(0.97); }
+    .btn-hub {
+      font-family: var(--font-body); font-size: 13px; font-weight: 600;
+      background: transparent; color: var(--text-muted);
+      border: 1px solid rgba(255,255,255,0.15); border-radius: 9999px;
+      padding: 8px 24px; cursor: pointer; text-decoration: none;
+      transition: all 150ms ease;
+    }
+    .btn-hub:hover { color: var(--cream); border-color: rgba(255,255,255,0.3); }
+
+    /* ── Mute ── */
+    .mute-btn {
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 50%; width: 32px; height: 32px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; font-size: 14px;
+      transition: background 150ms;
+    }
+    .mute-btn:hover { background: rgba(255,255,255,0.2); }
+
+    /* ── Animations ── */
+    @keyframes bounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-4px); }
+    }
+
+    /* ── Responsive ── */
+    @media (max-height: 640px) {
+      .title-icon { font-size: 48px; }
+      .title-text { font-size: 28px; }
+      .btn-primary { font-size: 17px; padding: 10px 36px; min-height: 44px; }
+      .game-grid { gap: 1px; padding: 2px; }
+      .tile { font-size: clamp(14px, 3.5vw, 22px); }
+      .orders-panel { padding: 4px 8px; }
+      .order-card { padding: 4px 6px; }
+    }
+    @media (min-width: 500px) {
+      .game-grid { max-width: 400px; }
+      .tile { font-size: clamp(22px, 5vw, 34px); }
+    }
+
+    .sr-only { position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0); }
+  </style>
+</head>
+<body>
+
+<a href="/" class="back-to-hub" onclick="window.recordPlayed&&window.recordPlayed('italian-chef-match')" aria-label="Back to hub">&larr; Hub</a>
+<button class="mute-btn" id="muteBtn" aria-label="Toggle sound" aria-pressed="false" style="position:fixed;top:12px;right:12px;z-index:10001">🔊</button>
+
+<!-- ═══ TITLE SCREEN ═══ -->
+<div class="screen title-screen active" id="titleScreen" role="region" aria-label="Title screen">
+  <div class="title-icon" aria-hidden="true">👨‍🍳</div>
+  <h1 class="title-text">Italian<br>Chef Match</h1>
+  <p class="title-sub">匹配食材 · 完成订单 · 成为意面大师</p>
+  <button class="btn-primary" id="startBtn" autofocus>开始烹饪</button>
+  <p class="title-best" id="titleBest">最高分: <span>0</span></p>
+</div>
+
+<!-- ═══ GAME SCREEN ═══ -->
+<div class="screen game-screen" id="gameScreen" role="region" aria-label="Game screen">
+  <header class="hud" role="banner">
+    <div class="hud-group">
+      <div class="hud-stat" aria-label="Score">
+        <span class="ico" aria-hidden="true">⭐</span>
+        <span class="val" id="scoreDisplay">0</span>
+      </div>
+      <span class="hud-level" id="levelDisplay">星级</span>
+    </div>
+    <div class="hud-group">
+      <div class="hud-stat" aria-label="Moves">
+        <span class="ico" aria-hidden="true">👟</span>
+        <span class="val" id="movesDisplay">30</span>
+      </div>
+      <button class="mute-btn" id="muteBtn2" style="font-size:13px;width:28px;height:28px">🔊</button>
+    </div>
+  </header>
+
+  <!-- Orders -->
+  <div class="orders-panel" id="ordersPanel"></div>
+
+  <!-- Grid -->
+  <div class="grid-container">
+    <div class="game-grid" id="gameGrid"></div>
+  </div>
+</div>
+
+<!-- ═══ RESULT ═══ -->
+<div class="result-overlay" id="resultOverlay" role="dialog" aria-label="Game result">
+  <div class="result-icon" id="resultIcon">🍝</div>
+  <h2 class="result-heading" id="resultHeading">太棒了!</h2>
+  <div class="result-stars" id="resultStars">⭐⭐⭐</div>
+  <div class="result-score" id="resultScore">0</div>
+  <div class="result-detail">
+    <span>订单 <strong id="resultOrders">0</strong></span>
+    <span>连击 <strong id="resultCombos">0</strong></span>
+    <span>最高连击 <strong id="resultMaxCombo">0</strong></span>
+  </div>
+  <div class="result-new-best" id="resultNewBest" style="display:none">🎉 新纪录!</div>
+  <button class="btn-replay" id="replayBtn">再来一局</button>
+  <a class="btn-hub" href="/">返回大厅</a>
+</div>
+
+<div class="sr-only" role="status" aria-live="polite" id="ariaLive"></div>
+
+<script>
+(function() {
+  'use strict';
+
+  // ── Constants ──
+  var ROWS = 8;
+  var COLS = 8;
+  var TOTAL_MOVES = 30;
+  var NUM_INGREDIENTS = 6;
+  var ORDERS_COUNT = 3; // max active orders
+  var STORAGE_KEY = 'italian-chef-match-data';
+  var ANIMATION_DELAY = 300;
+
+  // ── Ingredients ──
+  var INGREDIENTS = [
+    { id: 0, emoji: '🥩', name: '牛肉' },
+    { id: 1, emoji: '🧀', name: '奶酪' },
+    { id: 2, emoji: '🍅', name: '番茄' },
+    { id: 3, emoji: '🌿', name: '罗勒' },
+    { id: 4, emoji: '🧅', name: '洋葱' },
+    { id: 5, emoji: '🍄', name: '蘑菇' },
+  ];
+
+  // ── Recipe Book ──
+  var RECIPES = [
+    { name: '玛格丽特披萨',  ingredients: [{id:2,count:3},{id:3,count:2},{id:1,count:2}], reward: 30, icon: '🍕' },
+    { name: '博洛尼亚意面',  ingredients: [{id:0,count:3},{id:2,count:3}], reward: 25, icon: '🍝' },
+    { name: '蘑菇烩饭',      ingredients: [{id:5,count:4},{id:4,count:2}], reward: 28, icon: '🍚' },
+    { name: '卡布里沙拉',    ingredients: [{id:1,count:3},{id:2,count:2},{id:3,count:1}], reward: 22, icon: '🥗' },
+    { name: '洋葱汤',        ingredients: [{id:4,count:4},{id:1,count:2}], reward: 24, icon: '🍲' },
+    { name: '牛排配蘑菇酱',  ingredients: [{id:0,count:3},{id:5,count:3}], reward: 35, icon: '🥩' },
+    { name: '四奶酪披萨',    ingredients: [{id:1,count:4},{id:3,count:2}], reward: 32, icon: '🧀' },
+    { name: '意式蔬菜汤',    ingredients: [{id:2,count:2},{id:4,count:2},{id:5,count:2},{id:3,count:1}], reward: 30, icon: '🥣' },
+  ];
+
+  // ── DOM refs ──
+  var titleScreen = document.getElementById('titleScreen');
+  var gameScreen = document.getElementById('gameScreen');
+  var gameGrid = document.getElementById('gameGrid');
+  var scoreDisplay = document.getElementById('scoreDisplay');
+  var movesDisplay = document.getElementById('movesDisplay');
+  var levelDisplay = document.getElementById('levelDisplay');
+  var ordersPanel = document.getElementById('ordersPanel');
+  var resultOverlay = document.getElementById('resultOverlay');
+  var resultIcon = document.getElementById('resultIcon');
+  var resultHeading = document.getElementById('resultHeading');
+  var resultStars = document.getElementById('resultStars');
+  var resultScore = document.getElementById('resultScore');
+  var resultOrders = document.getElementById('resultOrders');
+  var resultCombos = document.getElementById('resultCombos');
+  var resultMaxCombo = document.getElementById('resultMaxCombo');
+  var resultNewBest = document.getElementById('resultNewBest');
+  var titleBest = document.getElementById('titleBest');
+  var ariaLive = document.getElementById('ariaLive');
+
+  // ── State ──
+  var state = {
+    screen: 'TITLE',
+    grid: [], // 2D array of ingredient ids (0-5) or -1 (empty)
+    score: 0,
+    movesLeft: TOTAL_MOVES,
+    orders: [], // active orders
+    completedOrders: 0,
+    totalCombos: 0,
+    maxCombo: 0,
+    selectedTile: null, // {row, col}
+    isProcessing: false,
+    muted: false,
+    highScore: 0,
+    bestCombo: 0,
+    comboCount: 0,
+  };
+
+  // ── Audio ──
+  var audioCtx = null;
+  function ensureAudio() {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+  }
+  function playTone(freq, dur, type, vol) {
+    if (state.muted || !audioCtx) return;
+    try {
+      var t = audioCtx.currentTime;
+      var o = audioCtx.createOscillator();
+      var g = audioCtx.createGain();
+      o.connect(g); g.connect(audioCtx.destination);
+      o.type = type || 'sine';
+      g.gain.setValueAtTime(vol || 0.08, t);
+      o.frequency.setValueAtTime(freq, t);
+      g.gain.linearRampToValueAtTime(0, t + dur);
+      o.start(t); o.stop(t + dur);
+    } catch(e) {}
+  }
+  function playSound(type) {
+    switch (type) {
+      case 'swap': playTone(440, 0.08, 'sine', 0.07); break;
+      case 'match': playTone(660, 0.1, 'sine', 0.08); break;
+      case 'combo2': playTone(523, 0.08, 'sine', 0.07); setTimeout(function(){ playTone(659, 0.08, 'sine', 0.07); }, 80); break;
+      case 'combo3': playTone(523, 0.08, 'sine', 0.07); setTimeout(function(){ playTone(659, 0.08, 'sine', 0.07); }, 80); setTimeout(function(){ playTone(784, 0.08, 'sine', 0.07); }, 160); break;
+      case 'order': playTone(880, 0.12, 'sine', 0.08); setTimeout(function(){ playTone(1100, 0.1, 'sine', 0.06); }, 100); break;
+      case 'win': playTone(523, 0.12, 'sine', 0.08); setTimeout(function(){ playTone(659, 0.12, 'sine', 0.08); }, 120); setTimeout(function(){ playTone(784, 0.12, 'sine', 0.08); }, 240); setTimeout(function(){ playTone(1047, 0.2, 'sine', 0.1); }, 360); break;
+      case 'lose': playTone(300, 0.2, 'sawtooth', 0.06); setTimeout(function(){ playTone(200, 0.3, 'sawtooth', 0.05); }, 150); break;
+      case 'select': playTone(330, 0.05, 'sine', 0.05); break;
+	      case 'error': playTone(200, 0.15, 'square', 0.04); break;
+    }
+  }
+  function vibrate(pattern) { if (navigator.vibrate) navigator.vibrate(pattern); }
+
+  // ── Storage ──
+  function loadData() {
+    try {
+      var raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        var data = JSON.parse(raw);
+        state.highScore = data.highScore || 0;
+        state.bestCombo = data.bestCombo || 0;
+      }
+    } catch(e) {}
+    titleBest.querySelector('span').textContent = state.highScore;
+  }
+  function saveData() {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({
+        highScore: Math.max(state.highScore, state.score),
+        bestCombo: Math.max(state.bestCombo, state.maxCombo),
+      }));
+    } catch(e) {}
+  }
+  function recordPlayed() {
+    try {
+      var recent = JSON.parse(localStorage.getItem('recentlyPlayed') || '[]');
+      var filtered = recent.filter(function(p) { return p.id !== 'italian-chef-match'; });
+      filtered.unshift({ id: 'italian-chef-match', playedAt: Date.now() });
+      localStorage.setItem('recentlyPlayed', JSON.stringify(filtered.slice(0, 10)));
+    } catch(e) {}
+  }
+  window.recordPlayed = recordPlayed;
+
+  // ── Grid helpers ──
+  function createGrid() {
+    var grid = [];
+    for (var r = 0; r < ROWS; r++) {
+      grid[r] = [];
+      for (var c = 0; c < COLS; c++) {
+        // Fill with random ingredient, ensuring no initial match
+        var available = [];
+        for (var i = 0; i < NUM_INGREDIENTS; i++) available.push(i);
+        // Remove ones that would cause an immediate match-3
+        if (r >= 2 && grid[r-1][c] === grid[r-2][c]) {
+          var idx = available.indexOf(grid[r-1][c]);
+          if (idx >= 0) available.splice(idx, 1);
+        }
+        if (c >= 2 && grid[r][c-1] === grid[r][c-2]) {
+          var idx2 = available.indexOf(grid[r][c-1]);
+          if (idx2 >= 0) available.splice(idx2, 1);
+        }
+        grid[r][c] = available[Math.floor(Math.random() * available.length)];
+      }
+    }
+    return grid;
+  }
+
+  function cloneGrid(grid) {
+    return grid.map(function(row) { return row.slice(); });
+  }
+
+  function findMatches(grid) {
+    var matched = [];
+    var checked = {}; // "r,c" keyed
+
+    // Check horizontal runs
+    for (var r = 0; r < ROWS; r++) {
+      var runStart = 0;
+      for (var c = 1; c <= COLS; c++) {
+        if (c < COLS && grid[r][c] >= 0 && grid[r][c] === grid[r][runStart]) continue;
+        var len = c - runStart;
+        if (len >= 3 && grid[r][runStart] >= 0) {
+          for (var k = runStart; k < c; k++) {
+            var key = r+','+k;
+            if (!checked[key]) {
+              matched.push({row: r, col: k, val: grid[r][k]});
+              checked[key] = true;
+            }
+          }
+        }
+        runStart = c;
+      }
+    }
+
+    // Check vertical runs
+    for (var c2 = 0; c2 < COLS; c2++) {
+      var runStart2 = 0;
+      for (var r2 = 1; r2 <= ROWS; r2++) {
+        if (r2 < ROWS && grid[r2][c2] >= 0 && grid[r2][c2] === grid[runStart2][c2]) continue;
+        var len2 = r2 - runStart2;
+        if (len2 >= 3 && grid[runStart2][c2] >= 0) {
+          for (var k2 = runStart2; k2 < r2; k2++) {
+            var key2 = k2+','+c2;
+            if (!checked[key2]) {
+              matched.push({row: k2, col: c2, val: grid[k2][c2]});
+              checked[key2] = true;
+            }
+          }
+        }
+        runStart2 = r2;
+      }
+    }
+
+    return matched;
+  }
+
+  function applyGravity(grid) {
+    var moved = false;
+    for (var c = 0; c < COLS; c++) {
+      // Compact downward
+      var writeRow = ROWS - 1;
+      for (var r = ROWS - 1; r >= 0; r--) {
+        if (grid[r][c] >= 0) {
+          grid[writeRow][c] = grid[r][c];
+          if (writeRow !== r) { grid[r][c] = -1; moved = true; }
+          writeRow--;
+        }
+      }
+      // Fill empty cells from top
+      for (var r2 = writeRow; r2 >= 0; r2--) {
+        grid[r2][c] = Math.floor(Math.random() * NUM_INGREDIENTS);
+        moved = true;
+      }
+    }
+    return moved;
+  }
+
+  function hasValidMoves(grid) {
+    for (var r = 0; r < ROWS; r++) {
+      for (var c = 0; c < COLS; c++) {
+        // Try swap right
+        if (c + 1 < COLS) {
+          var test = cloneGrid(grid);
+          var tmp = test[r][c]; test[r][c] = test[r][c+1]; test[r][c+1] = tmp;
+          if (findMatches(test).length > 0) return true;
+        }
+        // Try swap down
+        if (r + 1 < ROWS) {
+          var test2 = cloneGrid(grid);
+          var tmp2 = test2[r][c]; test2[r][c] = test2[r+1][c]; test2[r+1][c] = tmp2;
+          if (findMatches(test2).length > 0) return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  function getHintMove(grid) {
+    for (var r = 0; r < ROWS; r++) {
+      for (var c = 0; c < COLS; c++) {
+        if (c + 1 < COLS) {
+          var test = cloneGrid(grid);
+          var tmp = test[r][c]; test[r][c] = test[r][c+1]; test[r][c+1] = tmp;
+          if (findMatches(test).length > 0) return [{row:r,col:c},{row:r,col:c+1}];
+        }
+        if (r + 1 < ROWS) {
+          var test2 = cloneGrid(grid);
+          var tmp2 = test2[r][c]; test2[r][c] = test2[r+1][c]; test2[r+1][c] = tmp2;
+          if (findMatches(test2).length > 0) return [{row:r,col:c},{row:r+1,col:c}];
+        }
+      }
+    }
+    return null;
+  }
+
+  // ── Orders ──
+  function generateOrders(count) {
+    var orders = [];
+    var used = {};
+    while (orders.length < count) {
+      var idx = Math.floor(Math.random() * RECIPES.length);
+      if (used[idx]) continue;
+      used[idx] = true;
+      var recipe = RECIPES[idx];
+      orders.push({
+        recipeIdx: idx,
+        name: recipe.name,
+        icon: recipe.icon,
+        ingredients: recipe.ingredients.map(function(ing) { return {id: ing.id, count: ing.count, collected: 0}; }),
+        reward: recipe.reward,
+        completed: false,
+      });
+    }
+    return orders;
+  }
+
+  function renderOrders() {
+    ordersPanel.innerHTML = '';
+    state.orders.forEach(function(order) {
+      var card = document.createElement('div');
+      card.className = 'order-card' + (order.completed ? ' completed' : '');
+      var nameEl = document.createElement('div');
+      nameEl.className = 'order-name';
+      nameEl.textContent = order.icon + ' ' + order.name;
+      card.appendChild(nameEl);
+
+      var ingContainer = document.createElement('div');
+      ingContainer.className = 'order-ingredients';
+      order.ingredients.forEach(function(ing) {
+        var item = document.createElement('span');
+        item.className = 'order-ing-item' + (ing.collected >= ing.count ? ' done' : '');
+        item.innerHTML = '<span class="emoji">' + INGREDIENTS[ing.id].emoji + '</span>' +
+          ' <span class="count">' + Math.min(ing.collected, ing.count) + '/' + ing.count + '</span>';
+        ingContainer.appendChild(item);
+      });
+      card.appendChild(ingContainer);
+
+      var rewardEl = document.createElement('div');
+      rewardEl.className = 'order-reward';
+      rewardEl.textContent = '+' + order.reward + ' ⭐';
+      card.appendChild(rewardEl);
+
+      ordersPanel.appendChild(card);
+    });
+  }
+
+  function updateOrdersWithMatches(matches) {
+    // Count ingredient ids from matches
+    var counts = {};
+    matches.forEach(function(m) {
+      counts[m.val] = (counts[m.val] || 0) + 1;
+    });
+
+    var anyCompleted = false;
+    state.orders.forEach(function(order) {
+      if (order.completed) return;
+      order.ingredients.forEach(function(ing) {
+        if (ing.collected < ing.count && counts[ing.id]) {
+          ing.collected = Math.min(ing.collected + counts[ing.id], ing.count);
+        }
+      });
+      // Check if all ingredients collected
+      var allDone = order.ingredients.every(function(ing) { return ing.collected >= ing.count; });
+      if (allDone && !order.completed) {
+        order.completed = true;
+        anyCompleted = true;
+        state.score += order.reward;
+        state.completedOrders++;
+        playSound('order');
+        vibrate([50, 50, 50]);
+      }
+    });
+
+    if (anyCompleted) {
+      // Replace completed orders
+      state.orders = state.orders.filter(function(o) { return !o.completed; });
+      var need = ORDERS_COUNT - state.orders.length;
+      if (need > 0) {
+        var newOrders = generateOrders(need);
+        state.orders = state.orders.concat(newOrders);
+      }
+      renderOrders();
+    }
+  }
+
+  // ── Rendering ──
+  function renderGrid(animate) {
+    animate = animate || false;
+    gameGrid.innerHTML = '';
+    for (var r = 0; r < ROWS; r++) {
+      for (var c = 0; c < COLS; c++) {
+        var tile = document.createElement('div');
+        tile.className = 'tile';
+        tile.dataset.row = r;
+        tile.dataset.col = c;
+
+        var val = state.grid[r][c];
+        if (val >= 0 && val < NUM_INGREDIENTS) {
+          tile.textContent = INGREDIENTS[val].emoji;
+        } else {
+          tile.style.visibility = 'hidden';
+        }
+
+        // Selected highlight
+        if (state.selectedTile && state.selectedTile.row === r && state.selectedTile.col === c) {
+          tile.classList.add('selected');
+        }
+
+        tile.addEventListener('pointerdown', onTilePointerDown);
+        tile.addEventListener('pointermove', onTilePointerMove);
+        // Add click fallback
+        tile.addEventListener('click', onTileClick);
+
+        gameGrid.appendChild(tile);
+      }
+    }
+    updateHUD();
+  }
+
+  function updateHUD() {
+    scoreDisplay.textContent = state.score;
+    movesDisplay.textContent = state.movesLeft;
+    var stars = Math.min(5, 1 + Math.floor(state.completedOrders / 2));
+    levelDisplay.textContent = '⭐'.repeat(stars);
+  }
+
+  function showCombo(count) {
+    if (count < 2) return;
+    var labels = ['', '', 'Good!', 'Great!!', 'Amazing!!!', 'Fantastic!!!!'];
+    var label = labels[Math.min(count, labels.length - 1)] || 'INCREDIBLE!!!!!';
+    var el = document.createElement('div');
+    el.className = 'combo-toast';
+    el.textContent = label;
+    el.style.fontSize = Math.min(48, 28 + count * 4) + 'px';
+    document.body.appendChild(el);
+    setTimeout(function() { el.remove(); }, 900);
+    playSound(count >= 3 ? 'combo3' : 'combo2');
+  }
+
+  function showToast(text) {
+    var el = document.createElement('div');
+    el.className = 'combo-toast';
+    el.textContent = text;
+    el.style.fontSize = '24px';
+    document.body.appendChild(el);
+    setTimeout(function() { el.remove(); }, 900);
+  }
+
+  // ── Input Handling ──
+  var pointerStart = null;
+  var swipeThreshold = 15;
+  var tileSize = 0;
+
+  function getTileFromPoint(x, y) {
+    var rect = gameGrid.getBoundingClientRect();
+    if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) return null;
+    var col = Math.floor((x - rect.left) / rect.width * COLS);
+    var row = Math.floor((y - rect.top) / rect.height * ROWS);
+    if (row < 0 || row >= ROWS || col < 0 || col >= COLS) return null;
+    return { row: row, col: col };
+  }
+
+  function onTilePointerDown(e) {
+    if (state.isProcessing) return;
+    e.preventDefault();
+    pointerStart = { x: e.clientX, y: e.clientY, target: this };
+    this.setPointerCapture(e.pointerId);
+  }
+
+  function onTilePointerMove(e) {
+    if (!pointerStart || state.isProcessing) return;
+    e.preventDefault();
+    var dx = e.clientX - pointerStart.x;
+    var dy = e.clientY - pointerStart.y;
+    if (Math.abs(dx) < swipeThreshold && Math.abs(dy) < swipeThreshold) return;
+
+    // Determine swipe direction
+    var dr = 0, dc = 0;
+    if (Math.abs(dx) > Math.abs(dy)) {
+      dc = dx > 0 ? 1 : -1;
+    } else {
+      dr = dy > 0 ? 1 : -1;
+    }
+
+    var tile = pointerStart.target;
+    var row = parseInt(tile.dataset.row);
+    var col = parseInt(tile.dataset.col);
+    var nr = row + dr;
+    var nc = col + dc;
+
+    if (nr >= 0 && nr < ROWS && nc >= 0 && nc < COLS) {
+      trySwap(row, col, nr, nc);
+    }
+    pointerStart = null;
+  }
+
+  function onTileClick(e) {
+    if (state.isProcessing) return;
+    var row = parseInt(this.dataset.row);
+    var col = parseInt(this.dataset.col);
+
+    if (state.selectedTile) {
+      var sr = state.selectedTile.row;
+      var sc = state.selectedTile.col;
+      var dr2 = Math.abs(row - sr);
+      var dc2 = Math.abs(col - sc);
+      if ((dr2 === 1 && dc2 === 0) || (dr2 === 0 && dc2 === 1)) {
+        trySwap(sr, sc, row, col);
+        state.selectedTile = null;
+        return;
+      }
+    }
+
+    state.selectedTile = { row: row, col: col };
+    renderGrid();
+    playSound('select');
+  }
+
+  // ── Game Logic ──
+  function trySwap(r1, c1, r2, c2) {
+    if (state.isProcessing) return;
+    if (state.movesLeft <= 0) return;
+
+    state.isProcessing = true;
+    state.selectedTile = null;
+
+    // Swap
+    var tmp = state.grid[r1][c1];
+    state.grid[r1][c1] = state.grid[r2][c2];
+    state.grid[r2][c2] = tmp;
+
+    renderGrid();
+
+    // Check for matches
+    var matches = findMatches(state.grid);
+    if (matches.length === 0) {
+      // Swap back
+      var tmp2 = state.grid[r1][c1];
+      state.grid[r1][c1] = state.grid[r2][c2];
+      state.grid[r2][c2] = tmp2;
+      renderGrid();
+      playSound('error');
+      state.isProcessing = false;
+      return;
+    }
+
+    // Valid move
+    state.movesLeft--;
+    playSound('swap');
+    vibrate(30);
+
+    processMatches(matches);
+  }
+
+  function processMatches(matches) {
+    state.comboCount = 0;
+    processMatchChain(matches);
+  }
+
+  function processMatchChain(matches) {
+    if (matches.length === 0) {
+      // Apply gravity and check again
+      applyGravity(state.grid);
+      renderGrid();
+
+      var self = this;
+      setTimeout(function() {
+        var newMatches = findMatches(state.grid);
+        if (newMatches.length > 0) {
+          state.comboCount++;
+          if (state.comboCount > state.maxCombo) state.maxCombo = state.comboCount;
+          state.totalCombos++;
+          showCombo(state.comboCount);
+          processMatchChain(newMatches);
+        } else {
+          // Check for valid moves
+          if (!hasValidMoves(state.grid)) {
+            shuffleGrid();
+            showToast('🔀 重新洗牌!');
+          }
+          checkEndGame();
+        }
+      }, 300);
+      return;
+    }
+
+    // Process this set of matches
+    var matchVal = matches[0].val;
+    var matchCount = matches.length;
+
+    // Update orders with matched ingredients
+    updateOrdersWithMatches(matches);
+
+    // Score: base 10 per tile + bonus for length
+    var bonus = matchCount >= 4 ? matchCount * 5 : 0;
+    state.score += matchCount * 10 + bonus;
+
+    // Clear matched tiles
+    matches.forEach(function(m) {
+      state.grid[m.row][m.col] = -1;
+    });
+
+    playSound('match');
+    vibrate(20);
+    renderGrid();
+
+    var self = this;
+    setTimeout(function() {
+      applyGravity(state.grid);
+      renderGrid();
+
+      setTimeout(function() {
+        var newMatches = findMatches(state.grid);
+        if (newMatches.length > 0) {
+          state.comboCount++;
+          if (state.comboCount > state.maxCombo) state.maxCombo = state.comboCount;
+          state.totalCombos++;
+          showCombo(state.comboCount);
+          processMatchChain(newMatches);
+        } else {
+          if (!hasValidMoves(state.grid)) {
+            shuffleGrid();
+            showToast('🔀 重新洗牌!');
+          }
+          checkEndGame();
+        }
+      }, 250);
+    }, 200);
+  }
+
+  function shuffleGrid() {
+    // Collect all values
+    var vals = [];
+    for (var r = 0; r < ROWS; r++) {
+      for (var c = 0; c < COLS; c++) {
+        vals.push(state.grid[r][c]);
+      }
+    }
+    // Fisher-Yates shuffle
+    for (var i = vals.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var tmp = vals[i]; vals[i] = vals[j]; vals[j] = tmp;
+    }
+    // Refill grid
+    var idx = 0;
+    for (var r2 = 0; r2 < ROWS; r2++) {
+      for (var c2 = 0; c2 < COLS; c2++) {
+        state.grid[r2][c2] = vals[idx++];
+      }
+    }
+    // If still has matches or no valid moves, reshuffle
+    if (findMatches(state.grid).length > 0 || !hasValidMoves(state.grid)) {
+      shuffleGrid();
+      return;
+    }
+    renderGrid();
+  }
+
+  function checkEndGame() {
+    state.isProcessing = false;
+
+    if (state.movesLeft <= 0) {
+      // Game over
+      setTimeout(function() { showResult(); }, 500);
+    }
+  }
+
+  function showResult() {
+    var won = state.completedOrders >= 3;
+    var stars = 1;
+    if (state.completedOrders >= 5) stars = 3;
+    else if (state.completedOrders >= 3) stars = 2;
+
+    var isNewBest = state.score > state.highScore;
+    if (isNewBest) {
+      state.highScore = state.score;
+      saveData();
+    } else {
+      saveData();
+    }
+
+    resultIcon.textContent = won ? '🍝' : '😅';
+    resultHeading.textContent = won ? '完美收官!' : '继续努力!';
+    resultStars.textContent = '⭐'.repeat(stars) + '☆'.repeat(3 - stars);
+    resultScore.textContent = state.score + ' 分';
+    resultOrders.textContent = state.completedOrders + '/' + ORDERS_COUNT;
+    resultCombos.textContent = state.totalCombos;
+    resultMaxCombo.textContent = state.maxCombo;
+    resultNewBest.style.display = isNewBest ? 'block' : 'none';
+
+    resultOverlay.classList.add('active');
+
+    if (won) { playSound('win'); } else { playSound('lose'); }
+  }
+
+  // ── Game Init ──
+  function startGame() {
+    state.grid = createGrid();
+    state.score = 0;
+    state.movesLeft = TOTAL_MOVES;
+    state.completedOrders = 0;
+    state.totalCombos = 0;
+    state.maxCombo = 0;
+    state.comboCount = 0;
+    state.selectedTile = null;
+    state.isProcessing = false;
+    state.orders = generateOrders(ORDERS_COUNT);
+
+    titleScreen.classList.remove('active');
+    gameScreen.classList.add('active');
+    resultOverlay.classList.remove('active');
+
+    renderOrders();
+    renderGrid();
+    updateHUD();
+
+    ariaLive.textContent = '游戏开始，剩余 ' + TOTAL_MOVES + ' 步';
+    recordPlayed();
+    ensureAudio();
+  }
+
+  // ── Event Bindings ──
+  document.getElementById('startBtn').addEventListener('click', function() { startGame(); });
+  document.getElementById('replayBtn').addEventListener('click', function() {
+    resultOverlay.classList.remove('active');
+    startGame();
+  });
+
+  function toggleMute() {
+    state.muted = !state.muted;
+    var btns = [document.getElementById('muteBtn'), document.getElementById('muteBtn2')];
+    btns.forEach(function(b) { if (b) { b.textContent = state.muted ? '🔇' : '🔊'; b.setAttribute('aria-pressed', state.muted); } });
+  }
+  document.getElementById('muteBtn').addEventListener('click', toggleMute);
+  document.getElementById('muteBtn2').addEventListener('click', toggleMute);
+
+  // Keyboard support
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' || e.key === ' ') {
+      if (state.screen === 'TITLE' || titleScreen.classList.contains('active')) {
+        if (document.activeElement !== document.getElementById('startBtn')) {
+          startGame();
+          e.preventDefault();
+        }
+      }
+    }
+    if (e.key === 'r' || e.key === 'R') {
+      if (resultOverlay.classList.contains('active')) {
+        resultOverlay.classList.remove('active');
+        startGame();
+        e.preventDefault();
+      }
+    }
+  });
+
+  // ── Bootstrap ──
+  loadData();
+  // Pre-render grid for faster start
+  state.grid = createGrid();
+  renderGrid();
+  state.grid = null; // clear until game starts
+  gameGrid.innerHTML = '';
+  gameGrid.style.display = 'grid';
+  gameGrid.style.gridTemplateColumns = 'repeat(8, 1fr)';
+  gameGrid.style.gap = '2px';
+
+  // Ensure audio context on first interaction
+  document.addEventListener('pointerdown', ensureAudio, { once: true });
+  document.addEventListener('keydown', ensureAudio, { once: true });
+
+  // Expose
+  window.ensureAudio = ensureAudio;
+})();
+</script>
+</body>
+</html>
