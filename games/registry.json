@@ -373,6 +373,26 @@
       "rating": 4.3
     },
     {
+      "id": "gridlock-garden",
+      "name": "Gridlock Garden",
+      "description": "植物按网格规则种入花园解开谜题 — 拖放种植，满足相邻规则，通关所有关卡",
+      "category": "puzzle",
+      "tags": [
+        "singleplayer",
+        "puzzle",
+        "garden",
+        "drag",
+        "short-session"
+      ],
+      "thumbnail": "/games/042-gridlock-garden/thumb.svg",
+      "path": "/games/042-gridlock-garden/",
+      "hasServer": false,
+      "players": "1",
+      "version": "1.0.0",
+      "featured": true,
+      "rating": 4.0
+    },
+    {
       "id": "chat-master",
       "name": "Chat Master",
       "description": "聊天恋爱模拟 — 选择回复推进剧情，达成目标好感度通关",

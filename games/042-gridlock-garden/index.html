@@ -1,0 +1,1094 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
+  <meta name="theme-color" content="#3A7D44" />
+  <title>Gridlock Garden</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../shared/game-frame.css" />
+  <style>
+    /* ═══════════════════════════════════════════════════════
+       Gridlock Garden — Plant by the rules!
+       ═══════════════════════════════════════════════════════ */
+    :root {
+      --green-dark: #2E7D32;
+      --green-mid: #4CAF50;
+      --green-light: #81C784;
+      --grass: #7CB342;
+      --soil: #8D6E63;
+      --soil-dark: #6D4C41;
+      --sky: #87CEEB;
+      --sky-top: #4FC3F7;
+      --sun: #FFE082;
+      --wood: #A1887F;
+      --brown: #6D4C41;
+      --cream: #FFF8E1;
+      --danger: #e74c3c;
+      --success: #2ecc71;
+      --gold: #FFD700;
+      --panel-bg: rgba(0,0,0,0.55);
+      --panel-border: rgba(255,255,255,0.1);
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: linear-gradient(180deg, var(--sky-top) 0%, var(--sky) 30%, var(--grass) 60%, var(--green-dark) 100%);
+      color: #fff;
+      font-family: 'Nunito', system-ui, sans-serif;
+      overflow: hidden;
+      width: 100vw; height: 100vh;
+      display: flex; align-items: center; justify-content: center;
+      touch-action: manipulation; user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .screen { display: none; flex-direction: column; align-items: center; width: 100%; height: 100vh; position: fixed; inset: 0; }
+    .screen.active { display: flex; }
+    .back-to-hub { position: fixed; top: 12px; left: 12px; z-index: 10000; }
+
+    /* ─── Title Screen ─── */
+    .title-screen { justify-content: center; gap: 16px; text-align: center; z-index: 1; }
+    .title-icon { font-size: 72px; line-height: 1; filter: drop-shadow(0 4px 16px rgba(0,0,0,0.3)); animation: float 2s ease-in-out infinite alternate; }
+    @keyframes float { 0% { transform: translateY(0); } 100% { transform: translateY(-8px); } }
+    .title-text { font-family: 'Fredoka One', sans-serif; font-size: 40px; font-weight: 700; color: #fff; text-shadow: 0 2px 12px rgba(0,0,0,0.4); letter-spacing: 0.03em; line-height: 1.1; }
+    .title-sub { font-size: 14px; color: rgba(255,255,255,0.8); text-shadow: 0 1px 4px rgba(0,0,0,0.3); }
+    .title-best { font-family: 'Nunito', sans-serif; font-size: 13px; color: var(--gold); text-shadow: 0 1px 4px rgba(0,0,0,0.3); margin-top: 4px; }
+    .title-level { font-size: 13px; color: rgba(255,255,255,0.7); }
+    .btn {
+      font-family: 'Fredoka One', sans-serif; font-size: 18px; padding: 14px 48px;
+      border: none; border-radius: 50px; cursor: pointer;
+      transition: transform 0.12s, box-shadow 0.12s;
+      background: linear-gradient(135deg, #FFB300, #FF8F00); color: #3E2723;
+      box-shadow: 0 4px 16px rgba(255,179,0,0.4);
+    }
+    .btn:active { transform: scale(0.95); }
+    .btn-secondary { background: rgba(255,255,255,0.15); color: #fff; box-shadow: none; font-size: 14px; padding: 10px 32px; }
+
+    /* ─── Game Screen ─── */
+    .game-screen { justify-content: flex-start; padding-top: 60px; gap: 10px; }
+    .game-header-bar {
+      display: flex; align-items: center; justify-content: space-between;
+      width: 100%; max-width: 420px; padding: 0 16px;
+    }
+    .level-label { font-family: 'Fredoka One', sans-serif; font-size: 16px; }
+    .game-info { display: flex; align-items: center; gap: 12px; font-size: 13px; }
+    .game-info span { background: rgba(0,0,0,0.3); padding: 4px 12px; border-radius: 12px; }
+    .hint-btn {
+      background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.2);
+      color: #fff; border-radius: 50px; padding: 4px 14px; font-size: 13px;
+      cursor: pointer; font-family: 'Nunito', sans-serif; font-weight: 700;
+    }
+    .hint-btn:active { transform: scale(0.93); }
+
+    /* ─── Rules Display ─── */
+    .rules-container {
+      width: 100%; max-width: 420px; padding: 0 16px;
+      display: flex; flex-wrap: wrap; gap: 6px; justify-content: center;
+      min-height: 32px;
+    }
+    .rule-chip {
+      background: rgba(255,255,255,0.12); backdrop-filter: blur(4px);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 20px; padding: 3px 12px; font-size: 12px;
+      display: flex; align-items: center; gap: 4px;
+      transition: all 0.3s;
+    }
+    .rule-chip.satisfied {
+      background: rgba(46,204,113,0.3); border-color: var(--success);
+    }
+    .rule-chip .r-icon { font-size: 16px; }
+
+    /* ─── Grid ─── */
+    .grid-wrapper {
+      display: flex; align-items: center; justify-content: center;
+      flex: 0 0 auto; padding: 8px;
+    }
+    .grid-container {
+      display: grid; gap: 4px;
+      background: rgba(0,0,0,0.25); border-radius: 12px; padding: 8px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.3);
+    }
+    .cell {
+      width: 56px; height: 56px;
+      border-radius: 10px;
+      background: rgba(255,255,255,0.08);
+      border: 2px dashed rgba(255,255,255,0.15);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 30px; cursor: pointer;
+      transition: all 0.15s;
+      position: relative;
+    }
+    .cell.prefilled {
+      border-style: solid; border-color: rgba(255,215,0,0.4);
+      background: rgba(255,215,0,0.1);
+      cursor: default;
+    }
+    .cell.occupied:not(.prefilled) {
+      border-style: solid; border-color: rgba(255,255,255,0.25);
+      background: rgba(255,255,255,0.1);
+    }
+    .cell.drag-over {
+      border-color: var(--gold); background: rgba(255,215,0,0.2);
+      transform: scale(1.05);
+    }
+    .cell:active:not(.prefilled) { transform: scale(0.92); }
+    .cell .cell-remove {
+      position: absolute; top: -6px; right: -6px;
+      width: 18px; height: 18px; border-radius: 50%;
+      background: var(--danger); color: #fff; font-size: 10px;
+      display: none; align-items: center; justify-content: center;
+      border: 2px solid #fff; line-height: 1;
+    }
+    .cell.occupied:not(.prefilled) .cell-remove { display: flex; }
+    .cell.wrong {
+      animation: shake 0.3s;
+      border-color: var(--danger);
+    }
+    @keyframes shake {
+      0%,100% { transform: translateX(0); }
+      25% { transform: translateX(-4px); }
+      75% { transform: translateX(4px); }
+    }
+
+    /* ─── Plant Palette ─── */
+    .palette {
+      display: flex; gap: 8px; flex-wrap: wrap; justify-content: center;
+      padding: 8px 16px; max-width: 420px;
+    }
+    .plant-btn {
+      width: 48px; height: 48px; border-radius: 12px;
+      background: rgba(255,255,255,0.1); border: 2px solid rgba(255,255,255,0.15);
+      font-size: 26px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+      transition: all 0.12s; position: relative;
+    }
+    .plant-btn:active { transform: scale(0.9); background: rgba(255,255,255,0.2); }
+    .plant-btn.selected {
+      border-color: var(--gold); background: rgba(255,215,0,0.25);
+      transform: scale(1.1); box-shadow: 0 0 12px rgba(255,215,0,0.3);
+    }
+    .plant-btn .plant-count {
+      position: absolute; bottom: -4px; right: -4px;
+      min-width: 16px; height: 16px; border-radius: 8px;
+      background: var(--danger); font-size: 10px; line-height: 16px;
+      text-align: center; padding: 0 4px; font-weight: 700;
+    }
+
+    /* ─── Result Screen ─── */
+    .result-screen { justify-content: center; gap: 16px; text-align: center; z-index: 2; }
+    .result-icon { font-size: 64px; }
+    .result-title { font-family: 'Fredoka One', sans-serif; font-size: 32px; }
+    .result-stars { font-size: 36px; letter-spacing: 4px; }
+    .result-detail { font-size: 14px; color: rgba(255,255,255,0.8); }
+    .result-best { font-size: 13px; color: var(--gold); }
+    .result-actions { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+
+    /* ─── Level Select Screen ─── */
+    .level-select-screen { justify-content: flex-start; padding-top: 80px; gap: 12px; overflow-y: auto; }
+    .level-select-title { font-family: 'Fredoka One', sans-serif; font-size: 24px; }
+    .level-grid-select {
+      display: flex; flex-wrap: wrap; gap: 10px; justify-content: center;
+      padding: 10px; max-width: 360px;
+    }
+    .level-btn {
+      width: 52px; height: 52px; border-radius: 12px;
+      background: rgba(255,255,255,0.1); border: 2px solid rgba(255,255,255,0.15);
+      color: #fff; font-family: 'Fredoka One', sans-serif; font-size: 18px;
+      cursor: pointer; transition: all 0.12s; display: flex;
+      align-items: center; justify-content: center; flex-direction: column; gap: 2px;
+    }
+    .level-btn:active { transform: scale(0.9); }
+    .level-btn.locked { opacity: 0.3; cursor: default; }
+    .level-btn.locked::after { content: '🔒'; font-size: 14px; }
+    .level-btn.current { border-color: var(--gold); background: rgba(255,215,0,0.15); }
+    .level-btn.completed {
+      background: rgba(46,204,113,0.2); border-color: var(--success);
+    }
+    .level-btn .star-small { font-size: 8px; line-height: 1; }
+
+    /* ─── Toast ─── */
+    .toast {
+      position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
+      background: rgba(0,0,0,0.8); color: #fff;
+      padding: 10px 24px; border-radius: 20px; font-size: 14px;
+      opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 100;
+      backdrop-filter: blur(8px);
+    }
+    .toast.show { opacity: 1; }
+
+    /* ─── Responsive ─── */
+    @media (max-width: 420px) {
+      .cell { width: 48px; height: 48px; font-size: 24px; }
+      .plant-btn { width: 42px; height: 42px; font-size: 22px; }
+      .title-text { font-size: 32px; }
+      .rules-container { gap: 4px; }
+      .rule-chip { font-size: 11px; padding: 2px 10px; }
+    }
+    @media (max-width: 360px) {
+      .cell { width: 40px; height: 40px; font-size: 20px; }
+      .grid-container { gap: 3px; padding: 6px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ═══ TITLE SCREEN ═══ -->
+<div class="screen title-screen active" id="titleScreen">
+  <div class="title-icon">🌱</div>
+  <div class="title-text">Gridlock Garden</div>
+  <div class="title-sub">🌻 Plant by the rules! 🌿</div>
+  <div class="title-best" id="titleBest"></div>
+  <div class="title-level" id="titleLevel">Level 1</div>
+  <button class="btn" id="playBtn">🌱 Plant!</button>
+  <button class="btn btn-secondary" id="levelSelectBtn">📋 Levels</button>
+</div>
+
+<!-- ═══ LEVEL SELECT ═══ -->
+<div class="screen level-select-screen" id="levelSelectScreen">
+  <div class="level-select-title">🌻 Select Level</div>
+  <div class="level-grid-select" id="levelGrid"></div>
+  <button class="btn btn-secondary" id="levelBackBtn">← Back</button>
+</div>
+
+<!-- ═══ GAME SCREEN ═══ -->
+<div class="screen game-screen" id="gameScreen">
+  <div class="game-header-bar">
+    <div class="level-label" id="levelLabel">Level 1</div>
+    <div class="game-info">
+      <span id="moveCount">0 moves</span>
+      <span id="timerDisplay">0:00</span>
+    </div>
+    <button class="hint-btn" id="hintBtn">💡 Hint</button>
+  </div>
+  <div class="rules-container" id="rulesContainer"></div>
+  <div class="grid-wrapper">
+    <div class="grid-container" id="gridContainer"></div>
+  </div>
+  <div class="palette" id="palette"></div>
+  <div style="display:flex;gap:8px;margin-top:4px">
+    <button class="hint-btn" id="resetBtn">🔄 Reset</button>
+    <button class="hint-btn" id="quitBtn">🚪 Quit</button>
+  </div>
+</div>
+
+<!-- ═══ RESULT SCREEN ═══ -->
+<div class="screen result-screen" id="resultScreen">
+  <div class="result-icon" id="resultIcon">🌸</div>
+  <div class="result-title" id="resultTitle">Level Clear!</div>
+  <div class="result-stars" id="resultStars">⭐⭐⭐</div>
+  <div class="result-detail" id="resultDetail"></div>
+  <div class="result-best" id="resultBest"></div>
+  <div class="result-actions">
+    <button class="btn" id="resultNextBtn">➡️ Next</button>
+    <button class="btn btn-secondary" id="resultRetryBtn">🔄 Retry</button>
+    <button class="btn btn-secondary" id="resultMenuBtn">🏠 Menu</button>
+  </div>
+</div>
+
+<!-- ═══ TOAST ═══ -->
+<div class="toast" id="toast"></div>
+
+<script>
+(function() {
+  'use strict';
+
+  /* ═══════════════════════════════════════════════════════
+     LEVELS — pre-designed with known solutions
+     ═══════════════════════════════════════════════════════ */
+  const PLANTS = ['🌻','🌹','🌿','🌵','🌸','🍀'];
+
+  const LEVELS = [
+    // Level 1 — 3×3, 3 plants
+    { size:3, plants:['🌻','🌹','🌿'], solution:[
+      ['🌻','🌹','🌻'],
+      ['🌿','🌻','🌿'],
+      ['🌻','🌹','🌻']
+    ], hints:[
+      [0,0,0],
+      [0,1,0],
+      [0,0,0]
+    ]},
+    // Level 2 — 3×3
+    { size:3, plants:['🌻','🌹','🌿'], solution:[
+      ['🌹','🌿','🌹'],
+      ['🌻','🌹','🌻'],
+      ['🌿','🌻','🌿']
+    ], hints:[
+      [0,0,0],
+      [0,1,0],
+      [0,0,0]
+    ]},
+    // Level 3 — 3×3
+    { size:3, plants:['🌻','🌹','🌿'], solution:[
+      ['🌻','🌿','🌻'],
+      ['🌹','🌻','🌿'],
+      ['🌿','🌹','🌻']
+    ], hints:[
+      [1,0,0],
+      [0,0,0],
+      [0,0,1]
+    ]},
+    // Level 4 — 4×4, 4 plants
+    { size:4, plants:['🌻','🌹','🌿','🌵'], solution:[
+      ['🌻','🌹','🌻','🌿'],
+      ['🌿','🌵','🌹','🌻'],
+      ['🌻','🌹','🌵','🌿'],
+      ['🌿','🌻','🌿','🌹']
+    ], hints:[
+      [0,0,0,0],
+      [0,1,0,0],
+      [0,0,1,0],
+      [0,0,0,0]
+    ]},
+    // Level 5 — 4×4
+    { size:4, plants:['🌻','🌹','🌿','🌵'], solution:[
+      ['🌹','🌿','🌹','🌵'],
+      ['🌻','🌵','🌿','🌻'],
+      ['🌿','🌹','🌻','🌿'],
+      ['🌵','🌻','🌿','🌹']
+    ], hints:[
+      [0,0,0,0],
+      [0,0,0,0],
+      [0,0,0,0],
+      [0,0,0,0]
+    ]},
+    // Level 6 — 4×4
+    { size:4, plants:['🌻','🌹','🌿','🌵'], solution:[
+      ['🌻','🌿','🌵','🌹'],
+      ['🌵','🌹','🌻','🌿'],
+      ['🌿','🌻','🌹','🌵'],
+      ['🌹','🌵','🌿','🌻']
+    ], hints:[
+      [1,0,0,0],
+      [0,0,0,0],
+      [0,0,0,0],
+      [0,0,0,1]
+    ]},
+    // Level 7 — 5×5, 5 plants
+    { size:5, plants:['🌻','🌹','🌿','🌵','🌸'], solution:[
+      ['🌻','🌹','🌿','🌸','🌻'],
+      ['🌸','🌿','🌵','🌹','🌿'],
+      ['🌿','🌻','🌸','🌵','🌹'],
+      ['🌹','🌵','🌿','🌻','🌸'],
+      ['🌻','🌸','🌹','🌿','🌵']
+    ], hints:[
+      [0,0,0,0,0],
+      [0,1,0,0,0],
+      [0,0,0,0,0],
+      [0,0,1,0,0],
+      [0,0,0,0,0]
+    ]},
+    // Level 8 — 5×5
+    { size:5, plants:['🌻','🌹','🌿','🌵','🌸'], solution:[
+      ['🌵','🌻','🌿','🌹','🌵'],
+      ['🌹','🌿','🌸','🌻','🌿'],
+      ['🌻','🌸','🌵','🌿','🌹'],
+      ['🌿','🌵','🌹','🌸','🌻'],
+      ['🌸','🌻','🌿','🌹','🌵']
+    ], hints:[
+      [1,0,0,0,0],
+      [0,0,0,0,0],
+      [0,0,1,0,0],
+      [0,0,0,0,0],
+      [0,0,0,0,1]
+    ]},
+    // Level 9 — 5×5
+    { size:5, plants:['🌻','🌹','🌿','🌵','🌸'], solution:[
+      ['🌸','🌿','🌻','🌵','🌹'],
+      ['🌻','🌵','🌹','🌸','🌿'],
+      ['🌿','🌸','🌵','🌻','🌵'],
+      ['🌵','🌹','🌸','🌿','🌻'],
+      ['🌹','🌻','🌿','🌵','🌸']
+    ], hints:[
+      [0,0,0,0,0],
+      [0,0,0,0,0],
+      [0,0,0,0,0],
+      [0,0,0,0,0],
+      [0,0,0,0,0]
+    ]},
+    // Level 10 — 6×6, 6 plants
+    { size:6, plants:['🌻','🌹','🌿','🌵','🌸','🍀'], solution:[
+      ['🌻','🌹','🌿','🌸','🌵','🍀'],
+      ['🍀','🌵','🌸','🌿','🌹','🌻'],
+      ['🌿','🌸','🌻','🌵','🍀','🌹'],
+      ['🌹','🍀','🌵','🌻','🌸','🌿'],
+      ['🌵','🌻','🌿','🍀','🌹','🌸'],
+      ['🌸','🌿','🌹','🌻','🍀','🌵']
+    ], hints:[
+      [1,0,0,0,0,0],
+      [0,0,0,0,0,0],
+      [0,0,0,0,0,0],
+      [0,0,0,0,0,0],
+      [0,0,0,0,0,0],
+      [0,0,0,0,1,0]
+    ]},
+    // Level 11 — 6×6
+    { size:6, plants:['🌻','🌹','🌿','🌵','🌸','🍀'], solution:[
+      ['🌿','🌸','🌻','🍀','🌵','🌹'],
+      ['🌵','🌹','🍀','🌸','🌻','🌿'],
+      ['🌻','🍀','🌿','🌵','🌹','🌸'],
+      ['🌸','🌿','🌵','🌻','🍀','🌵'],
+      ['🌹','🌵','🌸','🌿','🌻','🍀'],
+      ['🍀','🌻','🌹','🌵','🌸','🌿']
+    ], hints:[
+      [0,0,1,0,0,0],
+      [0,0,0,1,0,0],
+      [0,0,0,0,0,0],
+      [0,0,0,0,0,0],
+      [0,0,0,0,0,0],
+      [0,0,0,0,0,0]
+    ]},
+    // Level 12 — 6×6
+    { size:6, plants:['🌻','🌹','🌿','🌵','🌸','🍀'], solution:[
+      ['🌵','🌻','🌸','🌿','🍀','🌹'],
+      ['🌿','🍀','🌹','🌸','🌻','🌵'],
+      ['🌸','🌵','🌻','🍀','🌿','🌻'],
+      ['🌻','🌿','🍀','🌵','🌸','🌿'],
+      ['🍀','🌸','🌵','🌻','🌹','🌵'],
+      ['🌹','🌻','🌿','🌸','🌵','🍀']
+    ], hints:[
+      [0,0,0,0,0,0],
+      [0,0,0,0,0,0],
+      [0,0,0,0,0,0],
+      [0,0,0,0,1,0],
+      [0,0,0,0,0,0],
+      [0,0,0,0,0,0]
+    ]}
+  ];
+
+  /* ═══════════════════════════════════════════════════════
+     Derive rules from a level's solution
+     ═══════════════════════════════════════════════════════ */
+  function deriveRules(level) {
+    const { size, solution, plants } = level;
+    const pairs = {};
+    // Count adjacency pairs (horizontal + vertical)
+    for (let r = 0; r < size; r++) {
+      for (let c = 0; c < size; c++) {
+        const p = solution[r][c];
+        const neighbors = [];
+        if (r > 0) neighbors.push(solution[r-1][c]);
+        if (r < size-1) neighbors.push(solution[r+1][c]);
+        if (c > 0) neighbors.push(solution[r][c-1]);
+        if (c < size-1) neighbors.push(solution[r][c+1]);
+        for (const n of neighbors) {
+          const key = [p, n].sort().join('');
+          if (p !== n) pairs[key] = (pairs[key] || 0) + 1;
+        }
+      }
+    }
+    // For each plant type, find the most common neighbor
+    const plantNeighbors = {};
+    for (const p of plants) plantNeighbors[p] = {};
+    for (const [key, count] of Object.entries(pairs)) {
+      const [a, b] = [key.slice(0,2), key.slice(2)];
+      if (plants.includes(a) && plants.includes(b)) {
+        plantNeighbors[a][b] = (plantNeighbors[a][b] || 0) + count;
+        plantNeighbors[b][a] = (plantNeighbors[b][a] || 0) + count;
+      }
+    }
+    // Generate "must be next to" rules: for each plant, pick the top neighbor
+    const rules = [];
+    for (const p of plants) {
+      const nbrs = Object.entries(plantNeighbors[p]).sort((a,b) => b[1] - a[1]);
+      if (nbrs.length > 0 && nbrs[0][1] >= 2) {
+        // Check if reciprocal rule already added
+        const exists = rules.some(r => r.a === nbrs[0][0] && r.b === p);
+        if (!exists) {
+          rules.push({ a: p, b: nbrs[0][0], emoji: '🤝' });
+        }
+      }
+    }
+    // Limit to 4 rules max
+    return rules.slice(0, 5);
+  }
+
+  /* ═══════════════════════════════════════════════════════
+     Check if a rule is satisfied
+     ═══════════════════════════════════════════════════════ */
+  function checkRule(grid, size, rule) {
+    const { a, b } = rule;
+    for (let r = 0; r < size; r++) {
+      for (let c = 0; c < size; c++) {
+        if (grid[r][c] !== a) continue;
+        const neighbors = [];
+        if (r > 0) neighbors.push(grid[r-1][c]);
+        if (r < size-1) neighbors.push(grid[r+1][c]);
+        if (c > 0) neighbors.push(grid[r][c-1]);
+        if (c < size-1) neighbors.push(grid[r][c+1]);
+        // Each a must have at least one b neighbor
+        if (!neighbors.some(n => n === b)) return false;
+      }
+    }
+    // Also check the reverse (each b must have at least one a neighbor)
+    for (let r = 0; r < size; r++) {
+      for (let c = 0; c < size; c++) {
+        if (grid[r][c] !== b) continue;
+        const neighbors = [];
+        if (r > 0) neighbors.push(grid[r-1][c]);
+        if (r < size-1) neighbors.push(grid[r+1][c]);
+        if (c > 0) neighbors.push(grid[r][c-1]);
+        if (c < size-1) neighbors.push(grid[r][c+1]);
+        if (!neighbors.some(n => n === a)) return false;
+      }
+    }
+    return true;
+  }
+
+  /* ═══════════════════════════════════════════════════════
+     Audio — Web Audio API with oscillator tones
+     ═══════════════════════════════════════════════════════ */
+  let audioCtx = null;
+  function ensureAudio() {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+  }
+  function playTone(freq, dur, vol, type) {
+    try {
+      ensureAudio();
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = type || 'sine';
+      osc.frequency.value = freq;
+      gain.gain.value = vol || 0.08;
+      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + dur);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start(audioCtx.currentTime);
+      osc.stop(audioCtx.currentTime + dur);
+    } catch(e) {}
+  }
+  function playPlace() { playTone(600, 0.12, 0.08, 'sine'); }
+  function playRemove() { playTone(300, 0.1, 0.06, 'sawtooth'); }
+  function playWin() {
+    playTone(523, 0.15, 0.1, 'sine');
+    setTimeout(() => playTone(659, 0.15, 0.1, 'sine'), 120);
+    setTimeout(() => playTone(784, 0.25, 0.1, 'sine'), 240);
+  }
+  function playFail() { playTone(200, 0.3, 0.08, 'sawtooth'); }
+  function playClick() { playTone(800, 0.06, 0.05, 'sine'); }
+  function playHint() { playTone(880, 0.08, 0.06, 'sine'); setTimeout(() => playTone(1100, 0.1, 0.06, 'sine'), 80); }
+  function vibrate(ms) { try { navigator.vibrate && navigator.vibrate(ms); } catch(e) {} }
+
+  /* ═══════════════════════════════════════════════════════
+     State
+     ═══════════════════════════════════════════════════════ */
+  const STORAGE_KEY = 'gridlock-garden-best';
+  const LEVEL_KEY = 'gridlock-garden-levels';
+  const CUR_LEVEL_KEY = 'gridlock-garden-cur';
+
+  let currentLevel = 0;
+  let grid = [];
+  let moveCount = 0;
+  let timerInterval = null;
+  let startTime = 0;
+  let elapsed = 0;
+  let selectedPlant = null;
+  let hintCount = 0;
+  let isComplete = false;
+
+  /* ═══════════════════════════════════════════════════════
+     DOM refs
+     ═══════════════════════════════════════════════════════ */
+  const $ = id => document.getElementById(id);
+  const titleScreen = $('titleScreen');
+  const levelSelectScreen = $('levelSelectScreen');
+  const gameScreen = $('gameScreen');
+  const resultScreen = $('resultScreen');
+  const titleBest = $('titleBest');
+  const titleLevel = $('titleLevel');
+  const playBtn = $('playBtn');
+  const levelSelectBtn = $('levelSelectBtn');
+  const levelGrid = $('levelGrid');
+  const levelBackBtn = $('levelBackBtn');
+  const gridContainer = $('gridContainer');
+  const palette = $('palette');
+  const rulesContainer = $('rulesContainer');
+  const levelLabel = $('levelLabel');
+  const moveCountEl = $('moveCount');
+  const timerDisplay = $('timerDisplay');
+  const hintBtn = $('hintBtn');
+  const resetBtn = $('resetBtn');
+  const quitBtn = $('quitBtn');
+  const resultIcon = $('resultIcon');
+  const resultTitle = $('resultTitle');
+  const resultStars = $('resultStars');
+  const resultDetail = $('resultDetail');
+  const resultBest = $('resultBest');
+  const resultNextBtn = $('resultNextBtn');
+  const resultRetryBtn = $('resultRetryBtn');
+  const resultMenuBtn = $('resultMenuBtn');
+  const toast = $('toast');
+
+  /* ═══════════════════════════════════════════════════════
+     Screen management
+     ═══════════════════════════════════════════════════════ */
+  function showScreen(screen) {
+    [titleScreen, levelSelectScreen, gameScreen, resultScreen].forEach(s => s.classList.remove('active'));
+    screen.classList.add('active');
+  }
+
+  function showToast(msg, duration) {
+    toast.textContent = msg;
+    toast.classList.add('show');
+    clearTimeout(toast._hide);
+    toast._hide = setTimeout(() => toast.classList.remove('show'), duration || 1800);
+  }
+
+  /* ═══════════════════════════════════════════════════════
+     Persistence
+     ═══════════════════════════════════════════════════════ */
+  function loadHighScore() {
+    return parseInt(localStorage.getItem(STORAGE_KEY) || '0', 10);
+  }
+  function saveHighScore(score) {
+    if (score > loadHighScore()) {
+      localStorage.setItem(STORAGE_KEY, String(score));
+    }
+  }
+  function loadLevelProgress() {
+    try {
+      return JSON.parse(localStorage.getItem(LEVEL_KEY)) || {};
+    } catch(e) { return {}; }
+  }
+  function saveLevelProgress(progress) {
+    localStorage.setItem(LEVEL_KEY, JSON.stringify(progress));
+  }
+  function loadCurrentLevel() {
+    return parseInt(localStorage.getItem(CUR_LEVEL_KEY) || '0', 10);
+  }
+  function saveCurrentLevel(lvl) {
+    localStorage.setItem(CUR_LEVEL_KEY, String(lvl));
+  }
+
+  /* ═══════════════════════════════════════════════════════
+     Timer
+     ═══════════════════════════════════════════════════════ */
+  function startTimer() {
+    startTime = Date.now();
+    elapsed = 0;
+    clearInterval(timerInterval);
+    timerInterval = setInterval(() => {
+      elapsed = Math.floor((Date.now() - startTime) / 1000);
+      timerDisplay.textContent = formatTime(elapsed);
+    }, 200);
+  }
+  function stopTimer() {
+    clearInterval(timerInterval);
+  }
+  function formatTime(sec) {
+    const m = Math.floor(sec / 60);
+    const s = sec % 60;
+    return `${m}:${s.toString().padStart(2,'0')}`;
+  }
+
+  /* ═══════════════════════════════════════════════════════
+     Rules management
+     ═══════════════════════════════════════════════════════ */
+  let levelRules = [];
+
+  function buildRules(level) {
+    levelRules = deriveRules(level);
+    renderRules();
+  }
+
+  function renderRules() {
+    rulesContainer.innerHTML = '';
+    if (levelRules.length === 0) {
+      rulesContainer.innerHTML = '<div class="rule-chip">🌿 Fill the grid!</div>';
+      return;
+    }
+    levelRules.forEach((rule, i) => {
+      const chip = document.createElement('div');
+      chip.className = 'rule-chip';
+      chip.id = 'rule-' + i;
+      chip.innerHTML = `<span class="r-icon">${rule.a}</span> ${rule.emoji} <span class="r-icon">${rule.b}</span>`;
+      const sat = checkRule(grid, LEVELS[currentLevel].size, rule);
+      if (sat) chip.classList.add('satisfied');
+      rulesContainer.appendChild(chip);
+    });
+  }
+
+  /* ═══════════════════════════════════════════════════════
+     Grid rendering
+     ═══════════════════════════════════════════════════════ */
+  function renderGrid() {
+    const level = LEVELS[currentLevel];
+    gridContainer.style.gridTemplateColumns = `repeat(${level.size}, 1fr)`;
+    gridContainer.innerHTML = '';
+    let cellIdx = 0;
+    for (let r = 0; r < level.size; r++) {
+      for (let c = 0; c < level.size; c++) {
+        const cell = document.createElement('div');
+        cell.className = 'cell';
+        cell.dataset.r = r;
+        cell.dataset.c = c;
+        cell.dataset.idx = cellIdx;
+        if (level.hints[r][c]) {
+          cell.classList.add('prefilled');
+          cell.textContent = level.solution[r][c];
+          // Ensure grid state has the hint
+          grid[r][c] = level.solution[r][c];
+        }
+        if (grid[r][c] && !level.hints[r][c]) {
+          cell.classList.add('occupied');
+          cell.textContent = grid[r][c];
+          cell.innerHTML += '<span class="cell-remove">✕</span>';
+        }
+        // Click to place selected, or remove
+        cell.addEventListener('click', () => onClickCell(r, c));
+        // Touch
+        cell.addEventListener('touchstart', (e) => {
+          e.preventDefault();
+          onClickCell(r, c);
+        }, { passive: false });
+        // Touch drag-over visual
+        const isTouching = { current: false };
+        gridContainer.appendChild(cell);
+        cellIdx++;
+      }
+    }
+    renderRules();
+  }
+
+  /* ═══════════════════════════════════════════════════════
+     Palette
+     ═══════════════════════════════════════════════════════ */
+  function renderPalette() {
+    const level = LEVELS[currentLevel];
+    palette.innerHTML = '';
+    // Count plants already placed
+    const counts = {};
+    for (const p of level.plants) counts[p] = 0;
+    for (let r = 0; r < level.size; r++)
+      for (let c = 0; c < level.size; c++) {
+        if (grid[r][c] && !level.hints[r][c]) counts[grid[r][c]]++;
+      }
+    // Total needed per plant (from solution)
+    const needed = {};
+    for (const p of level.plants) needed[p] = 0;
+    for (let r = 0; r < level.size; r++)
+      for (let c = 0; c < level.size; c++) {
+        if (!level.hints[r][c]) needed[level.solution[r][c]] = (needed[level.solution[r][c]] || 0) + 1;
+      }
+
+    for (const p of level.plants) {
+      const btn = document.createElement('button');
+      btn.className = 'plant-btn';
+      btn.textContent = p;
+      const remaining = (needed[p] || 0) - (counts[p] || 0);
+      if (remaining > 0) {
+        const badge = document.createElement('span');
+        badge.className = 'plant-count';
+        badge.textContent = remaining;
+        btn.appendChild(badge);
+      } else if (remaining <= 0 && needed[p] > 0) {
+        btn.style.opacity = '0.3';
+      }
+      btn.addEventListener('click', () => {
+        selectedPlant = (selectedPlant === p) ? null : p;
+        document.querySelectorAll('.plant-btn').forEach(b => b.classList.remove('selected'));
+        if (selectedPlant) btn.classList.add('selected');
+        playClick();
+      });
+      btn.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        selectedPlant = (selectedPlant === p) ? null : p;
+        document.querySelectorAll('.plant-btn').forEach(b => b.classList.remove('selected'));
+        if (selectedPlant) btn.classList.add('selected');
+        playClick();
+      }, { passive: false });
+      palette.appendChild(btn);
+    }
+  }
+
+  /* ═══════════════════════════════════════════════════════
+     Cell interaction
+     ═══════════════════════════════════════════════════════ */
+  function onClickCell(r, c) {
+    if (isComplete) return;
+    const level = LEVELS[currentLevel];
+    // Prefilled cells are immutable
+    if (level.hints[r][c]) return;
+
+    // If cell is occupied, remove the plant
+    if (grid[r][c]) {
+      grid[r][c] = '';
+      moveCount++;
+      updateStats();
+      playRemove();
+      vibrate(10);
+      renderGrid();
+      renderPalette();
+      return;
+    }
+
+    // If a plant is selected in the palette, place it
+    if (selectedPlant) {
+      // Check if we have remaining of this type
+      const needed = {};
+      for (const p of level.plants) needed[p] = 0;
+      for (let rr = 0; rr < level.size; rr++)
+        for (let cc = 0; cc < level.size; cc++) {
+          if (!level.hints[rr][cc]) needed[level.solution[rr][cc]] = (needed[level.solution[rr][cc]] || 0) + 1;
+        }
+      const placed = {};
+      for (const p of level.plants) placed[p] = 0;
+      for (let rr = 0; rr < level.size; rr++)
+        for (let cc = 0; cc < level.size; cc++) {
+          if (grid[rr][cc] && !level.hints[rr][cc]) placed[grid[rr][cc]] = (placed[grid[rr][cc]] || 0) + 1;
+        }
+      if (placed[selectedPlant] >= (needed[selectedPlant] || 0)) {
+        showToast('No more ' + selectedPlant + ' needed!');
+        return;
+      }
+
+      grid[r][c] = selectedPlant;
+      moveCount++;
+      playPlace();
+      vibrate(15);
+      updateStats();
+      renderGrid();
+      renderPalette();
+
+      // Check win condition: all non-hint cells filled
+      checkWin();
+      return;
+    }
+
+    // No plant selected — prompt
+    showToast('Select a plant from below first!');
+  }
+
+  /* ═══════════════════════════════════════════════════════
+     Win check
+     ═══════════════════════════════════════════════════════ */
+  function checkWin() {
+    const level = LEVELS[currentLevel];
+    // Check all non-hint cells are filled
+    for (let r = 0; r < level.size; r++) {
+      for (let c = 0; c < level.size; c++) {
+        if (!level.hints[r][c] && !grid[r][c]) return false;
+      }
+    }
+    // Check rules
+    for (const rule of levelRules) {
+      if (!checkRule(grid, level.size, rule)) {
+        showToast('Check your plant rules!', 2000);
+        playFail();
+        return false;
+      }
+    }
+    // WIN!
+    isComplete = true;
+    stopTimer();
+    const score = Math.max(100, Math.round(5000 / (moveCount + elapsed + 1)) * 100);
+    const high = loadHighScore();
+    if (score > high) saveHighScore(score);
+    // Save level progress
+    const prog = loadLevelProgress();
+    prog[String(currentLevel)] = 'completed';
+    saveLevelProgress(prog);
+    if (currentLevel + 1 > loadCurrentLevel() && currentLevel + 1 < LEVELS.length) {
+      saveCurrentLevel(currentLevel + 1);
+    }
+    playWin();
+    vibrate([50, 50, 80]);
+    showResult(true, score);
+    return true;
+  }
+
+  /* ═══════════════════════════════════════════════════════
+     Result screen
+     ═══════════════════════════════════════════════════════ */
+  function showResult(won, score) {
+    showScreen(resultScreen);
+    if (won) {
+      resultIcon.textContent = '🌸';
+      resultTitle.textContent = 'Garden Complete!';
+      const stars = moveCount <= 20 ? '⭐⭐⭐' : moveCount <= 40 ? '⭐⭐' : '⭐';
+      resultStars.textContent = stars;
+      resultDetail.textContent = `${moveCount} moves · ${formatTime(elapsed)}`;
+      const high = loadHighScore();
+      resultBest.textContent = high > 0 ? `Best: ${high}` : '';
+      resultNextBtn.style.display = currentLevel < LEVELS.length - 1 ? 'inline-block' : 'none';
+      if (currentLevel >= LEVELS.length - 1) {
+        resultTitle.textContent = '🎉 All Levels Complete!';
+        resultNextBtn.style.display = 'none';
+      }
+    }
+  }
+
+  /* ═══════════════════════════════════════════════════════
+     Update stats
+     ═══════════════════════════════════════════════════════ */
+  function updateStats() {
+    moveCountEl.textContent = moveCount + (moveCount === 1 ? ' move' : ' moves');
+  }
+
+  /* ═══════════════════════════════════════════════════════
+     Hint system
+     ═══════════════════════════════════════════════════════ */
+  function useHint() {
+    if (isComplete) return;
+    const level = LEVELS[currentLevel];
+    // Find first empty non-hint cell
+    for (let r = 0; r < level.size; r++) {
+      for (let c = 0; c < level.size; c++) {
+        if (!level.hints[r][c] && !grid[r][c]) {
+          grid[r][c] = level.solution[r][c];
+          moveCount += 2; // Penalty for using hint
+          playHint();
+          renderGrid();
+          renderPalette();
+          updateStats();
+          showToast('💡 Hint placed!');
+          checkWin();
+          return;
+        }
+      }
+    }
+    showToast('All cells filled!');
+  }
+
+  /* ═══════════════════════════════════════════════════════
+     Level management
+     ═══════════════════════════════════════════════════════ */
+  function startLevel(idx) {
+    currentLevel = idx;
+    const level = LEVELS[idx];
+    const prog = loadLevelProgress();
+    // Initialize grid
+    grid = [];
+    for (let r = 0; r < level.size; r++) {
+      grid[r] = [];
+      for (let c = 0; c < level.size; c++) {
+        grid[r][c] = level.hints[r][c] ? level.solution[r][c] : '';
+      }
+    }
+    moveCount = 0;
+    isComplete = false;
+    hintCount = 0;
+    selectedPlant = null;
+    levelLabel.textContent = `Level ${idx + 1}`;
+    buildRules(level);
+    renderGrid();
+    renderPalette();
+    updateStats();
+    startTimer();
+    showScreen(gameScreen);
+    saveCurrentLevel(idx);
+  }
+
+  function renderLevelSelect() {
+    levelGrid.innerHTML = '';
+    const prog = loadLevelProgress();
+    const unlocked = loadCurrentLevel();
+    for (let i = 0; i < LEVELS.length; i++) {
+      const btn = document.createElement('button');
+      btn.className = 'level-btn';
+      btn.textContent = i + 1;
+      if (i > unlocked) {
+        btn.classList.add('locked');
+        btn.disabled = true;
+      } else {
+        if (prog[String(i)] === 'completed') btn.classList.add('completed');
+        if (i === loadCurrentLevel()) btn.classList.add('current');
+        btn.addEventListener('click', () => {
+          playClick();
+          startLevel(i);
+        });
+        btn.addEventListener('touchstart', (e) => {
+          e.preventDefault();
+          playClick();
+          startLevel(i);
+        }, { passive: false });
+      }
+      levelGrid.appendChild(btn);
+    }
+  }
+
+  /* ═══════════════════════════════════════════════════════
+     Keyboard support
+     ═══════════════════════════════════════════════════════ */
+  document.addEventListener('keydown', (e) => {
+    if (gameScreen.classList.contains('active')) {
+      const level = LEVELS[currentLevel];
+      if (e.key >= '1' && e.key <= '9') {
+        const idx = parseInt(e.key) - 1;
+        if (idx < level.plants.length) {
+          const p = level.plants[idx];
+          selectedPlant = (selectedPlant === p) ? null : p;
+          document.querySelectorAll('.plant-btn').forEach(b => b.classList.remove('selected'));
+          const btns = palette.querySelectorAll('.plant-btn');
+          if (btns[idx]) {
+            if (selectedPlant) btns[idx].classList.add('selected');
+          }
+          playClick();
+        }
+      }
+      if (e.key === 'h' || e.key === 'H') useHint();
+      if (e.key === 'r' || e.key === 'R') resetGame();
+      if (e.key === 'Escape') { stopTimer(); showScreen(titleScreen); renderLevelSelect(); }
+    }
+    if (titleScreen.classList.contains('active') && e.key === 'Enter') {
+      startLevel(loadCurrentLevel());
+    }
+  });
+
+  /* ═══════════════════════════════════════════════════════
+     Reset game
+     ═══════════════════════════════════════════════════════ */
+  function resetGame() {
+    if (isComplete) return;
+    const level = LEVELS[currentLevel];
+    grid = [];
+    for (let r = 0; r < level.size; r++) {
+      grid[r] = [];
+      for (let c = 0; c < level.size; c++) {
+        grid[r][c] = level.hints[r][c] ? level.solution[r][c] : '';
+      }
+    }
+    moveCount = 0;
+    selectedPlant = null;
+    playClick();
+    renderGrid();
+    renderPalette();
+    updateStats();
+    showToast('🔄 Grid reset!');
+  }
+
+  /* ═══════════════════════════════════════════════════════
+     Init
+     ═══════════════════════════════════════════════════════ */
+  function init() {
+    const high = loadHighScore();
+    titleBest.textContent = high > 0 ? `🏆 Best: ${high}` : '';
+    const cur = loadCurrentLevel();
+    titleLevel.textContent = `Level ${cur + 1} of ${LEVELS.length}`;
+
+    playBtn.addEventListener('click', () => { playClick(); startLevel(loadCurrentLevel()); });
+    levelSelectBtn.addEventListener('click', () => { playClick(); renderLevelSelect(); showScreen(levelSelectScreen); });
+    levelBackBtn.addEventListener('click', () => { playClick(); showScreen(titleScreen); });
+    hintBtn.addEventListener('click', useHint);
+    resetBtn.addEventListener('click', resetGame);
+    quitBtn.addEventListener('click', () => { stopTimer(); playClick(); showScreen(titleScreen); renderLevelSelect(); });
+    resultNextBtn.addEventListener('click', () => { playClick(); if (currentLevel < LEVELS.length - 1) startLevel(currentLevel + 1); });
+    resultRetryBtn.addEventListener('click', () => { playClick(); startLevel(currentLevel); });
+    resultMenuBtn.addEventListener('click', () => { stopTimer(); playClick(); showScreen(titleScreen); renderLevelSelect(); });
+
+    // Init progress: level 0 unlocked by default
+    if (!loadCurrentLevel() && LEVELS.length > 0) saveCurrentLevel(0);
+  }
+
+  // Boot
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+
+})();
+</script>
+</body>
+</html>
