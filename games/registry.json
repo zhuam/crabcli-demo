@@ -353,6 +353,26 @@
       "rating": 4.2
     },
     {
+      "id": "enchanted-garden-match",
+      "name": "Enchanted Garden Match",
+      "description": "魔法花园三消 — 匹配花朵充能法术，击溃暗影领主！触屏/鼠标/键盘全支持",
+      "category": "puzzle",
+      "tags": [
+        "singleplayer",
+        "puzzle",
+        "match-3",
+        "magic",
+        "short-session"
+      ],
+      "thumbnail": "/games/044-enchanted-garden-match/thumb.svg",
+      "path": "/games/044-enchanted-garden-match/",
+      "hasServer": false,
+      "players": "1",
+      "version": "1.0.0",
+      "featured": true,
+      "rating": 4.3
+    },
+    {
       "id": "chat-master",
       "name": "Chat Master",
       "description": "聊天恋爱模拟 — 选择回复推进剧情，达成目标好感度通关",

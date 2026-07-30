@@ -1,0 +1,1595 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
+  <meta name="theme-color" content="#1a0a2e" />
+  <title>Enchanted Garden Match</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700;800;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../../games/shared/game-frame.css" />
+  <style>
+    /* ═══════════════════════════════════════════════════════
+       Enchanted Garden Match — Match-3 magic spell combat!
+       ═══════════════════════════════════════════════════════ */
+
+    :root {
+      --bg-deep: #1a0a2e;
+      --bg-body: #12071f;
+      --surface: rgba(180, 74, 255, 0.08);
+      --surface-hover: rgba(180, 74, 255, 0.14);
+      --border: rgba(180, 74, 255, 0.15);
+      --border-strong: rgba(180, 74, 255, 0.3);
+      --text: #f0e6ff;
+      --text-dim: rgba(240, 230, 255, 0.6);
+      --text-muted: rgba(240, 230, 255, 0.3);
+      --accent: #b44aff;
+      --accent-glow: #7b2dbe;
+      --gold: #ffd700;
+      --success: #00e676;
+      --danger: #ff1744;
+      --warning: #ffab40;
+      --boss-color: #ff0066;
+      --spell-color: #b44aff;
+      --font-display: 'Outfit', system-ui, sans-serif;
+      --font-body: 'Inter', system-ui, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+      --radius-sm: 6px;
+      --radius-md: 12px;
+      --radius-lg: 20px;
+      --radius-xl: 28px;
+      --board-size: min(85vw, 380px);
+      --cell-gap: 2px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      background: var(--bg-deep);
+      color: var(--text);
+      font-family: var(--font-body);
+      overflow: hidden;
+      height: 100%;
+      width: 100%;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: none;
+      -webkit-touch-callout: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    #app {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* ─── Floating particles background ─── */
+    .bg-particles {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      overflow: hidden;
+      z-index: 0;
+    }
+    .bg-particle {
+      position: absolute;
+      width: 3px;
+      height: 3px;
+      border-radius: 50%;
+      background: var(--accent);
+      opacity: 0;
+      animation: floatUp linear infinite;
+    }
+    @keyframes floatUp {
+      0% { transform: translateY(100vh) scale(0); opacity: 0; }
+      10% { opacity: 0.4; }
+      90% { opacity: 0.4; }
+      100% { transform: translateY(-10vh) scale(1); opacity: 0; }
+    }
+
+    /* ─── Screens ─── */
+    .screen {
+      position: fixed; inset: 0;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      transition: opacity 0.4s ease, transform 0.4s ease;
+      will-change: opacity, transform;
+      z-index: 1;
+    }
+    .screen.hidden {
+      opacity: 0; pointer-events: none; transform: scale(0.96);
+    }
+
+    /* ─── Title Screen ─── */
+    #title-screen {
+      background: radial-gradient(ellipse at 50% 30%, #2a1050 0%, var(--bg-deep) 70%);
+      text-align: center;
+      gap: 0;
+    }
+    .title-icon {
+      font-size: clamp(3rem, 10vw, 5rem);
+      margin-bottom: 4px;
+      filter: drop-shadow(0 0 30px rgba(180, 74, 255, 0.4));
+      animation: float 3s ease-in-out infinite;
+    }
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+    }
+    .title-content h1 {
+      font-family: var(--font-display);
+      font-weight: 900;
+      font-size: clamp(1.6rem, 5.5vw, 2.8rem);
+      line-height: 1.1;
+      background: linear-gradient(135deg, #ffd700, #b44aff, #00e5ff);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 4px;
+    }
+    .title-content h1 .shine {
+      -webkit-text-fill-color: transparent;
+    }
+    .subtitle {
+      color: var(--text-dim);
+      font-size: clamp(0.8rem, 2vw, 0.95rem);
+      max-width: 300px;
+      margin: 0 auto 20px;
+      line-height: 1.5;
+    }
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 14px 40px;
+      border: 2px solid var(--accent);
+      border-radius: 50px;
+      background: linear-gradient(135deg, rgba(180, 74, 255, 0.2), rgba(180, 74, 255, 0.05));
+      color: var(--text);
+      font-family: var(--font-display);
+      font-weight: 800;
+      font-size: 1.1rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      letter-spacing: 0.5px;
+    }
+    .btn-primary:hover, .btn-primary:active {
+      background: linear-gradient(135deg, rgba(180, 74, 255, 0.35), rgba(180, 74, 255, 0.15));
+      transform: scale(1.05);
+      box-shadow: 0 0 30px rgba(180, 74, 255, 0.25);
+    }
+    .title-high-score {
+      margin-top: 16px;
+      color: var(--text-dim);
+      font-size: 0.85rem;
+    }
+    .title-high-score span {
+      color: var(--gold);
+      font-weight: 700;
+    }
+    .title-instructions {
+      margin-top: 14px;
+      display: flex;
+      gap: 14px;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-muted);
+      font-size: 0.72rem;
+    }
+    .title-instructions span {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    /* ─── Game Screen ─── */
+    #game-screen {
+      background: radial-gradient(ellipse at 50% 15%, #2a1050 0%, var(--bg-deep) 70%);
+      justify-content: flex-start;
+      padding-top: max(env(safe-area-inset-top, 0px) + 48px, 48px);
+      gap: 3px;
+    }
+
+    /* Boss Area */
+    #boss-area {
+      width: 100%;
+      max-width: var(--board-size);
+      padding: 0 6px;
+      margin-bottom: 2px;
+    }
+    #boss-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 10px;
+      background: rgba(255, 0, 102, 0.06);
+      border: 1px solid rgba(255, 0, 102, 0.15);
+      border-radius: var(--radius-md);
+    }
+    #boss-emoji {
+      font-size: 1.6rem;
+      filter: drop-shadow(0 0 12px rgba(255, 0, 102, 0.4));
+      transition: transform 0.3s;
+      flex-shrink: 0;
+    }
+    #boss-emoji.hit {
+      animation: bossHit 0.3s ease;
+    }
+    @keyframes bossHit {
+      0%, 100% { transform: scale(1) rotate(0deg); }
+      25% { transform: scale(1.3) rotate(-8deg); }
+      50% { transform: scale(1.1) rotate(5deg); }
+    }
+    #boss-info {
+      flex: 1;
+      min-width: 0;
+    }
+    #boss-name {
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--boss-color);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 2px;
+    }
+    #boss-hp-bar-bg {
+      width: 100%;
+      height: 8px;
+      background: rgba(255,255,255,0.08);
+      border-radius: 4px;
+      overflow: hidden;
+      position: relative;
+    }
+    #boss-hp-fill {
+      height: 100%;
+      width: 100%;
+      background: linear-gradient(90deg, var(--boss-color), #ff9100);
+      border-radius: 4px;
+      transition: width 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+      position: relative;
+    }
+    #boss-hp-fill::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2));
+      border-radius: 4px;
+    }
+    #boss-hp-fill.damage {
+      animation: hpFlash 0.3s ease;
+    }
+    @keyframes hpFlash {
+      0% { filter: brightness(1); }
+      50% { filter: brightness(2); }
+      100% { filter: brightness(1); }
+    }
+    #boss-hp-text {
+      font-size: 0.6rem;
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+      margin-top: 1px;
+    }
+
+    /* Game Header */
+    #game-header {
+      width: 100%;
+      max-width: var(--board-size);
+      padding: 0 6px;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .score-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .score-label {
+      color: var(--text-dim);
+      font-size: 0.65rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    .score-value {
+      font-family: var(--font-display);
+      font-size: 1.2rem;
+      font-weight: 900;
+      color: var(--gold);
+    }
+    .score-value.animate {
+      animation: scorePop 0.3s ease;
+    }
+    @keyframes scorePop {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.25); }
+      100% { transform: scale(1); }
+    }
+    .moves-value {
+      font-family: var(--font-display);
+      font-size: 1.1rem;
+      font-weight: 900;
+      color: var(--text);
+    }
+    .moves-value.warning-text {
+      color: var(--danger);
+    }
+
+    /* Spell Meter */
+    #spell-meter-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 8px;
+      background: var(--surface);
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+    }
+    #spell-icon {
+      font-size: 1rem;
+      flex-shrink: 0;
+    }
+    #spell-meter-bg {
+      flex: 1;
+      height: 6px;
+      background: rgba(255,255,255,0.06);
+      border-radius: 3px;
+      overflow: hidden;
+      position: relative;
+    }
+    #spell-meter-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--accent-glow), var(--accent), #00e5ff);
+      border-radius: 3px;
+      transition: width 0.3s ease;
+      position: relative;
+    }
+    #spell-meter-fill.full {
+      animation: meterPulse 0.6s ease-in-out infinite;
+      box-shadow: 0 0 10px rgba(180, 74, 255, 0.5);
+    }
+    @keyframes meterPulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
+    }
+    #spell-meter-label {
+      font-size: 0.6rem;
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+      white-space: nowrap;
+      min-width: 38px;
+      text-align: right;
+    }
+
+    /* Board */
+    #board-container {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      padding: 2px;
+      min-height: 0;
+    }
+    #board {
+      display: grid;
+      grid-template-columns: repeat(8, 1fr);
+      gap: var(--cell-gap);
+      width: var(--board-size);
+      height: var(--board-size);
+      padding: 4px;
+      background: rgba(0,0,0,0.35);
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border);
+      box-shadow: inset 0 2px 20px rgba(0,0,0,0.5), 0 4px 30px rgba(0,0,0,0.3);
+    }
+
+    .cell {
+      position: relative;
+      border-radius: 4px;
+      background: rgba(180, 74, 255, 0.03);
+      border: 1px solid rgba(180, 74, 255, 0.05);
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .cell.selected {
+      background: rgba(180, 74, 255, 0.15);
+      border-color: var(--accent);
+      box-shadow: inset 0 0 15px rgba(180, 74, 255, 0.15);
+    }
+    .cell.hint-highlight {
+      animation: hintPulse 0.8s ease-in-out infinite;
+    }
+    @keyframes hintPulse {
+      0%, 100% { background: rgba(180, 74, 255, 0.08); border-color: rgba(180, 74, 255, 0.15); }
+      50% { background: rgba(180, 74, 255, 0.2); border-color: var(--accent); }
+    }
+
+    /* Gems (Flowers) */
+    .gem {
+      position: absolute;
+      inset: 1px;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: clamp(1.2rem, 3vw, 1.7rem);
+      cursor: pointer;
+      transition: transform 0.12s ease, box-shadow 0.12s ease;
+      will-change: transform;
+      z-index: 2;
+      perspective: 200px;
+    }
+    .gem::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      opacity: 0.1;
+      transition: opacity 0.2s;
+    }
+    .gem::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      border: 1.5px solid;
+      opacity: 0.25;
+      transition: opacity 0.2s;
+    }
+    .gem:hover {
+      transform: scale(1.06);
+      z-index: 3;
+    }
+    .gem.selected {
+      transform: scale(1.08);
+      z-index: 4;
+      animation: gemSelect 0.6s ease-in-out infinite;
+    }
+    @keyframes gemSelect {
+      0%, 100% { transform: scale(1.08); }
+      50% { transform: scale(1.15); }
+    }
+    .gem.removing {
+      animation: gemRemove 0.25s ease forwards;
+    }
+    @keyframes gemRemove {
+      0% { transform: scale(1); opacity: 1; }
+      100% { transform: scale(0.2) rotate(180deg); opacity: 0; }
+    }
+    .gem.falling {
+      animation: gemFall 0.25s ease forwards;
+    }
+    @keyframes gemFall {
+      0% { transform: translateY(calc(var(--fall-dist) * -1)) scale(0.8); opacity: 0; }
+      100% { transform: translateY(0) scale(1); opacity: 1; }
+    }
+    .gem.spawning {
+      animation: gemSpawn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    @keyframes gemSpawn {
+      0% { transform: scale(0); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    .gem.swap-in {
+      animation: gemSwap 0.15s ease;
+    }
+    @keyframes gemSwap {
+      0% { transform: scale(0.8) rotate(10deg); }
+      100% { transform: scale(1) rotate(0deg); }
+    }
+    .gem.invalid-swap {
+      animation: invalidShake 0.3s ease;
+    }
+    @keyframes invalidShake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-4px); }
+      75% { transform: translateX(4px); }
+    }
+
+    /* Gem types */
+    .gem-0::before { background: #ff4081; }
+    .gem-0::after  { border-color: #ff4081; }
+    .gem-0 { background: linear-gradient(135deg, #3d1525, #2a0e1a); }
+
+    .gem-1::before { background: #ffd700; }
+    .gem-1::after  { border-color: #ffd700; }
+    .gem-1 { background: linear-gradient(135deg, #3d3520, #2a2515); }
+
+    .gem-2::before { background: #00e676; }
+    .gem-2::after  { border-color: #00e676; }
+    .gem-2 { background: linear-gradient(135deg, #0d3d20, #082a15); }
+
+    .gem-3::before { background: #b44aff; }
+    .gem-3::after  { border-color: #b44aff; }
+    .gem-3 { background: linear-gradient(135deg, #2a0d3d, #1a082a); }
+
+    .gem-4::before { background: #ff5252; }
+    .gem-4::after  { border-color: #ff5252; }
+    .gem-4 { background: linear-gradient(135deg, #3d1515, #2a0e0e); }
+
+    .gem-5::before { background: #40c4ff; }
+    .gem-5::after  { border-color: #40c4ff; }
+    .gem-5 { background: linear-gradient(135deg, #0d2a3d, #081c2a); }
+
+    /* ─── Result Screens ─── */
+    .result-screen {
+      background: radial-gradient(ellipse at 50% 40%, #2a1050 0%, var(--bg-deep) 70%);
+      text-align: center;
+    }
+    .result-icon {
+      font-size: clamp(3.5rem, 12vw, 5rem);
+      margin-bottom: 8px;
+    }
+    .result-screen h1 {
+      font-family: var(--font-display);
+      font-weight: 900;
+      font-size: clamp(2rem, 6vw, 2.8rem);
+      margin-bottom: 6px;
+    }
+    .result-screen h1.win-title {
+      background: linear-gradient(135deg, var(--gold), var(--accent));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .result-screen h1.lose-title {
+      color: var(--boss-color);
+    }
+    .result-subtitle {
+      color: var(--text-dim);
+      font-size: clamp(0.85rem, 2vw, 1rem);
+      margin-bottom: 20px;
+    }
+    .result-stats {
+      display: flex;
+      gap: 24px;
+      justify-content: center;
+      margin-bottom: 28px;
+    }
+    .result-stat {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .result-stat-label {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    .result-stat-value {
+      font-family: var(--font-display);
+      font-size: 1.6rem;
+      font-weight: 900;
+      color: var(--gold);
+    }
+    .result-stat-value.new-best {
+      animation: scorePop 0.5s ease infinite;
+      color: var(--success);
+    }
+    .new-best-label {
+      font-size: 0.65rem;
+      color: var(--success);
+      font-weight: 600;
+    }
+
+    /* ─── Particles ─── */
+    .particle {
+      position: fixed;
+      pointer-events: none;
+      z-index: 999;
+      border-radius: 50%;
+      animation: particleFly 0.6s ease-out forwards;
+    }
+    @keyframes particleFly {
+      0% { opacity: 1; transform: translate(0, 0) scale(1); }
+      100% { opacity: 0; transform: translate(var(--dx), var(--dy)) scale(0); }
+    }
+
+    /* ─── Spell Cast Effect ─── */
+    .spell-burst {
+      position: fixed;
+      pointer-events: none;
+      z-index: 998;
+      width: 200px;
+      height: 200px;
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      animation: spellBurst 0.8s ease-out forwards;
+    }
+    @keyframes spellBurst {
+      0% { transform: translate(-50%, -50%) scale(0); opacity: 0.8; }
+      100% { transform: translate(-50%, -50%) scale(3); opacity: 0; }
+    }
+
+    /* ─── Confetti ─── */
+    .confetti-piece {
+      position: fixed;
+      pointer-events: none;
+      z-index: 998;
+      width: 8px;
+      height: 8px;
+      border-radius: 2px;
+      animation: confettiFall var(--dur, 2s) ease-out forwards;
+    }
+    @keyframes confettiFall {
+      0% { opacity: 1; transform: translateY(-20px) rotate(0deg) scale(1); }
+      100% { opacity: 0; transform: translateY(100vh) rotate(720deg) scale(0.3); }
+    }
+
+    /* ─── Responsive ─── */
+    @media (max-height: 640px) {
+      #game-screen { padding-top: max(env(safe-area-inset-top, 0px) + 40px, 40px); gap: 2px; }
+      #boss-row { padding: 4px 8px; }
+      #boss-emoji { font-size: 1.2rem; }
+      #boss-hp-bar-bg { height: 6px; }
+      .score-value { font-size: 1rem; }
+      #board { padding: 3px; gap: 1px; }
+      .gem { font-size: clamp(1rem, 2.5vw, 1.4rem); }
+    }
+
+    @media (min-width: 768px) {
+      :root { --board-size: 420px; }
+      .gem { font-size: 1.8rem; }
+    }
+
+    @media (pointer: coarse) {
+      .gem:hover { transform: none; }
+    }
+  </style>
+</head>
+<body>
+  <a href="/" class="back-to-hub" aria-label="Back to hub">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
+    <span>Back</span>
+  </a>
+
+  <div id="app">
+
+    <!-- ═══ BACKGROUND PARTICLES ═══ -->
+    <div id="bg-particles" class="bg-particles"></div>
+
+    <!-- ═══ TITLE SCREEN ═══ -->
+    <div id="title-screen" class="screen">
+      <div class="title-content">
+        <div class="title-icon">🌿</div>
+        <h1>Enchanted<br>Garden Match</h1>
+        <p class="subtitle">Match magical flowers to charge spells and defeat the Shadow Lord!</p>
+        <button id="play-btn" class="btn-primary">✨ Play</button>
+        <div class="title-high-score">🏆 Best Score: <span id="title-high-score">0</span></div>
+        <div class="title-instructions">
+          <span>🖱️ Swap adjacent</span>
+          <span style="opacity:0.3">·</span>
+          <span>✨ Match 3+</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ GAME SCREEN ═══ -->
+    <div id="game-screen" class="screen hidden">
+      <div id="boss-area">
+        <div id="boss-row">
+          <div id="boss-emoji">👹</div>
+          <div id="boss-info">
+            <div id="boss-name">Shadow Lord</div>
+            <div id="boss-hp-bar-bg"><div id="boss-hp-fill" style="width:100%"></div></div>
+            <div id="boss-hp-text">HP: 100 / 100</div>
+          </div>
+        </div>
+      </div>
+
+      <div id="game-header">
+        <div class="score-row">
+          <div>
+            <div class="score-label">Score</div>
+            <div id="score" class="score-value">0</div>
+          </div>
+          <div style="text-align:right">
+            <div class="score-label">Moves</div>
+            <div id="moves" class="moves-value">30</div>
+          </div>
+        </div>
+        <div id="spell-meter-row">
+          <span id="spell-icon">✨</span>
+          <div id="spell-meter-bg"><div id="spell-meter-fill"></div></div>
+          <span id="spell-meter-label">0%</span>
+        </div>
+      </div>
+
+      <div id="board-container">
+        <div id="board"></div>
+      </div>
+
+      <div id="game-footer" style="width:100%;max-width:var(--board-size);padding:0 6px 8px;">
+        <div id="status-text" style="font-size:0.65rem;color:var(--text-muted);text-align:center;">
+          🌸 Select a flower, then an adjacent one to swap
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ WIN SCREEN ═══ -->
+    <div id="win-screen" class="screen hidden result-screen">
+      <div class="result-icon">🏆</div>
+      <h1 class="win-title">Victory!</h1>
+      <p class="result-subtitle">The Shadow Lord has been banished! The garden is safe!</p>
+      <div class="result-stats">
+        <div class="result-stat">
+          <span class="result-stat-label">Score</span>
+          <span class="result-stat-value" id="win-score">0</span>
+        </div>
+        <div class="result-stat">
+          <span class="result-stat-label">Best</span>
+          <span class="result-stat-value" id="win-best">0</span>
+        </div>
+        <div class="result-stat">
+          <span class="result-stat-label">Moves Left</span>
+          <span class="result-stat-value" id="win-moves">0</span>
+        </div>
+      </div>
+      <button id="win-play-again" class="btn-primary">🌿 Play Again</button>
+    </div>
+
+    <!-- ═══ LOSE SCREEN ═══ -->
+    <div id="lose-screen" class="screen hidden result-screen">
+      <div class="result-icon">💀</div>
+      <h1 class="lose-title">Defeated!</h1>
+      <p class="result-subtitle">The Shadow Lord's darkness prevails... Try again with stronger magic!</p>
+      <div class="result-stats">
+        <div class="result-stat">
+          <span class="result-stat-label">Score</span>
+          <span class="result-stat-value" id="lose-score">0</span>
+        </div>
+        <div class="result-stat">
+          <span class="result-stat-label">Best</span>
+          <span class="result-stat-value" id="lose-best">0</span>
+        </div>
+        <div class="result-stat">
+          <span class="result-stat-label">Boss HP</span>
+          <span class="result-stat-value" id="lose-boss-hp" style="color:var(--boss-color)">100</span>
+        </div>
+      </div>
+      <button id="lose-try-again" class="btn-primary">🌿 Try Again</button>
+    </div>
+
+  </div>
+
+  <script>
+  /* ═══════════════════════════════════════════════════════════
+     Enchanted Garden Match — Game Script
+     ═══════════════════════════════════════════════════════════ */
+
+  (function() {
+    'use strict';
+
+    // ─── Flower types ───
+    const FLOWERS = [
+      { type: 0, emoji: '\u{1F338}', name: 'Cherry Blossom', css: 'gem-0' },  // 🌸
+      { type: 1, emoji: '\u{1F33B}', name: 'Sunflower',      css: 'gem-1' },  // 🌻
+      { type: 2, emoji: '\u{1F33F}', name: 'Fairy Vine',     css: 'gem-2' },  // 🌿
+      { type: 3, emoji: '\u{1F33A}', name: 'Magic Bloom',    css: 'gem-3' },  // 🌺
+      { type: 4, emoji: '\u{1F339}', name: 'Enchanted Rose',  css: 'gem-4' },  // 🌹
+      { type: 5, emoji: '\u{1F48E}', name: 'Crystal Flower', css: 'gem-5' },  // 💎
+    ];
+
+    const ROWS = 8;
+    const COLS = 8;
+    const TOTAL_CELLS = ROWS * COLS;
+    const MAX_MOVES = 30;
+    const BOSS_MAX_HP = 100;
+    const SPELL_METER_MAX = 10; // 10 flower matches = 1 spell
+    const SPELL_BASE_DAMAGE = 12;
+    const CHAIN_BONUS_PER_CASCADE = 2;
+    const STORAGE_KEY = 'enchantedGardenMatch_highScore';
+
+    // ─── State ───
+    let board = [];
+    let score = 0;
+    let highScore = parseInt(localStorage.getItem(STORAGE_KEY) || '0', 10);
+    let movesLeft = MAX_MOVES;
+    let bossHP = BOSS_MAX_HP;
+    let spellMeter = 0;
+    let selectedCell = -1;
+    let gameRunning = false;
+    let isAnimating = false;
+    let comboLevel = 0;
+    let gameResult = null; // 'win' | 'lose' | null
+
+    // ─── DOM refs ───
+    const $ = (id) => document.getElementById(id);
+    const titleScreen = $('title-screen');
+    const gameScreen  = $('game-screen');
+    const winScreen   = $('win-screen');
+    const loseScreen  = $('lose-screen');
+    const boardEl     = $('board');
+    const scoreEl     = $('score');
+    const movesEl     = $('moves');
+    const titleHigh   = $('title-high-score');
+    const bossEmoji   = $('boss-emoji');
+    const bossHPFill  = $('boss-hp-fill');
+    const bossHPText  = $('boss-hp-text');
+    const spellMeterFill = $('spell-meter-fill');
+    const spellMeterLabel = $('spell-meter-label');
+    const statusText  = $('status-text');
+
+    // ─── Audio ───
+    let audioCtx = null;
+    function getAudio() {
+      if (!audioCtx) {
+        try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch (_) {}
+      }
+      return audioCtx;
+    }
+    function playTone(freq, duration, type, volume) {
+      try {
+        const ctx = getAudio();
+        if (!ctx) return;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = type || 'sine';
+        osc.frequency.value = freq;
+        gain.gain.value = volume || 0.08;
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(ctx.currentTime);
+        osc.stop(ctx.currentTime + duration);
+      } catch (_) {}
+    }
+    function playMatchSound(matchSize) {
+      const base = 260 + matchSize * 30;
+      playTone(base, 0.10, 'sine', 0.10);
+      setTimeout(() => playTone(base * 1.4, 0.08, 'sine', 0.07), 50);
+    }
+    function playSelectSound() {
+      playTone(440, 0.06, 'sine', 0.06);
+    }
+    function playSwapSound() {
+      playTone(350, 0.06, 'sine', 0.06);
+      setTimeout(() => playTone(550, 0.06, 'sine', 0.05), 40);
+    }
+    function playInvalidSound() {
+      playTone(150, 0.1, 'square', 0.04);
+    }
+    function playSpellSound() {
+      const notes = [440, 554, 659, 880];
+      notes.forEach((n, i) => setTimeout(() => playTone(n, 0.15, 'sine', 0.10), i * 80));
+    }
+    function playBossHitSound() {
+      playTone(120, 0.2, 'sawtooth', 0.08);
+      setTimeout(() => playTone(80, 0.3, 'sawtooth', 0.06), 100);
+    }
+    function playWinSound() {
+      const notes = [523, 659, 784, 1047, 1318];
+      notes.forEach((n, i) => setTimeout(() => playTone(n, 0.25, 'sine', 0.10), i * 120));
+    }
+    function playLoseSound() {
+      playTone(300, 0.2, 'sawtooth', 0.06);
+      setTimeout(() => playTone(200, 0.3, 'sawtooth', 0.05), 200);
+      setTimeout(() => playTone(150, 0.4, 'sawtooth', 0.04), 400);
+    }
+    function vibrate(ms) {
+      try { if (navigator.vibrate) navigator.vibrate(ms); } catch (_) {}
+    }
+
+    // ─── Background particles ───
+    function initBgParticles() {
+      const container = $('bg-particles');
+      for (let i = 0; i < 25; i++) {
+        const p = document.createElement('div');
+        p.className = 'bg-particle';
+        p.style.left = Math.random() * 100 + '%';
+        p.style.animationDuration = (6 + Math.random() * 10) + 's';
+        p.style.animationDelay = Math.random() * 10 + 's';
+        p.style.width = (1 + Math.random() * 3) + 'px';
+        p.style.height = p.style.width;
+        p.style.background = ['rgba(180,74,255,0.4)', 'rgba(0,229,255,0.3)', 'rgba(255,215,0,0.3)'][Math.floor(Math.random() * 3)];
+        container.appendChild(p);
+      }
+    }
+
+    // ─── Screen helpers ───
+    function showScreen(screen) {
+      [titleScreen, gameScreen, winScreen, loseScreen].forEach(s => s.classList.add('hidden'));
+      screen.classList.remove('hidden');
+    }
+
+    // ─── Board logic ───
+    function createBoard() {
+      board = [];
+      for (let r = 0; r < ROWS; r++) {
+        board[r] = [];
+        for (let c = 0; c < COLS; c++) {
+          let type;
+          // Place flowers ensuring no pre-existing matches
+          do {
+            type = Math.floor(Math.random() * FLOWERS.length);
+          } while (wouldMatch(r, c, type));
+          board[r][c] = type;
+        }
+      }
+    }
+
+    function wouldMatch(row, col, type) {
+      // Check horizontal: 2 to the left same type
+      if (col >= 2 && board[row][col - 1] === type && board[row][col - 2] === type) return true;
+      // Check vertical: 2 above same type
+      if (row >= 2 && board[row - 1] && board[row - 1][col] === type && board[row - 2] && board[row - 2][col] === type) return true;
+      return false;
+    }
+
+    // ─── Board rendering ───
+    function buildBoardDOM() {
+      boardEl.innerHTML = '';
+      for (let i = 0; i < TOTAL_CELLS; i++) {
+        const cell = document.createElement('div');
+        cell.className = 'cell';
+        cell.dataset.idx = i;
+        boardEl.appendChild(cell);
+      }
+    }
+
+    function renderBoard() {
+      const cells = boardEl.children;
+      for (let i = 0; i < TOTAL_CELLS; i++) {
+        const cell = cells[i];
+        const r = Math.floor(i / COLS);
+        const c = i % COLS;
+        const type = board[r][c];
+        cell.innerHTML = '';
+        cell.classList.remove('selected');
+        if (selectedCell === i) cell.classList.add('selected');
+        if (type !== null && type !== undefined) {
+          const f = FLOWERS[type];
+          const gem = document.createElement('div');
+          gem.className = `gem ${f.css}`;
+          gem.textContent = f.emoji;
+          gem.dataset.r = r;
+          gem.dataset.c = c;
+          gem.dataset.idx = i;
+          cell.appendChild(gem);
+        }
+      }
+    }
+
+    function updateUI() {
+      scoreEl.textContent = score;
+      movesEl.textContent = movesLeft;
+      movesEl.classList.toggle('warning-text', movesLeft <= 5);
+
+      // Boss HP
+      const pct = Math.max(0, (bossHP / BOSS_MAX_HP) * 100);
+      bossHPFill.style.width = pct + '%';
+      bossHPText.textContent = `HP: ${Math.max(0, bossHP)} / ${BOSS_MAX_HP}`;
+
+      // Boss emoji changes with HP
+      if (bossHP <= 0) {
+        bossEmoji.textContent = '💀';
+      } else if (bossHP < BOSS_MAX_HP * 0.3) {
+        bossEmoji.textContent = '😈';
+      } else if (bossHP < BOSS_MAX_HP * 0.6) {
+        bossEmoji.textContent = '👿';
+      } else {
+        bossEmoji.textContent = '👹';
+      }
+
+      // Spell meter
+      const meterPct = Math.min(100, (spellMeter / SPELL_METER_MAX) * 100);
+      spellMeterFill.style.width = meterPct + '%';
+      spellMeterFill.classList.toggle('full', spellMeter >= SPELL_METER_MAX);
+      spellMeterLabel.textContent = Math.floor(meterPct) + '%';
+    }
+
+    // ─── Match detection ───
+    function findMatches() {
+      const matched = new Set();
+
+      // Horizontal matches
+      for (let r = 0; r < ROWS; r++) {
+        let c = 0;
+        while (c < COLS) {
+          if (board[r][c] === null || board[r][c] === undefined) { c++; continue; }
+          let end = c + 1;
+          while (end < COLS && board[r][end] === board[r][c]) end++;
+          if (end - c >= 3) {
+            for (let i = c; i < end; i++) matched.add(r + ',' + i);
+          }
+          c = end;
+        }
+      }
+
+      // Vertical matches
+      for (let c = 0; c < COLS; c++) {
+        let r = 0;
+        while (r < ROWS) {
+          if (board[r][c] === null || board[r][c] === undefined) { r++; continue; }
+          let end = r + 1;
+          while (end < ROWS && board[end][c] === board[r][c]) end++;
+          if (end - r >= 3) {
+            for (let i = r; i < end; i++) matched.add(i + ',' + c);
+          }
+          r = end;
+        }
+      }
+
+      return [...matched].map(s => {
+        const [r, c] = s.split(',').map(Number);
+        return { r, c };
+      });
+    }
+
+    // ─── Cascade resolution ───
+    function resolveCascade(callback) {
+      isAnimating = true;
+
+      function step() {
+        const matches = findMatches();
+        if (matches.length === 0) {
+          // No more matches, done cascading
+          isAnimating = false;
+          if (callback) callback();
+          return;
+        }
+
+        comboLevel++;
+
+        // Process matches
+        const matchInfo = {};
+        const matchedSet = new Set(matches.map(m => m.r + ',' + m.c));
+
+        // Count matches per type for scoring
+        matches.forEach(m => {
+          const type = board[m.r][m.c];
+          matchInfo[type] = (matchInfo[type] || 0) + 1;
+        });
+
+        // Calculate spell meter gain & score
+        let totalMatched = matches.length;
+        spellMeter += totalMatched;
+        const points = totalMatched * 10 * Math.max(1, comboLevel);
+        score += points;
+
+        playMatchSound(Math.min(totalMatched, 5));
+        vibrate(20 + comboLevel * 10);
+
+        // Animate removal
+        const cells = boardEl.children;
+        matches.forEach(m => {
+          const idx = m.r * COLS + m.c;
+          const gem = cells[idx].querySelector('.gem');
+          if (gem) gem.classList.add('removing');
+        });
+
+        // Spawn removal particles
+        matches.forEach(m => {
+          const idx = m.r * COLS + m.c;
+          const rect = cells[idx].getBoundingClientRect();
+          if (rect.width > 0) {
+            spawnParticles(rect.left + rect.width / 2, rect.top + rect.height / 2, board[m.r][m.c]);
+          }
+        });
+
+        // Clear matched cells
+        matches.forEach(m => { board[m.r][m.c] = null; });
+
+        // Score pop animation
+        scoreEl.classList.remove('animate');
+        void scoreEl.offsetWidth;
+        scoreEl.classList.add('animate');
+
+        setTimeout(() => {
+          // Apply gravity
+          applyGravity();
+
+          // Animate falling
+          renderBoard();
+          // Add fall animation to gems that moved
+          // (simplified - we just re-render with spawn effect)
+
+          // Check for spell cast
+          checkSpellCast();
+
+          updateUI();
+
+          // Check win condition (boss might have been defeated)
+          if (bossHP <= 0) {
+            isAnimating = false;
+            if (callback) callback();
+            return;
+          }
+
+          // Continue cascading after a short delay
+          setTimeout(step, 250);
+        }, 250);
+      }
+
+      step();
+    }
+
+    function applyGravity() {
+      for (let c = 0; c < COLS; c++) {
+        let writeRow = ROWS - 1;
+        for (let r = ROWS - 1; r >= 0; r--) {
+          if (board[r][c] !== null) {
+            if (r !== writeRow) {
+              board[writeRow][c] = board[r][c];
+              board[r][c] = null;
+            }
+            writeRow--;
+          }
+        }
+        // Fill empty cells at top with new random flowers
+        for (let r = writeRow; r >= 0; r--) {
+          board[r][c] = Math.floor(Math.random() * FLOWERS.length);
+        }
+      }
+    }
+
+    // ─── Spell system ───
+    function checkSpellCast() {
+      while (spellMeter >= SPELL_METER_MAX) {
+        spellMeter -= SPELL_METER_MAX;
+        castSpell();
+      }
+    }
+
+    function castSpell() {
+      const damage = SPELL_BASE_DAMAGE + (comboLevel - 1) * CHAIN_BONUS_PER_CASCADE;
+      bossHP = Math.max(0, bossHP - damage);
+
+      playSpellSound();
+      playBossHitSound();
+      vibrate([50, 30, 80]);
+
+      // Visual effects
+      spellMeterFill.classList.remove('full');
+
+      // Boss hit effect
+      bossEmoji.classList.remove('hit');
+      void bossEmoji.offsetWidth;
+      bossEmoji.classList.add('hit');
+
+      // Boss HP flash
+      bossHPFill.classList.remove('damage');
+      void bossHPFill.offsetWidth;
+      bossHPFill.classList.add('damage');
+
+      // Spell burst effect
+      const bossRect = bossEmoji.getBoundingClientRect();
+      const burst = document.createElement('div');
+      burst.className = 'spell-burst';
+      burst.style.left = (bossRect.left + bossRect.width / 2) + 'px';
+      burst.style.top = (bossRect.top + bossRect.height / 2) + 'px';
+      burst.style.background = 'radial-gradient(circle, rgba(180,74,255,0.4), rgba(0,229,255,0.2), transparent)';
+      document.body.appendChild(burst);
+      setTimeout(() => burst.remove(), 800);
+
+      statusText.textContent = `✨ Spell cast! ${damage} damage to Shadow Lord!`;
+
+      // Check boss defeated
+      if (bossHP <= 0) {
+        setTimeout(() => endGame(true), 500);
+      }
+
+      updateUI();
+    }
+
+    // ─── Swap logic ───
+    function trySwap(idx1, idx2) {
+      if (isAnimating || !gameRunning) return false;
+      if (idx1 === idx2) return false;
+
+      const r1 = Math.floor(idx1 / COLS), c1 = idx1 % COLS;
+      const r2 = Math.floor(idx2 / COLS), c2 = idx2 % COLS;
+
+      // Check adjacency (including diagonals? No, only orthogonal)
+      const dr = Math.abs(r1 - r2), dc = Math.abs(c1 - c2);
+      if (dr + dc !== 1) return false;
+
+      if (board[r1][c1] === null || board[r1][c1] === undefined) return false;
+      if (board[r2][c2] === null || board[r2][c2] === undefined) return false;
+
+      // Perform swap
+      const temp = board[r1][c1];
+      board[r1][c1] = board[r2][c2];
+      board[r2][c2] = temp;
+
+      // Check for matches
+      const matches = findMatches();
+      if (matches.length === 0) {
+        // Invalid swap - swap back
+        const temp2 = board[r1][c1];
+        board[r1][c1] = board[r2][c2];
+        board[r2][c2] = temp2;
+
+        renderBoard();
+        playInvalidSound();
+        statusText.textContent = '❌ No match — try swapping different flowers';
+        return false;
+      }
+
+      // Valid swap
+      selectedCell = -1;
+      movesLeft--;
+
+      playSwapSound();
+
+      // Render with swap animation
+      renderBoard();
+      const cells = boardEl.children;
+      const gem1 = cells[idx1].querySelector('.gem');
+      const gem2 = cells[idx2].querySelector('.gem');
+      if (gem1) gem1.classList.add('swap-in');
+      if (gem2) gem2.classList.add('swap-in');
+
+      updateUI();
+
+      // Check for no moves left
+      if (movesLeft <= 0) {
+        // Process matches first, then check for loss
+        comboLevel = 0;
+        resolveCascade(() => {
+          if (bossHP <= 0) return; // Already won from cascade
+          endGame(false);
+        });
+        return true;
+      }
+
+      // Process cascade
+      comboLevel = 0;
+      resolveCascade(() => {
+        // After cascade, check for possible moves
+        if (gameRunning && !hasValidMoves()) {
+          shuffleBoard();
+          renderBoard();
+          statusText.textContent = '🔀 No matches available — board shuffled!';
+        }
+      });
+
+      return true;
+    }
+
+    // ─── Valid moves check ───
+    function hasValidMoves() {
+      for (let r = 0; r < ROWS; r++) {
+        for (let c = 0; c < COLS; c++) {
+          const type = board[r][c];
+          if (type === null || type === undefined) continue;
+
+          // Try swap right
+          if (c + 1 < COLS && board[r][c + 1] !== null) {
+            board[r][c] = board[r][c + 1];
+            board[r][c + 1] = type;
+            if (findMatches().length > 0) {
+              board[r][c + 1] = board[r][c];
+              board[r][c] = type;
+              return true;
+            }
+            board[r][c + 1] = board[r][c];
+            board[r][c] = type;
+          }
+
+          // Try swap down
+          if (r + 1 < ROWS && board[r + 1][c] !== null) {
+            board[r][c] = board[r + 1][c];
+            board[r + 1][c] = type;
+            if (findMatches().length > 0) {
+              board[r + 1][c] = board[r][c];
+              board[r][c] = type;
+              return true;
+            }
+            board[r + 1][c] = board[r][c];
+            board[r][c] = type;
+          }
+        }
+      }
+      return false;
+    }
+
+    function shuffleBoard() {
+      // Collect all flower types
+      const types = [];
+      for (let r = 0; r < ROWS; r++) {
+        for (let c = 0; c < COLS; c++) {
+          if (board[r][c] !== null) types.push(board[r][c]);
+        }
+      }
+      // Fisher-Yates shuffle
+      for (let i = types.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [types[i], types[j]] = [types[j], types[i]];
+      }
+      let idx = 0;
+      for (let r = 0; r < ROWS; r++) {
+        for (let c = 0; c < COLS; c++) {
+          if (board[r][c] !== null) {
+            board[r][c] = types[idx++];
+          }
+        }
+      }
+      // If still no valid moves, just regenerate
+      if (!hasValidMoves()) {
+        createBoard();
+      }
+    }
+
+    // ─── Particles ───
+    function spawnParticles(x, y, typeIdx) {
+      const colors = ['#ff4081', '#ffd700', '#00e676', '#b44aff', '#ff5252', '#40c4ff'];
+      const count = 6 + Math.floor(Math.random() * 4);
+      for (let i = 0; i < count; i++) {
+        const p = document.createElement('div');
+        p.className = 'particle';
+        const size = 3 + Math.random() * 5;
+        p.style.width = size + 'px';
+        p.style.height = size + 'px';
+        p.style.left = x + 'px';
+        p.style.top = y + 'px';
+        p.style.background = colors[typeIdx % colors.length];
+        p.style.setProperty('--dx', (Math.random() - 0.5) * 80 + 'px');
+        p.style.setProperty('--dy', (Math.random() - 0.5) * 80 + 'px');
+        document.body.appendChild(p);
+        setTimeout(() => p.remove(), 700);
+      }
+    }
+
+    // ─── Confetti ───
+    function spawnConfetti() {
+      const colors = ['#ffd700', '#b44aff', '#00e5ff', '#ff4081', '#00e676', '#ffab40'];
+      for (let i = 0; i < 50; i++) {
+        const c = document.createElement('div');
+        c.className = 'confetti-piece';
+        c.style.left = Math.random() * 100 + 'vw';
+        c.style.top = '-10px';
+        c.style.background = colors[Math.floor(Math.random() * colors.length)];
+        c.style.width = (4 + Math.random() * 8) + 'px';
+        c.style.height = (4 + Math.random() * 8) + 'px';
+        c.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+        c.style.setProperty('--dur', (1.5 + Math.random() * 2) + 's');
+        c.style.animationDelay = Math.random() * 1.5 + 's';
+        document.body.appendChild(c);
+        setTimeout(() => c.remove(), 5000);
+      }
+    }
+
+    // ─── End game ───
+    function endGame(won) {
+      if (!gameRunning) return;
+      gameRunning = false;
+      isAnimating = false;
+
+      const finalScore = score;
+      const isNewBest = finalScore > parseInt(localStorage.getItem(STORAGE_KEY) || '0', 10);
+      if (isNewBest && finalScore > 0) {
+        highScore = finalScore;
+        localStorage.setItem(STORAGE_KEY, highScore);
+      }
+
+      if (won) {
+        playWinSound();
+        spawnConfetti();
+        vibrate([100, 50, 100, 50, 200]);
+        $('win-score').textContent = finalScore;
+        $('win-best').textContent = highScore;
+        $('win-moves').textContent = movesLeft;
+        showScreen(winScreen);
+      } else {
+        playLoseSound();
+        vibrate([100, 80, 100]);
+        $('lose-score').textContent = finalScore;
+        $('lose-best').textContent = highScore;
+        $('lose-boss-hp').textContent = Math.max(0, bossHP);
+        showScreen(loseScreen);
+      }
+    }
+
+    // ─── Interaction ───
+    function getCellIndexFromEvent(e) {
+      const pt = e.touches ? e.touches[0] : e;
+      const cells = boardEl.children;
+      for (let i = 0; i < cells.length; i++) {
+        const r = cells[i].getBoundingClientRect();
+        const pad = 4;
+        if (pt.clientX >= r.left - pad && pt.clientX <= r.right + pad &&
+            pt.clientY >= r.top - pad && pt.clientY <= r.bottom + pad) {
+          return i;
+        }
+      }
+      return -1;
+    }
+
+    function onCellClick(e) {
+      if (!gameRunning || isAnimating) return;
+
+      const idx = getCellIndexFromEvent(e);
+      if (idx < 0 || idx >= TOTAL_CELLS) return;
+
+      const r = Math.floor(idx / COLS), c = idx % COLS;
+      if (board[r][c] === null || board[r][c] === undefined) return;
+
+      if (selectedCell === -1) {
+        // First selection
+        selectedCell = idx;
+        renderBoard();
+        playSelectSound();
+        statusText.textContent = `🌸 Selected — tap an adjacent flower to swap`;
+      } else if (selectedCell === idx) {
+        // Deselect
+        selectedCell = -1;
+        renderBoard();
+        statusText.textContent = '🌸 Select a flower to start matching';
+      } else {
+        // Try swap
+        const sR = Math.floor(selectedCell / COLS), sC = selectedCell % COLS;
+        const tR = r, tC = c;
+        const dr = Math.abs(sR - tR), dc = Math.abs(sC - tC);
+
+        if (dr + dc === 1) {
+          trySwap(selectedCell, idx);
+        } else {
+          // Not adjacent - select the new one instead
+          selectedCell = idx;
+          renderBoard();
+          playSelectSound();
+          statusText.textContent = `🌸 Selected — tap an adjacent flower to swap`;
+        }
+      }
+    }
+
+    // ─── Keyboard support ───
+    let kbCursor = Math.floor(TOTAL_CELLS / 2);
+    let kbSelected = -1;
+
+    function onKeyDown(e) {
+      if (!gameRunning) return;
+      const key = e.key;
+
+      // If result screen is showing, don't process keyboard
+      if (!gameScreen.classList.contains('hidden')) {
+        let handled = true;
+
+        switch (key) {
+          case 'ArrowUp':    kbCursor = Math.max(0, kbCursor - COLS); break;
+          case 'ArrowDown':  kbCursor = Math.min(TOTAL_CELLS - 1, kbCursor + COLS); break;
+          case 'ArrowLeft':  kbCursor = Math.max(0, kbCursor - 1); break;
+          case 'ArrowRight': kbCursor = Math.min(TOTAL_CELLS - 1, kbCursor + 1); break;
+          case ' ':
+          case 'Enter':
+            e.preventDefault();
+            handleKeyboardSelect();
+            return;
+          default:
+            handled = false;
+        }
+
+        if (handled) {
+          e.preventDefault();
+          // Move selected cursor
+          selectedCell = kbCursor;
+          renderBoard();
+          playSelectSound();
+          statusText.textContent = `🌸 Keyboard: arrow keys to move, Enter to select/swap`;
+        }
+      }
+
+      // Global shortcuts
+      if (key === 'Enter' || key === ' ') {
+        if (!titleScreen.classList.contains('hidden')) {
+          e.preventDefault();
+          startGame();
+        } else if (!winScreen.classList.contains('hidden')) {
+          e.preventDefault();
+          startGame();
+        } else if (!loseScreen.classList.contains('hidden')) {
+          e.preventDefault();
+          startGame();
+        }
+      }
+    }
+
+    function handleKeyboardSelect() {
+      if (isAnimating || !gameRunning) return;
+      const idx = kbCursor;
+      const r = Math.floor(idx / COLS), c = idx % COLS;
+      if (board[r][c] === null || board[r][c] === undefined) return;
+
+      if (kbSelected === -1) {
+        kbSelected = idx;
+        selectedCell = idx;
+        renderBoard();
+        statusText.textContent = '🌸 Keyboard selected — navigate to adjacent and press Enter';
+      } else {
+        if (idx === kbSelected) {
+          kbSelected = -1;
+          selectedCell = -1;
+          renderBoard();
+          statusText.textContent = '🌸 Keyboard: selection cancelled';
+          return;
+        }
+        const sR = Math.floor(kbSelected / COLS), sC = kbSelected % COLS;
+        const dr = Math.abs(sR - r), dc = Math.abs(sC - c);
+        if (dr + dc === 1) {
+          trySwap(kbSelected, idx);
+        } else {
+          kbSelected = idx;
+          selectedCell = idx;
+          renderBoard();
+          statusText.textContent = '🌸 Not adjacent — re-selected';
+        }
+        kbSelected = -1;
+      }
+    }
+
+    // ─── Game Lifecycle ───
+    function startGame() {
+      // Reset state
+      score = 0;
+      movesLeft = MAX_MOVES;
+      bossHP = BOSS_MAX_HP;
+      spellMeter = 0;
+      selectedCell = -1;
+      kbSelected = -1;
+      kbCursor = Math.floor(TOTAL_CELLS / 2);
+      gameRunning = true;
+      isAnimating = false;
+      comboLevel = 0;
+      gameResult = null;
+
+      createBoard();
+      buildBoardDOM();
+      renderBoard();
+      updateUI();
+
+      statusText.textContent = '🌸 Select a flower, then an adjacent one to swap';
+      showScreen(gameScreen);
+    }
+
+    // ─── Event Binding ───
+    function bindEvents() {
+      // Click/tap on board
+      boardEl.addEventListener('click', onCellClick);
+      boardEl.addEventListener('touchstart', (e) => {
+        if (e.target.closest('.gem') || e.target.closest('.cell')) {
+          e.preventDefault();
+          onCellClick(e);
+        }
+      }, { passive: false });
+
+      // Keyboard
+      window.addEventListener('keydown', onKeyDown);
+
+      // Buttons
+      $('play-btn').addEventListener('click', () => {
+        try { getAudio(); } catch (_) {}
+        startGame();
+      });
+      $('win-play-again').addEventListener('click', () => {
+        startGame();
+      });
+      $('lose-try-again').addEventListener('click', () => {
+        startGame();
+      });
+    }
+
+    // ─── Init ───
+    function init() {
+      titleHigh.textContent = highScore;
+      initBgParticles();
+      bindEvents();
+      showScreen(titleScreen);
+    }
+
+    // Kick off
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', init);
+    } else {
+      init();
+    }
+
+  })();
+  </script>
+</body>
+</html>
