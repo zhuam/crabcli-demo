@@ -1,0 +1,2230 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Big Boi Eats - 大胖子吞吞吞</title>
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body {
+    width: 100%; height: 100%;
+    overflow: hidden;
+    background: #FFF8F0;
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+    cursor: none;
+  }
+  /* Fallback overlay for browser auto-play policy — invisible */
+  #resume-audio {
+    position: fixed; top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: transparent;
+    border: none;
+    z-index: 0;
+    opacity: 0;
+    pointer-events: none;
+  }
+</style>
+</head>
+<body>
+<canvas id="gameCanvas"></canvas>
+<button id="resume-audio" aria-hidden="true"></button>
+<script>
+// ============================================================
+// BIG BOI EATS — Complete Game
+// ============================================================
+
+// ============================================================
+// SECTION 1: CONFIGURATION
+// ============================================================
+const CONFIG = {
+  // Growth
+  BASE_SIZE: 32,          // base radius in px
+  SIZE_PER_UNIT: 0.12,    // px radius per weight unit
+  MAX_SIZE: 120,          // max radius in px
+  STARTING_WEIGHT: 10,
+
+  // Movement
+  LERP_SPEED: 0.12,       // how fast Big Boi follows pointer (per frame)
+  KEYBOARD_SPEED: 5,      // px per frame for keyboard movement
+
+  // Food
+  MAX_FOOD: 40,
+  FOOD_RADIUS: 16,
+
+  // Star (double-score powerup)
+  STAR_DURATION: 5000,    // ms
+  STAR_CHANCE: 0.15,      // 15% spawn chance when available
+
+  // Bomb
+  BOMB_SHRINK_PCT: 0.20,  // shrink 20%
+  BOMB_CHANCE: 0.10,
+
+  // Level select layout
+  LEVEL_CARD_W: 140,
+  LEVEL_CARD_H: 160,
+  LEVEL_CARD_GAP: 16,
+
+  // HUD
+  HUD_PADDING: 12,
+  PROGRESS_BAR_H: 14,
+  PROGRESS_BAR_W: 200,
+
+  // Animation
+  EAT_ANIM_MS: 150,
+  POP_SCALE: 1.15,
+
+  // Food type definitions
+  FOOD_TYPES: [
+    { id:'crumb',      emoji:'🍪', weight:1, color:'#D4A574', label:'Crumb' },
+    { id:'grape',      emoji:'🍇', weight:2, color:'#9B59B6', label:'Grape' },
+    { id:'cookie',     emoji:'🍪', weight:3, color:'#E67E22', label:'Cookie' },
+    { id:'berry',      emoji:'🫐', weight:2, color:'#3498DB', label:'Berry' },
+    { id:'apple',      emoji:'🍎', weight:4, color:'#E74C3C', label:'Apple' },
+    { id:'pie',        emoji:'🥧', weight:6, color:'#F39C12', label:'Pie' },
+    { id:'cake',       emoji:'🍰', weight:5, color:'#FF69B4', label:'Cake' },
+    { id:'turkey',     emoji:'🍗', weight:8, color:'#D35400', label:'Turkey' },
+    { id:'gummy',      emoji:'🍬', weight:3, color:'#00BCD4', label:'Gummy' },
+    { id:'lollipop',   emoji:'🍭', weight:5, color:'#E91E63', label:'Lollipop' },
+    { id:'candycorn',  emoji:'🌽', weight:7, color:'#FF9800', label:'Candy Corn' },
+  ],
+
+  // Level definitions
+  LEVELS: [
+    {
+      id:1, name:'厨房', icon:'🍳', bg:'#FFF3E0', bgDark:'#F5E6D3',
+      targetWeight:50, timeLimit:90, spawnInterval:800,
+      foodIds:['crumb','grape','cookie'], starEnabled:false, bombEnabled:false,
+      obstacles:false, decor:'kitchen'
+    },
+    {
+      id:2, name:'花园', icon:'🌸', bg:'#E8F5E9', bgDark:'#DCE8DD',
+      targetWeight:100, timeLimit:90, spawnInterval:700,
+      foodIds:['berry','apple','pie'], starEnabled:false, bombEnabled:false,
+      obstacles:false, decor:'garden'
+    },
+    {
+      id:3, name:'自助餐', icon:'🍽', bg:'#FFF8E1', bgDark:'#F5EDD5',
+      targetWeight:180, timeLimit:120, spawnInterval:600,
+      foodIds:['cake','turkey'], starEnabled:true, bombEnabled:true,
+      obstacles:false, decor:'buffet'
+    },
+    {
+      id:4, name:'糖果乐园', icon:'🍭', bg:'#FCE4EC', bgDark:'#F0D8E0',
+      targetWeight:280, timeLimit:120, spawnInterval:500,
+      foodIds:['gummy','lollipop','candycorn'], starEnabled:true, bombEnabled:true,
+      obstacles:true, decor:'candy'
+    },
+    {
+      id:5, name:'美食节', icon:'🎪', bg:'#FFFDE7', bgDark:'#F5F3DB',
+      targetWeight:400, timeLimit:150, spawnInterval:400,
+      foodIds:['apple','turkey','cake','lollipop','candycorn'],
+      starEnabled:true, bombEnabled:true,
+      obstacles:true, decor:'festival'
+    },
+  ],
+
+  // Skin definitions
+  SKINS: [
+    { id:'default',   name:'默认', unlock:'always',     color:'#FF6B6B', colorLight:'#FF8E8E', hat:false },
+    { id:'chef',      name:'厨师', unlock:'allLevels',  color:'#FF6B6B', colorLight:'#FF8E8E', hat:true },
+    { id:'ninja',     name:'忍者', unlock:'cum2000',    color:'#2C3E50', colorLight:'#4A6A8A', hat:false },
+    { id:'alien',     name:'外星人',unlock:'lvl5_3star',color:'#2ECC71', colorLight:'#58D68D', hat:false },
+    { id:'king',      name:'国王', unlock:'cum5000',    color:'#F1C40F', colorLight:'#F5D76E', hat:true },
+    { id:'ghost',     name:'幽灵', unlock:'play30',     color:'rgba(255,255,255,0.7)', colorLight:'rgba(255,255,255,0.5)', hat:false },
+  ],
+};
+
+// ============================================================
+// SECTION 2: DOM REFS & CANVAS SETUP
+// ============================================================
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+let W, H;
+
+function resize() {
+  W = canvas.width = window.innerWidth;
+  H = canvas.height = window.innerHeight;
+}
+window.addEventListener('resize', resize);
+resize();
+
+// ============================================================
+// SECTION 3: AUDIO (Web Audio API)
+// ============================================================
+let audioCtx = null;
+
+function initAudio() {
+  if (!audioCtx) {
+    try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e) {}
+  }
+  if (audioCtx && audioCtx.state === 'suspended') {
+    audioCtx.resume().catch(() => {});
+  }
+}
+
+function playTone(freq, duration, type, volume) {
+  if (!audioCtx || !G.settings.sfx) return;
+  try {
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = type || 'sine';
+    osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+    gain.gain.setValueAtTime(volume || 0.15, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start(audioCtx.currentTime);
+    osc.stop(audioCtx.currentTime + duration);
+  } catch(e) {}
+}
+
+function playToneSeq(notes, baseTime) {
+  if (!audioCtx || !G.settings.sfx) return;
+  try {
+    const t0 = audioCtx.currentTime + (baseTime || 0);
+    notes.forEach((n, i) => {
+      const t = t0 + n.t;
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = n.type || 'sine';
+      osc.frequency.setValueAtTime(n.freq, t);
+      gain.gain.setValueAtTime(n.vol || 0.12, t);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + n.dur);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start(t);
+      osc.stop(t + n.dur);
+    });
+  } catch(e) {}
+}
+
+const SOUNDS = {
+  eat()   { playTone(300, 0.08, 'sine', 0.12); },
+  star()  { playToneSeq([{t:0,freq:400,dur:0.06},{t:0.07,freq:600,dur:0.06},{t:0.14,freq:800,dur:0.08}], 0); },
+  bomb()  { playTone(200, 0.2, 'sawtooth', 0.1); },
+  win()   { playToneSeq([{t:0,freq:523,dur:0.12},{t:0.15,freq:659,dur:0.12},{t:0.3,freq:784,dur:0.12},{t:0.45,freq:1047,dur:0.25}], 0); },
+  lose()  { playToneSeq([{t:0,freq:400,dur:0.15},{t:0.2,freq:300,dur:0.15},{t:0.4,freq:200,dur:0.3}], 0); },
+  click() { playTone(800, 0.03, 'sine', 0.06); },
+  fanfare(){playToneSeq([{t:0,freq:523,dur:0.15},{t:0.1,freq:659,dur:0.15},{t:0.2,freq:784,dur:0.15},{t:0.3,freq:1047,dur:0.4}],0);},
+  chomp() { playTone(250, 0.06, 'square', 0.08); },
+};
+
+// ============================================================
+// SECTION 4: HAPTIC FEEDBACK
+// ============================================================
+const HAPTIC = {
+  canVibrate: 'vibrate' in navigator,
+  eat()   { if (this.canVibrate && G.settings.haptic) navigator.vibrate(50); },
+  star()  { if (this.canVibrate && G.settings.haptic) navigator.vibrate([30,20,50]); },
+  bomb()  { if (this.canVibrate && G.settings.haptic) navigator.vibrate([100,50,100]); },
+  win()   { if (this.canVibrate && G.settings.haptic) navigator.vibrate([50,30,50,30,100]); },
+  lose()  { if (this.canVibrate && G.settings.haptic) navigator.vibrate([150,100,200]); },
+  click() { if (this.canVibrate && G.settings.haptic) navigator.vibrate(15); },
+};
+
+// ============================================================
+// SECTION 5: DATA PERSISTENCE (localStorage)
+// ============================================================
+const STORAGE_KEY = 'big_boi_eats_data';
+
+function defaultData() {
+  return {
+    best: { highestLevel:1, maxWeight:10, totalStars:0, gamesPlayed:0, cumulativeWeight:0 },
+    unlockedLevels:[1],
+    unlockedSkins:['default'],
+    equippedSkin:'default',
+    settings:{ sfx:true, haptic:true },
+  };
+}
+
+let savedData = null;
+
+function loadData() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      const d = JSON.parse(raw);
+      savedData = d;
+      // Merge with defaults for any missing fields
+      const def = defaultData();
+      for (const k in def) { if (!(k in d)) d[k] = def[k]; }
+      if (d.best) {
+        if (typeof d.best.highestLevel !== 'number') d.best.highestLevel = 1;
+        if (typeof d.best.maxWeight !== 'number') d.best.maxWeight = 10;
+        if (typeof d.best.totalStars !== 'number') d.best.totalStars = 0;
+        if (typeof d.best.gamesPlayed !== 'number') d.best.gamesPlayed = 0;
+        if (typeof d.best.cumulativeWeight !== 'number') d.best.cumulativeWeight = 0;
+      }
+      return d;
+    }
+  } catch(e) {}
+  const d = defaultData();
+  savedData = d;
+  return d;
+}
+
+function saveData() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(savedData));
+  } catch(e) {}
+}
+
+function getSetting(key) {
+  return savedData && savedData.settings ? savedData.settings[key] : true;
+}
+
+// ============================================================
+// SECTION 6: GAME STATE
+// ============================================================
+const G = {
+  // Screens: 'title' | 'levelSelect' | 'playing' | 'victory' | 'gameover' | 'intro'
+  screen: 'title',
+  level: 0,          // current level index (0-based)
+  weight: CONFIG.STARTING_WEIGHT,
+  score: 0,
+  timeLeft: 0,
+  maxTime: 0,
+
+  // Big Boi
+  bx: 0, by: 0,      // current position
+  tx: 0, ty: 0,      // target position (for pointer follow)
+  bScale: 1,
+  bTargetScale: 1,
+  bAngle: 0,
+  bobPhase: 0,
+  eating: false,
+  eatTimer: 0,
+  eatItem: null,
+
+  // Star powerup
+  starActive: false,
+  starTimer: 0,
+
+  // Food & entities
+  foods: [],
+  stars: [],
+  bombs: [],
+  obstacles: [],
+  particles: [],
+
+  // Timers
+  spawnTimer: 0,
+  foodSpawnTimer: 0,
+  starSpawnTimer: 0,
+  bombSpawnTimer: 0,
+
+  // Input
+  pointerX: -1,
+  pointerY: -1,
+  usingPointer: false,
+  keys: { up:false, down:false, left:false, right:false },
+
+  // Settings
+  settings: { sfx:true, haptic:true },
+
+  // Level intro
+  introTimer: 0,
+
+  // Stars earned
+  stars: 0,
+
+  // Skin
+  currentSkin: 'default',
+
+  // Frame
+  lastTime: 0,
+  running: false,
+};
+
+// ============================================================
+// SECTION 7: ENTITY HELPERS
+// ============================================================
+function randomInBounds(r) {
+  const pad = r || 40;
+  return {
+    x: pad + Math.random() * (W - pad * 2),
+    y: pad + Math.random() * (H - pad * 2),
+  };
+}
+
+function dist(a, b) {
+  return Math.hypot(a.x - b.x, a.y - b.y);
+}
+
+function getFoodTypeById(id) {
+  return CONFIG.FOOD_TYPES.find(f => f.id === id);
+}
+
+function getLevelConfig(levelIdx) {
+  return CONFIG.LEVELS[levelIdx] || CONFIG.LEVELS[0];
+}
+
+function getBigBoiRadius() {
+  const r = CONFIG.BASE_SIZE + G.weight * CONFIG.SIZE_PER_UNIT;
+  return Math.min(r, CONFIG.MAX_SIZE);
+}
+
+function getFoodRadius() {
+  return CONFIG.FOOD_RADIUS;
+}
+
+function createFood(levelIdx) {
+  const lv = getLevelConfig(levelIdx);
+  const avail = lv.foodIds;
+  const id = avail[Math.floor(Math.random() * avail.length)];
+  const type = getFoodTypeById(id);
+  if (!type) return null;
+  const pos = randomInBounds(getFoodRadius() + 4);
+  const br = getBigBoiRadius();
+  // Don't spawn on Big Boi
+  if (dist(pos, {x:G.bx, y:G.by}) < br + getFoodRadius() + 20) return null;
+  return {
+    type, x:pos.x, y:pos.y,
+    radius: getFoodRadius(),
+    alive: true,
+    animScale: 1,
+    driftAngle: Math.random() * Math.PI * 2,
+    driftSpeed: levelIdx >= 3 ? 0.2 + Math.random() * 0.3 : 0,
+  };
+}
+
+function createStar() {
+  const pos = randomInBounds(24);
+  return {
+    x:pos.x, y:pos.y, radius:20, alive:true,
+    phase:0, glow:0,
+  };
+}
+
+function createBomb() {
+  const pos = randomInBounds(20);
+  return {
+    x:pos.x, y:pos.y, radius:18, alive:true,
+    phase:0,
+  };
+}
+
+function createObstacles(levelIdx) {
+  const obs = [];
+  if (!getLevelConfig(levelIdx).obstacles) return obs;
+  const count = 3 + levelIdx * 2;
+  for (let i = 0; i < count; i++) {
+    const pos = randomInBounds(40);
+    // Ensure obstacles don't overlap
+    let ok = true;
+    for (const o of obs) {
+      if (dist(pos, o) < 100) { ok = false; break; }
+    }
+    if (ok) {
+      const w = 30 + Math.random() * 50;
+      const h = 30 + Math.random() * 50;
+      obs.push({ x:pos.x, y:pos.y, w, h, color: getLevelConfig(levelIdx).bgDark });
+    }
+  }
+  return obs;
+}
+
+// ============================================================
+// SECTION 8: PARTICLES
+// ============================================================
+function spawnParticles(x, y, color, count) {
+  for (let i = 0; i < (count || 8); i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const speed = 1 + Math.random() * 3;
+    G.particles.push({
+      x, y,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed,
+      life: 1,
+      decay: 0.015 + Math.random() * 0.025,
+      radius: 2 + Math.random() * 4,
+      color: color || '#FFD93D',
+    });
+  }
+}
+
+function spawnConfetti() {
+  for (let i = 0; i < 60; i++) {
+    const angle = -Math.PI / 2 + (Math.random() - 0.5) * Math.PI;
+    const speed = 2 + Math.random() * 5;
+    G.particles.push({
+      x: W / 2,
+      y: H / 2,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed - 2,
+      life: 1,
+      decay: 0.005 + Math.random() * 0.01,
+      radius: 3 + Math.random() * 5,
+      color: ['#FF6B6B','#FFD93D','#6BCB77','#4D96FF','#FF8E53','#FF69B4','#00BCD4'][Math.floor(Math.random()*7)],
+    });
+  }
+}
+
+function updateParticles() {
+  for (let i = G.particles.length - 1; i >= 0; i--) {
+    const p = G.particles[i];
+    p.x += p.vx;
+    p.y += p.vy;
+    p.vy += 0.05; // gravity
+    p.life -= p.decay;
+    if (p.life <= 0) G.particles.splice(i, 1);
+  }
+}
+
+function drawParticles() {
+  for (const p of G.particles) {
+    ctx.globalAlpha = p.life;
+    ctx.fillStyle = p.color;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.radius * p.life, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+}
+
+// ============================================================
+// SECTION 9: SKIN SYSTEM
+// ============================================================
+function isSkinUnlocked(skinId) {
+  if (skinId === 'default') return true;
+  return savedData && savedData.unlockedSkins && savedData.unlockedSkins.includes(skinId);
+}
+
+function checkSkinUnlocks() {
+  if (!savedData) return null;
+  const d = savedData;
+  let newSkin = null;
+
+  // Chef: all 5 levels cleared
+  if (!d.unlockedSkins.includes('chef') && d.best.highestLevel >= 5) {
+    d.unlockedSkins.push('chef');
+    newSkin = 'chef';
+  }
+  // Ninja: cumulative 2000g
+  if (!d.unlockedSkins.includes('ninja') && d.best.cumulativeWeight >= 2000) {
+    d.unlockedSkins.push('ninja');
+    newSkin = newSkin || 'ninja';
+  }
+  // Alien: level 5 with 3 stars
+  if (!d.unlockedSkins.includes('alien') && d.best.highestLevel >= 5) {
+    // We'll track this on level 5 completion with 3 stars
+  }
+  // King: cumulative 5000g
+  if (!d.unlockedSkins.includes('king') && d.best.cumulativeWeight >= 5000) {
+    d.unlockedSkins.push('king');
+    newSkin = newSkin || 'king';
+  }
+  // Ghost: 30 games
+  if (!d.unlockedSkins.includes('ghost') && d.best.gamesPlayed >= 30) {
+    d.unlockedSkins.push('ghost');
+    newSkin = newSkin || 'ghost';
+  }
+  saveData();
+  return newSkin;
+}
+
+function getSkinConfig() {
+  return CONFIG.SKINS.find(s => s.id === G.currentSkin) || CONFIG.SKINS[0];
+}
+
+// ============================================================
+// SECTION 10: LEVEL MANAGEMENT
+// ============================================================
+function startLevel(levelIdx) {
+  G.level = levelIdx;
+  G.weight = CONFIG.STARTING_WEIGHT;
+  G.score = 0;
+  const lv = getLevelConfig(levelIdx);
+  G.timeLeft = lv.timeLimit;
+  G.maxTime = lv.timeLimit;
+  G.bScale = 1;
+  G.bTargetScale = 1;
+  G.bAngle = 0;
+  G.eating = false;
+  G.eatTimer = 0;
+  G.starActive = false;
+  G.starTimer = 0;
+  G.foods = [];
+  G.stars = [];
+  G.bombs = [];
+  G.particles = [];
+  G.obstacles = [];
+  G.spawnTimer = 0;
+  G.foodSpawnTimer = 0;
+  G.starSpawnTimer = 0;
+  G.bombSpawnTimer = 0;
+
+  // Center Big Boi
+  G.bx = W / 2;
+  G.by = H / 2;
+  G.tx = G.bx;
+  G.ty = G.by;
+
+  // Create obstacles for higher levels
+  G.obstacles = createObstacles(levelIdx);
+
+  // Spawn initial food
+  for (let i = 0; i < 8; i++) {
+    const f = createFood(levelIdx);
+    if (f) G.foods.push(f);
+  }
+
+  // Show intro screen briefly
+  G.screen = 'intro';
+  G.introTimer = 120; // frames (~2 sec at 60fps)
+}
+
+function completeLevel() {
+  const lv = getLevelConfig(G.level);
+
+  // Calculate stars
+  const remaining = G.timeLeft;
+  const total = G.maxTime;
+  let stars = 1;
+  if (remaining > total * 0.25) stars = 2;
+  if (remaining > total * 0.5) stars = 3;
+  G.stars = stars;
+
+  // Update save data
+  if (savedData) {
+    // Unlock next level
+    const nextLevel = G.level + 2; // 1-indexed + 1
+    if (nextLevel <= CONFIG.LEVELS.length && !savedData.unlockedLevels.includes(nextLevel)) {
+      savedData.unlockedLevels.push(nextLevel);
+    }
+    if (G.level + 1 > savedData.best.highestLevel) {
+      savedData.best.highestLevel = G.level + 1;
+    }
+    if (G.weight > savedData.best.maxWeight) {
+      savedData.best.maxWeight = G.weight;
+    }
+    savedData.best.totalStars += stars;
+    savedData.best.gamesPlayed++;
+    savedData.best.cumulativeWeight += G.weight;
+    saveData();
+
+    // Check alien skin unlock specifically
+    if (G.level === 4 && stars === 3 && !savedData.unlockedSkins.includes('alien')) {
+      savedData.unlockedSkins.push('alien');
+      saveData();
+    }
+  }
+
+  SOUNDS.win();
+  HAPTIC.win();
+  spawnConfetti();
+
+  G.screen = 'victory';
+}
+
+function gameOver() {
+  const lv = getLevelConfig(G.level);
+
+  if (savedData) {
+    savedData.best.gamesPlayed++;
+    if (G.weight > savedData.best.maxWeight) {
+      savedData.best.maxWeight = G.weight;
+    }
+    savedData.best.cumulativeWeight += G.weight;
+    saveData();
+  }
+
+  SOUNDS.lose();
+  HAPTIC.lose();
+
+  G.screen = 'gameover';
+}
+
+// ============================================================
+// SECTION 11: GAME UPDATE
+// ============================================================
+function update(dt) {
+  const dtFrames = dt / 16.667; // normalize to 60fps
+
+  // --- Intro countdown ---
+  if (G.screen === 'intro') {
+    G.introTimer -= dtFrames;
+    if (G.introTimer <= 0) {
+      G.screen = 'playing';
+    }
+    // Still bob Big Boi during intro
+    G.bobPhase += 0.03 * dtFrames;
+    return;
+  }
+
+  if (G.screen !== 'playing') return;
+
+  // --- Timer ---
+  G.timeLeft -= dt / 1000;
+  if (G.timeLeft <= 0) {
+    G.timeLeft = 0;
+    gameOver();
+    return;
+  }
+
+  // --- Big Boi movement ---
+  G.bobPhase += 0.03 * dtFrames;
+
+  if (G.usingPointer && G.pointerX >= 0) {
+    // Follow pointer
+    G.tx = G.pointerX;
+    G.ty = G.pointerY;
+  }
+
+  // Keyboard input
+  const kSpeed = CONFIG.KEYBOARD_SPEED * dtFrames;
+  if (G.keys.left || G.keys.right || G.keys.up || G.keys.down) {
+    G.usingPointer = false;
+    if (G.keys.left)  G.tx -= kSpeed;
+    if (G.keys.right) G.tx += kSpeed;
+    if (G.keys.up)    G.ty -= kSpeed;
+    if (G.keys.down)  G.ty += kSpeed;
+  }
+
+  // Lerp toward target
+  const lerpFactor = CONFIG.LERP_SPEED * dtFrames;
+  G.bx += (G.tx - G.bx) * lerpFactor;
+  G.by += (G.ty - G.by) * lerpFactor;
+
+  // Clamp to bounds
+  const br = getBigBoiRadius();
+  G.bx = Math.max(br, Math.min(W - br, G.bx));
+  G.by = Math.max(br, Math.min(H - br, G.by));
+
+  // Clamp target too so it doesn't get stuck
+  G.tx = Math.max(br, Math.min(W - br, G.tx));
+  G.ty = Math.max(br, Math.min(H - br, G.ty));
+
+  // --- Scale animation ---
+  G.bScale += (G.bTargetScale - G.bScale) * 0.15 * dtFrames;
+
+  // Eating animation timer
+  if (G.eating) {
+    G.eatTimer -= dtFrames;
+    if (G.eatTimer <= 0) {
+      G.eating = false;
+      G.bTargetScale = 1;
+    }
+  }
+
+  // --- Star powerup timer ---
+  if (G.starActive) {
+    G.starTimer -= dt;
+    if (G.starTimer <= 0) {
+      G.starActive = false;
+      G.starTimer = 0;
+    }
+  }
+
+  // --- Spawn food ---
+  const lv = getLevelConfig(G.level);
+  G.foodSpawnTimer -= dt * dtFrames;
+  if (G.foodSpawnTimer <= 0) {
+    G.foodSpawnTimer = lv.spawnInterval / 16.667;
+    if (G.foods.length < CONFIG.MAX_FOOD) {
+      const f = createFood(G.level);
+      if (f) G.foods.push(f);
+    }
+  }
+
+  // --- Spawn star ---
+  if (lv.starEnabled) {
+    G.starSpawnTimer -= dtFrames;
+    if (G.starSpawnTimer <= 0) {
+      G.starSpawnTimer = 400 + Math.random() * 400;
+      if (G.stars.length < 2 && Math.random() < CONFIG.STAR_CHANCE) {
+        const s = createStar();
+        if (s) G.stars.push(s);
+      }
+    }
+  }
+
+  // --- Spawn bomb ---
+  if (lv.bombEnabled) {
+    G.bombSpawnTimer -= dtFrames;
+    if (G.bombSpawnTimer <= 0) {
+      G.bombSpawnTimer = 500 + Math.random() * 300;
+      if (G.bombs.length < 3 && Math.random() < CONFIG.BOMB_CHANCE) {
+        const b = createBomb();
+        if (b) G.bombs.push(b);
+      }
+    }
+  }
+
+  // --- Update food drift (levels 3+) ---
+  for (const f of G.foods) {
+    if (f.driftSpeed > 0) {
+      // Flee from Big Boi if too close
+      const d = dist(f, {x:G.bx, y:G.by});
+      if (d < 150) {
+        const angle = Math.atan2(f.y - G.by, f.x - G.bx);
+        f.x += Math.cos(angle) * f.driftSpeed * dtFrames;
+        f.y += Math.sin(angle) * f.driftSpeed * dtFrames;
+      }
+      // Clamp food to bounds
+      const fr = getFoodRadius();
+      f.x = Math.max(fr, Math.min(W - fr, f.x));
+      f.y = Math.max(fr, Math.min(H - fr, f.y));
+    }
+  }
+
+  // --- Collision: Big Boi vs food ---
+  const brr = getBigBoiRadius();
+  for (let i = G.foods.length - 1; i >= 0; i--) {
+    const f = G.foods[i];
+    if (!f.alive) continue;
+    const d = dist(f, {x:G.bx, y:G.by});
+    const fr = getFoodRadius();
+    if (d < brr + fr) {
+      // Eat!
+      const weightGain = f.type.weight * (G.starActive ? 2 : 1);
+      G.weight += weightGain;
+      G.score += weightGain * 10;
+      f.alive = false;
+      G.foods.splice(i, 1);
+
+      // Pop animation
+      G.eating = true;
+      G.eatTimer = CONFIG.EAT_ANIM_MS / 16.667;
+      G.bTargetScale = CONFIG.POP_SCALE;
+
+      spawnParticles(f.x, f.y, f.type.color, 6);
+      SOUNDS.chomp();
+      HAPTIC.eat();
+
+      // Check win condition
+      if (G.weight >= lv.targetWeight) {
+        completeLevel();
+        return;
+      }
+    }
+  }
+
+  // --- Collision: Big Boi vs star ---
+  for (let i = G.stars.length - 1; i >= 0; i--) {
+    const s = G.stars[i];
+    s.phase += 0.05 * dtFrames;
+    if (dist(s, {x:G.bx, y:G.by}) < brr + s.radius) {
+      G.starActive = true;
+      G.starTimer = CONFIG.STAR_DURATION;
+      s.alive = false;
+      G.stars.splice(i, 1);
+      spawnParticles(s.x, s.y, '#FFD700', 12);
+      SOUNDS.star();
+      HAPTIC.star();
+    }
+  }
+
+  // --- Collision: Big Boi vs bomb ---
+  for (let i = G.bombs.length - 1; i >= 0; i--) {
+    const b = G.bombs[i];
+    b.phase += 0.05 * dtFrames;
+    if (dist(b, {x:G.bx, y:G.by}) < brr + b.radius) {
+      // Shrink!
+      G.weight = Math.max(CONFIG.STARTING_WEIGHT, Math.floor(G.weight * (1 - CONFIG.BOMB_SHRINK_PCT)));
+      b.alive = false;
+      G.bombs.splice(i, 1);
+      spawnParticles(b.x, b.y, '#555', 10);
+      G.bTargetScale = 0.85;
+      G.eating = true;
+      G.eatTimer = 120 / 16.667;
+      SOUNDS.bomb();
+      HAPTIC.bomb();
+    }
+  }
+
+  // --- Update particles ---
+  updateParticles();
+
+  // --- Obstacle collision (just push back) ---
+  for (const ob of G.obstacles) {
+    const cx = ob.x + ob.w / 2;
+    const cy = ob.y + ob.h / 2;
+    const d = dist({x:G.bx, y:G.by}, {x:cx, y:cy});
+    const minD = brr + Math.min(ob.w, ob.h) / 2;
+    if (d < minD) {
+      // Push Big Boi away
+      const angle = Math.atan2(G.by - cy, G.bx - cx);
+      const overlap = minD - d;
+      G.bx += Math.cos(angle) * overlap;
+      G.by += Math.sin(angle) * overlap;
+      G.tx = G.bx;
+      G.ty = G.by;
+    }
+  }
+}
+
+// ============================================================
+// SECTION 12: RENDERING
+// ============================================================
+
+function drawBackground() {
+  const lv = getLevelConfig(G.level);
+  ctx.fillStyle = lv.bg;
+  ctx.fillRect(0, 0, W, H);
+
+  // Decorative elements per level
+  ctx.globalAlpha = 0.15;
+  switch (lv.decor) {
+    case 'kitchen':
+      // Counter outlines
+      ctx.strokeStyle = '#D4A574';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(20, H - 60, 120, 40);
+      ctx.strokeRect(W - 140, H - 60, 120, 40);
+      // Fridge icon
+      ctx.font = '30px sans-serif';
+      ctx.fillText('🧊', 40, H - 30);
+      ctx.fillText('🧊', W - 120, H - 30);
+      break;
+    case 'garden':
+      // Flower patches
+      ctx.font = '28px sans-serif';
+      for (let i = 0; i < 6; i++) {
+        const fx = 60 + i * 80;
+        const fy = (i % 2 === 0) ? 50 : H - 50;
+        ctx.fillText('🌸', fx, fy);
+      }
+      // Fence borders
+      ctx.strokeStyle = '#A5D6A7';
+      ctx.lineWidth = 4;
+      ctx.setLineDash([8, 8]);
+      ctx.beginPath();
+      ctx.moveTo(0, 20); ctx.lineTo(W, 20);
+      ctx.moveTo(0, H - 20); ctx.lineTo(W, H - 20);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      break;
+    case 'buffet':
+      // Table silhouettes
+      ctx.fillStyle = '#E0C9A6';
+      for (let i = 0; i < 4; i++) {
+        const tx = 50 + i * (W / 4);
+        ctx.fillRect(tx, 30, 60, 12);
+        ctx.fillRect(tx + 20, 42, 20, 30);
+        ctx.fillRect(tx, H - 50, 60, 12);
+        ctx.fillRect(tx + 20, H - 62, 20, 30);
+      }
+      // Plate icons
+      ctx.font = '36px sans-serif';
+      ctx.fillText('🍽', W / 2 - 18, H / 2 - 10);
+      break;
+    case 'candy':
+      // Candy cane stripes
+      ctx.fillStyle = '#FFCDD2';
+      for (let i = 0; i < 8; i++) {
+        ctx.fillRect(i * (W / 8), 0, 6, H);
+      }
+      ctx.fillStyle = '#F8BBD0';
+      for (let i = 0; i < 12; i++) {
+        ctx.beginPath();
+        ctx.arc(40 + i * (W / 12), H / 2, 12, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      // Gumdrop shapes
+      ctx.fillStyle = '#CE93D8';
+      for (let i = 0; i < 5; i++) {
+        const gx = 30 + i * (W / 5);
+        ctx.beginPath();
+        ctx.arc(gx, 40, 16, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(gx, H - 40, 16, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      break;
+    case 'festival':
+      // Banner flags
+      ctx.fillStyle = '#FFD54F';
+      for (let i = 0; i < 10; i++) {
+        const bx = i * (W / 10);
+        ctx.beginPath();
+        ctx.moveTo(bx, 0);
+        ctx.lineTo(bx + 20, 30);
+        ctx.lineTo(bx, 30);
+        ctx.fill();
+      }
+      // Confetti dots
+      ctx.fillStyle = '#FF8A80';
+      for (let i = 0; i < 30; i++) {
+        const dx = Math.random() * W;
+        const dy = Math.random() * H;
+        ctx.beginPath();
+        ctx.arc(dx, dy, 3, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.fillStyle = '#82B1FF';
+      for (let i = 0; i < 30; i++) {
+        const dx = Math.random() * W;
+        const dy = Math.random() * H;
+        ctx.beginPath();
+        ctx.arc(dx, dy, 2, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      break;
+  }
+  ctx.globalAlpha = 1;
+}
+
+function drawBigBoi() {
+  const r = getBigBoiRadius() * G.bScale;
+  const bx = G.bx;
+  const by = G.by + Math.sin(G.bobPhase) * 2; // idle bob
+  const skin = getSkinConfig();
+
+  // Body
+  const grad = ctx.createRadialGradient(bx - r * 0.3, by - r * 0.3, r * 0.1, bx, by, r);
+  grad.addColorStop(0, skin.colorLight || '#FF8E8E');
+  grad.addColorStop(1, skin.color);
+  ctx.fillStyle = grad;
+
+  ctx.beginPath();
+  ctx.arc(bx, by, r, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Shadow
+  ctx.shadowColor = 'rgba(0,0,0,0.1)';
+  ctx.shadowBlur = 10;
+  ctx.shadowOffsetY = 4;
+  ctx.beginPath();
+  ctx.arc(bx, by, r, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.shadowColor = 'transparent';
+  ctx.shadowBlur = 0;
+  ctx.shadowOffsetY = 0;
+
+  // Chef hat
+  if (skin.hat) {
+    const hatY = by - r + 4;
+    ctx.fillStyle = '#FFFFFF';
+    ctx.shadowColor = 'rgba(0,0,0,0.08)';
+    ctx.shadowBlur = 4;
+    // Hat body
+    ctx.fillRect(bx - r * 0.4, hatY - r * 0.35, r * 0.8, r * 0.35);
+    // Puffy top
+    ctx.beginPath();
+    ctx.arc(bx, hatY - r * 0.35, r * 0.35, Math.PI, 0);
+    ctx.fill();
+    ctx.shadowColor = 'transparent';
+    ctx.shadowBlur = 0;
+  }
+
+  // Eyes
+  const eyeY = by - r * 0.15;
+  const eyeSpacing = r * 0.25;
+  const eyeR = r * 0.12;
+  // White
+  ctx.fillStyle = '#FFFFFF';
+  ctx.beginPath();
+  ctx.arc(bx - eyeSpacing, eyeY, eyeR, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(bx + eyeSpacing, eyeY, eyeR, 0, Math.PI * 2);
+  ctx.fill();
+  // Pupils
+  ctx.fillStyle = '#2D1B69';
+  const pupilR = eyeR * 0.55;
+  ctx.beginPath();
+  ctx.arc(bx - eyeSpacing + 1, eyeY + 1, pupilR, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(bx + eyeSpacing + 1, eyeY + 1, pupilR, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Cheeks
+  ctx.fillStyle = 'rgba(255,150,150,0.4)';
+  const cheekR = r * 0.15;
+  ctx.beginPath();
+  ctx.arc(bx - r * 0.45, by + r * 0.1, cheekR, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(bx + r * 0.45, by + r * 0.1, cheekR, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Mouth (smile)
+  ctx.strokeStyle = '#2D1B69';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.arc(bx, by + r * 0.05, r * 0.2, 0.1, Math.PI - 0.1);
+  ctx.stroke();
+
+  // Crown for king skin
+  if (skin.id === 'king') {
+    const cY = by - r + 6;
+    ctx.fillStyle = '#FFD700';
+    ctx.shadowColor = 'rgba(255,215,0,0.3)';
+    ctx.shadowBlur = 8;
+    // Simple crown shape
+    ctx.beginPath();
+    ctx.moveTo(bx - r * 0.3, cY);
+    ctx.lineTo(bx - r * 0.25, cY - r * 0.25);
+    ctx.lineTo(bx - r * 0.08, cY - r * 0.1);
+    ctx.lineTo(bx, cY - r * 0.3);
+    ctx.lineTo(bx + r * 0.08, cY - r * 0.1);
+    ctx.lineTo(bx + r * 0.25, cY - r * 0.25);
+    ctx.lineTo(bx + r * 0.3, cY);
+    ctx.closePath();
+    ctx.fill();
+    ctx.shadowColor = 'transparent';
+    ctx.shadowBlur = 0;
+  }
+
+  // Alien antenna
+  if (skin.id === 'alien') {
+    ctx.strokeStyle = '#2ECC71';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(bx, by - r + 2);
+    ctx.lineTo(bx + r * 0.1, by - r - 16);
+    ctx.stroke();
+    // Antenna ball
+    ctx.fillStyle = '#F1C40F';
+    ctx.beginPath();
+    ctx.arc(bx + r * 0.1, by - r - 18, 5, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Ghost semi-transparency
+  if (skin.id === 'ghost') {
+    // Already handled by rgba color, draw a wavy bottom
+    ctx.fillStyle = 'rgba(255,255,255,0.3)';
+    ctx.beginPath();
+    ctx.arc(bx, by + r * 0.7, r * 0.2, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+function drawFood(f) {
+  const fr = f.radius;
+  // Background circle
+  ctx.fillStyle = f.type.color + '30'; // semi-transparent
+  ctx.beginPath();
+  ctx.arc(f.x, f.y, fr, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Emoji
+  ctx.font = `${fr * 1.5}px sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(f.type.emoji, f.x, f.y + 1);
+}
+
+function drawStar(s) {
+  const pulse = 1 + Math.sin(s.phase * 3) * 0.15;
+  const r = s.radius * pulse;
+
+  // Glow
+  ctx.shadowColor = '#FFD700';
+  ctx.shadowBlur = 20 + Math.sin(s.phase * 2) * 10;
+
+  ctx.font = `${r * 2}px sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('⭐', s.x, s.y + 1);
+
+  ctx.shadowColor = 'transparent';
+  ctx.shadowBlur = 0;
+}
+
+function drawBomb(b) {
+  const wobble = Math.sin(b.phase * 4) * 2;
+
+  ctx.fillStyle = '#555';
+  ctx.beginPath();
+  ctx.arc(b.x, b.y + wobble, b.radius, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Fuse
+  ctx.strokeStyle = '#8B4513';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(b.x, b.y - b.radius + wobble);
+  ctx.lineTo(b.x + 8, b.y - b.radius - 8 + wobble);
+  ctx.stroke();
+
+  // Spark
+  ctx.fillStyle = '#FF5722';
+  ctx.beginPath();
+  ctx.arc(b.x + 8, b.y - b.radius - 10 + wobble, 4, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Emoji
+  ctx.font = '24px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('💣', b.x, b.y + wobble + 1);
+}
+
+function drawObstacle(ob) {
+  ctx.fillStyle = ob.color;
+  ctx.shadowColor = 'rgba(0,0,0,0.1)';
+  ctx.shadowBlur = 6;
+  ctx.beginPath();
+  ctx.roundRect(ob.x, ob.y, ob.w, ob.h, 4);
+  ctx.fill();
+  ctx.shadowColor = 'transparent';
+  ctx.shadowBlur = 0;
+}
+
+function drawHUD() {
+  const lv = getLevelConfig(G.level);
+
+  // Top bar
+  ctx.fillStyle = 'rgba(255,255,255,0.85)';
+  ctx.beginPath();
+  ctx.roundRect(CONFIG.HUD_PADDING - 4, CONFIG.HUD_PADDING - 4, W - CONFIG.HUD_PADDING * 2 + 8, 50, 12);
+  ctx.fill();
+
+  // Level name + icon
+  ctx.fillStyle = '#3D2C1A';
+  ctx.font = 'bold 18px sans-serif';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(`${lv.icon} ${lv.name}`, CONFIG.HUD_PADDING + 8, CONFIG.HUD_PADDING + 22);
+
+  // Star indicator
+  if (G.starActive) {
+    ctx.fillStyle = '#FFD700';
+    ctx.font = '20px sans-serif';
+    ctx.fillText('⭐ x2', 140, CONFIG.HUD_PADDING + 22);
+    // Timer bar for star
+    const starPct = G.starTimer / CONFIG.STAR_DURATION;
+    ctx.fillStyle = '#FFF3CD';
+    ctx.fillRect(140, CONFIG.HUD_PADDING + 34, 100, 6);
+    ctx.fillStyle = '#FFD700';
+    ctx.fillRect(140, CONFIG.HUD_PADDING + 34, 100 * starPct, 6);
+  }
+
+  // Weight counter
+  ctx.fillStyle = '#3D2C1A';
+  ctx.font = 'bold 16px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(`${G.weight} / ${lv.targetWeight}`, W / 2 + 60, CONFIG.HUD_PADDING + 18);
+
+  // Progress bar
+  const progPct = Math.min(1, G.weight / lv.targetWeight);
+  const barX = W / 2 - CONFIG.PROGRESS_BAR_W / 2 + 60;
+  const barY = CONFIG.HUD_PADDING + 28;
+  ctx.fillStyle = '#E0E0E0';
+  ctx.beginPath();
+  ctx.roundRect(barX, barY, CONFIG.PROGRESS_BAR_W, CONFIG.PROGRESS_BAR_H, 7);
+  ctx.fill();
+  ctx.fillStyle = progPct >= 1 ? '#43A047' : '#4D96FF';
+  ctx.beginPath();
+  ctx.roundRect(barX, barY, CONFIG.PROGRESS_BAR_W * progPct, CONFIG.PROGRESS_BAR_H, 7);
+  ctx.fill();
+
+  // Timer
+  const mins = Math.floor(Math.max(0, G.timeLeft) / 60);
+  const secs = Math.floor(Math.max(0, G.timeLeft) % 60);
+  const timeStr = `${mins}:${secs.toString().padStart(2, '0')}`;
+  ctx.fillStyle = G.timeLeft < 15 ? '#E53935' : '#3D2C1A';
+  ctx.font = 'bold 18px sans-serif';
+  ctx.textAlign = 'right';
+  ctx.fillText(`⏱ ${timeStr}`, W - CONFIG.HUD_PADDING - 8, CONFIG.HUD_PADDING + 22);
+
+  // SFX toggle
+  ctx.fillStyle = G.settings.sfx ? '#3D2C1A' : '#A08060';
+  ctx.font = '20px sans-serif';
+  ctx.textAlign = 'right';
+  ctx.fillText(G.settings.sfx ? '🔊' : '🔇', W - CONFIG.HUD_PADDING - 8, CONFIG.HUD_PADDING + 45);
+
+  // Score
+  ctx.fillStyle = '#A08060';
+  ctx.font = '14px sans-serif';
+  ctx.textAlign = 'right';
+  ctx.fillText(`得分: ${G.score}`, W - CONFIG.HUD_PADDING - 8, CONFIG.HUD_PADDING + 42);
+
+  // Big Boi radius display at bottom
+  ctx.fillStyle = 'rgba(255,255,255,0.7)';
+  ctx.beginPath();
+  ctx.roundRect(CONFIG.HUD_PADDING - 4, H - 40, 130, 30, 10);
+  ctx.fill();
+  ctx.fillStyle = '#3D2C1A';
+  ctx.font = '13px sans-serif';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+  const size = getBigBoiRadius();
+  ctx.fillText(`🍪 体型: ${size.toFixed(0)}px`, CONFIG.HUD_PADDING + 8, H - 24);
+
+  // Not enough room for instruction — skip, game is intuitive
+}
+
+// ============================================================
+// SECTION 13: SCREEN DRAWING
+// ============================================================
+
+function drawTitleScreen() {
+  // Background
+  ctx.fillStyle = '#FFF8F0';
+  ctx.fillRect(0, 0, W, H);
+
+  // Decorative circles
+  ctx.globalAlpha = 0.08;
+  for (let i = 0; i < 5; i++) {
+    const cx = (i + 1) * W / 6;
+    const cy = Math.random() * H;
+    ctx.fillStyle = '#FF6B6B';
+    ctx.beginPath();
+    ctx.arc(cx, cy, 60 + i * 20, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+
+  // Big Boi mascot (large)
+  const mascotR = 80;
+  const mx = W / 2;
+  const my = H * 0.30;
+
+  // Save Big Boi drawing context for mascot
+  const grad = ctx.createRadialGradient(mx - mascotR * 0.3, my - mascotR * 0.3, mascotR * 0.1, mx, my, mascotR);
+  grad.addColorStop(0, '#FF8E8E');
+  grad.addColorStop(1, '#FF6B6B');
+  ctx.fillStyle = grad;
+  ctx.shadowColor = 'rgba(0,0,0,0.12)';
+  ctx.shadowBlur = 16;
+  ctx.shadowOffsetY = 6;
+  ctx.beginPath();
+  ctx.arc(mx, my, mascotR, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.shadowColor = 'transparent';
+  ctx.shadowBlur = 0;
+  ctx.shadowOffsetY = 0;
+
+  // Mascot eyes
+  const eY = my - 12;
+  const eSp = 22;
+  ctx.fillStyle = '#FFFFFF';
+  ctx.beginPath();
+  ctx.arc(mx - eSp, eY, 14, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(mx + eSp, eY, 14, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#2D1B69';
+  ctx.beginPath();
+  ctx.arc(mx - eSp + 3, eY + 2, 8, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(mx + eSp + 3, eY + 2, 8, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Mascot cheeks
+  ctx.fillStyle = 'rgba(255,150,150,0.35)';
+  ctx.beginPath();
+  ctx.arc(mx - 42, my + 12, 14, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(mx + 42, my + 12, 14, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Mascot mouth (big smile)
+  ctx.strokeStyle = '#2D1B69';
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.arc(mx, my + 8, 28, 0.15, Math.PI - 0.15);
+  ctx.stroke();
+
+  // Food around mascot
+  ctx.font = '28px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  const foodAround = ['🍎', '🍇', '🍪', '🍰', '🍗', '🍭'];
+  for (let i = 0; i < 6; i++) {
+    const a = i / 6 * Math.PI * 2 + Date.now() * 0.0003;
+    const fd = mascotR + 50 + Math.sin(Date.now() * 0.001 + i) * 10;
+    const fx = mx + Math.cos(a) * fd;
+    const fy = my + Math.sin(a) * fd;
+    ctx.fillText(foodAround[i], fx, fy);
+  }
+
+  // Title
+  ctx.fillStyle = '#3D2C1A';
+  ctx.font = 'bold 44px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('BIG BOI EATS', W / 2, H * 0.58);
+
+  ctx.fillStyle = '#A08060';
+  ctx.font = '18px sans-serif';
+  ctx.fillText('大胖子吞吞吞', W / 2, H * 0.62 + 8);
+
+  // Start prompt
+  const pulse = 0.7 + Math.sin(Date.now() * 0.004) * 0.3;
+  ctx.globalAlpha = pulse;
+  ctx.fillStyle = '#FF6B6B';
+  ctx.font = 'bold 22px sans-serif';
+  ctx.fillText('👆 点击 / 点击开始', W / 2, H * 0.73);
+  ctx.globalAlpha = 1;
+
+  // Best score
+  if (savedData && savedData.best) {
+    ctx.fillStyle = '#A08060';
+    ctx.font = '16px sans-serif';
+    ctx.fillText(`最高分: 第${savedData.best.highestLevel}关 / ${savedData.best.maxWeight}g`, W / 2, H * 0.80);
+  }
+
+  // Settings toggle
+  ctx.fillStyle = '#A08060';
+  ctx.font = '16px sans-serif';
+  ctx.fillText('⚙ 设置', W / 2, H * 0.87);
+
+  // Skin equipped
+  if (savedData && savedData.equippedSkin && savedData.equippedSkin !== 'default') {
+    const sk = CONFIG.SKINS.find(s => s.id === savedData.equippedSkin);
+    if (sk) {
+      ctx.fillStyle = '#A08060';
+      ctx.font = '14px sans-serif';
+      ctx.fillText(`皮肤: ${sk.name}`, W / 2, H * 0.92);
+    }
+  }
+}
+
+function drawLevelSelect() {
+  // Background
+  ctx.fillStyle = '#FFF8F0';
+  ctx.fillRect(0, 0, W, H);
+
+  // Title bar
+  ctx.fillStyle = '#3D2C1A';
+  ctx.font = 'bold 20px sans-serif';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('← 选关', 16, 28);
+
+  ctx.textAlign = 'center';
+  ctx.font = 'bold 18px sans-serif';
+  ctx.fillText('大胖子吞吞吞', W / 2, 28);
+
+  // SFX toggle
+  ctx.textAlign = 'right';
+  ctx.fillStyle = G.settings.sfx ? '#3D2C1A' : '#A08060';
+  ctx.font = '20px sans-serif';
+  ctx.fillText(G.settings.sfx ? '🔊' : '🔇', W - 16, 28);
+
+  // Level cards
+  const cardW = CONFIG.LEVEL_CARD_W;
+  const cardH = CONFIG.LEVEL_CARD_H;
+  const gap = CONFIG.LEVEL_CARD_GAP;
+  const totalW = CONFIG.LEVELS.length * cardW + (CONFIG.LEVELS.length - 1) * gap;
+  const startX = Math.max(16, (W - totalW) / 2);
+  const startY = H * 0.3;
+
+  for (let i = 0; i < CONFIG.LEVELS.length; i++) {
+    const lv = CONFIG.LEVELS[i];
+    const cx = startX + i * (cardW + gap);
+    const cy = startY;
+    const unlocked = savedData && savedData.unlockedLevels.includes(lv.id);
+    const stars = (savedData && savedData.best && i + 1 <= savedData.best.highestLevel) ? 1 : 0;
+    // Just show 1 star for completed, 0 for not
+
+    // Card background
+    ctx.fillStyle = unlocked ? '#FFFFFF' : '#EEEEEE';
+    ctx.shadowColor = unlocked ? 'rgba(0,0,0,0.08)' : 'rgba(0,0,0,0.04)';
+    ctx.shadowBlur = 12;
+    ctx.shadowOffsetY = 4;
+    ctx.beginPath();
+    ctx.roundRect(cx, cy, cardW, cardH, 16);
+    ctx.fill();
+    ctx.shadowColor = 'transparent';
+    ctx.shadowBlur = 0;
+    ctx.shadowOffsetY = 0;
+
+    // Card border
+    if (unlocked) {
+      ctx.strokeStyle = '#FF6B6B';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.roundRect(cx, cy, cardW, cardH, 16);
+      ctx.stroke();
+    }
+
+    // Emoji icon
+    ctx.font = '40px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = unlocked ? '#3D2C1A' : '#CCCCCC';
+    if (unlocked) {
+      ctx.fillText(lv.icon, cx + cardW / 2, cy + 45);
+    } else {
+      ctx.fillText('🔒', cx + cardW / 2, cy + 45);
+    }
+
+    // Level name
+    ctx.font = unlocked ? 'bold 16px sans-serif' : '16px sans-serif';
+    ctx.fillStyle = unlocked ? '#3D2C1A' : '#BBBBBB';
+    ctx.fillText(`${lv.name}`, cx + cardW / 2, cy + 95);
+
+    // Target weight
+    ctx.font = '12px sans-serif';
+    ctx.fillStyle = unlocked ? '#A08060' : '#CCCCCC';
+    ctx.fillText(`${lv.targetWeight}g`, cx + cardW / 2, cy + 116);
+
+    // Star rating
+    if (stars > 0) {
+      ctx.font = '14px sans-serif';
+      ctx.fillText('⭐', cx + cardW / 2, cy + 140);
+    }
+  }
+
+  // Skin button at bottom
+  if (savedData && savedData.unlockedSkins.length > 1) {
+    ctx.fillStyle = '#FFD700';
+    ctx.font = '18px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('👑 皮肤', W / 2, H - 40);
+  }
+
+  // Save card positions for click detection
+  G._levelCards = CONFIG.LEVELS.map((lv, i) => {
+    const cx = startX + i * (cardW + gap);
+    return { x:cx, y:startY, w:cardW, h:cardH, index:i, id:lv.id };
+  });
+}
+
+function drawIntro() {
+  // Draw game background + hud but not the gameplay overlay
+  drawBackground();
+  for (const ob of G.obstacles) drawObstacle(ob);
+  for (const f of G.foods) drawFood(f);
+  for (const s of G.stars) drawStar(s);
+  for (const b of G.bombs) drawBomb(b);
+  drawBigBoi();
+  drawParticles();
+
+  // HUD
+  drawHUD();
+
+  // Overlay
+  ctx.fillStyle = 'rgba(0,0,0,0.3)';
+  ctx.fillRect(0, 0, W, H);
+
+  const lv = getLevelConfig(G.level);
+  ctx.fillStyle = '#FFFFFF';
+  ctx.font = 'bold 42px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(`${lv.icon} ${lv.name}`, W / 2, H / 2 - 20);
+
+  ctx.font = '20px sans-serif';
+  ctx.fillStyle = 'rgba(255,255,255,0.8)';
+  ctx.fillText(`目标: ${lv.targetWeight}g  |  时限: ${lv.timeLimit}s`, W / 2, H / 2 + 30);
+}
+
+function drawVictory() {
+  // Clear stale button refs
+  G._btnNext = null; G._btnReplay = null; G._btnSelect = null;
+
+  drawBackground();
+  for (const ob of G.obstacles) drawObstacle(ob);
+  for (const f of G.foods) drawFood(f);
+  drawBigBoi();
+  drawParticles();
+
+  // Overlay
+  ctx.fillStyle = 'rgba(0,0,0,0.4)';
+  ctx.fillRect(0, 0, W, H);
+
+  const lv = getLevelConfig(G.level);
+
+  ctx.fillStyle = '#FFFFFF';
+  ctx.font = 'bold 48px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('🎉', W / 2, H * 0.25);
+
+  ctx.font = 'bold 32px sans-serif';
+  ctx.fillText(`${lv.name} 通关！`, W / 2, H * 0.35);
+
+  ctx.font = '18px sans-serif';
+  ctx.fillStyle = 'rgba(255,255,255,0.85)';
+  ctx.fillText(`目标体重: ${lv.targetWeight}g`, W / 2, H * 0.43);
+  ctx.fillText(`最终体重: ${G.weight}g`, W / 2, H * 0.48);
+  ctx.fillText(`剩余时间: ${Math.floor(G.timeLeft)}s`, W / 2, H * 0.53);
+
+  // Stars
+  ctx.font = '36px sans-serif';
+  let starStr = '';
+  for (let i = 0; i < 3; i++) starStr += i < G.stars ? '⭐' : '☆';
+  ctx.fillText(starStr, W / 2, H * 0.62);
+
+  // Buttons
+  const btnY = H * 0.72;
+  const hasNext = G.level < CONFIG.LEVELS.length - 1;
+
+  // Next level button
+  if (hasNext) {
+    ctx.fillStyle = '#43A047';
+    ctx.shadowColor = 'rgba(67,160,71,0.3)';
+    ctx.shadowBlur = 12;
+    ctx.beginPath();
+    ctx.roundRect(W / 2 - 100, btnY, 200, 48, 24);
+    ctx.fill();
+    ctx.shadowColor = 'transparent';
+    ctx.shadowBlur = 0;
+
+    ctx.fillStyle = '#FFFFFF';
+    ctx.font = 'bold 18px sans-serif';
+    ctx.fillText('下一关 →', W / 2, btnY + 27);
+    G._btnNext = { x:W/2-100, y:btnY, w:200, h:48 };
+  }
+
+  // Replay button
+  const replayY = hasNext ? btnY + 60 : btnY;
+  ctx.fillStyle = '#FF6B6B';
+  ctx.shadowColor = 'rgba(255,107,107,0.3)';
+  ctx.shadowBlur = 12;
+  ctx.beginPath();
+  ctx.roundRect(W / 2 - 100, replayY, 200, 48, 24);
+  ctx.fill();
+  ctx.shadowColor = 'transparent';
+  ctx.shadowBlur = 0;
+
+  ctx.fillStyle = '#FFFFFF';
+  ctx.font = 'bold 18px sans-serif';
+  ctx.fillText('再来一局', W / 2, replayY + 27);
+  G._btnReplay = { x:W/2-100, y:replayY, w:200, h:48 };
+
+  // Level select
+  const selY = replayY + 60;
+  ctx.fillStyle = 'rgba(255,255,255,0.2)';
+  ctx.beginPath();
+  ctx.roundRect(W / 2 - 80, selY, 160, 40, 20);
+  ctx.fill();
+  ctx.fillStyle = '#FFFFFF';
+  ctx.font = '16px sans-serif';
+  ctx.fillText('选关', W / 2, selY + 23);
+  G._btnSelect = { x:W/2-80, y:selY, w:160, h:40 };
+
+  // Check skin unlock
+  const newSkin = checkSkinUnlocks();
+  if (newSkin) {
+    const sk = CONFIG.SKINS.find(s => s.id === newSkin);
+    if (sk) {
+      ctx.fillStyle = '#FFD700';
+      ctx.font = 'bold 20px sans-serif';
+      ctx.fillText(`🎊 解锁皮肤: ${sk.name}! 🎊`, W / 2, H * 0.94);
+    }
+  }
+}
+
+function drawGameover() {
+  // Clear stale button refs
+  G._btnReplay = null; G._btnSelect = null;
+
+  drawBackground();
+  for (const ob of G.obstacles) drawObstacle(ob);
+  for (const f of G.foods) drawFood(f);
+  drawBigBoi();
+  drawParticles();
+
+  ctx.fillStyle = 'rgba(0,0,0,0.4)';
+  ctx.fillRect(0, 0, W, H);
+
+  const lv = getLevelConfig(G.level);
+
+  ctx.fillStyle = '#FFFFFF';
+  ctx.font = 'bold 48px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('😵', W / 2, H * 0.28);
+
+  ctx.font = 'bold 30px sans-serif';
+  ctx.fillText('时间到！', W / 2, H * 0.38);
+
+  ctx.font = '18px sans-serif';
+  ctx.fillStyle = 'rgba(255,255,255,0.85)';
+  ctx.fillText(`当前体重: ${G.weight} / ${lv.targetWeight}g`, W / 2, H * 0.46);
+
+  // Replay button
+  const btnY = H * 0.58;
+  ctx.fillStyle = '#FF6B6B';
+  ctx.shadowColor = 'rgba(255,107,107,0.3)';
+  ctx.shadowBlur = 12;
+  ctx.beginPath();
+  ctx.roundRect(W / 2 - 100, btnY, 200, 48, 24);
+  ctx.fill();
+  ctx.shadowColor = 'transparent';
+  ctx.shadowBlur = 0;
+
+  ctx.fillStyle = '#FFFFFF';
+  ctx.font = 'bold 18px sans-serif';
+  ctx.fillText('再试一次', W / 2, btnY + 27);
+  G._btnReplay = { x:W/2-100, y:btnY, w:200, h:48 };
+
+  // Level select
+  const selY = btnY + 64;
+  ctx.fillStyle = 'rgba(255,255,255,0.2)';
+  ctx.beginPath();
+  ctx.roundRect(W / 2 - 80, selY, 160, 40, 20);
+  ctx.fill();
+  ctx.fillStyle = '#FFFFFF';
+  ctx.font = '16px sans-serif';
+  ctx.fillText('选关', W / 2, selY + 23);
+  G._btnSelect = { x:W/2-80, y:selY, w:160, h:40 };
+}
+
+// ============================================================
+// SECTION 14: MAIN DRAW
+// ============================================================
+function draw() {
+  ctx.clearRect(0, 0, W, H);
+
+  switch (G.screen) {
+    case 'title':
+      drawTitleScreen();
+      break;
+    case 'levelSelect':
+      drawLevelSelect();
+      break;
+    case 'intro':
+      drawIntro();
+      break;
+    case 'playing':
+      drawBackground();
+      // Obstacles
+      for (const ob of G.obstacles) drawObstacle(ob);
+      // Food
+      for (const f of G.foods) drawFood(f);
+      // Stars
+      for (const s of G.stars) drawStar(s);
+      // Bombs
+      for (const b of G.bombs) drawBomb(b);
+      // Big Boi
+      drawBigBoi();
+      // Particles
+      drawParticles();
+      // HUD
+      drawHUD();
+      break;
+    case 'victory':
+      drawVictory();
+      break;
+    case 'gameover':
+      drawGameover();
+      break;
+  }
+}
+
+// ============================================================
+// SECTION 15: INPUT HANDLING
+// ============================================================
+
+function getCanvasPos(e) {
+  const rect = canvas.getBoundingClientRect();
+  const clientX = e.clientX || (e.touches && e.touches[0] && e.touches[0].clientX) || 0;
+  const clientY = e.clientY || (e.touches && e.touches[0] && e.touches[0].clientY) || 0;
+  return {
+    x: clientX - rect.left,
+    y: clientY - rect.top,
+  };
+}
+
+function handlePointerDown(e) {
+  e.preventDefault();
+  initAudio();
+  const pos = getCanvasPos(e);
+
+  if (G.screen === 'title') {
+    SOUNDS.click();
+    HAPTIC.click();
+    G.screen = 'levelSelect';
+    return;
+  }
+
+  if (G.screen === 'levelSelect') {
+    // Check skin button
+    if (savedData && savedData.unlockedSkins.length > 1 &&
+        pos.y > H - 60 && pos.y < H - 20) {
+      openSkinSelect();
+      return;
+    }
+    // Check level card clicks
+    if (G._levelCards) {
+      for (const card of G._levelCards) {
+        if (pos.x >= card.x && pos.x <= card.x + card.w &&
+            pos.y >= card.y && pos.y <= card.y + card.h) {
+          if (savedData && savedData.unlockedLevels.includes(card.id)) {
+            SOUNDS.click();
+            HAPTIC.click();
+            startLevel(card.index);
+            return;
+          }
+          // Play locked sound
+          playTone(200, 0.15, 'sine', 0.08);
+          return;
+        }
+      }
+    }
+    // SFX toggle
+    if (pos.x > W - 40 && pos.y < 50) {
+      toggleSFX();
+    }
+    return;
+  }
+
+  if (G.screen === 'victory') {
+    // Next level
+    if (G._btnNext && pos.x >= G._btnNext.x && pos.x <= G._btnNext.x + G._btnNext.w &&
+        pos.y >= G._btnNext.y && pos.y <= G._btnNext.y + G._btnNext.h) {
+      SOUNDS.click();
+      HAPTIC.click();
+      if (G.level < CONFIG.LEVELS.length - 1) {
+        startLevel(G.level + 1);
+      } else {
+        G.screen = 'levelSelect';
+      }
+      return;
+    }
+    // Replay
+    if (G._btnReplay && pos.x >= G._btnReplay.x && pos.x <= G._btnReplay.x + G._btnReplay.w &&
+        pos.y >= G._btnReplay.y && pos.y <= G._btnReplay.y + G._btnReplay.h) {
+      SOUNDS.click();
+      HAPTIC.click();
+      startLevel(G.level);
+      return;
+    }
+    // Level select
+    if (G._btnSelect && pos.x >= G._btnSelect.x && pos.x <= G._btnSelect.x + G._btnSelect.w &&
+        pos.y >= G._btnSelect.y && pos.y <= G._btnSelect.y + G._btnSelect.h) {
+      SOUNDS.click();
+      HAPTIC.click();
+      G.screen = 'levelSelect';
+      return;
+    }
+    return;
+  }
+
+  if (G.screen === 'gameover') {
+    // Replay
+    if (G._btnReplay && pos.x >= G._btnReplay.x && pos.x <= G._btnReplay.x + G._btnReplay.w &&
+        pos.y >= G._btnReplay.y && pos.y <= G._btnReplay.y + G._btnReplay.h) {
+      SOUNDS.click();
+      HAPTIC.click();
+      startLevel(G.level);
+      return;
+    }
+    // Level select
+    if (G._btnSelect && pos.x >= G._btnSelect.x && pos.x <= G._btnSelect.x + G._btnSelect.w &&
+        pos.y >= G._btnSelect.y && pos.y <= G._btnSelect.y + G._btnSelect.h) {
+      SOUNDS.click();
+      HAPTIC.click();
+      G.screen = 'levelSelect';
+      return;
+    }
+    return;
+  }
+
+  if (G.screen === 'playing') {
+    // SFX toggle
+    if (pos.y < 46 && pos.x > W - 46) {
+      toggleSFX();
+      return;
+    }
+    // Start following pointer
+    G.usingPointer = true;
+    G.pointerX = pos.x;
+    G.pointerY = pos.y;
+    G.tx = pos.x;
+    G.ty = pos.y;
+    return;
+  }
+}
+
+function handlePointerMove(e) {
+  e.preventDefault();
+  const pos = getCanvasPos(e);
+
+  if (G.screen === 'playing' || G.screen === 'intro') {
+    G.usingPointer = true;
+    G.pointerX = pos.x;
+    G.pointerY = pos.y;
+    // Don't set tx/ty here during intro to keep Big Boi centered
+    if (G.screen === 'playing') {
+      G.tx = pos.x;
+      G.ty = pos.y;
+    }
+  }
+}
+
+function handleKeyDown(e) {
+  const key = e.key;
+  if (key === ' ' || key === 'Space') {
+    e.preventDefault();
+    initAudio();
+    if (G.screen === 'title') {
+      SOUNDS.click();
+      HAPTIC.click();
+      G.screen = 'levelSelect';
+    }
+    return;
+  }
+
+  if (key === 'm' || key === 'M') {
+    toggleSFX();
+    e.preventDefault();
+    return;
+  }
+
+  if (G.screen === 'playing') {
+    switch (key) {
+      case 'ArrowUp': case 'w': case 'W': G.keys.up = true; e.preventDefault(); G.usingPointer = false; break;
+      case 'ArrowDown': case 's': case 'S': G.keys.down = true; e.preventDefault(); G.usingPointer = false; break;
+      case 'ArrowLeft': case 'a': case 'A': G.keys.left = true; e.preventDefault(); G.usingPointer = false; break;
+      case 'ArrowRight': case 'd': case 'D': G.keys.right = true; e.preventDefault(); G.usingPointer = false; break;
+    }
+  }
+}
+
+function handleKeyUp(e) {
+  const key = e.key;
+  if (G.screen === 'playing') {
+    switch (key) {
+      case 'ArrowUp': case 'w': case 'W': G.keys.up = false; e.preventDefault(); break;
+      case 'ArrowDown': case 's': case 'S': G.keys.down = false; e.preventDefault(); break;
+      case 'ArrowLeft': case 'a': case 'A': G.keys.left = false; e.preventDefault(); break;
+      case 'ArrowRight': case 'd': case 'D': G.keys.right = false; e.preventDefault(); break;
+    }
+  }
+}
+
+function toggleSFX() {
+  G.settings.sfx = !G.settings.sfx;
+  if (savedData) {
+    savedData.settings.sfx = G.settings.sfx;
+    saveData();
+  }
+  if (G.settings.sfx) playTone(800, 0.05, 'sine', 0.06);
+}
+
+// Skin select screen
+let _skinSelectActive = false;
+
+function openSkinSelect() {
+  _skinSelectActive = true;
+  SOUNDS.click();
+}
+
+function drawSkinSelect() {
+  G._skinItems = [];
+
+  ctx.fillStyle = 'rgba(0,0,0,0.6)';
+  ctx.fillRect(0, 0, W, H);
+
+  const panelW = Math.min(W - 40, 360);
+  const panelH = 360;
+  const px = (W - panelW) / 2;
+  const py = (H - panelH) / 2;
+
+  ctx.fillStyle = '#FFFFFF';
+  ctx.shadowColor = 'rgba(0,0,0,0.2)';
+  ctx.shadowBlur = 20;
+  ctx.beginPath();
+  ctx.roundRect(px, py, panelW, panelH, 20);
+  ctx.fill();
+  ctx.shadowColor = 'transparent';
+  ctx.shadowBlur = 0;
+
+  ctx.fillStyle = '#3D2C1A';
+  ctx.font = 'bold 22px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('👑 皮肤选择', W / 2, py + 30);
+
+  const startY = py + 60;
+  const itemH = 52;
+
+  for (let i = 0; i < CONFIG.SKINS.length; i++) {
+    const sk = CONFIG.SKINS[i];
+    const unlocked = isSkinUnlocked(sk.id);
+    const isEquipped = savedData && savedData.equippedSkin === sk.id;
+    const iy = startY + i * (itemH + 6);
+
+    ctx.fillStyle = isEquipped ? '#FFF3E0' : (unlocked ? '#FAFAFA' : '#F5F5F5');
+    ctx.beginPath();
+    ctx.roundRect(px + 10, iy, panelW - 20, itemH, 10);
+    ctx.fill();
+
+    if (isEquipped) {
+      ctx.strokeStyle = '#FF6B6B';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.roundRect(px + 10, iy, panelW - 20, itemH, 10);
+      ctx.stroke();
+    }
+
+    // Color swatch
+    ctx.fillStyle = sk.color;
+    ctx.beginPath();
+    ctx.arc(px + 34, iy + itemH / 2, 12, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.textAlign = 'left';
+    ctx.fillStyle = unlocked ? '#3D2C1A' : '#BBBBBB';
+    ctx.font = '16px sans-serif';
+    ctx.fillText(sk.name, px + 54, iy + itemH / 2);
+
+    ctx.textAlign = 'right';
+    if (isEquipped) {
+      ctx.fillStyle = '#FF6B6B';
+      ctx.font = '14px sans-serif';
+      ctx.fillText('✓ 使用中', px + panelW - 16, iy + itemH / 2);
+    } else if (unlocked) {
+      ctx.fillStyle = '#A08060';
+      ctx.font = '14px sans-serif';
+      ctx.fillText('点击装备', px + panelW - 16, iy + itemH / 2);
+    } else {
+      ctx.fillStyle = '#CCCCCC';
+      ctx.font = '12px sans-serif';
+      const lockReasons = {
+        'allLevels':'通关全部5关',
+        'cum2000':'累计体重2000g',
+        'lvl5_3star':'第5关3星通关',
+        'cum5000':'累计体重5000g',
+        'play30':'游玩30次',
+      };
+      ctx.fillText(lockReasons[sk.unlock] || '🔒', px + panelW - 16, iy + itemH / 2);
+    }
+
+    // Store skin positions for click detection
+    G._skinItems = G._skinItems || [];
+    G._skinItems.push({ x: px + 10, y: iy, w: panelW - 20, h: itemH, index: i });
+  }
+
+  // Close button
+  const closeY = startY + CONFIG.SKINS.length * (itemH + 6) + 10;
+  ctx.fillStyle = '#FF6B6B';
+  ctx.beginPath();
+  ctx.roundRect(px + panelW / 2 - 60, closeY, 120, 36, 18);
+  ctx.fill();
+  ctx.fillStyle = '#FFFFFF';
+  ctx.font = '16px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('关闭', W / 2, closeY + 20);
+  G._btnSkinClose = { x: px + panelW / 2 - 60, y: closeY, w: 120, h: 36 };
+}
+
+// ============================================================
+// SECTION 16: GAME LOOP
+// ============================================================
+let then = 0;
+
+function gameLoop(now) {
+  const dt = now - then;
+  then = now;
+
+  // Cap dt to prevent spiral of death
+  const cappedDt = Math.min(dt, 50);
+
+  // Update
+  update(cappedDt);
+
+  // Draw
+  draw();
+
+  // Overlay skin select if active
+  if (_skinSelectActive) {
+    drawSkinSelect();
+  }
+
+  requestAnimationFrame(gameLoop);
+}
+
+let _visibilityHidden = false;
+let _hiddenTime = 0;
+
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) {
+    _visibilityHidden = true;
+    _hiddenTime = performance.now();
+  } else if (_visibilityHidden) {
+    _visibilityHidden = false;
+    // Add back the hidden duration so the timer effectively pauses
+    const hiddenDur = performance.now() - _hiddenTime;
+    G.timeLeft += hiddenDur / 1000;
+    _hiddenTime = 0;
+  }
+});
+
+// ============================================================
+// SECTION 17: EVENT LISTENERS
+// ============================================================
+
+// Pointer (mouse + touch)
+canvas.addEventListener('pointerdown', handlePointerDown);
+canvas.addEventListener('pointermove', handlePointerMove);
+// Prevent context menu
+canvas.addEventListener('contextmenu', e => e.preventDefault());
+
+// Touch fallback for older browsers
+canvas.addEventListener('touchstart', (e) => {
+  e.preventDefault();
+  initAudio();
+  const touch = e.touches[0];
+  if (!touch) return;
+  const rect = canvas.getBoundingClientRect();
+  const pos = { x: touch.clientX - rect.left, y: touch.clientY - rect.top };
+
+  if (G.screen === 'title') {
+    SOUNDS.click();
+    HAPTIC.click();
+    G.screen = 'levelSelect';
+    return;
+  }
+
+  // Reuse pointerdown logic by dispatching to same handler
+  handlePointerDown(e);
+}, { passive: false });
+
+canvas.addEventListener('touchmove', (e) => {
+  e.preventDefault();
+  handlePointerMove(e);
+}, { passive: false });
+
+// Keyboard
+window.addEventListener('keydown', handleKeyDown);
+window.addEventListener('keyup', handleKeyUp);
+
+// Canvas click for skin select interaction
+canvas.addEventListener('click', (e) => {
+  if (_skinSelectActive) {
+    const rect = canvas.getBoundingClientRect();
+    const cx = e.clientX - rect.left;
+    const cy = e.clientY - rect.top;
+
+    // Close button
+    if (G._btnSkinClose && cx >= G._btnSkinClose.x && cx <= G._btnSkinClose.x + G._btnSkinClose.w &&
+        cy >= G._btnSkinClose.y && cy <= G._btnSkinClose.y + G._btnSkinClose.h) {
+      _skinSelectActive = false;
+      G._skinItems = null;
+      G._btnSkinClose = null;
+      SOUNDS.click();
+      return;
+    }
+
+    // Skin items
+    if (G._skinItems) {
+      for (const item of G._skinItems) {
+        if (cx >= item.x && cx <= item.x + item.w &&
+            cy >= item.y && cy <= item.y + item.h) {
+          const sk = CONFIG.SKINS[item.index];
+          if (isSkinUnlocked(sk.id) && savedData) {
+            savedData.equippedSkin = sk.id;
+            G.currentSkin = sk.id;
+            saveData();
+            SOUNDS.click();
+            // Rebuild skin items to refresh display
+            G._skinItems = [];
+          }
+          return;
+        }
+      }
+    }
+  }
+});
+
+// Also handle pointerup for skin select
+canvas.addEventListener('pointerup', (e) => {
+  if (_skinSelectActive) {
+    const rect = canvas.getBoundingClientRect();
+    const cx = e.clientX - rect.left;
+    const cy = e.clientY - rect.top;
+
+    // Close button
+    if (G._btnSkinClose && cx >= G._btnSkinClose.x && cx <= G._btnSkinClose.x + G._btnSkinClose.w &&
+        cy >= G._btnSkinClose.y && cy <= G._btnSkinClose.y + G._btnSkinClose.h) {
+      _skinSelectActive = false;
+      G._skinItems = null;
+      G._btnSkinClose = null;
+      SOUNDS.click();
+      return;
+    }
+
+    // Skin items
+    if (G._skinItems) {
+      for (const item of G._skinItems) {
+        if (cx >= item.x && cx <= item.x + item.w &&
+            cy >= item.y && cy <= item.y + item.h) {
+          const sk = CONFIG.SKINS[item.index];
+          if (isSkinUnlocked(sk.id) && savedData) {
+            savedData.equippedSkin = sk.id;
+            G.currentSkin = sk.id;
+            saveData();
+            SOUNDS.click();
+            G._skinItems = [];
+          }
+          return;
+        }
+      }
+    }
+  }
+});
+
+// Resize
+window.addEventListener('resize', () => {
+  resize();
+  // Re-center Big Boi
+  G.bx = Math.min(G.bx, W - getBigBoiRadius());
+  G.by = Math.min(G.by, H - getBigBoiRadius());
+});
+
+// ============================================================
+// SECTION 18: INITIALIZATION
+// ============================================================
+
+function init() {
+  // Load saved data
+  savedData = loadData();
+
+  // Apply settings
+  if (savedData) {
+    G.settings.sfx = savedData.settings.sfx !== undefined ? savedData.settings.sfx : true;
+    G.settings.haptic = savedData.settings.haptic !== undefined ? savedData.settings.haptic : true;
+    G.currentSkin = savedData.equippedSkin || 'default';
+  }
+
+  // Initialize positions
+  G.bx = W / 2;
+  G.by = H / 2;
+  G.tx = W / 2;
+  G.ty = H / 2;
+
+  // Initialize level cards
+  G._levelCards = [];
+
+  // Start game loop
+  then = performance.now();
+  requestAnimationFrame(gameLoop);
+}
+
+// Polyfill roundRect if needed
+if (!CanvasRenderingContext2D.prototype.roundRect) {
+  CanvasRenderingContext2D.prototype.roundRect = function(x, y, w, h, radii) {
+    const r = typeof radii === 'number' ? radii : (radii || 0);
+    this.moveTo(x + r, y);
+    this.lineTo(x + w - r, y);
+    this.quadraticCurveTo(x + w, y, x + w, y + r);
+    this.lineTo(x + w, y + h - r);
+    this.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    this.lineTo(x + r, y + h);
+    this.quadraticCurveTo(x, y + h, x, y + h - r);
+    this.lineTo(x, y + r);
+    this.quadraticCurveTo(x, y, x + r, y);
+    return this;
+  };
+}
+
+// Start the game
+init();
+
+</script>
+</body>
+</html>

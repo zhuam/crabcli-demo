@@ -843,6 +843,25 @@
       "version": "1.0.0",
       "featured": true,
       "rating": 4
+    },
+    {
+      "id": "big-boi-eats",
+      "name": "Big Boi Eats",
+      "description": "大胖子吞掉小物体不断变大！移动吞噬 → 成长升级 → 解锁新地图和皮肤",
+      "category": "casual",
+      "tags": [
+        "singleplayer",
+        "casual",
+        "eating",
+        "growth",
+        "short-session"
+      ],
+      "path": "/games/039-big-boi-eats/",
+      "thumbnail": "/games/039-big-boi-eats/thumb.svg",
+      "players": "1",
+      "version": "1.0.0",
+      "featured": true,
+      "rating": 4
     }
   ],
   "categories": [
