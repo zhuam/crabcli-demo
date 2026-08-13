@@ -81,6 +81,8 @@ ok('btnRetry calls startGame', /btnRetry\.addEventListener\(\s*['"]click['"][\s\
 ok('resultNextBtn advances to next scene', /btnNextScene\.addEventListener\(\s*['"]click['"][\s\S]{0,40}nextScene/.test(js));
 ok('Last scene button shows "查看结果"', /if\s*\(isLast\)[\s\S]{0,80}查看结果/.test(js));
 ok('resetGame() resets all state', /function\s+resetGame/.test(js) && /state\.currentSceneIdx\s*=\s*0/.test(js));
+ok('showSceneIntro syncs state.currentSceneIdx (scene-progression fix)', /function\s+showSceneIntro\s*\(idx\)\s*\{[\s\S]{0,500}state\.currentSceneIdx\s*=\s*idx/.test(js));
+ok('dom.screens key matches showScreen("scene-done") (scene-done screen visibility fix)', /dom\.screens\s*=\s*\{[\s\S]{0,400}['"]scene-done['"]\s*:\s*\$\(['"]screen-scene-done['"]\)/.test(js));
 
 /* =====================================================================
  * AC5 · 关键音效与震动反馈

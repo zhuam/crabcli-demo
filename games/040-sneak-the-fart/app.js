@@ -105,7 +105,7 @@
       title: $('screen-title'),
       intro: $('screen-intro'),
       game: $('screen-game'),
-      sceneDone: $('screen-scene-done'),
+      'scene-done': $('screen-scene-done'), // key must match showScreen('scene-done')
       victory: $('screen-victory'),
       gameover: $('screen-gameover'),
       settings: $('screen-settings'),
@@ -497,7 +497,7 @@
       case 0: return { away: 0.6, around: 0.25, atPlayer: 0.15 };  // Office - easy
       case 1: return { away: 0.4, around: 0.35, atPlayer: 0.25 };  // Library - medium
       case 2: return { away: 0.3, around: 0.3, atPlayer: 0.4 };    // Elevator - harder
-      case 3: return { away: 0.2, around: 0.3, atPlayer: 0.5 };    // Meeting - hardest
+      case 3: return { away: 0.4, around: 0.3, atPlayer: 0.3 };    // Meeting - hardest
       default: return { away: 0.4, around: 0.3, atPlayer: 0.3 };
     }
   }
@@ -546,9 +546,11 @@
       dot = '🔴'; label = '有人看着你！';
       hint = '⛔ 别放！'; hintClass = 'danger-text';
     } else if (around > 0) {
+      // "around" NPCs look around the room, NOT at the player —
+      // farting is mechanically safe here (only atPlayer catches).
       level = 'warn';
-      dot = '🟡'; label = '不太确定';
-      hint = '⚠️ 小心...'; hintClass = '';
+      dot = '🟡'; label = '没人看这边';
+      hint = '💨 快放！'; hintClass = 'safe-text';
     } else {
       level = 'safe';
       dot = '🟢'; label = '安全！';
@@ -809,6 +811,11 @@
   }
 
   function showSceneIntro(idx) {
+    // Critical: keep state.currentSceneIdx in sync so the intro's
+    // "准备好了"/Space handler starts the CORRECT next scene.
+    // (Previously this was only set in startScene(), which made
+    //  btnBegin restart the previous scene — infinite loop on scene 1.)
+    state.currentSceneIdx = idx;
     const scene = SCENES[idx];
     dom.introIcon.textContent = scene.icon;
     dom.introName.textContent = scene.name;
