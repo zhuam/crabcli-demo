@@ -164,6 +164,9 @@ if (entry) {
   ok('registry.version present', typeof entry.version === 'string' && entry.version.length > 0);
   ok('registry.featured = true', entry.featured === true);
   ok('registry.tags includes stealth/timing/humor', Array.isArray(entry.tags) && entry.tags.includes('stealth'));
+  ok('registry.thumbnail = /games/040-sneak-the-fart/thumb.svg and resolves on disk',
+    entry.thumbnail === '/games/040-sneak-the-fart/thumb.svg' &&
+    fs.existsSync(path.join(ROOT, 'thumb.svg')));
 }
 
 /* =====================================================================

@@ -838,6 +838,7 @@
         "short-session"
       ],
       "path": "/games/040-sneak-the-fart/",
+      "thumbnail": "/games/040-sneak-the-fart/thumb.svg",
       "hasServer": false,
       "players": "1",
       "version": "1.0.0",
