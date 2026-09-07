@@ -340,11 +340,11 @@ var G=null;
 function newGame(){
   return {phase:'intermission',
     gold:GOLD_START,castleHp:CASTLE_MAX,castleMax:CASTLE_MAX,
-    wave:0,cleared:0,waveT:FIRST_WAVE_DELAY,
+    wave:0,cleared:0,unlockBase:0,waveT:FIRST_WAVE_DELAY,
     spawns:[],spawnIdx:0,combatStart:0,waveState:'idle',
     enemies:[],towers:[],projs:[],parts:[],dmgNums:[],floats:[],rings:[],
     rage:0,rageTier:0,berserk:0,autoDeto:0,
-    combo:0,comboT:0,score:0,kills:0,
+    combo:0,comboT:0,maxCombo:0,score:0,kills:0,
     drag:null,selUnit:-1,cursor:{c:2,r:2},selTower:-1,
     elapsed:0,paused:false,over:false,shake:0,redFlash:0,whiteFlash:0,muted:false,
     _btns:[]};
@@ -372,7 +372,7 @@ function detonate(){
   var boom=120+G.wave*26;
   var snap=G.enemies.slice();
   for(var i=0;i<snap.length;i++){ hurtEnemy(snap[i],boom+snap[i].hpMax*0.2,true); }
-  addFloat(CASTLE.x,CASTLE.y-70,'暴怒反击 清屏 x'+(rageMul()>1?1:1),'#ff9600',22);
+  addFloat(CASTLE.x,CASTLE.y-70,'暴怒反击 清屏!','#ff9600',22);
 }
 
 /* ---------- 波次 ---------- */
@@ -396,7 +396,7 @@ function startWave(){
   G.spawns=flat.map(function(type){var cur=t;t+=cfg.gap;return{type:type,at:cur};});
   G.spawnIdx=0;G.combatStart=G.elapsed;
   waveNum.textContent=G.wave+1;syncWaveDots();
-  var unlocked=UNITS.filter(function(u){return u.unlockAfter===G.cleared&&u.unlockAfter>0});
+  var unlocked=UNITS.filter(function(u){return u.unlockAfter>G.unlockBase&&u.unlockAfter===G.cleared&&u.unlockAfter>0});
   if(unlocked.length){sfx.unlock();addFloat(WB/2,HB/2-130,'新单位解锁：'+unlocked.map(function(u){return u.name}).join('、'),'#58a700',20);}
 }
 function spawnEnemy(type){
@@ -411,7 +411,8 @@ function spawnEnemy(type){
 function startBattle(){
   if(S.screen==='battle'&&G&&!G.over)return;
   sfx.ui();hapLight();
-  G=newGame();G.muted=loadBest().muted;setMute(G.muted);
+  var hist=loadBest();G=newGame();G.muted=hist.muted;setMute(G.muted);
+  G.unlockBase=hist.bestRound||0; // 跨局解锁: 历史最佳过关波数作为本次解锁底数
   titleSc.classList.add('hidden');pauseSc.classList.add('hidden');resSc.classList.add('hidden');
   S.screen='battle';
   waveNum.textContent=1;syncWaveDots();renderTray();
@@ -423,7 +424,8 @@ function endGame(victory){
   var best=loadBest();best.gamesPlayed++;
   var isNew=G.score>best.bestScore;
   if(isNew)best.bestScore=G.score;
-  if(G.combo>best.highestCombo)best.highestCombo=G.combo;
+  if(G.combo>G.maxCombo)G.maxCombo=G.combo; // 兜底: 结算瞬间连击不低于已记录峰值
+  if(G.maxCombo>best.highestCombo)best.highestCombo=G.maxCombo;
   if(G.cleared>best.bestRound)best.bestRound=G.cleared;
   best.muted=G.muted;saveBest(best);
   G.win=victory;
@@ -441,7 +443,7 @@ function showResult(victory,best,isNew){
     +(isNew?'<div class="r-new">★ 新纪录!</div>':'')
     +'<div class="r-stats">'
     +'<div class="r-stat"><b>'+fmt(G.score)+'</b><span>本局得分</span></div>'
-    +'<div class="r-stat"><b>x'+Math.max(1,G.combo)+'</b><span>最高连击</span></div>'
+    +'<div class="r-stat"><b>x'+Math.max(1,G.maxCombo||0)+'</b><span>最高连击</span></div>'
     +'<div class="r-stat"><b>'+G.cleared+'/5</b><span>守住波数</span></div>'
     +'<div class="r-stat"><b>'+fmt(best.bestScore)+'</b><span>历史最高</span></div>'
     +'</div></div>'
@@ -465,7 +467,7 @@ function goHome(){
 }
 
 /* ---------- 放置 / 塔 ---------- */
-function isUnlocked(u){return G.cleared>=u.unlockAfter}
+function isUnlocked(u){return Math.max(G.cleared,G.unlockBase||0)>=u.unlockAfter}
 function buyable(u){return G.gold>=u.cost}
 function towerAt(c,r){for(var i=0;i<G.towers.length;i++){var t=G.towers[i];if(t.c===c&&t.r===r)return i}return -1}
 function tryPlace(c,r,ui,drag){
@@ -500,6 +502,7 @@ function comboMul(){return 1+Math.min(G.combo,COMBO_MAX)*COMBO_SCORE}
 function addKillReward(e,x,y){
   G.kills++;G.gold+=e.gold;
   G.combo=(G.comboT>0)?G.combo+1:1;G.comboT=COMBO_WIN;
+  if(G.combo>G.maxCombo)G.maxCombo=G.combo; // 记录本局连击峰值
   G.score=Math.round(G.score+e.gold*5*comboMul());
   rageAdd(RAGE_CFG.perKill*(1+Math.min(G.combo,COMBO_MAX)*COMBO_RAGE));
   addFloat(x,y-18,'+'+e.gold,'#ffc800',15);
@@ -610,7 +613,7 @@ function update(dt){
         if(g.wave>=TOTAL_WAVES-1){win();return;}
         sfx.waveClear();hapMed();
         addFloat(WB/2,HB/2-150,'第'+(g.wave+1)+'波守住! 奖励 +'+cfg.bonus,'#58a700',22);
-        var nextUnlock=UNITS.filter(function(u){return u.unlockAfter===g.cleared&&u.unlockAfter>0});
+        var nextUnlock=UNITS.filter(function(u){return u.unlockAfter>g.unlockBase&&u.unlockAfter===g.cleared&&u.unlockAfter>0});
         if(nextUnlock.length)addFloat(WB/2,HB/2-116,'新单位解锁：'+nextUnlock.map(function(u){return u.name}).join('、'),'#1cb0f6',18);
         g.wave++;g.phase='intermission';g.waveT=INTERMISSION;g.waveState='idle';
         waveNum.textContent=g.wave+1;syncWaveDots();renderTray();
@@ -1148,7 +1151,7 @@ function boot(){
 window.__GD={
   state:function(){return G?{screen:S.screen,gold:G.gold,rage:G.rage,wave:G.wave,cleared:G.cleared,
     hp:G.castleHp,enemies:G.enemies.length,kills:G.kills,towers:G.towers.length,phase:G.phase,
-    combo:G.combo,score:G.score,over:G.over,elapsed:G.elapsed}:{screen:S.screen}},
+    combo:G.combo,maxCombo:G.maxCombo,score:G.score,over:G.over,elapsed:G.elapsed}:{screen:S.screen}},
   setRage:function(v){if(G){G.rage=clamp(v,0,1);tierCheck(false);}},
   setGold:function(v){if(G)G.gold=Math.max(0,v);},
   leakAll:function(){if(G){var s=G.enemies.slice();for(var i=0;i<s.length;i++)leak(s[i]);}},
