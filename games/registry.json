@@ -863,6 +863,24 @@
       "version": "1.0.0",
       "featured": true,
       "rating": 4
+    },
+    {
+      "id": "grumpy-defender",
+      "name": "Grumpy Defender",
+      "description": "脾气暴躁的守城者，怒气越高伤害越高 — 拖放布防守住城堡，满怒点击阿咕爆发反击",
+      "category": "strategy",
+      "tags": [
+        "singleplayer",
+        "strategy",
+        "defense",
+        "tower-defense",
+        "short-session"
+      ],
+      "thumbnail": "/games/036-grumpy-defender/thumb.svg",
+      "path": "/games/036-grumpy-defender/",
+      "hasServer": false,
+      "players": "1",
+      "version": "1.0.0"
     }
   ],
   "categories": [
