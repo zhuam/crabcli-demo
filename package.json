@@ -18,6 +18,7 @@
     "test:sneak-the-fart": "node games/040-sneak-the-fart/tests/static.test.cjs",
     "test:login-rate-limit": "node tests/login-rate-limit-unit.test.mjs",
     "test:login-rate-limit:integration": "node tests/login-rate-limit.test.mjs",
+    "test:hub": "node tests/hub-gateway.test.mjs",
     "test:trivia-improvements": "tsx tests/trivia-improvements.test.ts"
   },
   "dependencies": {

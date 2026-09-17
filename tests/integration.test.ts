@@ -5,9 +5,11 @@
  * Run: node tests/integration.test.js
  */
 import { WebSocket } from 'ws';
+import { readFileSync } from 'fs';
 
 const BASE = `http://localhost:${process.env.PORT || 3001}`;
 const WS_URL = `ws://localhost:${process.env.PORT || 3001}/ws`;
+const PKG_VERSION = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf-8')).version;
 
 let passed = 0;
 let failed = 0;
@@ -30,6 +32,8 @@ async function testHealthEndpoint() {
   const data = await res.json();
   assert(res.status === 200, 'Returns 200');
   assert(data.status === 'ok', 'status === "ok"');
+  assert(typeof data.version === 'string' && data.version.length > 0, 'version is a non-empty string');
+  assert(data.version === PKG_VERSION, 'version matches package.json');
   assert(typeof data.rooms === 'number', 'rooms count is number');
   assert(typeof data.uptime === 'number', 'uptime is number');
 }

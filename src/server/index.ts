@@ -9,6 +9,7 @@ import { handleConnection, rooms } from './game-logic.js';
 const PORT = parseInt(process.env.PORT || '3001', 10);
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const CLIENT_DIR = resolve(__dirname, '../../dist/client');
+const VERSION = JSON.parse(readFileSync(resolve(__dirname, '../../package.json'), 'utf-8')).version;
 
 const MIME_TYPES: Record<string, string> = {
   '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css',
@@ -32,7 +33,7 @@ function serveStatic(req: any, res: any) {
 const server = createServer((req, res) => {
   if (req.url === '/health') {
     res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ status: 'ok', rooms: rooms.size, uptime: process.uptime() }));
+    res.end(JSON.stringify({ status: 'ok', version: VERSION, rooms: rooms.size, uptime: process.uptime() }));
     return;
   }
   if (process.env.NODE_ENV === 'production') { if (serveStatic(req, res)) return; }

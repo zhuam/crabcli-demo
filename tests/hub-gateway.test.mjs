@@ -8,6 +8,10 @@
  * Server must be running on PORT 3000 (or set PORT env var)
  */
 
+import { readFileSync } from 'fs';
+
+const PKG_VERSION = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf-8')).version;
+
 const BASE = `http://localhost:${process.env.PORT || 3000}`;
 
 let passed = 0;
@@ -44,6 +48,8 @@ async function testHealth() {
   const { res, body, status } = await req('/health');
   assert(status === 200, 'Returns 200');
   assert(body && body.status === 'ok', 'status === "ok"');
+  assert(typeof body.version === 'string' && body.version.length > 0, 'version is a non-empty string');
+  assert(body.version === PKG_VERSION, `version matches package.json (${PKG_VERSION})`);
   assert(typeof body.uptime === 'number', 'uptime is a number');
   assert(body.games >= 24, `games count >= 24 (got ${body.games})`);
 }

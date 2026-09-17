@@ -17,6 +17,9 @@ const PORT = parseInt(process.env.PORT || '3000', 10);
 // ─── Load game registry ───
 const REGISTRY = JSON.parse(readFileSync(resolve(PROJECT_ROOT, 'games/registry.json'), 'utf-8'));
 
+// ─── App version (from package.json, read once at startup) ───
+const VERSION = JSON.parse(readFileSync(resolve(PROJECT_ROOT, 'package.json'), 'utf-8')).version;
+
 // ─── Game directory resolver ───
 const GAMES_DIR = resolve(PROJECT_ROOT, 'games');
 
@@ -152,7 +155,7 @@ const server = createServer(async (req, res) => {
   try {
     // Health check
     if (pathname === '/health') {
-      return json(res, 200, { status: 'ok', uptime: process.uptime(), games: REGISTRY.games.length });
+      return json(res, 200, { status: 'ok', version: VERSION, uptime: process.uptime(), games: REGISTRY.games.length });
     }
 
     // API: Game list
