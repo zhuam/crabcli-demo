@@ -50,7 +50,7 @@ CREATE TABLE IF NOT EXISTS categories (
 );
 CREATE UNIQUE INDEX IF NOT EXISTS idx_categories_name ON categories(name);
 
--- 书籍（F2：下架 = status RETIRED；availableCopies 由借阅与预约状态推导，不落库）
+-- 书籍（F2：下架 = status WITHDRAWN，#121 契约定名；availableCopies 由借阅与预约状态推导，不落库）
 CREATE TABLE IF NOT EXISTS books (
     id           INTEGER PRIMARY KEY,
     book_code    TEXT NOT NULL,            -- 馆藏编号
@@ -59,7 +59,7 @@ CREATE TABLE IF NOT EXISTS books (
     category_id  INTEGER NOT NULL REFERENCES categories(id),
     keywords     TEXT,
     total_copies INTEGER NOT NULL CHECK (total_copies > 0),
-    status       TEXT NOT NULL DEFAULT 'ACTIVE' CHECK (status IN ('ACTIVE','RETIRED')),
+    status       TEXT NOT NULL DEFAULT 'ACTIVE' CHECK (status IN ('ACTIVE','WITHDRAWN')),
     remark       TEXT,
     created_at   TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
     updated_at   TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
