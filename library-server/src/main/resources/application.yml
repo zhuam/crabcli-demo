@@ -21,3 +21,12 @@ spring:
       mode: always
       schema-locations: classpath:schema.sql
       data-locations: classpath:data.sql
+
+library:
+  jwt:
+    # 【安全·Issue #118】密钥只能由环境变量 JWT_SECRET 显式提供。冒号后的空串是「无默认值」的
+    # 占位写法而非兜底：缺失/空白/不足 32 字节时 JwtService 构造期直接抛异常令启动失败，
+    # 不存在任何可用的默认密钥。生成方式示例：openssl rand -base64 48
+    secret: ${JWT_SECRET:}
+    # 登录会话有效期（秒），可用环境变量 JWT_TTL_SECONDS 覆盖；与登录响应 expiresIn 一致
+    ttl-seconds: ${JWT_TTL_SECONDS:7200}

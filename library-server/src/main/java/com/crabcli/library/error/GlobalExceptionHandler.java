@@ -3,16 +3,20 @@ package com.crabcli.library.error;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 /**
- * 全局异常出口（BE-B02）：三类异常统一落成 {@link ErrorResponse}。
+ * 全局异常出口（BE-B02）：四类异常统一落成 {@link ErrorResponse}。
  * <ul>
  *   <li>{@link ApiException} —— 业务异常，状态码与 code/message 透传；</li>
  *   <li>{@link MethodArgumentNotValidException} —— 400 VALIDATION_ERROR + fields[]；</li>
+ *   <li>{@link NoResourceFoundException} —— 未注册接口 404 NOT_FOUND
+ *       （BE-B03 鉴权矩阵以「放行到 404」证明安全链畅通，不能落 500）；</li>
  *   <li>其余未捕获异常 —— 500 INTERNAL_ERROR，【安全】响应体不回显堆栈与类名，
  *       仅服务端日志留痕。</li>
  * </ul>
@@ -35,6 +39,12 @@ public class GlobalExceptionHandler {
                 .toList();
         return ResponseEntity.badRequest()
                 .body(new ErrorResponse(ErrorCode.VALIDATION_ERROR.name(), "请求参数校验失败", fields));
+    }
+
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<ErrorResponse> handleNoResource(NoResourceFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(new ErrorResponse("NOT_FOUND", "接口不存在", null));
     }
 
     @ExceptionHandler(Exception.class)
