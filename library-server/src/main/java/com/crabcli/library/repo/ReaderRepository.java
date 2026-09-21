@@ -15,10 +15,10 @@ import org.springframework.stereotype.Repository;
  * <ul>
  *   <li>{@code max_borrow} JOIN reader_types 实时读取（#119 参数化，PUT 后立即生效）；</li>
  *   <li>{@code active_borrow_count} 契约状态 ∈ {BORROWED, OVERDUE, LOST} 的借阅数
- *       （丢失未赔仍占配额，[假设 A8]；已赔 LOST_PAID 不占）——存储 BORROWING 覆盖
- *       BORROWED 与 OVERDUE（逾期由 due_at 实时算，#115 契约，不落状态）；LOST 仅
- *       未赔计入，{@code IS NOT 'PAID'} 为 NULL 安全比较，未赔记录不因赔偿字段
- *       暂缺而漏计。</li>
+ *       （丢失未赔仍占配额，[假设 A8]；已赔 LOST_PAID 不占）——存储 BORROWED 覆盖
+ *       BORROWED 与 OVERDUE（逾期由 due_at 实时算，#115 契约，不落状态）；#122 契约
+ *       字面定稿后 LOST 即未赔（已赔转 LOST_PAID），占用字面唯一来源见
+ *       {@link BorrowRepository#ACTIVE_STATUS_PREDICATE}，与可借副本口径同字面。</li>
  * </ul>
  */
 @Repository
@@ -31,8 +31,7 @@ public class ReaderRepository {
                     + "FROM readers r "
                     + "JOIN reader_types t ON t.code = r.reader_type_code "
                     + "LEFT JOIN (SELECT reader_id, COUNT(*) AS active_count FROM borrow_records "
-                    + "           WHERE status = 'BORROWING' "
-                    + "              OR (status = 'LOST' AND compensation_status IS NOT 'PAID') "
+                    + "           WHERE " + BorrowRepository.ACTIVE_STATUS_PREDICATE + " "
                     + "           GROUP BY reader_id) bc ON bc.reader_id = r.id";
 
     private static final RowMapper<Reader> MAPPER = (rs, i) -> new Reader(

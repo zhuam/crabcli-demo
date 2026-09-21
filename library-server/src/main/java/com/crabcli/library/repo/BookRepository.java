@@ -1,6 +1,7 @@
 package com.crabcli.library.repo;
 
 import com.crabcli.library.domain.Book;
+import com.crabcli.library.service.AvailableCopiesService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -22,16 +23,18 @@ import org.springframework.stereotype.Repository;
  * 外键由 schema.sql:54-68 建立，这里只做 CRUD、下架与条件分页查询。
  * <p>keywords 为字符串数组，落库序列化为 JSON 文本（keywords TEXT 列）后原样反
  * 序列化——关键词本身可能含逗号等任意字符，JSON 保证往返不丢不串。
- * <p>availableCopies 读时推导（SELECT 里的 CASE）：ACTIVE=total_copies，WITHDRAWN=0；
- * 借阅/预约扣减的正式口径收口 #122（AvailableCopiesService），届时只需替换该推导。
+ * <p>availableCopies 读时推导（#122 正式口径）：SELECT 内联
+ * {@link AvailableCopiesService#AVAILABLE_COPIES_SQL}（口径唯一来源）——
+ * ACTIVE = totalCopies − 占用借阅 − HELD 预约，WITHDRAWN = 0；行内关联子查询
+ * 命中索引，列表页零额外往返（无 N+1），与单书查询严格同源。
  */
 @Repository
 public class BookRepository {
 
     private static final String SELECT_COLUMNS =
-            "SELECT id, book_code, title, author, category_id, keywords, total_copies, "
-            + "CASE WHEN status = 'ACTIVE' THEN total_copies ELSE 0 END AS available_copies, "
-            + "status, remark, created_at, updated_at FROM books";
+            "SELECT b.id, b.book_code, b.title, b.author, b.category_id, b.keywords, b.total_copies, "
+            + AvailableCopiesService.AVAILABLE_COPIES_SQL + " AS available_copies, "
+            + "b.status, b.remark, b.created_at, b.updated_at FROM books b";
 
     private final JdbcTemplate jdbc;
     private final ObjectMapper objectMapper;
@@ -42,7 +45,7 @@ public class BookRepository {
     }
 
     public Optional<Book> findById(int id) {
-        return jdbc.query(SELECT_COLUMNS + " WHERE id = ?", this::mapRow, id).stream().findFirst();
+        return jdbc.query(SELECT_COLUMNS + " WHERE b.id = ?", this::mapRow, id).stream().findFirst();
     }
 
     public int insert(String bookCode, String title, String author, int categoryId,
@@ -73,7 +76,7 @@ public class BookRepository {
         String where = where(q, categoryId, args);
         args.add(size);
         args.add((long) (page - 1) * size);
-        return jdbc.query(SELECT_COLUMNS + where + " ORDER BY id DESC LIMIT ? OFFSET ?",
+        return jdbc.query(SELECT_COLUMNS + where + " ORDER BY b.id DESC LIMIT ? OFFSET ?",
                 this::mapRow, args.toArray());
     }
 

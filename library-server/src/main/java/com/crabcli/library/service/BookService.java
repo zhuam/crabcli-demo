@@ -19,7 +19,7 @@ import org.springframework.stereotype.Service;
  * idx_books_book_code 唯一索引兜底，服务层把约束违约转成 409（并发下两条同路径同归 409）；
  * categoryId 不存在与分页参数越界回 400 {@code VALIDATION_ERROR}（#121 验收口径）。
  * <p>下架幂等：已 WITHDRAWN 的书再次 withdraw 直接返回现值，不重复写库。
- * availableCopies 的推导口径见 {@link BookRepository}，正式收口归 #122。
+ * availableCopies 正式口径收口于 {@link AvailableCopiesService}（#122），书目行与单书查询同源。
  */
 @Service
 public class BookService {

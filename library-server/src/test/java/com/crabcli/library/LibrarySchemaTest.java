@@ -110,6 +110,50 @@ class LibrarySchemaTest {
     }
 
     @Test
+    void borrowReservationChecksMatchContractLiterals() {
+        // #122 验收 2/4：借阅存储字面 BORROWED/RETURNED/LOST/LOST_PAID——BORROWING 已废止、
+        // OVERDUE 读时派生不落库，CHECK 均拒绝；LOST_PAID 流转态可落库；
+        // 预约 CHECK 与契约一致，外键指向 books（借阅 FK→readers 已由 foreignKeysEnforced 覆盖）
+        int readerId = jdbc.queryForObject(
+                "SELECT id FROM readers WHERE card_no = 'R0001'", Integer.class);
+        String bookCode = "SCHEMA-" + System.nanoTime();
+        int categoryId = jdbc.queryForObject("SELECT MIN(id) FROM categories", Integer.class);
+        jdbc.update("INSERT INTO books (book_code, title, author, category_id, total_copies) "
+                + "VALUES (?, ?, ?, ?, 1)", bookCode, "口径验收书", "测试作者", categoryId);
+        int bookId = jdbc.queryForObject(
+                "SELECT id FROM books WHERE book_code = ?", Integer.class, bookCode);
+        try {
+            assertThatThrownBy(() -> insertBorrow(readerId, bookId, "BORROWING"))
+                    .getRootCause().hasMessageContaining("CHECK constraint failed");
+            assertThatThrownBy(() -> insertBorrow(readerId, bookId, "OVERDUE"))
+                    .getRootCause().hasMessageContaining("CHECK constraint failed");
+            insertBorrow(readerId, bookId, "LOST_PAID");
+            assertThat(jdbc.queryForObject(
+                    "SELECT COUNT(*) FROM borrow_records WHERE book_id = ?",
+                    Integer.class, bookId)).isEqualTo(1);
+
+            assertThatThrownBy(() -> jdbc.update(
+                    "INSERT INTO reservations (reader_id, book_id, status) VALUES (?, ?, 'PENDING')",
+                    readerId, bookId))
+                    .getRootCause().hasMessageContaining("CHECK constraint failed");
+            assertThatThrownBy(() -> jdbc.update(
+                    "INSERT INTO reservations (reader_id, book_id, status) VALUES (?, ?, 'HELD')",
+                    readerId, 999999))
+                    .getRootCause().hasMessageContaining("FOREIGN KEY constraint failed");
+        } finally {
+            jdbc.update("DELETE FROM borrow_records WHERE book_id = ?", bookId);
+            jdbc.update("DELETE FROM reservations WHERE book_id = ?", bookId);
+            jdbc.update("DELETE FROM books WHERE id = ?", bookId);
+        }
+    }
+
+    private void insertBorrow(int readerId, int bookId, String status) {
+        jdbc.update("INSERT INTO borrow_records (reader_id, book_id, borrowed_at, due_at, status, "
+                        + "compensation_status) VALUES (?, ?, '2026-09-01T00:00:00.000Z', "
+                        + "'2026-09-30T00:00:00.000Z', ?, 'PAID')", readerId, bookId, status);
+    }
+
+    @Test
     void schemaAndDataScriptsAreIdempotent() {
         // 应用启动已执行过一遍 schema.sql + data.sql；再原样跑一遍，模拟重复启动
         ResourceDatabasePopulator populator = new ResourceDatabasePopulator(

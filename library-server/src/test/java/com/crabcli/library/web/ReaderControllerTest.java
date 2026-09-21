@@ -24,7 +24,7 @@ import org.springframework.test.web.servlet.MvcResult;
  *   <li>POST 建普通读者 → 201，GET ?q=&lt;证号&gt; 可见且 maxBorrow=3（验收 1）；</li>
  *   <li>重复 cardNo 409 DUPLICATE_CARD_NO；q 模糊 + 过滤 + 分页 total 过滤后总数（验收 2）；</li>
  *   <li>deactivate 恒成功 status=INACTIVE，即使有未还图书（验收 3）；</li>
- *   <li>activeBorrowCount 口径：BORROWING + 未赔 LOST 计入，已赔 LOST/已还 不计（验收 4）。</li>
+ *   <li>activeBorrowCount 口径：BORROWED + 未赔 LOST 计入，LOST_PAID/已还 不计（验收 4）。</li>
  * </ul>
  * 与其他 IT 共用同一测试库与 Spring 上下文：自建数据用唯一 cardNo/bookCode，
  * finally 按外键依赖序清理（borrow_records → readers / books），种子 R0001 不动。
@@ -264,9 +264,9 @@ class ReaderControllerTest {
         try {
             int readerId = createReader(cardNo, "注销测试读者");
             int bookId = insertBook(bookCode);
-            // 未还借阅：BORROWING 在架外借中（F3 实体域 #122 未交付，直接落表模拟）
+            // 未还借阅：BORROWED 在借中（#122 已交付域模型，直接落表模拟借出）
             jdbc.update("INSERT INTO borrow_records (reader_id, book_id, borrowed_at, due_at, status) "
-                            + "VALUES (?, ?, '2026-09-14T00:00:00.000Z', '2026-10-12T00:00:00.000Z', 'BORROWING')",
+                            + "VALUES (?, ?, '2026-09-14T00:00:00.000Z', '2026-10-12T00:00:00.000Z', 'BORROWED')",
                     readerId, bookId);
 
             // 验收 3：有未还图书仍恒成功 → 200 且 status=INACTIVE
@@ -312,25 +312,25 @@ class ReaderControllerTest {
             int readerId = createReader(cardNo, "口径测试读者");
             int bookId = insertBook(bookCode);
 
-            // 契约状态 → 存储行：BORROWED/OVERDUE=BORROWING（逾期实时算）；
-            // LOST=LOST+未赔（计入）；LOST_PAID=LOST+PAID（不计）；RETURNED 不计
+            // 契约状态 → 存储行（#122 字面）：BORROWED/OVERDUE=BORROWED（逾期实时算）；
+            // 未赔 LOST 计入；已赔=LOST_PAID（不计）；RETURNED 不计
             jdbc.update("INSERT INTO borrow_records (reader_id, book_id, borrowed_at, due_at, status) "
-                    + "VALUES (?, ?, '2026-09-14T00:00:00.000Z', '2026-10-12T00:00:00.000Z', 'BORROWING')",
+                    + "VALUES (?, ?, '2026-09-14T00:00:00.000Z', '2026-10-12T00:00:00.000Z', 'BORROWED')",
                     readerId, bookId);
             jdbc.update("INSERT INTO borrow_records (reader_id, book_id, borrowed_at, due_at, status) "
-                    + "VALUES (?, ?, '2026-09-01T00:00:00.000Z', '2026-09-29T00:00:00.000Z', 'BORROWING')",
+                    + "VALUES (?, ?, '2026-09-01T00:00:00.000Z', '2026-09-29T00:00:00.000Z', 'BORROWED')",
                     readerId, bookId);
             jdbc.update("INSERT INTO borrow_records (reader_id, book_id, borrowed_at, due_at, status, "
                     + "compensation_status) VALUES (?, ?, '2026-08-01T00:00:00.000Z', "
                     + "'2026-08-29T00:00:00.000Z', 'LOST', 'UNPAID')", readerId, bookId);
             jdbc.update("INSERT INTO borrow_records (reader_id, book_id, borrowed_at, due_at, status, "
                     + "compensation_status) VALUES (?, ?, '2026-07-01T00:00:00.000Z', "
-                    + "'2026-07-29T00:00:00.000Z', 'LOST', 'PAID')", readerId, bookId);
+                    + "'2026-07-29T00:00:00.000Z', 'LOST_PAID', 'PAID')", readerId, bookId);
             jdbc.update("INSERT INTO borrow_records (reader_id, book_id, borrowed_at, due_at, status, "
                     + "returned_at) VALUES (?, ?, '2026-06-01T00:00:00.000Z', "
                     + "'2026-06-29T00:00:00.000Z', 'RETURNED', '2026-06-20T00:00:00.000Z')", readerId, bookId);
 
-            // 验收 4：BORROWING×2 + 未赔 LOST×1 计入；已赔 LOST 与已还不计 → 3
+            // 验收 4：BORROWED×2 + 未赔 LOST×1 计入；LOST_PAID 与已还不计 → 3
             mockMvc.perform(get("/api/readers?q=" + cardNo)
                             .header("Authorization", "Bearer " + adminToken()))
                     .andExpect(status().isOk())
