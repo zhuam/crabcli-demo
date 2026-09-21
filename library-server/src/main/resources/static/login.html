@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登录 - 图书馆管理系统</title>
+    <style>
+        body { margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center;
+               background: #f3f4f6; font-family: system-ui, sans-serif; }
+        .login-card { width: 340px; background: #fff; border: 1px solid #e5e7eb; border-radius: 10px;
+                      padding: 32px 28px 24px; box-shadow: 0 4px 16px rgba(0,0,0,.06); box-sizing: border-box; }
+        .login-card h1 { font-size: 18px; color: #111827; text-align: center; margin: 0 0 20px; }
+        .login-card label { display: block; font-size: 13px; color: #374151; margin: 12px 0 4px; }
+        .login-card input { width: 100%; box-sizing: border-box; padding: 9px 10px; font-size: 14px;
+                            border: 1px solid #d1d5db; border-radius: 6px; outline: none; }
+        .login-card input:focus { border-color: #2563eb; }
+        #login-btn { width: 100%; margin-top: 20px; padding: 10px 0; font-size: 14px; color: #fff;
+                     background: #2563eb; border: none; border-radius: 6px; cursor: pointer; }
+        #login-btn:hover:not(:disabled) { background: #1d4ed8; }
+        #login-btn:disabled { opacity: .6; cursor: not-allowed; }
+        .login-footnote { margin: 16px 0 0; font-size: 12px; color: #6b7280; text-align: center; }
+    </style>
+</head>
+<body>
+    <form id="login-form" class="login-card" novalidate>
+        <h1>图书馆管理系统</h1>
+        <div id="error-slot"></div>
+        <label for="username">用户名</label>
+        <input id="username" name="username" autocomplete="username" autofocus>
+        <label for="password">密码</label>
+        <input id="password" name="password" type="password" autocomplete="current-password">
+        <button id="login-btn" type="submit">登 录</button>
+        <p class="login-footnote">首次使用请联系管理员开通账号</p>
+    </form>
+
+    <script src="js/dict.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/nav.js"></script>
+    <script>
+    (function () {
+      'use strict';
+
+      var form = document.getElementById('login-form');
+      var errorSlot = document.getElementById('error-slot');
+      var usernameInput = document.getElementById('username');
+      var passwordInput = document.getElementById('password');
+      var btn = document.getElementById('login-btn');
+      var failCount = 0; // 连续凭据错误计数（页面内，成功清零）
+
+      // ?next 只接受站内相对路径（api.js/auth.js 的 401 跳转来源），防开放重定向
+      function sanitizeNext(next) {
+        if (!next || next.charAt(0) !== '/' || next.charAt(1) === '/' || next.indexOf('://') !== -1) return '';
+        return next;
+      }
+
+      form.addEventListener('submit', function (e) {
+        e.preventDefault(); // 回车与点击统一走 submit
+        UI.inlineError(errorSlot, '');
+
+        var username = usernameInput.value.trim();
+        var password = passwordInput.value;
+        if (!username || !password) {
+          UI.inlineError(errorSlot, '请输入用户名和密码');
+          return;
+        }
+
+        btn.disabled = true;
+        btn.textContent = '登录中…';
+        Api.post('/api/auth/login', { username: username, password: password }).then(function (data) {
+          failCount = 0;
+          Auth.setToken(data.token);
+          Auth.user = data.user; // 与 /api/auth/me 同形（#118），业务页免一次 /me 回程
+          // 登录后跳回原目标页（?next）；无则按角色分发（READER→my、LIBRARIAN→circulation、ADMIN→books）
+          location.href = sanitizeNext(new URLSearchParams(location.search).get('next'))
+            || Nav.homeFor(data.user.role);
+        }, function (err) {
+          btn.disabled = false;
+          btn.textContent = '登 录';
+          if (err instanceof Api.ApiError && err.code === 'AUTH_INVALID_CREDENTIALS') {
+            // 行内直显后端中文文案，不清空已输入用户名；连续失败 5 次追加提示
+            failCount += 1;
+            var hint = failCount >= 5 ? '，如忘记密码请联系管理员' : '';
+            UI.inlineError(errorSlot, err.message + hint);
+          } else if (err instanceof Api.ApiError) {
+            UI.inlineError(errorSlot, err.message);
+          } else {
+            UI.inlineError(errorSlot, '网络异常，请检查网络后重试');
+          }
+        });
+      });
+    })();
+    </script>
+</body>
+</html>

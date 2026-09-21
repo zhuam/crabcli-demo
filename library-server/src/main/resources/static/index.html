@@ -4,11 +4,41 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>图书馆管理系统</title>
+    <style>
+        body { margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center;
+               background: #f3f4f6; color: #6b7280; font-family: system-ui, sans-serif; font-size: 14px; }
+    </style>
 </head>
 <body>
-    <h1>图书馆管理系统</h1>
-    <p>静态托管占位页（BE-B15 / Issue #130）。</p>
-    <p>业务页面由 WEB-1 ~ WEB-8 任务直接落在 static/ 目录下（如 index.html、login.html），
-       放入即生效，无需改动后端代码。</p>
+    <p>正在进入…</p>
+
+    <script src="js/dict.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/nav.js"></script>
+    <script>
+    // 守卫跳板（#132）：已登录按角色分发到角色首页，未登录去登录页。
+    // 业务页不放这里——各业务页由 WEB-2~WEB-8 落地后经 Auth.requireRole 自守卫。
+    (function () {
+      'use strict';
+
+      Auth.init().then(function (user) {
+        if (!user) {
+          // 无 token：直接去登录，登录后按角色分发（跳板本身不作为回跳目标）
+          location.replace('login.html');
+          return;
+        }
+        var home = Nav.homeFor(user.role);
+        if (home === 'index.html') {
+          // 角色未映射：清态回登录，避免跳板自循环
+          Auth.clearToken();
+          location.replace('login.html');
+          return;
+        }
+        location.replace(home);
+      });
+    })();
+    </script>
 </body>
 </html>

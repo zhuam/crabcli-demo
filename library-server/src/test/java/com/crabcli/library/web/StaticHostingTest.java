@@ -57,10 +57,18 @@ class StaticHostingTest {
     }
 
     @Test
-    void futurePagesInStaticRootAreNotAuthBlocked() throws Exception {
-        // WEB-1（#132）将交付 login.html：页面路径不因安全链 401——文件未落地按 404 呈现，
-        // 落进 static/ 后即刻匿名可达，无需改后端（验收第 4 条）
+    void deliveredLoginPageServesAnonymously() throws Exception {
+        // WEB-1（#132）交付 login.html：页面路径不因安全链 401，落进 static/ 即刻匿名可达
         mockMvc.perform(get("/login.html"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith("text/html"));
+    }
+
+    @Test
+    void futurePagesInStaticRootAreNotAuthBlocked() throws Exception {
+        // WEB-2~8 页面（如 my.html）尚未交付：文件未落地按 404 呈现而非 401——静态路径
+        // 不被安全链拦截（#130 验收第 4 条），页面落进 static/ 后即刻匿名可达，无需改后端
+        mockMvc.perform(get("/my.html"))
                 .andExpect(status().isNotFound());
     }
 
