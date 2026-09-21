@@ -23,8 +23,8 @@ import org.springframework.test.web.servlet.MvcResult;
  * <ul>
  *   <li>无 token 打管理接口 → 401 UNAUTHENTICATED；</li>
  *   <li>READER 打馆员写接口 → 403 FORBIDDEN；</li>
- *   <li>LIBRARIAN 打馆员接口 → 通过鉴权（接口本体由 BE-B08 起交付，此处以放行到
- *       DispatcherServlet 后的 404 证明安全链放行）；</li>
+ *   <li>LIBRARIAN 打馆员接口 → 通过鉴权（接口本体 BE-B06 / BE-B08 起交付，以放行到
+ *       控制器边界后的 400 证明安全链放行，原 404 断言只适用于端点未交付时）；</li>
  *   <li>ADMIN 打基础数据维护接口 → 通过鉴权；LIBRARIAN 打基础数据维护 → 403。</li>
  * </ul>
  * 与 GlobalExceptionHandlerTest 共用同一测试库与 Spring 上下文。
@@ -71,11 +71,11 @@ class RbacMatrixTest {
 
     @Test
     void librarianPostBorrowsPassesAuthChain() throws Exception {
-        // 通过安全链后无控制器 → 404 NOT_FOUND（业务接口 BE-B08 / #123 交付）；
-        // 非 401/403 即证明鉴权放行
+        // BE-B08（#123）落地后端点已存在：无 Content-Type 的空请求在控制器边界被
+        // 400 拒——非 401/403 即证明 LIBRARIAN 通过鉴权（原 404 断言只适用于端点未交付时）
         mockMvc.perform(post("/api/borrows").header("Authorization", "Bearer " + tokenFor("librarian")))
-                .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.code").value("NOT_FOUND"));
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"));
     }
 
     @Test
