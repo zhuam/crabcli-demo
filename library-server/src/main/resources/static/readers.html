@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>读者管理 - 图书馆管理系统</title>
+    <style>
+        body { margin: 0; background: #f3f4f6; color: #111827; font-family: system-ui, sans-serif; font-size: 14px; }
+        .page { max-width: 960px; margin: 24px auto 40px; padding: 0 16px; }
+        .card { background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; padding: 16px 20px; margin-bottom: 12px; }
+        .toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 12px; }
+        .toolbar input, .toolbar select { padding: 8px 10px; font-size: 14px; border: 1px solid #d1d5db; border-radius: 6px; outline: none; background: #fff; }
+        .toolbar input { width: 180px; }
+        .toolbar input:focus, .toolbar select:focus { border-color: #2563eb; }
+        .toolbar .grow { flex: 1; }
+        .btn { padding: 8px 14px; font-size: 14px; border: 1px solid #d1d5db; background: #fff; border-radius: 6px; cursor: pointer; color: #374151; }
+        .btn:hover:not(:disabled) { background: #f3f4f6; }
+        .btn:disabled { opacity: .5; cursor: not-allowed; }
+        .btn-primary { background: #2563eb; border-color: #2563eb; color: #fff; }
+        .btn-primary:hover:not(:disabled) { background: #1d4ed8; }
+        .btn-danger { color: #b91c1c; border-color: #fca5a5; }
+        .btn-danger:hover:not(:disabled) { background: #fef2f2; }
+        table { width: 100%; border-collapse: collapse; background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; overflow: hidden; }
+        th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid #f3f4f6; vertical-align: middle; }
+        th { font-size: 13px; color: #6b7280; font-weight: 500; background: #f9fafb; white-space: nowrap; }
+        tbody tr:last-child td { border-bottom: none; }
+        td .actions { display: flex; gap: 6px; }
+        td .actions .btn { padding: 4px 10px; font-size: 13px; }
+        .row-highlight { animation: rowHighlight 2.5s forwards; }
+        @keyframes rowHighlight { from { background: #fef3c7; } to { background: transparent; } }
+        .pager { display: flex; align-items: center; gap: 12px; margin-top: 12px; color: #6b7280; }
+        /* display:flex 会压过 UA 的 [hidden]{display:none}，须显式声明（单页数据时隐藏分页条） */
+        .pager[hidden] { display: none; }
+        .empty { text-align: center; padding: 48px 0 40px; color: #6b7280; }
+        .empty p { margin: 0 0 16px; }
+        #reader-form-card h2 { font-size: 16px; margin: 0 0 4px; }
+        #reader-form-card label { display: block; font-size: 13px; color: #374151; margin: 12px 0 4px; }
+        #reader-form-card input, #reader-form-card select { width: 100%; box-sizing: border-box; padding: 8px 10px; font-size: 14px; border: 1px solid #d1d5db; border-radius: 6px; outline: none; }
+        #reader-form-card input:focus, #reader-form-card select:focus { border-color: #2563eb; }
+        #reader-form-card input:disabled { background: #f9fafb; color: #6b7280; }
+        .field-error { color: #dc2626; font-size: 12px; margin: 4px 0 0; }
+        .muted { color: #9ca3af; font-weight: 400; }
+        .form-actions { margin-top: 16px; display: flex; gap: 8px; }
+        @media (max-width: 720px) { .toolbar input { width: 130px; } }
+    </style>
+</head>
+<body>
+    <main class="page">
+        <div class="toolbar">
+            <input id="filter-q" placeholder="证号 / 姓名搜索">
+            <select id="filter-type"></select>
+            <select id="filter-status"></select>
+            <button id="search-btn" class="btn">查询</button>
+            <span class="grow"></span>
+            <button id="add-btn" class="btn btn-primary">新增读者</button>
+        </div>
+
+        <!-- 新增 / 编辑表单：内联卡片（#136），保存成功关闭并刷新列表 -->
+        <form id="reader-form-card" class="card" hidden novalidate>
+            <h2 id="form-title">新增读者</h2>
+            <div id="form-error-slot"></div>
+            <label for="f-cardNo">借书证号<span id="cardNo-hint" class="muted"></span></label>
+            <input id="f-cardNo" autocomplete="off">
+            <p class="field-error" data-for="cardNo" hidden></p>
+            <label for="f-name">姓名</label>
+            <input id="f-name" autocomplete="off">
+            <p class="field-error" data-for="name" hidden></p>
+            <label for="f-type">读者类型</label>
+            <select id="f-type"></select>
+            <p class="field-error" data-for="readerTypeCode" hidden></p>
+            <label for="f-phone">电话（选填）</label>
+            <input id="f-phone" autocomplete="off">
+            <p class="field-error" data-for="phone" hidden></p>
+            <label for="f-email">邮箱（选填）</label>
+            <input id="f-email" autocomplete="off">
+            <p class="field-error" data-for="email" hidden></p>
+            <div class="form-actions">
+                <button id="form-save" type="submit" class="btn btn-primary">保存</button>
+                <button id="form-cancel" type="button" class="btn">取消</button>
+            </div>
+        </form>
+
+        <div id="list-slot"></div>
+        <div id="pager-slot" class="pager" hidden></div>
+    </main>
+
+    <script src="js/dict.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/nav.js"></script>
+    <script>
+    // 读者管理页（WEB-5 / Issue #136）。后端契约见 ReaderController（BE-B05 / #120）：
+    // GET /api/readers?q=&readerTypeCode=&status=&page=&size= -> {items,total,page,size}
+    // POST /api/readers {cardNo,name,readerTypeCode?,phone?,email?} -> 201；重复证号 409 DUPLICATE_CARD_NO
+    // PUT /api/readers/{id} {name,readerTypeCode,phone,email} -> 200（证号是身份键不可改）
+    // POST /api/readers/{id}/deactivate -> 200 幂等（[假设 B4]，有在借也可注销）
+    (function () {
+      'use strict';
+
+      var SIZE = 10; // 与服务端缺省一致（ReaderService），上限 100 由后端钳制
+      var state = {
+        q: '', readerTypeCode: '', status: '',
+        page: 1, total: 0,
+        editingId: null,   // null=新增模式
+        highlightId: null, // 保存/注销成功后高亮的行
+        items: []          // 当前页原始数据，注销确认文案从这里取
+      };
+
+      var el = function (id) { return document.getElementById(id); };
+      var listSlot = el('list-slot');
+      var pagerSlot = el('pager-slot');
+      var formCard = el('reader-form-card');
+
+      // ---- 过滤控件 ----
+      function fillSelect(select, map, allLabel) {
+        select.textContent = '';
+        if (allLabel) {
+          var all = document.createElement('option');
+          all.value = '';
+          all.textContent = allLabel;
+          select.appendChild(all);
+        }
+        Object.keys(map).forEach(function (code) {
+          var opt = document.createElement('option');
+          opt.value = code;
+          opt.textContent = map[code];
+          select.appendChild(opt);
+        });
+      }
+
+      // ---- 列表加载与渲染 ----
+      function filterParams(page) {
+        return {
+          q: state.q, readerTypeCode: state.readerTypeCode, status: state.status,
+          page: page, size: SIZE
+        };
+      }
+
+      function load() {
+        Api.get('/api/readers', filterParams(state.page)).then(function (data) {
+          state.total = data.total;
+          // 过滤后落在空页（如筛选收紧）：钳回最后一页再取一次，避免「有数据却空白」
+          if (data.items.length === 0 && data.total > 0 && data.page > 1) {
+            state.page = Math.max(1, Math.ceil(data.total / data.size));
+            return load();
+          }
+          state.items = data.items;
+          renderList();
+        }, function (err) {
+          // 401/403 已由 api.js 处理（跳登录 / toast）；其余给行内提示
+          listSlot.innerHTML = '<div class="card empty"><p>' + UI.escapeHtml(
+            err instanceof Api.ApiError ? Dict.rejectText(err) : '加载失败，请稍后重试') + '</p></div>';
+          pagerSlot.hidden = true;
+        });
+      }
+
+      function renderList() {
+        if (state.items.length === 0) {
+          // 空态（含首次使用，U8）：文案 + 高亮引导按钮
+          listSlot.innerHTML =
+            '<div class="card empty">' +
+            '<p>暂无读者，点击新增</p>' +
+            '<button type="button" class="btn btn-primary" data-action="open-create">新增读者</button>' +
+            '</div>';
+          pagerSlot.hidden = true;
+          return;
+        }
+
+        var rows = state.items.map(function (r) {
+          var hl = r.id === state.highlightId ? ' class="row-highlight"' : '';
+          var deactivateBtn = r.status === 'ACTIVE'
+            ? '<button type="button" class="btn btn-danger" data-action="deactivate" data-id="' + r.id + '">注销</button>'
+            : '';
+          return '<tr' + hl + '>' +
+            '<td>' + UI.escapeHtml(r.cardNo) + '</td>' +
+            '<td>' + UI.escapeHtml(r.name) + '</td>' +
+            '<td>' + UI.escapeHtml(Dict.text(r.readerTypeCode) || r.readerTypeCode) + '</td>' +
+            '<td>已借 ' + r.activeBorrowCount + '/' + r.maxBorrow + '</td>' +
+            '<td>' + UI.badge(r.status) + '</td>' +
+            '<td><span class="actions">' +
+            '<button type="button" class="btn" data-action="edit" data-id="' + r.id + '">编辑</button>' +
+            deactivateBtn +
+            '</span></td>' +
+            '</tr>';
+        }).join('');
+
+        listSlot.innerHTML =
+          '<table>' +
+          '<thead><tr><th>证号</th><th>姓名</th><th>类型</th><th>借阅情况</th><th>状态</th><th>操作</th></tr></thead>' +
+          '<tbody>' + rows + '</tbody>' +
+          '</table>';
+
+        var lastPage = Math.max(1, Math.ceil(state.total / SIZE));
+        pagerSlot.hidden = state.total <= SIZE;
+        pagerSlot.innerHTML = '';
+        var prev = document.createElement('button');
+        prev.type = 'button';
+        prev.className = 'btn';
+        prev.textContent = '上一页';
+        prev.disabled = state.page <= 1;
+        prev.addEventListener('click', function () { state.page -= 1; load(); });
+        var info = document.createElement('span');
+        info.textContent = '第 ' + state.page + ' / ' + lastPage + ' 页（共 ' + state.total + ' 人）';
+        var next = document.createElement('button');
+        next.type = 'button';
+        next.className = 'btn';
+        next.textContent = '下一页';
+        next.disabled = state.page >= lastPage;
+        next.addEventListener('click', function () { state.page += 1; load(); });
+        pagerSlot.appendChild(prev);
+        pagerSlot.appendChild(info);
+        pagerSlot.appendChild(next);
+        state.highlightId = null; // 高亮一次性：渲染即消费，翻页回来不重复闪
+      }
+
+      // ---- 表单（新增 / 编辑） ----
+      function openCreate() {
+        state.editingId = null;
+        el('form-title').textContent = '新增读者';
+        el('cardNo-hint').textContent = '';
+        el('f-cardNo').disabled = false;
+        formCard.reset();
+        clearFormErrors();
+        formCard.hidden = false;
+        el('f-cardNo').focus();
+      }
+
+      function openEdit(r) {
+        state.editingId = r.id;
+        el('form-title').textContent = '编辑读者';
+        el('cardNo-hint').textContent = '（证号是身份键，不可修改）';
+        el('f-cardNo').disabled = true;
+        el('f-cardNo').value = r.cardNo;
+        el('f-name').value = r.name || '';
+        el('f-type').value = r.readerTypeCode;
+        if (el('f-type').value !== r.readerTypeCode) {
+          // 字典尚未收录的新类型（reader_types 可扩，WEB-8）：保值优先，label 退回码值
+          var opt = document.createElement('option');
+          opt.value = r.readerTypeCode;
+          opt.textContent = Dict.text(r.readerTypeCode) || r.readerTypeCode;
+          el('f-type').appendChild(opt);
+          el('f-type').value = r.readerTypeCode;
+        }
+        el('f-phone').value = r.phone || '';
+        el('f-email').value = r.email || '';
+        clearFormErrors();
+        formCard.hidden = false;
+        el('f-name').focus();
+      }
+
+      function closeForm() {
+        formCard.hidden = true;
+        state.editingId = null;
+      }
+
+      function clearFormErrors() {
+        UI.inlineError(el('form-error-slot'), '');
+        Array.prototype.forEach.call(formCard.querySelectorAll('.field-error'), function (p) {
+          p.hidden = true;
+          p.textContent = '';
+        });
+      }
+
+      // 400 fields[]（GlobalExceptionHandler）按 field 归位逐字段红字；未匹配的字段并入行内
+      function showFieldErrors(fields) {
+        var unmatched = [];
+        fields.forEach(function (fe) {
+          var slot = formCard.querySelector('.field-error[data-for="' + fe.field + '"]');
+          if (slot) {
+            slot.textContent = fe.message;
+            slot.hidden = false;
+          } else {
+            unmatched.push(fe.field + ' ' + fe.message);
+          }
+        });
+        if (unmatched.length) UI.inlineError(el('form-error-slot'), unmatched.join('；'));
+      }
+
+      function save() {
+        clearFormErrors();
+        var name = el('f-name').value.trim();
+        var type = el('f-type').value;
+        var phone = el('f-phone').value.trim();
+        var email = el('f-email').value.trim();
+        var btn = el('form-save');
+        btn.disabled = true;
+
+        var req;
+        if (state.editingId === null) {
+          // 新增：POST 全量档案；类型缺省 NORMAL 由后端兜底（ReaderService），这里始终显式传
+          req = Api.post('/api/readers', {
+            cardNo: el('f-cardNo').value.trim(),
+            name: name, readerTypeCode: type,
+            phone: phone || undefined, email: email || undefined
+          });
+        } else {
+          // 编辑：PUT 不含 cardNo（身份键不可改，ReaderDtos.UpdateRequest）
+          req = Api.put('/api/readers/' + state.editingId, {
+            name: name, readerTypeCode: type,
+            phone: phone || undefined, email: email || undefined
+          });
+        }
+
+        // 先捕获模式再关表单：closeForm 会把 editingId 置回 null
+        var isCreate = state.editingId === null;
+        req.then(function (saved) {
+          btn.disabled = false;
+          closeForm();
+          UI.toast(isCreate ? '读者已创建' : '读者已更新', 'success');
+          state.highlightId = saved.id;
+          if (isCreate) gotoPageOfNew(); // id 升序：新行在匹配过滤的最后一页
+          else load();
+        }, function (err) {
+          btn.disabled = false;
+          if (!(err instanceof Api.ApiError)) {
+            UI.inlineError(el('form-error-slot'), '网络异常，请检查网络后重试');
+            return;
+          }
+          if (err.status === 400 && err.fields && err.fields.length) {
+            showFieldErrors(err.fields);
+          } else {
+            // 409 DUPLICATE_CARD_NO 等业务拒绝：后端中文文案行内直显，不映射（#131 契约）
+            UI.inlineError(el('form-error-slot'), Dict.rejectText(err));
+          }
+        });
+      }
+
+      // 新增后跳到能看见新行的页：先取 total（同过滤条件），再取最后一页（列表 id 升序）
+      function gotoPageOfNew() {
+        Api.get('/api/readers', filterParams(1)).then(function (first) {
+          state.page = Math.max(1, Math.ceil(first.total / (first.size || SIZE)));
+          load();
+        }, function () {
+          load(); // 拿不到 total 就留在当前页，行内高亮自然落空，不阻断
+        });
+      }
+
+      // ---- 注销（F1 柔性删除） ----
+      function deactivate(id) {
+        var r = null;
+        state.items.forEach(function (item) { if (item.id === id) r = item; });
+        if (!r) return;
+
+        // 二次确认文案（#136 U8）：固定语义句 + 在借警示追加（口径 activeBorrowCount，服务端统计）
+        var message = '确定注销读者「' + r.name + '（' + r.cardNo + '）」吗？' +
+          '注销后该读者不可借书，历史记录保留。' +
+          (r.activeBorrowCount > 0 ? '注意：该读者有 ' + r.activeBorrowCount + ' 本在借图书！' : '');
+        if (!window.confirm(message)) return;
+
+        Api.post('/api/readers/' + id + '/deactivate').then(function () {
+          UI.toast('读者已注销', 'success');
+          state.highlightId = id;
+          load();
+        }, function (err) {
+          if (err instanceof Api.ApiError) UI.toast(Dict.rejectText(err), 'error');
+          else UI.toast('网络异常，请稍后重试', 'error');
+        });
+      }
+
+      // ---- 事件绑定 ----
+      function bind() {
+        fillSelect(el('filter-type'), Dict.readerType, '全部类型');
+        fillSelect(el('filter-status'), Dict.readerStatus, '全部状态');
+        fillSelect(el('f-type'), Dict.readerType, null);
+
+        el('search-btn').addEventListener('click', function () {
+          state.q = el('filter-q').value.trim();
+          state.readerTypeCode = el('filter-type').value;
+          state.status = el('filter-status').value;
+          state.page = 1;
+          load();
+        });
+        el('filter-q').addEventListener('keydown', function (e) {
+          if (e.key === 'Enter') el('search-btn').click();
+        });
+        el('filter-type').addEventListener('change', function () { el('search-btn').click(); });
+        el('filter-status').addEventListener('change', function () { el('search-btn').click(); });
+        el('add-btn').addEventListener('click', openCreate);
+
+        listSlot.addEventListener('click', function (e) {
+          var btn = e.target.closest('button[data-action]');
+          if (!btn) return;
+          var action = btn.getAttribute('data-action');
+          if (action === 'open-create') {
+            openCreate();
+            return;
+          }
+          var id = parseInt(btn.getAttribute('data-id'), 10);
+          if (action === 'edit') {
+            state.items.forEach(function (item) { if (item.id === id) openEdit(item); });
+          } else if (action === 'deactivate') {
+            deactivate(id);
+          }
+        });
+
+        formCard.addEventListener('submit', function (e) {
+          e.preventDefault(); // 回车与点击统一走 submit（login.html 同款）
+          save();
+        });
+        el('form-cancel').addEventListener('click', closeForm);
+      }
+
+      // ---- 启动：角色守卫 -> 导航 -> 拉列表 ----
+      Auth.requireRole('LIBRARIAN', 'ADMIN').then(function (user) {
+        Nav.render(user);
+        bind();
+        load();
+      });
+    })();
+    </script>
+</body>
+</html>
