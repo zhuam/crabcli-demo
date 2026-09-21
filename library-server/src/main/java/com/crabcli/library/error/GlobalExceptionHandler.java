@@ -5,9 +5,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.web.HttpMediaTypeNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 /**
@@ -15,6 +18,8 @@ import org.springframework.web.servlet.resource.NoResourceFoundException;
  * <ul>
  *   <li>{@link ApiException} —— 业务异常，状态码与 code/message 透传；</li>
  *   <li>{@link MethodArgumentNotValidException} —— 400 VALIDATION_ERROR + fields[]；</li>
+ *   <li>请求本体/媒体类型/路径参数类型的边界畸形（BE-B04 / #119 端点接受 JSON 体与
+ *       路径参数后引入）—— 400 VALIDATION_ERROR，客户端错误不得落 500；</li>
  *   <li>{@link NoResourceFoundException} —— 未注册接口 404 NOT_FOUND
  *       （BE-B03 鉴权矩阵以「放行到 404」证明安全链畅通，不能落 500）；</li>
  *   <li>其余未捕获异常 —— 500 INTERNAL_ERROR，【安全】响应体不回显堆栈与类名，
@@ -39,6 +44,29 @@ public class GlobalExceptionHandler {
                 .toList();
         return ResponseEntity.badRequest()
                 .body(new ErrorResponse(ErrorCode.VALIDATION_ERROR.name(), "请求参数校验失败", fields));
+    }
+
+    /** 请求体缺失或非法 JSON（#119 端点边界）：400，不落 500。 */
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ErrorResponse> handleUnreadableBody(HttpMessageNotReadableException ex) {
+        return badRequest("请求体缺失或格式非法");
+    }
+
+    /** Content-Type 缺失/不支持（#119 端点只收 JSON）：按契约并入 400 VALIDATION_ERROR。 */
+    @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
+    public ResponseEntity<ErrorResponse> handleUnsupportedMediaType(HttpMediaTypeNotSupportedException ex) {
+        return badRequest("Content-Type 需为 application/json");
+    }
+
+    /** 路径参数类型不符（如 /api/categories/abc）：400，不落 500。 */
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ErrorResponse> handleTypeMismatch(MethodArgumentTypeMismatchException ex) {
+        return badRequest("路径参数类型非法");
+    }
+
+    private static ResponseEntity<ErrorResponse> badRequest(String message) {
+        return ResponseEntity.badRequest()
+                .body(new ErrorResponse(ErrorCode.VALIDATION_ERROR.name(), message, null));
     }
 
     @ExceptionHandler(NoResourceFoundException.class)

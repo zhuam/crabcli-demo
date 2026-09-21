@@ -87,9 +87,11 @@ class RbacMatrixTest {
 
     @Test
     void adminPutReaderTypesPassesAuthChain() throws Exception {
+        // BE-B04（#119）落地后端点已存在：空请求体在控制器边界被 400 拒——
+        // 非 401/403 即证明 ADMIN 通过鉴权（原 404 断言只适用于端点未交付时）
         mockMvc.perform(put("/api/reader-types/NORMAL").header("Authorization", "Bearer " + tokenFor("admin")))
-                .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.code").value("NOT_FOUND"));
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"));
     }
 
     @Test
