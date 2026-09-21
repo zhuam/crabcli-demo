@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>书籍管理 - 图书馆管理系统</title>
+    <style>
+        body { margin: 0; min-height: 100vh; background: #f3f4f6; color: #111827;
+               font-family: system-ui, sans-serif; font-size: 14px; }
+        .page { max-width: 1080px; margin: 24px auto 40px; padding: 0 16px; }
+        .page-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+        .page-head h1 { font-size: 18px; margin: 0; }
+        .toolbar { display: flex; gap: 8px; align-items: center; background: #fff; border: 1px solid #e5e7eb;
+                   border-radius: 10px; padding: 12px; box-sizing: border-box; }
+        .toolbar input, .toolbar select { padding: 8px 10px; font-size: 14px; border: 1px solid #d1d5db;
+                                          border-radius: 6px; outline: none; background: #fff; color: #111827; }
+        .toolbar input { width: 220px; }
+        .toolbar input:focus, .toolbar select:focus { border-color: #2563eb; }
+        .btn { padding: 8px 16px; font-size: 14px; border-radius: 6px; border: 1px solid transparent; cursor: pointer; }
+        .btn-primary { background: #2563eb; color: #fff; }
+        .btn-primary:hover:not(:disabled) { background: #1d4ed8; }
+        .btn-plain { background: #fff; color: #374151; border-color: #d1d5db; }
+        .btn-plain:hover:not(:disabled) { background: #f3f4f6; }
+        .btn:disabled { opacity: .6; cursor: not-allowed; }
+        .btn-danger { background: #dc2626; color: #fff; }
+        .btn-danger:hover:not(:disabled) { background: #b91c1c; }
+        .card { background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; margin-top: 16px; overflow: hidden; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 10px 12px; text-align: left; font-size: 14px; border-bottom: 1px solid #f3f4f6; }
+        th { background: #f9fafb; color: #6b7280; font-weight: 500; white-space: nowrap; }
+        td { color: #374151; }
+        td.code { font-family: ui-monospace, monospace; }
+        tr.withdrawn td { color: #9ca3af; }
+        tr.withdrawn td.code { color: #9ca3af; }
+        .pager { display: flex; align-items: center; justify-content: flex-end; gap: 12px; padding: 10px 12px;
+                 color: #6b7280; font-size: 13px; }
+        .empty { padding: 48px 0; text-align: center; color: #6b7280; }
+        .empty a { color: #2563eb; cursor: pointer; }
+        .kw-list { display: flex; flex-wrap: wrap; gap: 4px; }
+        dialog { border: none; border-radius: 10px; padding: 0; width: 420px; max-width: calc(100vw - 32px);
+                 box-shadow: 0 8px 32px rgba(0,0,0,.18); }
+        dialog::backdrop { background: rgba(17,24,39,.4); }
+        .dlg-body { padding: 24px 24px 20px; }
+        .dlg-body h2 { font-size: 16px; margin: 0 0 8px; }
+        .dlg-body label { display: block; font-size: 13px; color: #374151; margin: 12px 0 4px; }
+        .dlg-body input, .dlg-body select, .dlg-body textarea { width: 100%; box-sizing: border-box; padding: 8px 10px;
+                 font-size: 14px; border: 1px solid #d1d5db; border-radius: 6px; outline: none;
+                 font-family: inherit; background: #fff; color: #111827; }
+        .dlg-body input:focus, .dlg-body select:focus, .dlg-body textarea:focus { border-color: #2563eb; }
+        .dlg-body input:disabled { background: #f3f4f6; color: #9ca3af; }
+        .dlg-body textarea { resize: vertical; min-height: 52px; }
+        .dlg-foot { display: flex; justify-content: flex-end; gap: 8px; padding: 0 24px 20px; }
+        .dlg-warn { color: #9a3412; background: #ffedd5; border-radius: 6px; padding: 8px 10px; margin: 12px 0 0;
+                    font-size: 13px; }
+        .dlg-warn:empty { display: none; }
+        .field-hint { font-size: 12px; color: #9ca3af; margin: 4px 0 0; }
+    </style>
+</head>
+<body>
+    <div class="page">
+        <div class="page-head">
+            <h1>书籍管理</h1>
+            <button id="btn-new" type="button" class="btn btn-primary">新增书籍</button>
+        </div>
+        <div class="toolbar">
+            <input id="f-q" type="text" placeholder="搜索书名 / 作者 / 关键词">
+            <select id="f-category"></select>
+            <button id="btn-search" type="button" class="btn btn-plain">查询</button>
+        </div>
+        <div class="card">
+            <table>
+                <thead>
+                    <tr>
+                        <th>编号</th><th>书名</th><th>作者</th><th>类别</th><th>关键词</th>
+                        <th>可借/馆藏</th><th>状态</th><th>操作</th>
+                    </tr>
+                </thead>
+                <tbody id="rows"></tbody>
+            </table>
+            <div class="empty" id="empty" hidden></div>
+            <div class="pager" id="pager">
+                <span id="pager-info"></span>
+                <button id="btn-prev" type="button" class="btn btn-plain">上一页</button>
+                <button id="btn-next" type="button" class="btn btn-plain">下一页</button>
+            </div>
+        </div>
+    </div>
+
+    <dialog id="book-dialog">
+        <form id="book-form" class="dlg-body" novalidate>
+            <h2 id="dlg-title">新增书籍</h2>
+            <div id="form-error-slot"></div>
+            <label for="b-code">书籍编号</label>
+            <input id="b-code" name="bookCode" autocomplete="off" placeholder="如 B001">
+            <p class="field-hint" id="code-hint" hidden>编号创建后不可修改</p>
+            <label for="b-title">书名</label>
+            <input id="b-title" name="title" autocomplete="off">
+            <label for="b-author">作者</label>
+            <input id="b-author" name="author" autocomplete="off">
+            <label for="b-category">类别</label>
+            <select id="b-category"></select>
+            <label for="b-keywords">关键词</label>
+            <input id="b-keywords" name="keywords" autocomplete="off" placeholder="多个关键词用英文逗号分隔">
+            <label for="b-copies">馆藏数量</label>
+            <input id="b-copies" name="totalCopies" type="number" min="1" step="1" value="1">
+            <label for="b-remark">备注</label>
+            <textarea id="b-remark" name="remark"></textarea>
+        </form>
+        <div class="dlg-foot">
+            <button id="btn-cancel" type="button" class="btn btn-plain">取消</button>
+            <button id="btn-save" type="button" class="btn btn-primary">保存</button>
+        </div>
+    </dialog>
+
+    <dialog id="withdraw-dialog">
+        <div class="dlg-body">
+            <h2>下架确认</h2>
+            <p id="wd-text" style="margin:8px 0 0;line-height:1.6;"></p>
+            <p class="dlg-warn" id="wd-warn"></p>
+        </div>
+        <div class="dlg-foot">
+            <button id="btn-wd-cancel" type="button" class="btn btn-plain">取消</button>
+            <button id="btn-wd-ok" type="button" class="btn btn-danger">确认下架</button>
+        </div>
+    </dialog>
+
+    <script src="js/dict.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/nav.js"></script>
+    <script>
+    // 书籍管理页（WEB-6 / Issue #137）。后端契约见 BookController（#121）：
+    // 列表 GET /api/books?q&categoryId&page&size → {items,total,page,size}；
+    // 新增 POST /api/books（重复编号 409 DUPLICATE_BOOK_CODE，后端中文文案直显）；
+    // 编辑 PUT /api/books/{id} 部分更新（bookCode 不可改，表单禁用该字段）；
+    // 下架 POST /api/books/{id}/withdraw 幂等。
+    // 差异说明：Book 契约无 categoryName 字段，类别名由 GET /api/categories 前端映射；
+    // 列表无 status 筛选参数，下架书籍以置灰行 + 徽标呈现。
+    (function () {
+      'use strict';
+
+      var PAGE_SIZE = 10;
+
+      var rowsEl = document.getElementById('rows');
+      var emptyEl = document.getElementById('empty');
+      var qInput = document.getElementById('f-q');
+      var fCategoryEl = document.getElementById('f-category');
+      var pagerInfo = document.getElementById('pager-info');
+      var btnPrev = document.getElementById('btn-prev');
+      var btnNext = document.getElementById('btn-next');
+
+      var dialog = document.getElementById('book-dialog');
+      var form = document.getElementById('book-form');
+      var dlgTitle = document.getElementById('dlg-title');
+      var codeHint = document.getElementById('code-hint');
+      var codeInput = document.getElementById('b-code');
+      var titleInput = document.getElementById('b-title');
+      var authorInput = document.getElementById('b-author');
+      var bCategoryEl = document.getElementById('b-category');
+      var kwInput = document.getElementById('b-keywords');
+      var copiesInput = document.getElementById('b-copies');
+      var remarkInput = document.getElementById('b-remark');
+      var btnSave = document.getElementById('btn-save');
+
+      var wdDialog = document.getElementById('withdraw-dialog');
+      var wdText = document.getElementById('wd-text');
+      var wdWarn = document.getElementById('wd-warn');
+      var btnWdOk = document.getElementById('btn-wd-ok');
+
+      var categories = [];        // GET /api/categories 的 {id,name} 缓存，供筛选/表单/列名映射
+      var page = 1;               // 当前页（从 1 起，契约同 #121）
+      var total = 0;
+      var items = [];             // 当前页书目，编辑/下架时按 id 取行数据
+      var editing = null;         // 编辑目标 Book；null = 新增
+      var withdrawing = null;     // 下架确认目标 Book
+
+      function esc(v) { return UI.escapeHtml(v); }
+
+      function catName(categoryId) {
+        for (var i = 0; i < categories.length; i++) {
+          if (categories[i].id === categoryId) return categories[i].name;
+        }
+        return '#' + categoryId;
+      }
+
+      function fillCategorySelect(selectEl, placeholder) {
+        selectEl.textContent = '';
+        var opt = document.createElement('option');
+        opt.value = '';
+        opt.textContent = placeholder;
+        selectEl.appendChild(opt);
+        categories.forEach(function (c) {
+          var o = document.createElement('option');
+          o.value = c.id;
+          o.textContent = c.name;
+          selectEl.appendChild(o);
+        });
+      }
+
+      function loadCategories() {
+        return Api.get('/api/categories').then(function (data) {
+          categories = (data && data.items) || [];
+          fillCategorySelect(fCategoryEl, '全部类别');
+          fillCategorySelect(bCategoryEl, '请选择类别');
+        });
+      }
+
+      // 状态徽标：文案取 Dict.bookStatus 组（不用 Dict.text——ACTIVE 在 readerStatus/bookStatus
+      // 跨组同键，后者先被 readerStatus 命中成「正常」；书籍正解见 dict.js bookStatus=在架/已下架）。
+      // 颜色沿用 ui.js BADGE_COLOR 色板：ACTIVE 绿 / WITHDRAWN 灰。
+      function statusBadge(status) {
+        var color = status === 'ACTIVE' ? 'green' : 'gray';
+        var text = Dict.bookStatus[status] || status;
+        return '<span class="lib-badge lib-badge-' + color + '">' + esc(text) + '</span>';
+      }
+
+      function renderRow(b) {
+        var withdrawn = b.status === 'WITHDRAWN';
+        var kws = (b.keywords || []).map(function (k) {
+          return '<span class="lib-badge lib-badge-gray">' + esc(k) + '</span>';
+        }).join('');
+        var ops = '<a href="javascript:void(0)" data-act="edit" data-id="' + b.id + '">编辑</a>';
+        if (!withdrawn) {
+          ops += ' &nbsp; <a href="javascript:void(0)" data-act="withdraw" data-id="' + b.id + '">下架</a>';
+        }
+        return '<tr class="' + (withdrawn ? 'withdrawn' : '') + '">' +
+            '<td class="code">' + esc(b.bookCode) + '</td>' +
+            '<td>' + esc(b.title) + '</td>' +
+            '<td>' + esc(b.author) + '</td>' +
+            '<td>' + esc(catName(b.categoryId)) + '</td>' +
+            '<td><span class="kw-list">' + kws + '</span></td>' +
+            '<td>' + b.availableCopies + ' / ' + b.totalCopies + '</td>' +
+            '<td>' + statusBadge(b.status) + '</td>' +
+            '<td>' + ops + '</td>' +
+            '</tr>';
+      }
+
+      function renderList() {
+        rowsEl.innerHTML = items.map(renderRow).join('');
+        var isEmpty = total === 0;
+        emptyEl.hidden = !isEmpty;
+        if (isEmpty) {
+          emptyEl.innerHTML = '暂无书籍，<a id="empty-new">点击新增</a>';
+          document.getElementById('empty-new').addEventListener('click', function () { openDialog(null); });
+        }
+        var pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+        pagerInfo.textContent = '共 ' + total + ' 条 · 第 ' + page + ' / ' + pages + ' 页';
+        btnPrev.disabled = page <= 1;
+        btnNext.disabled = page >= pages;
+        document.getElementById('pager').style.display = isEmpty ? 'none' : '';
+      }
+
+      function loadList(targetPage) {
+        page = targetPage || 1;
+        return Api.get('/api/books', {
+          q: qInput.value.trim(),
+          categoryId: fCategoryEl.value,
+          page: page,
+          size: PAGE_SIZE
+        }).then(function (data) {
+          items = data.items || [];
+          total = data.total;
+          renderList();
+        }, function (err) {
+          items = [];
+          total = 0;
+          emptyEl.hidden = false;
+          emptyEl.textContent = '加载失败：' + (err.message || '请稍后重试');
+          document.getElementById('pager').style.display = 'none';
+        });
+      }
+
+      // ---- 新增 / 编辑弹窗 ----
+      function openDialog(book) {
+        editing = book;
+        UI.inlineError(form, '');
+        dlgTitle.textContent = book ? '编辑书籍' : '新增书籍';
+        codeInput.value = book ? book.bookCode : '';
+        codeInput.disabled = !!book; // PUT 契约不含 bookCode，编号不可改
+        codeHint.hidden = !book;
+        titleInput.value = book ? book.title : '';
+        authorInput.value = book ? book.author : '';
+        bCategoryEl.value = book ? String(book.categoryId) : '';
+        kwInput.value = book ? (book.keywords || []).join(',') : '';
+        copiesInput.value = book ? book.totalCopies : 1;
+        remarkInput.value = book ? (book.remark || '') : '';
+        btnSave.disabled = false;
+        btnSave.textContent = '保存';
+        dialog.showModal();
+        (book ? titleInput : codeInput).focus();
+      }
+
+      // 关键词契约：英文逗号分隔，前端 split/join（#137）
+      function parseKeywords(text) {
+        return text.split(',').map(function (s) { return s.trim(); }).filter(Boolean);
+      }
+
+      function saveDialog() {
+        UI.inlineError(form, '');
+        var bookCode = codeInput.value.trim();
+        var title = titleInput.value.trim();
+        var author = authorInput.value.trim();
+        var categoryId = bCategoryEl.value;
+        var copies = Number(copiesInput.value);
+        if (!bookCode || !title || !author || !categoryId) {
+          UI.inlineError(form, '请填写编号、书名、作者并选择类别');
+          return;
+        }
+        if (!copies || copies < 1) {
+          UI.inlineError(form, '馆藏数量至少为 1');
+          return;
+        }
+        var body = {
+          title: title,
+          author: author,
+          categoryId: Number(categoryId),
+          keywords: parseKeywords(kwInput.value),
+          totalCopies: copies,
+          remark: remarkInput.value.trim()
+        };
+        btnSave.disabled = true;
+        btnSave.textContent = '保存中…';
+        var req = editing
+          ? Api.put('/api/books/' + editing.id, body)
+          : Api.post('/api/books', Object.assign({ bookCode: bookCode }, body));
+        req.then(function () {
+          dialog.close();
+          UI.toast(editing ? '已保存' : '已新增', 'success');
+          loadList(page);
+        }, function (err) {
+          btnSave.disabled = false;
+          btnSave.textContent = '保存';
+          // 409 DUPLICATE_BOOK_CODE 等业务拒绝：后端中文文案行内直显（契约不映射）
+          UI.inlineError(form, err instanceof Api.ApiError ? Dict.rejectText(err) : '网络异常，请稍后重试');
+        });
+      }
+
+      // ---- 下架（二次确认；在借副本警示） ----
+      function openWithdraw(book) {
+        withdrawing = book;
+        wdText.textContent = '确定下架《' + book.title + '》（' + book.bookCode + '）吗？下架后读者不可再借出该书。';
+        var out = book.totalCopies - book.availableCopies;
+        wdWarn.textContent = out > 0 ? '有 ' + out + ' 本在借，归还后不可再借出' : '';
+        btnWdOk.disabled = false;
+        wdDialog.showModal();
+      }
+
+      function confirmWithdraw() {
+        btnWdOk.disabled = true;
+        Api.post('/api/books/' + withdrawing.id + '/withdraw').then(function () {
+          wdDialog.close();
+          UI.toast('已下架', 'success');
+          loadList(page);
+        }, function (err) {
+          wdDialog.close();
+          UI.toast(err instanceof Api.ApiError ? Dict.rejectText(err) : '网络异常，请稍后重试', 'error');
+        });
+      }
+
+      // ---- 事件绑定 ----
+      document.getElementById('btn-new').addEventListener('click', function () { openDialog(null); });
+      document.getElementById('btn-search').addEventListener('click', function () { loadList(1); });
+      qInput.addEventListener('keydown', function (e) { if (e.key === 'Enter') loadList(1); });
+      fCategoryEl.addEventListener('change', function () { loadList(1); });
+      btnPrev.addEventListener('click', function () { if (page > 1) loadList(page - 1); });
+      btnNext.addEventListener('click', function () { if (page * PAGE_SIZE < total) loadList(page + 1); });
+      btnSave.addEventListener('click', saveDialog);
+      document.getElementById('btn-cancel').addEventListener('click', function () { dialog.close(); });
+      btnWdOk.addEventListener('click', confirmWithdraw);
+      document.getElementById('btn-wd-cancel').addEventListener('click', function () { wdDialog.close(); });
+      rowsEl.addEventListener('click', function (e) {
+        var id = Number(e.target.getAttribute && e.target.getAttribute('data-id'));
+        if (!id) return;
+        var book = null;
+        for (var i = 0; i < items.length; i++) {
+          if (items[i].id === id) { book = items[i]; break; }
+        }
+        if (!book) return;
+        if (e.target.getAttribute('data-act') === 'edit') openDialog(book);
+        if (e.target.getAttribute('data-act') === 'withdraw') openWithdraw(book);
+      });
+
+      // ---- 启动：管理员守卫 → 导航 → 类别缓存 → 列表 ----
+      Auth.requireRole('ADMIN')
+        .then(function (user) { Nav.render(user); return loadCategories(); })
+        .then(function () { return loadList(1); })
+        .catch(function () { /* 守卫跳转/无权限页已替换文档，无需后续初始化 */ });
+    })();
+    </script>
+</body>
+</html>
