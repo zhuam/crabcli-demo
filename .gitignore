@@ -1,5 +1,7 @@
 node_modules/
 dist/
+library-server/target/
+library-server/data/
 .x-miner/
 *.js.map
 data/

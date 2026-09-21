@@ -1,0 +1,23 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: library-server
+  datasource:
+    # 单文件 SQLite 库；WAL 对齐网关先例（journal_mode 落盘持久，设一次即可）
+    url: jdbc:sqlite:data/library.db?journal_mode=WAL
+    driver-class-name: org.sqlite.JDBC
+    hikari:
+      # SQLite 的 foreign_keys 是连接级开关，必须在每个池化连接上打开；
+      # 仅靠 schema.sql 里的 PRAGMA 只覆盖初始化连接，运行期请求走的是这里的 init-sql
+      connection-init-sql: PRAGMA foreign_keys=ON
+      # SQLite 单写者模型，收紧连接池避免写锁排队
+      maximum-pool-size: 4
+  sql:
+    init:
+      # SQLite 不在 Spring 的嵌入式库清单里，默认 embedded 模式不会执行脚本，必须显式 always；
+      # 脚本自身幂等（IF NOT EXISTS / OR IGNORE），重复启动不报错
+      mode: always
+      schema-locations: classpath:schema.sql
+      data-locations: classpath:data.sql
