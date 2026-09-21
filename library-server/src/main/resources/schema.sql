@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS reader_types (
     created_at  TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
 );
 
--- 读者档案（F1：注销 = status CANCELLED）
+-- 读者档案（F1：注销 = status INACTIVE，契约字面 #120 / 前端 dict.js readerStatus 对称）
 CREATE TABLE IF NOT EXISTS readers (
     id               INTEGER PRIMARY KEY,
     card_no          TEXT NOT NULL,        -- 借书证号
@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS readers (
     reader_type_code TEXT NOT NULL REFERENCES reader_types(code),
     phone            TEXT,
     email            TEXT,
-    status           TEXT NOT NULL DEFAULT 'ACTIVE' CHECK (status IN ('ACTIVE','CANCELLED')),
+    status           TEXT NOT NULL DEFAULT 'ACTIVE' CHECK (status IN ('ACTIVE','INACTIVE')),
     created_at       TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
 );
 CREATE UNIQUE INDEX IF NOT EXISTS idx_readers_card_no ON readers(card_no);
