@@ -28,7 +28,9 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 /**
  * 安全链（BE-B03 / Issue #118）：无状态 JWT，权限在服务端强制。
  * <ul>
- *   <li>放行：{@code POST /api/auth/login}、{@code GET /api/health}；</li>
+ *   <li>放行：{@code POST /api/auth/login}、{@code GET /api/health}；静态资源
+ *       （css/js/images/webjars/favicon）与 static/ 根下 HTML 页面（含 welcome 页 /）
+ *       匿名可取（前端托管收口 BE-B15 / #130）；</li>
  *   <li>管理写操作按角色收紧——基础数据维护（reader-types / categories / borrow-rules）
  *       仅 ADMIN；馆员业务（books / borrows / reservations / readers 的写操作）
  *       LIBRARIAN 或 ADMIN；</li>
@@ -53,6 +55,11 @@ public class SecurityConfig {
                         .requestMatchers("/api/health").permitAll()
                         // #131 前端共享层已在 classpath static/ 下：静态资源匿名可取（托管收口归 BE-B15 / #130）
                         .requestMatchers(PathRequest.toStaticResources().atCommonLocations()).permitAll()
+                        // #130 托管收口：welcome 页（/ 转发 static/index.html）与 static/ 根下 HTML 页面
+                        // 匿名可取，WEB-1~WEB-8 产出的页面直接落 static/ 即生效、无需改后端。
+                        // PathRequest 的 COMMON 清单只覆盖 css/js/images/webjars/favicon，
+                        // 不含根路径与 .html（PathPattern 也不支持 /**/*.html 中段 **）
+                        .requestMatchers("/", "/*.html").permitAll()
                         // 容器错误页转发（ERROR dispatch）不再过授权，避免 404 被二次拦成 401
                         .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
                         // 基础数据维护（#119）：仅 ADMIN
