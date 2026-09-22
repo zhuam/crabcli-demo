@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>我的借阅 - 图书馆管理系统</title>
+    <style>
+        body { margin: 0; background: #f3f4f6; color: #111827; font-family: system-ui, sans-serif; font-size: 14px; }
+        .page { max-width: 960px; margin: 24px auto 40px; padding: 0 16px; }
+        .page-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+        .page-head h1 { font-size: 18px; margin: 0; }
+        .welcome { background: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af; border-radius: 10px; padding: 12px 16px; margin-bottom: 12px; font-size: 13px; line-height: 1.6; }
+        .welcome[hidden] { display: none; }
+        .card { background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; margin-bottom: 12px; overflow: hidden; }
+        .card h2 { font-size: 16px; margin: 0; padding: 14px 16px 0; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid #f3f4f6; vertical-align: middle; }
+        th { font-size: 13px; color: #6b7280; font-weight: 500; background: #f9fafb; white-space: nowrap; }
+        tbody tr:last-child td { border-bottom: none; }
+        td .actions { display: flex; gap: 6px; align-items: center; }
+        .btn { padding: 8px 14px; font-size: 14px; border: 1px solid #d1d5db; background: #fff; border-radius: 6px; cursor: pointer; color: #374151; }
+        .btn:hover:not(:disabled) { background: #f3f4f6; }
+        .btn:disabled { opacity: .5; cursor: not-allowed; }
+        td .actions .btn { padding: 4px 10px; font-size: 13px; }
+        td .actions .muted { color: #9ca3af; font-size: 12px; }
+        tr.row-error td { background: #fef2f2; color: #991b1b; font-size: 13px; }
+        .empty { text-align: center; padding: 40px 0 32px; color: #6b7280; }
+        .empty p { margin: 0; }
+        /* 页面级错误条（列表加载失败 / 登录态异常） */
+        .page-error { display: flex; align-items: center; gap: 12px; background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; border-radius: 8px; padding: 10px 14px; margin-bottom: 12px; }
+        .page-error[hidden] { display: none; }
+        .page-error .btn { color: #991b1b; border-color: #fca5a5; }
+        .page-error .btn:hover:not(:disabled) { background: #fee2e2; }
+        /* 表格骨架行（shimmer） */
+        .skeleton-bar { height: 12px; border-radius: 6px; background: linear-gradient(90deg, #eef0f3 25%, #e3e6ea 37%, #eef0f3 63%); background-size: 400% 100%; animation: shimmer 1.2s infinite; }
+        @keyframes shimmer { 0% { background-position: 100% 0; } 100% { background-position: 0 0; } }
+    </style>
+</head>
+<body>
+    <main class="page">
+        <div class="page-head">
+            <h1>我的借阅</h1>
+        </div>
+
+        <!-- 首用欢迎 + 借阅规则（两个列表皆空时显示，验收 UX 字面） -->
+        <div id="welcome" class="welcome" hidden>欢迎，借阅规则：普通 3 本/4 周，教师类 6 本/8 周</div>
+
+        <div id="page-error" class="page-error" hidden>
+            <span id="page-error-text"></span>
+            <button id="page-error-retry" type="button" class="btn">重试</button>
+        </div>
+
+        <div class="card">
+            <h2>借阅中</h2>
+            <div id="loans-slot"></div>
+        </div>
+
+        <div class="card">
+            <h2>我的预约</h2>
+            <div id="reservations-slot"></div>
+        </div>
+    </main>
+
+    <script src="js/dict.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/nav.js"></script>
+    <script>
+    // 读者自助页（WEB-8 / Issue #139）。契约（BE-B09 #124 / BE-B12 #127 / WEB-8 后端
+    // 例外，均亲验）：
+    // GET  /api/auth/me → {userId,username,role,displayName,readerId}（readerId 仅
+    //      READER 非空，LoginUser 契约）；readerId 一律取此处，页面不解析 token。
+    // GET  /api/borrows?readerId=&status= → {items,total,page,size}；READER 服务端
+    //      钉定本人（BorrowQueryService，显式他人 403）；status 三态互斥
+    //      （BORROWED 排除逾期、逾期归 OVERDUE、LOST 为丢失未赔，BorrowRepository
+    //      .statusFilter），在借列表按三态各查一次拼接（circulation.html 同款）。
+    // PUT  /api/borrows/{id}/renew → 200 renewCount=1、dueAt 顺延；READER 仅本人
+    //      （RenewService 归属校验，他人 403 FORBIDDEN）；规则拒绝 409
+    //      RENEW_LIMIT_REACHED / RENEW_BLOCKED_BY_RESERVATION / RENEW_BLOCKED_BY_OVERDUE
+    //      / BORROW_NOT_ACTIVE——被拒原因行内原样展示。
+    // GET  /api/reservations?readerId= → ReservationView[]（READER 服务层钉定本人，
+    //      ReservationService#list，显式他人 403）；
+    // POST /api/reservations/{id}/cancel → 200 CANCELLED（HELD 释放并递补）；409
+    //      RESERVATION_NOT_ACTIVE；READER 取消他人 403。
+    // 403（登录态/越权异常）页面提示后回登录页，不滞留半授权状态。
+    (function () {
+      'use strict';
+
+      var state = {
+        readerId: null,    // Auth.user.readerId（登录响应契约，不解析 token）
+        loans: [],         // 在借（含逾期）+ 丢失行，BorrowQueryView
+        reservations: [],  // 本人预约行，ReservationView
+        bookTitles: {}     // id -> 书名（编号），init 拉全量映射
+      };
+
+      var el = function (id) { return document.getElementById(id); };
+      var loansSlot = el('loans-slot');
+      var reservationsSlot = el('reservations-slot');
+
+      // ---- 基础数据 ----
+      function fetchAll(path) {
+        function collect(page, acc) {
+          return Api.get(path, { page: page, size: 100 }).then(function (p) {
+            acc = acc.concat(p.items);
+            if (p.items.length === 0 || acc.length >= p.total) return acc;
+            return collect(page + 1, acc);
+          });
+        }
+        return collect(1, []);
+      }
+
+      function bookTitleOf(bookId) {
+        return state.bookTitles[bookId] || '书籍 #' + bookId;
+      }
+
+      // ---- 页面级错误 ----
+      function showPageError(message) {
+        el('page-error-text').textContent = message;
+        el('page-error').hidden = false;
+      }
+
+      // 403：登录态/越权异常（api.js 已 toast 提示），本页提示后回登录页，不滞留
+      function handleForbidden() {
+        showPageError('登录状态异常，请重新登录');
+        setTimeout(function () { location.href = Auth.loginUrl(); }, 1200);
+      }
+
+      // ---- 加载 ----
+      function showSkeleton() {
+        var bar = '<div class="skeleton-bar"></div>';
+        var loanCells = new Array(6).join('<td>' + bar + '</td>'); // 5 列
+        var resCells = new Array(5).join('<td>' + bar + '</td>');  // 4 列
+        loansSlot.innerHTML =
+          '<table><thead><tr><th>书籍</th><th>借出日期</th><th>应还日期</th><th>状态</th><th>操作</th></tr></thead>' +
+          '<tbody>' + new Array(5).join('<tr>' + loanCells + '</tr>') + '</tbody></table>';
+        reservationsSlot.innerHTML =
+          '<table><thead><tr><th>书籍</th><th>状态</th><th>排队 / 保留</th><th>操作</th></tr></thead>' +
+          '<tbody>' + new Array(4).join('<tr>' + resCells + '</tr>') + '</tbody></table>';
+      }
+
+      // 在借列表：契约 status 三态互斥，BORROWED / OVERDUE / LOST 各查一次拼接
+      // （circulation.html 同款；RETURNED / LOST_PAID 为终态不进本列表）
+      function allOfStatus(status) {
+        function collect(page, acc) {
+          return Api.get('/api/borrows', { readerId: state.readerId, status: status, page: page, size: 100 })
+            .then(function (p) {
+              acc = acc.concat(p.items);
+              if (p.items.length === 0 || acc.length >= p.total) return acc;
+              return collect(page + 1, acc);
+            });
+        }
+        return collect(1, []);
+      }
+
+      function load() {
+        el('page-error').hidden = true;
+        showSkeleton();
+        var loans = Promise.all([
+          allOfStatus('BORROWED'),
+          allOfStatus('OVERDUE'),
+          allOfStatus('LOST')
+        ]).then(function (results) {
+          state.loans = results[0].concat(results[1]).concat(results[2]);
+          renderLoans();
+        });
+        var reservations = Api.get('/api/reservations', { readerId: state.readerId })
+          .then(function (list) {
+            state.reservations = list || [];
+            renderReservations();
+          });
+        Promise.all([loans, reservations]).then(function () {
+          // 首用（两个列表皆空）展示欢迎与借阅规则
+          el('welcome').hidden = !(state.loans.length === 0 && state.reservations.length === 0);
+        }, function (err) {
+          loansSlot.innerHTML = '';
+          reservationsSlot.innerHTML = '';
+          if (err instanceof Api.ApiError && err.status === 403) {
+            handleForbidden();
+            return;
+          }
+          showPageError(err instanceof Api.ApiError ? Dict.rejectText(err) : '加载失败，请稍后重试');
+        });
+      }
+
+      // ---- 我的借阅 ----
+      function statusCell(r) {
+        if (r.status === 'OVERDUE') {
+          var text = (Dict.text('OVERDUE') || 'OVERDUE') + ' ' + r.overdueDays + ' 天';
+          return '<span class="lib-badge lib-badge-red">' + UI.escapeHtml(text) + '</span>';
+        }
+        if (r.status === 'LOST' && r.compensationStatus === 'PENDING') {
+          var lostPending = (Dict.text('LOST') || 'LOST') + '（未赔）';
+          return '<span class="lib-badge lib-badge-orange">' + UI.escapeHtml(lostPending) + '</span>';
+        }
+        return UI.badge(r.status);
+      }
+
+      function renderLoans() {
+        if (state.loans.length === 0) {
+          loansSlot.innerHTML = '<div class="empty"><p>您当前没有在借图书</p></div>';
+          return;
+        }
+        var rows = state.loans.map(function (r) {
+          var ops = '';
+          if (r.status !== 'LOST') { // LOST 已结束无续借入口；OVERDUE 保留按钮以原样展示「已逾期不能续借」
+            if (r.renewCount >= 1) {
+              ops = '<button type="button" class="btn" disabled>续借</button><span class="muted">已达上限</span>';
+            } else {
+              ops = '<button type="button" class="btn" data-action="renew" data-id="' + r.id + '">续借</button>';
+            }
+          }
+          return '<tr>' +
+            '<td>' + UI.escapeHtml(bookTitleOf(r.bookId)) + '</td>' +
+            '<td>' + UI.escapeHtml(r.borrowDate) + '</td>' +
+            '<td>' + UI.escapeHtml(r.dueDate) + '</td>' +
+            '<td>' + statusCell(r) + '</td>' +
+            '<td><span class="actions">' + ops + '</span></td>' +
+            '</tr>';
+        }).join('');
+        loansSlot.innerHTML =
+          '<table><thead><tr><th>书籍</th><th>借出日期</th><th>应还日期</th><th>状态</th><th>操作</th></tr></thead>' +
+          '<tbody>' + rows + '</tbody></table>';
+      }
+
+      function renew(id) {
+        Api.put('/api/borrows/' + id + '/renew').then(function (updated) {
+          // 该行应还日期立即更新（原地替换，不整表刷新）
+          state.loans = state.loans.map(function (row) {
+            if (row.id !== id) return row;
+            row.dueDate = updated.dueAt.slice(0, 10);
+            row.renewCount = updated.renewCount;
+            return row;
+          });
+          renderLoans();
+          UI.toast('续借成功，新应还日期 ' + updated.dueAt.slice(0, 10), 'success');
+        }, function (err) {
+          if (!(err instanceof Api.ApiError)) {
+            UI.toast('网络异常，请稍后重试', 'error');
+            return;
+          }
+          if (err.status === 403) { handleForbidden(); return; }
+          // 被拒原因行内原样展示（后端中文文案直显）
+          var btn = loansSlot.querySelector('button[data-action="renew"][data-id="' + id + '"]');
+          var rowEl = btn && btn.closest('tr');
+          if (rowEl) {
+            var tbody = rowEl.parentNode;
+            var prev = tbody.querySelector('tr.row-error'); // 只保留最新一条
+            if (prev) prev.parentNode.removeChild(prev);
+            var errRow = document.createElement('tr');
+            errRow.className = 'row-error';
+            var cell = document.createElement('td');
+            cell.colSpan = 5;
+            cell.textContent = Dict.rejectText(err);
+            errRow.appendChild(cell);
+            tbody.insertBefore(errRow, rowEl.nextSibling);
+          } else {
+            UI.toast(Dict.rejectText(err), 'error');
+          }
+        });
+      }
+
+      // ---- 我的预约 ----
+      // 剩余天数：与 ReservationExpirySweeper 口径对齐（UTC 日历日差，reservations.html 同款）
+      function remainingDays(holdExpiresAt) {
+        var holdDay = Date.parse(holdExpiresAt.slice(0, 10) + 'T00:00:00Z');
+        var todayUtc = Date.parse(new Date().toISOString().slice(0, 10) + 'T00:00:00Z');
+        return Math.round((holdDay - todayUtc) / 86400000);
+      }
+
+      function queueOrHoldCell(r) {
+        if (r.status === 'WAITING') return '排队第 ' + r.queuePosition + ' 位';
+        if (r.status === 'HELD') {
+          var days = remainingDays(r.holdExpiresAt);
+          return '保留中，剩 ' + (days <= 0 ? '不足 1' : days) + ' 天';
+        }
+        return '';
+      }
+
+      function renderReservations() {
+        if (state.reservations.length === 0) {
+          reservationsSlot.innerHTML = '<div class="empty"><p>没有预约记录</p></div>';
+          return;
+        }
+        var rows = state.reservations.map(function (r) {
+          var cancelBtn = (r.status === 'WAITING' || r.status === 'HELD')
+            ? '<button type="button" class="btn" data-action="cancel" data-id="' + r.id + '">取消</button>'
+            : '';
+          return '<tr>' +
+            '<td>' + UI.escapeHtml(bookTitleOf(r.bookId)) + '</td>' +
+            '<td>' + UI.badge(r.status) + '</td>' +
+            '<td>' + UI.escapeHtml(queueOrHoldCell(r)) + '</td>' +
+            '<td><span class="actions">' + cancelBtn + '</span></td>' +
+            '</tr>';
+        }).join('');
+        reservationsSlot.innerHTML =
+          '<table><thead><tr><th>书籍</th><th>状态</th><th>排队 / 保留</th><th>操作</th></tr></thead>' +
+          '<tbody>' + rows + '</tbody></table>';
+      }
+
+      function cancelReservation(id) {
+        Api.post('/api/reservations/' + id + '/cancel').then(function () {
+          UI.toast('预约已取消', 'success');
+          load(); // 取消 HELD 会触发服务端递补，刷新取最新排队位次
+        }, function (err) {
+          if (!(err instanceof Api.ApiError)) {
+            UI.toast('网络异常，请稍后重试', 'error');
+            return;
+          }
+          if (err.status === 403) { handleForbidden(); return; }
+          // 失败原因行内直显在对应预约行：越权 403「无权操作该预约」、
+          // RESERVATION_NOT_ACTIVE 提示已失效（后端中文文案原样）
+          var message = err.status === 403 ? '无权操作该预约' : Dict.rejectText(err);
+          var btn = reservationsSlot.querySelector('button[data-action="cancel"][data-id="' + id + '"]');
+          var rowEl = btn && btn.closest('tr');
+          if (rowEl) {
+            var tbody = rowEl.parentNode;
+            var prev = tbody.querySelector('tr.row-error');
+            if (prev) prev.parentNode.removeChild(prev);
+            var errRow = document.createElement('tr');
+            errRow.className = 'row-error';
+            var cell = document.createElement('td');
+            cell.colSpan = 4;
+            cell.textContent = message;
+            errRow.appendChild(cell);
+            tbody.insertBefore(errRow, rowEl.nextSibling);
+          } else {
+            UI.toast(message, 'error');
+          }
+        });
+      }
+
+      // ---- 事件绑定 ----
+      function bind() {
+        loansSlot.addEventListener('click', function (e) {
+          var btn = e.target.closest('button[data-action="renew"]');
+          if (btn) renew(parseInt(btn.getAttribute('data-id'), 10));
+        });
+        reservationsSlot.addEventListener('click', function (e) {
+          var btn = e.target.closest('button[data-action="cancel"]');
+          if (btn) cancelReservation(parseInt(btn.getAttribute('data-id'), 10));
+        });
+        el('page-error-retry').addEventListener('click', load);
+      }
+
+      // ---- 启动：读者守卫 -> 导航 -> 书名映射 -> 列表 ----
+      Auth.requireRole('READER').then(function (user) {
+        Nav.render(user);
+        state.readerId = user.readerId; // LoginUser 契约：readerId 仅 READER 非空
+        bind();
+        fetchAll('/api/books').then(function (list) {
+          list.forEach(function (b) { state.bookTitles[b.id] = b.title + '（' + b.bookCode + '）'; });
+        }, function () { /* 失败不拦列表：行名退回 #id 标签 */ })
+          .then(load);
+      }).catch(function () { /* 守卫跳转/无权限页已替换文档 */ });
+    })();
+    </script>
+</body>
+</html>
