@@ -81,11 +81,14 @@ class StaticHostingTest {
     }
 
     @Test
-    void futurePagesInStaticRootAreNotAuthBlocked() throws Exception {
-        // WEB-2~8 页面（如 my.html）尚未交付：文件未落地按 404 呈现而非 401——静态路径
-        // 不被安全链拦截（#130 验收第 4 条），页面落进 static/ 后即刻匿名可达，无需改后端
+    void web8ReaderPageInStaticRootIsNotAuthBlocked() throws Exception {
+        // WEB-8（#139）交付 my.html：静态路径不被安全链拦截（#130 验收第 4 条），
+        // 页面落进 static/ 即刻匿名可达（页面自身经 Auth.requireRole 守卫），
+        // 无需改后端——同 login.html / readers.html / admin-data.html 先例。
+        // 9cf4011 交付页面时本用例未随改（仍断言未落地 404）致套件红，此处跟进。
         mockMvc.perform(get("/my.html"))
-                .andExpect(status().isNotFound());
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith("text/html"));
     }
 
     @Test
