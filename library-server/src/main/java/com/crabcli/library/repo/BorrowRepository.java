@@ -12,10 +12,10 @@ import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Repository;
 
 /**
- * 借阅记录仓储（BE-B07 口径锚点 + BE-B08 借出写路径 / Issue #122、#123）：
- * borrow_records 表（schema.sql:74 建表，FK→readers/books）。B07 交付占用判定字面，
- * B08 起本类承接借出写路径与按读者查询（@Repository + JdbcTemplate 装配就位）；
- * 还书、续借、丢失赔偿写路径归 B09。
+ * 借阅记录仓储（BE-B07 口径锚点 + BE-B08 借出写路径 + BE-B10 还书写路径
+ * / Issue #122、#123、#125）：borrow_records 表（schema.sql:74 建表，FK→readers/books）。
+ * B07 交付占用判定字面，B08 起本类承接借出写路径与按读者查询；B10 增补还书落账
+ * （{@link #markReturned}）；续借、丢失赔偿写路径归后续。
  * <p>{@link #ACTIVE_STATUS_PREDICATE} 是「占用副本的借阅」唯一字面来源，勿在他处复写：
  * 存储 BORROWED 覆盖契约 BORROWED 与 OVERDUE（逾期读时派生不落库）；LOST 均为未赔——
  * 已赔即转 LOST_PAID（契约流转态）。两者计入占用，RETURNED / LOST_PAID 不占；
@@ -91,5 +91,16 @@ public class BorrowRepository {
             return ps;
         }, keys);
         return keys.getKey().intValue();
+    }
+
+    /**
+     * 还书落账（BE-B10 / Issue #125）：returned_at 置当日、status → RETURNED。
+     * returned_at 沿借期字面惯例 {@code LocalDate + "T00:00:00.000Z"}（日历日语义，
+     * 与 due_at / hold_expires_at 同款）。在借与否的判定归 {@link BorrowService#returnBook}，
+     * 本方法只对已确认在借的行执行状态流转。调用方须处于事务内（还书 + 预约递补同事务）。
+     */
+    public void markReturned(int id, String returnedAt) {
+        jdbc.update("UPDATE borrow_records SET returned_at = ?, status = 'RETURNED' WHERE id = ?",
+                returnedAt, id);
     }
 }
