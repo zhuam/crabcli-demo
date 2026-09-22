@@ -14,10 +14,11 @@ import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Repository;
 
 /**
- * 借阅记录仓储（BE-B07 口径锚点 + BE-B08 借出写路径 + BE-B10 还书写路径
- * / Issue #122、#123、#125）：borrow_records 表（schema.sql:74 建表，FK→readers/books）。
- * B07 交付占用判定字面，B08 起本类承接借出写路径与按读者查询；B10 增补还书落账
- * （{@link #markReturned}）；续借、丢失赔偿写路径归后续。
+ * 借阅记录仓储（BE-B07 口径锚点 + BE-B08 借出写路径 + BE-B10 还书写路径 + BE-B11 续借
+ * 写路径 / Issue #122、#123、#125、#126）：borrow_records 表（schema.sql:74 建表，
+ * FK→readers/books）。B07 交付占用判定字面，B08 起本类承接借出写路径与按读者查询；
+ * B10 增补还书落账（{@link #markReturned}）、B11 增补续借落账（{@link #renew}）；
+ * 丢失赔偿写路径归后续。
  * <p>{@link #ACTIVE_STATUS_PREDICATE} 是「占用副本的借阅」唯一字面来源，勿在他处复写：
  * 存储 BORROWED 覆盖契约 BORROWED 与 OVERDUE（逾期读时派生不落库）；LOST 均为未赔——
  * 已赔即转 LOST_PAID（契约流转态）。两者计入占用，RETURNED / LOST_PAID 不占；
@@ -180,5 +181,18 @@ public class BorrowRepository {
                 yield "status = ?";
             }
         };
+    }
+
+    /**
+     * 续借落账（BE-B11）：due_at 顺延为新到期日、renew_count 自增 1。WHERE 带
+     * {@code status = 'BORROWED' AND renew_count = 0} 守卫——并发窗口内记录被还 /
+     * 被续时本更新不落笔（防把 due_at 写到 RETURNED 行上），返回受影响行数供
+     * 调用方重载重判；表级 CHECK（renew_count BETWEEN 0 AND 1）为第二道兜底。
+     */
+    public int renew(int id, String newDueAt) {
+        return jdbc.update(
+                "UPDATE borrow_records SET due_at = ?, renew_count = renew_count + 1 "
+                        + "WHERE id = ? AND status = 'BORROWED' AND renew_count = 0",
+                newDueAt, id);
     }
 }

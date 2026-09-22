@@ -87,6 +87,19 @@ public class ReservationRepository {
         return jdbc.query(sql.toString(), MAPPER, args.toArray());
     }
 
+    /**
+     * 该书是否存在「其他读者」的仍生效预约（WAITING / HELD，续借阻断校验 BE-B11）：
+     * 他人在排队或保留中则该在借书不可续借（续借会继续推迟副本回池）；本人预约不拦
+     * （与 {@link #existsHeldByOther} 的「他人」口径一致）。
+     */
+    public boolean existsActiveByOther(int bookId, int readerId) {
+        List<Integer> counts = jdbc.query(
+                "SELECT COUNT(*) FROM reservations WHERE book_id = ? AND reader_id <> ? AND "
+                        + ACTIVE_STATUS_PREDICATE,
+                (rs, i) -> rs.getInt(1), bookId, readerId);
+        return counts.get(0) > 0;
+    }
+
     /** 该书是否存在读者的仍生效预约（WAITING / HELD）——重复预约校验。 */
     public boolean existsActiveByReaderAndBook(int readerId, int bookId) {
         List<Integer> counts = jdbc.query(

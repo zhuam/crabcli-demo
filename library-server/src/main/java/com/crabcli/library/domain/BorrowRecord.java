@@ -36,8 +36,12 @@ public record BorrowRecord(int id, int readerId, int bookId, String borrowedAt, 
         return Math.max(0, ChronoUnit.DAYS.between(dueDate(), today));
     }
 
-    /** due_at 存 ISO-8601 UTC 文本，日期部分取前 10 字符（列约束 NOT NULL，无缺省分支）。 */
-    private LocalDate dueDate() {
+    /**
+     * due_at 存 ISO-8601 UTC 文本，日期部分取前 10 字符（列约束 NOT NULL，无缺省分支）。
+     * 本类内部派生逾期用；续借（BE-B11）以 {@code dueDate().plusWeeks(loanWeeks)}
+     * 从原到期日顺延，故对业务层开放。
+     */
+    public LocalDate dueDate() {
         return LocalDate.parse(dueAt.substring(0, 10));
     }
 }

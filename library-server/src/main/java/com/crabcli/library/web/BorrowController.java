@@ -8,18 +8,23 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * 借书 / 还书契约（BE-B08 / Issue #123、BE-B10 / Issue #125）：
+ * 借书 / 还书 / 续借契约（BE-B08 / Issue #123、BE-B10 / Issue #125、BE-B11 / Issue #126）：
  * {@code POST /api/borrows} → 201 返回创建的借阅记录（status=BORROWED，dueAt 按
  * 读者类型借期）；规则拒绝见 {@code BorrowRuleValidator} 的 409 错误码契约，缺失
  * 引用 404。{@code POST /api/borrows/{id}/return} → 200 返回还书后的记录
  * （status=RETURNED、returnedAt=当日；有排队预约时同事务递补队首 WAITING → HELD），
  * 404 BORROW_NOT_FOUND、非在借再还 409 BORROW_NOT_ACTIVE。
- * 鉴权由 SecurityConfig 既有规则覆盖（#118：borrows 写 LIBRARIAN/ADMIN），
- * 这里不再重复。
+ * {@code PUT /api/borrows/{id}/renew} → 200 返回续借后的借阅记录（dueAt 原到期日
+ * 顺延、renewCount 变 1）；规则拒绝码见 {@code RenewService}（404 BORROW_NOT_FOUND /
+ * 409 BORROW_NOT_ACTIVE、RENEW_BLOCKED_BY_OVERDUE、RENEW_LIMIT_REACHED、
+ * RENEW_BLOCKED_BY_RESERVATION）。
+ * 鉴权由 SecurityConfig 既有规则覆盖（#118：borrows 写 LIBRARIAN/ADMIN，
+ * PUT /api/borrows/** 恰好承接续借路由），这里不再重复。
  */
 @RestController
 public class BorrowController {
@@ -38,5 +43,10 @@ public class BorrowController {
     @PostMapping("/api/borrows/{id}/return")
     public BorrowRecord returnBook(@PathVariable int id) {
         return service.returnBook(id);
+    }
+
+    @PutMapping("/api/borrows/{id}/renew")
+    public ResponseEntity<BorrowRecord> renew(@PathVariable int id) {
+        return ResponseEntity.ok(service.renew(id));
     }
 }

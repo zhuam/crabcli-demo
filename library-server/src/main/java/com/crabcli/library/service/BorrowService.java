@@ -17,7 +17,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * 借书 / 还书业务（BE-B08 / Issue #123、BE-B10 / Issue #125）：借出为加载档案 →
+ * 借书 / 还书 / 续借业务（BE-B08 / Issue #123、BE-B10 / Issue #125、BE-B11 / Issue #126）：
+ * 借出为加载档案 →
  * 规则校验链（顺序契约定稿，见 {@link BorrowRuleValidator}）→ 落借阅行。借期按读者
  * 类型参数化：{@code dueDate = borrowDate + loanWeeks × 7 天}（NORMAL 4 周 / TEACHER
  * 8 周，reader_types PUT 后下一次借出即按新值）。时间列沿 schema 约定存 TEXT ISO-8601
@@ -26,6 +27,8 @@ import org.springframework.transaction.annotation.Transactional;
  * <p>错误码：404 {@code READER_NOT_FOUND} / {@code BOOK_NOT_FOUND}（沿用 #120/#121
  * 同码同语义）；校验链拒绝码见 {@link BorrowRuleValidator}；还书 404
  * {@code BORROW_NOT_FOUND}、非在借再还 409 {@code BORROW_NOT_ACTIVE}。
+ * <p>续借入口（BE-B11 / Issue #126）：{@link #renew(int)} 薄委托
+ * {@link RenewService}——规则与写路径归续借域，本类保持借出 / 还书域职责单一。
  */
 @Service
 public class BorrowService {
@@ -36,16 +39,19 @@ public class BorrowService {
     private final BorrowRepository borrowRepository;
     private final BorrowRuleValidator validator;
     private final ReservationExpirySweeper sweeper;
+    private final RenewService renewService;
 
     public BorrowService(ReaderRepository readerRepository, BookRepository bookRepository,
                          ReaderTypeRepository readerTypeRepository, BorrowRepository borrowRepository,
-                         BorrowRuleValidator validator, ReservationExpirySweeper sweeper) {
+                         BorrowRuleValidator validator, ReservationExpirySweeper sweeper,
+                         RenewService renewService) {
         this.readerRepository = readerRepository;
         this.bookRepository = bookRepository;
         this.readerTypeRepository = readerTypeRepository;
         this.borrowRepository = borrowRepository;
         this.validator = validator;
         this.sweeper = sweeper;
+        this.renewService = renewService;
     }
 
     /** 借出一本：校验链全过 → 落 status=BORROWED 行，返回创建后的借阅记录。 */
@@ -97,5 +103,10 @@ public class BorrowService {
         borrowRepository.markReturned(borrowId, LocalDate.now() + "T00:00:00.000Z");
         sweeper.promoteNextWaiting(record.bookId());
         return borrowRepository.findById(borrowId).orElseThrow();
+    }
+
+    /** 续借入口（BE-B11）：薄委托 {@link RenewService}，规则与写路径归续借域。 */
+    public BorrowRecord renew(int borrowRecordId) {
+        return renewService.renew(borrowRecordId);
     }
 }
