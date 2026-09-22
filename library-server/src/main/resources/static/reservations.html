@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>预约管理 - 图书馆管理系统</title>
+    <style>
+        body { margin: 0; background: #f3f4f6; color: #111827; font-family: system-ui, sans-serif; font-size: 14px; }
+        .page { max-width: 960px; margin: 24px auto 40px; padding: 0 16px; }
+        .card { background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; padding: 16px 20px; margin-bottom: 12px; }
+        .toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 12px; }
+        .toolbar select { padding: 8px 10px; font-size: 14px; border: 1px solid #d1d5db; border-radius: 6px; outline: none; background: #fff; }
+        .toolbar select:focus { border-color: #2563eb; }
+        .toolbar .grow { flex: 1; }
+        .btn { padding: 8px 14px; font-size: 14px; border: 1px solid #d1d5db; background: #fff; border-radius: 6px; cursor: pointer; color: #374151; }
+        .btn:hover:not(:disabled) { background: #f3f4f6; }
+        .btn:disabled { opacity: .5; cursor: not-allowed; }
+        .btn-primary { background: #2563eb; border-color: #2563eb; color: #fff; }
+        .btn-primary:hover:not(:disabled) { background: #1d4ed8; }
+        table { width: 100%; border-collapse: collapse; background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; overflow: hidden; }
+        th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid #f3f4f6; vertical-align: middle; }
+        th { font-size: 13px; color: #6b7280; font-weight: 500; background: #f9fafb; white-space: nowrap; }
+        tbody tr:last-child td { border-bottom: none; }
+        td .actions { display: flex; gap: 6px; }
+        td .actions .btn { padding: 4px 10px; font-size: 13px; }
+        .row-highlight { animation: rowHighlight 2.5s forwards; }
+        @keyframes rowHighlight { from { background: #fef3c7; } to { background: transparent; } }
+        .empty { text-align: center; padding: 48px 0 40px; color: #6b7280; }
+        .empty p { margin: 0 0 16px; }
+        /* 页面级错误条（加载失败，UX U5/#135：骨架行 + 页面级错误条，后续 records.html 同模式） */
+        .page-error { display: flex; align-items: center; gap: 12px; background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; border-radius: 8px; padding: 10px 14px; margin-bottom: 12px; }
+        .page-error[hidden] { display: none; }
+        .page-error .btn { color: #991b1b; border-color: #fca5a5; }
+        .page-error .btn:hover:not(:disabled) { background: #fee2e2; }
+        /* 骨架行：数据未到时的占位行（shimmer），结构同正式表格 */
+        .skeleton-bar { height: 12px; border-radius: 6px; background: linear-gradient(90deg, #eef0f3 25%, #e3e6ea 37%, #eef0f3 63%); background-size: 400% 100%; animation: shimmer 1.2s infinite; }
+        @keyframes shimmer { 0% { background-position: 100% 0; } 100% { background-position: 0 0; } }
+        #reserve-form-card h2 { font-size: 16px; margin: 0 0 4px; }
+        #reserve-form-card label { display: block; font-size: 13px; color: #374151; margin: 12px 0 4px; }
+        #reserve-form-card select { width: 100%; box-sizing: border-box; padding: 8px 10px; font-size: 14px; border: 1px solid #d1d5db; border-radius: 6px; outline: none; background: #fff; }
+        #reserve-form-card select:focus { border-color: #2563eb; }
+        .field-hint { color: #9ca3af; font-size: 12px; margin: 4px 0 0; }
+        .form-actions { margin-top: 16px; display: flex; gap: 8px; }
+    </style>
+</head>
+<body>
+    <main class="page">
+        <div class="toolbar">
+            <select id="filter-status"></select>
+            <span class="grow"></span>
+            <button id="add-btn" class="btn btn-primary">新建预约</button>
+        </div>
+
+        <!-- 新建预约表单：内联卡片，拒绝码行内直显（#135），保存成功关闭并刷新列表 -->
+        <form id="reserve-form-card" class="card" hidden novalidate>
+            <h2>新建预约</h2>
+            <div id="form-error-slot"></div>
+            <label for="f-reader">读者</label>
+            <select id="f-reader"></select>
+            <label for="f-book">书籍</label>
+            <select id="f-book"></select>
+            <p class="field-hint" id="book-hint"></p>
+            <div class="form-actions">
+                <button id="form-save" type="submit" class="btn btn-primary">创建预约</button>
+                <button id="form-cancel" type="button" class="btn">取消</button>
+            </div>
+        </form>
+
+        <!-- 页面级错误条：列表/基础数据加载失败（区别于表单行内错误） -->
+        <div id="page-error" class="page-error" hidden>
+            <span id="page-error-text"></span>
+            <button id="page-error-retry" type="button" class="btn">重试</button>
+        </div>
+
+        <div id="list-slot"></div>
+    </main>
+
+    <script src="js/dict.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/nav.js"></script>
+    <script>
+    // 预约管理页（WEB-4 / Issue #135）。后端契约见 ReservationController（BE-B09 / #124）：
+    // GET  /api/reservations?status= -> ReservationView[] 平铺数组（本端点非分页，#124 定稿）
+    //      视图字段 {id,readerId,bookId,status,holdExpiresAt,queuePosition,createdAt,updatedAt}
+    // POST /api/reservations {readerId,bookId} -> 201；拒绝码 READER_INACTIVE / ALREADY_BORROWED /
+    //      DUPLICATE_RESERVATION / RESERVATION_NOT_ALLOWED（409，中文 message 行内直显）
+    // POST /api/reservations/{id}/cancel -> 200；RESERVATION_NOT_ACTIVE 409
+    // 注：视图保留到期字段为 holdExpiresAt（issue 正文 holdUntil 为过时叫法，以 DTO 为准）；
+    //     EXPIRED 由服务端惰性结算结出（ReservationExpirySweeper），前端只渲染不判过期。
+    (function () {
+      'use strict';
+
+      var state = {
+        status: '',        // 列表状态过滤（空=全部）
+        items: [],         // 预约原始数据
+        readerMap: {},     // id -> Reader，行标签与确认文案取名字用
+        bookMap: {},       // id -> Book，同上
+        highlightId: null  // 创建成功后高亮的行
+      };
+
+      var el = function (id) { return document.getElementById(id); };
+      var listSlot = el('list-slot');
+      var pageErrorBar = el('page-error');
+      var formCard = el('reserve-form-card');
+
+      // ---- 页面级错误条 ----
+      function showPageError(message) {
+        el('page-error-text').textContent = message;
+        pageErrorBar.hidden = false;
+      }
+
+      // ---- 基础数据：读者 / 书籍逐页取全量 ----
+      // 契约 {items,total,page,size}，size 上限 100（服务端钳制）；以 total 判断取完，
+      // 空页终止兜底防服务端 total 异常时死循环。
+      function fetchAll(path) {
+        function collect(page, acc) {
+          return Api.get(path, { page: page, size: 100 }).then(function (p) {
+            acc = acc.concat(p.items);
+            if (p.items.length === 0 || acc.length >= p.total) return acc;
+            return collect(page + 1, acc);
+          });
+        }
+        return collect(1, []);
+      }
+
+      function indexBy(list) {
+        var map = {};
+        list.forEach(function (item) { map[item.id] = item; });
+        return map;
+      }
+
+      function fillSelect(select, placeholder, options) {
+        select.textContent = '';
+        var ph = document.createElement('option');
+        ph.value = '';
+        ph.textContent = placeholder;
+        select.appendChild(ph);
+        options.forEach(function (opt) {
+          var node = document.createElement('option');
+          node.value = opt.value;
+          node.textContent = opt.label;
+          select.appendChild(node);
+        });
+      }
+
+      function fillReaderSelect() {
+        var options = Object.keys(state.readerMap).map(function (id) {
+          var r = state.readerMap[id];
+          return { value: id, label: r.name + '（' + r.cardNo + '）' + (r.status === 'INACTIVE' ? '【已注销】' : '') };
+        });
+        fillSelect(el('f-reader'), '请选择读者', options);
+      }
+
+      // 下架书籍不进新建下拉（避免制造服务端语义外的预约），仍保留在 bookMap 供历史行显示
+      function fillBookSelect() {
+        var options = Object.keys(state.bookMap)
+          .filter(function (id) { return state.bookMap[id].status !== 'WITHDRAWN'; })
+          .map(function (id) {
+            var b = state.bookMap[id];
+            return { value: id, label: b.title + '（' + b.bookCode + '）' };
+          });
+        fillSelect(el('f-book'), '请选择书籍', options);
+      }
+
+      function readerLabel(readerId) {
+        var r = state.readerMap[readerId];
+        return r ? r.name + '（' + r.cardNo + '）' : '读者 #' + readerId;
+      }
+
+      function bookLabel(bookId) {
+        var b = state.bookMap[bookId];
+        return b ? b.title + '（' + b.bookCode + '）' : '书籍 #' + bookId;
+      }
+
+      // ---- 时间展示 ----
+      // createdAt 为 ISO-8601 UTC 字面，按浏览器时区转 YYYY-MM-DD HH:mm；
+      // holdExpiresAt 是「LocalDate + T00:00:00.000Z」的日历日语义字面（sweeper 同款），
+      // 只取日期字面展示，不做时区换算（换算会在东八区外显示成前一天）。
+      function formatDateTime(iso) {
+        if (!iso) return '';
+        var d = new Date(iso);
+        if (isNaN(d.getTime())) return iso;
+        function p(n) { return (n < 10 ? '0' : '') + n; }
+        return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) +
+          ' ' + p(d.getHours()) + ':' + p(d.getMinutes());
+      }
+
+      // 剩余天数：与 ReservationExpirySweeper 的比较口径对齐——两侧都取 UTC 日历日
+      // （sweeper 以 strftime('now') 字典序比较，到期即 UTC 当日零点），差整天数即剩余天数。
+      function remainingDays(holdExpiresAt) {
+        var holdDay = Date.parse(holdExpiresAt.slice(0, 10) + 'T00:00:00Z');
+        var todayUtc = Date.parse(new Date().toISOString().slice(0, 10) + 'T00:00:00Z');
+        return Math.round((holdDay - todayUtc) / 86400000);
+      }
+
+      // ---- 列表加载与渲染 ----
+      function showSkeleton() {
+        var bar = '<div class="skeleton-bar"></div>';
+        var cells = new Array(7).join('<td>' + bar + '</td>'); // 6 列
+        var rows = new Array(6).join('<tr>' + cells + '</tr>'); // 5 行
+        listSlot.innerHTML =
+          '<table>' +
+          '<thead><tr><th>读者</th><th>书籍</th><th>状态</th><th>队列 / 保留</th><th>创建时间</th><th>操作</th></tr></thead>' +
+          '<tbody>' + rows + '</tbody>' +
+          '</table>';
+      }
+
+      // 排队/保留列：派生信息全部来自服务端结算后字段，前端不推算（#124 契约）
+      function queueOrHoldCell(r) {
+        if (r.status === 'WAITING') return '排队第 ' + r.queuePosition + ' 位';
+        if (r.status === 'HELD') {
+          var days = remainingDays(r.holdExpiresAt);
+          return '保留中，至 ' + r.holdExpiresAt.slice(0, 10) +
+            '（' + (days <= 0 ? '剩余不足 1 天' : '剩余 ' + days + ' 天') + '）';
+        }
+        return '';
+      }
+
+      function load() {
+        showSkeleton();
+        pageErrorBar.hidden = true;
+        Api.get('/api/reservations', { status: state.status }).then(function (data) {
+          state.items = data;
+          renderList();
+        }, function (err) {
+          // 401/403 已由 api.js 处理（跳登录 / toast）；其余走页面级错误条
+          listSlot.innerHTML = '';
+          showPageError(err instanceof Api.ApiError ? Dict.rejectText(err) : '加载失败，请稍后重试');
+        });
+      }
+
+      function renderList() {
+        if (state.items.length === 0) {
+          listSlot.innerHTML = '<div class="card empty"><p>暂无预约</p></div>';
+          return;
+        }
+
+        var rows = state.items.map(function (r) {
+          var hl = r.id === state.highlightId ? ' class="row-highlight"' : '';
+          var cancelBtn = (r.status === 'WAITING' || r.status === 'HELD')
+            ? '<button type="button" class="btn btn-danger" data-action="cancel" data-id="' + r.id + '">取消</button>'
+            : '';
+          return '<tr' + hl + '>' +
+            '<td>' + UI.escapeHtml(readerLabel(r.readerId)) + '</td>' +
+            '<td>' + UI.escapeHtml(bookLabel(r.bookId)) + '</td>' +
+            '<td>' + UI.badge(r.status) + '</td>' +
+            '<td>' + UI.escapeHtml(queueOrHoldCell(r)) + '</td>' +
+            '<td>' + UI.escapeHtml(formatDateTime(r.createdAt)) + '</td>' +
+            '<td><span class="actions">' + cancelBtn + '</span></td>' +
+            '</tr>';
+        }).join('');
+
+        listSlot.innerHTML =
+          '<table>' +
+          '<thead><tr><th>读者</th><th>书籍</th><th>状态</th><th>队列 / 保留</th><th>创建时间</th><th>操作</th></tr></thead>' +
+          '<tbody>' + rows + '</tbody>' +
+          '</table>';
+        state.highlightId = null; // 高亮一次性：渲染即消费
+      }
+
+      // ---- 新建预约 ----
+      function openCreate() {
+        formCard.reset();
+        el('book-hint').textContent = '';
+        UI.inlineError(el('form-error-slot'), '');
+        formCard.hidden = false;
+      }
+
+      function closeForm() {
+        formCard.hidden = true;
+      }
+
+      function updateBookHint() {
+        var b = state.bookMap[parseInt(el('f-book').value, 10)];
+        el('book-hint').textContent = b ? '该书当前可借 ' + b.availableCopies + ' 本' : '';
+      }
+
+      function save() {
+        UI.inlineError(el('form-error-slot'), '');
+        var readerId = parseInt(el('f-reader').value, 10);
+        var bookId = parseInt(el('f-book').value, 10);
+        if (!readerId) { UI.inlineError(el('form-error-slot'), '请选择读者'); return; }
+        if (!bookId) { UI.inlineError(el('form-error-slot'), '请选择书籍'); return; }
+
+        var btn = el('form-save');
+        btn.disabled = true;
+        Api.post('/api/reservations', { readerId: readerId, bookId: bookId }).then(function (created) {
+          btn.disabled = false;
+          closeForm();
+          UI.toast('预约已创建', 'success');
+          state.highlightId = created.id;
+          load();
+        }, function (err) {
+          btn.disabled = false;
+          if (!(err instanceof Api.ApiError)) {
+            UI.inlineError(el('form-error-slot'), '网络异常，请检查网络后重试');
+            return;
+          }
+          // 拒绝码分支：后端中文 message 行内直显（RESERVATION_NOT_ALLOWED 文案含「可借」/
+          // DUPLICATE_RESERVATION / ALREADY_BORROWED / READER_INACTIVE），缺失时 Dict 兜底
+          UI.inlineError(el('form-error-slot'), Dict.rejectText(err));
+        });
+      }
+
+      // ---- 取消预约 ----
+      function cancelReservation(id) {
+        var r = null;
+        state.items.forEach(function (item) { if (item.id === id) r = item; });
+        if (!r) return;
+
+        var message = '确定取消读者「' + readerLabel(r.readerId) + '」对「' + bookLabel(r.bookId) + '」的' +
+          (r.status === 'HELD'
+            ? '保留吗？释放的副本将递补给下一位排队读者。'
+            : '预约吗？取消后退出排队。');
+        if (!window.confirm(message)) return;
+
+        Api.post('/api/reservations/' + id + '/cancel').then(function () {
+          UI.toast('预约已取消', 'success');
+          load(); // 取消 HELD 会触发服务端递补，整表刷新取最新 queuePosition
+        }, function (err) {
+          if (err instanceof Api.ApiError) {
+            // RESERVATION_NOT_ACTIVE 等 409：后端中文文案 toast 直显；
+            // 403 已由 api.js 统一提示（无权限），不重复弹
+            if (err.status !== 403) UI.toast(Dict.rejectText(err), 'error');
+          } else {
+            UI.toast('网络异常，请稍后重试', 'error');
+          }
+        });
+      }
+
+      // ---- 事件绑定 ----
+      function bind() {
+        var statusOptions = Object.keys(Dict.reservationStatus).map(function (code) {
+          return { value: code, label: Dict.reservationStatus[code] };
+        });
+        fillSelect(el('filter-status'), '全部状态', statusOptions);
+
+        el('filter-status').addEventListener('change', function () {
+          state.status = el('filter-status').value;
+          load();
+        });
+        el('add-btn').addEventListener('click', openCreate);
+
+        el('f-book').addEventListener('change', updateBookHint);
+        formCard.addEventListener('submit', function (e) {
+          e.preventDefault(); // 回车与点击统一走 submit（readers.html 同款）
+          save();
+        });
+        el('form-cancel').addEventListener('click', closeForm);
+
+        listSlot.addEventListener('click', function (e) {
+          var btn = e.target.closest('button[data-action]');
+          if (!btn) return;
+          if (btn.getAttribute('data-action') === 'cancel') {
+            cancelReservation(parseInt(btn.getAttribute('data-id'), 10));
+          }
+        });
+
+        el('page-error-retry').addEventListener('click', init);
+      }
+
+      // ---- 启动：角色守卫 -> 导航 -> 基础数据 + 列表 ----
+      // 列表必须等基础数据 settle 再拉：否则渲染可能早于 bookMap 填充，行落在 #id
+      // 兜底且无人触发重绘（jsdom 并发桩首次跑出的竞态）。
+      function init() {
+        var failed = 0;
+        function tolerate() { failed += 1; return null; } // 失败不拦列表（历史行退回 #id 标签）
+        Promise.all([
+          fetchAll('/api/readers').then(function (list) {
+            state.readerMap = indexBy(list);
+            fillReaderSelect();
+          }, tolerate),
+          fetchAll('/api/books').then(function (list) {
+            state.bookMap = indexBy(list);
+            fillBookSelect();
+          }, tolerate)
+        ]).then(function () {
+          if (failed > 0) showPageError('读者或书籍数据加载失败，新建预约暂不可用');
+          load();
+        });
+      }
+
+      Auth.requireRole('LIBRARIAN', 'ADMIN').then(function (user) {
+        Nav.render(user);
+        bind();
+        init();
+      });
+    })();
+    </script>
+</body>
+</html>
