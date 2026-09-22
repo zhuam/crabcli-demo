@@ -1,5 +1,6 @@
 package com.crabcli.library.web;
 
+import com.crabcli.library.auth.LoginUser;
 import com.crabcli.library.domain.BorrowRecord;
 import com.crabcli.library.service.BorrowService;
 import com.crabcli.library.web.dto.BorrowDtos.BorrowRequest;
@@ -7,6 +8,7 @@ import com.crabcli.library.web.dto.BorrowDtos.LostRequest;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -55,8 +57,9 @@ public class BorrowController {
     }
 
     @PutMapping("/api/borrows/{id}/renew")
-    public ResponseEntity<BorrowRecord> renew(@PathVariable int id) {
-        return ResponseEntity.ok(service.renew(id));
+    public ResponseEntity<BorrowRecord> renew(@PathVariable int id,
+                                              @AuthenticationPrincipal LoginUser actor) {
+        return ResponseEntity.ok(service.renew(id, actor));
     }
 
     @PostMapping("/api/borrows/{id}/lost")

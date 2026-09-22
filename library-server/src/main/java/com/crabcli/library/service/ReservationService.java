@@ -114,9 +114,21 @@ public class ReservationService {
         return toView(reservationRepository.findById(reservationId).orElseThrow());
     }
 
-    /** 预约列表（可按 readerId / bookId / status 过滤，均可选）：入口先惰性结算。 */
-    public List<ReservationView> list(Integer readerId, Integer bookId, String status) {
+    /**
+     * 预约列表（可按 readerId / bookId / status 过滤，均可选）：入口先惰性结算。
+     * <p>READER 仅可查本人（WEB-8 / #139 自助页，SecurityConfig 对 GET 放行至
+     * authenticated）：readerId 缺省即本人、显式传他人 403 {@code FORBIDDEN}
+     * （镜像 {@code BorrowQueryService#search} 的收权口径）；馆员 / 管理员可查任意。
+     */
+    public List<ReservationView> list(LoginUser actor, Integer readerId, Integer bookId,
+                                      String status) {
         sweeper.sweepExpiredHolds();
+        if (actor.role() == Role.READER) {
+            if (readerId != null && !readerId.equals(actor.readerId())) {
+                throw new ApiException("FORBIDDEN", "只能查询本人预约", HttpStatus.FORBIDDEN);
+            }
+            readerId = actor.readerId();
+        }
         return reservationRepository.findByFilter(readerId, bookId, status).stream()
                 .map(this::toView)
                 .toList();

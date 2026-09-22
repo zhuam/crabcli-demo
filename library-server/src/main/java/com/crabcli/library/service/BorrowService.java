@@ -1,5 +1,6 @@
 package com.crabcli.library.service;
 
+import com.crabcli.library.auth.LoginUser;
 import com.crabcli.library.domain.Book;
 import com.crabcli.library.domain.BorrowRecord;
 import com.crabcli.library.domain.BorrowStatus;
@@ -111,8 +112,8 @@ public class BorrowService {
     }
 
     /** 续借入口（BE-B11）：薄委托 {@link RenewService}，规则与写路径归续借域。 */
-    public BorrowRecord renew(int borrowRecordId) {
-        return renewService.renew(borrowRecordId);
+    public BorrowRecord renew(int borrowRecordId, LoginUser actor) {
+        return renewService.renew(borrowRecordId, actor);
     }
 
     /** 丢失登记入口（BE-B13）：薄委托 {@link LostCompensationService}，规则与写路径归赔偿域。 */

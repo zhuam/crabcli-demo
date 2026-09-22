@@ -134,11 +134,16 @@ class AuthRbacTest {
     }
 
     @Test
-    void readerListReservationsIs403() throws Exception {
-        // /api/reservations/** 为馆员/管理员专属（SecurityConfig:85）：READER 整体 403，
-        // 不存在「可看自己、看不了他人」的部分授权形态
+    void readerListReservationsIsScopedToSelf() throws Exception {
+        // WEB-8 / #139 契约翻转：GET /api/reservations 放行至 authenticated，READER
+        // 由服务层钉定 readerId——缺省即本人（200），显式传他人 readerId → 403 FORBIDDEN
+        // （旧契约「READER 整体 403」随自助页交付废止，SecurityConfig 例外注释同步）
         mockMvc.perform(get("/api/reservations")
                         .header("Authorization", "Bearer " + tokenFor("reader01")))
+                .andExpect(status().isOk());
+        mockMvc.perform(get("/api/reservations")
+                        .header("Authorization", "Bearer " + tokenFor("reader01"))
+                        .param("readerId", "999999"))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.code").value("FORBIDDEN"));
     }

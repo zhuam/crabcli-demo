@@ -25,10 +25,12 @@ import org.springframework.web.bind.annotation.RestController;
  *       副本并递补下一位 WAITING）；READER 仅本人（服务端校验归属，403 FORBIDDEN），
  *       SecurityConfig 对本路由放行至 authenticated；</li>
  *   <li>{@code GET /api/reservations} → 200 列表（入口先惰性结算，状态永不过期）。
+ *       READER 仅本人（服务层钉定 readerId，显式传他人 403 FORBIDDEN，WEB-8 /
+ *       #139 自助页；SecurityConfig 对 GET 放行至 authenticated）。
  *       后续 GET /api/borrows（#127）入口同款接入 ReservationExpirySweeper。</li>
  * </ul>
- * 建预约与列表沿用既有馆员规则（reservations 写操作 LIBRARIAN/ADMIN）；取消在
- * SecurityConfig 例外放行后由服务层按角色收权。
+ * 建预约沿用馆员规则（LIBRARIAN/ADMIN）；取消与查询在 SecurityConfig 例外放行后
+ * 由服务层按角色收权。
  */
 @RestController
 public class ReservationController {
@@ -50,9 +52,10 @@ public class ReservationController {
     }
 
     @GetMapping("/api/reservations")
-    public List<ReservationView> list(@RequestParam(required = false) Integer readerId,
+    public List<ReservationView> list(@AuthenticationPrincipal LoginUser actor,
+                                      @RequestParam(required = false) Integer readerId,
                                       @RequestParam(required = false) Integer bookId,
                                       @RequestParam(required = false) String status) {
-        return service.list(readerId, bookId, status);
+        return service.list(actor, readerId, bookId, status);
     }
 }

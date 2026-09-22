@@ -1,5 +1,7 @@
 package com.crabcli.library.service;
 
+import com.crabcli.library.auth.LoginUser;
+import com.crabcli.library.auth.Role;
 import com.crabcli.library.domain.BorrowRecord;
 import com.crabcli.library.domain.BorrowStatus;
 import com.crabcli.library.domain.Reader;
@@ -9,6 +11,7 @@ import com.crabcli.library.repo.ReaderRepository;
 import com.crabcli.library.repo.ReaderTypeRepository;
 import com.crabcli.library.repo.ReservationRepository;
 import java.time.LocalDate;
+import java.util.Objects;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
@@ -55,11 +58,20 @@ public class RenewService {
         this.sweeper = sweeper;
     }
 
-    /** 续借一本：校验链全过 → 原到期日顺延、renewCount 变 1，返回续借后的借阅记录。 */
-    public BorrowRecord renew(int borrowRecordId) {
+    /**
+     * 续借一本：校验链全过 → 原到期日顺延、renewCount 变 1，返回续借后的借阅记录。
+     * <p>READER 仅可续借本人借阅（WEB-8 / #139 自助续借，SecurityConfig 对本路由放行
+     * 至 authenticated），他人借阅 403 {@code FORBIDDEN}；馆员 / 管理员可续借任意
+     * （#126 既有行为不变）。归属判定与 {@code ReservationService#cancel} 同款。
+     */
+    public BorrowRecord renew(int borrowRecordId, LoginUser actor) {
         BorrowRecord record = borrowRepository.findById(borrowRecordId)
                 .orElseThrow(() -> new ApiException("BORROW_NOT_FOUND", "借阅记录不存在",
                         HttpStatus.NOT_FOUND));
+        if (actor.role() == Role.READER
+                && !Objects.equals(record.readerId(), actor.readerId())) {
+            throw new ApiException("FORBIDDEN", "只能续借本人借阅", HttpStatus.FORBIDDEN);
+        }
         LocalDate today = LocalDate.now();
         validate(record, today);
 
@@ -67,7 +79,7 @@ public class RenewService {
                 .plusWeeks(loanWeeksOf(record.readerId()));
         if (borrowRepository.renew(borrowRecordId, newDueDate + "T00:00:00.000Z") == 0) {
             // 并发窗口内状态已变：以最新行重判（有界一次，SQLite 单写者下必收敛）
-            return renew(borrowRecordId);
+            return renew(borrowRecordId, actor);
         }
         return borrowRepository.findById(borrowRecordId).orElseThrow();
     }
