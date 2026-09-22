@@ -65,6 +65,15 @@ public class BorrowRepository {
                 MAPPER, readerId);
     }
 
+    /** 读者是否仍占用某书的借阅（占用判定与 {@link #ACTIVE_STATUS_PREDICATE} 同一口径）——预约 ALREADY_BORROWED 校验（BE-B09）。 */
+    public boolean existsActiveByReaderAndBook(int readerId, int bookId) {
+        List<Integer> counts = jdbc.query(
+                "SELECT COUNT(*) FROM borrow_records WHERE reader_id = ? AND book_id = ? AND "
+                        + ACTIVE_STATUS_PREDICATE,
+                (rs, i) -> rs.getInt(1), readerId, bookId);
+        return counts.get(0) > 0;
+    }
+
     /**
      * 借出落一行（BE-B08）：status 走 DEFAULT 'BORROWED'、renew_count 走 DEFAULT 0、
      * returned_at / compensation_status 保持 NULL，返回生成 id。

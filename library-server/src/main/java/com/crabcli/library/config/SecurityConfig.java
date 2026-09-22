@@ -33,7 +33,8 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
  *       匿名可取（前端托管收口 BE-B15 / #130）；</li>
  *   <li>管理写操作按角色收紧——基础数据维护（reader-types / categories / borrow-rules）
  *       仅 ADMIN；馆员业务（books / borrows / reservations / readers 的写操作）
- *       LIBRARIAN 或 ADMIN；</li>
+ *       LIBRARIAN 或 ADMIN（例外：预约取消路由 POST /api/reservations/&#42;/cancel
+ *       放行至 authenticated，READER 取消本人预约由服务层校验归属，#124）；</li>
  *   <li>读操作暂统一 authenticated，自助查询场景（#127 借阅查询、WEB-8 自助页）
  *       由后续 issue 按需收紧或定向放行；</li>
  *   <li>401 / 403 直接以统一错误体 {@code {"code","message"}} 落响应——过滤器层
@@ -76,8 +77,12 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.DELETE, "/api/books/**").hasAnyRole("LIBRARIAN", "ADMIN")
                         .requestMatchers(HttpMethod.POST, "/api/borrows/**").hasAnyRole("LIBRARIAN", "ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/api/borrows/**").hasAnyRole("LIBRARIAN", "ADMIN")
-                        .requestMatchers("/api/reservations/**", "/api/readers/**")
-                        .hasAnyRole("LIBRARIAN", "ADMIN")
+                        // 预约取消（BE-B09 / #124，契约定稿第 10 项）：READER 可取消本人预约，
+                        // 归属校验在服务层（ReservationService#cancel）；须先于下方 blanket 规则命中
+                        .requestMatchers(HttpMethod.POST, "/api/reservations/*/cancel")
+                        .authenticated()
+                        .requestMatchers("/api/readers/**").hasAnyRole("LIBRARIAN", "ADMIN")
+                        .requestMatchers("/api/reservations/**").hasAnyRole("LIBRARIAN", "ADMIN")
                         .anyRequest().authenticated())
                 .exceptionHandling(e -> e
                         .authenticationEntryPoint(unauthenticated(objectMapper))
