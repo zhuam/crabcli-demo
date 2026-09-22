@@ -50,12 +50,12 @@ class BorrowRecordTest {
     /** 未归还借出记录：dueAt 传日期部分，时间统一补 00:00:00.000Z。 */
     private BorrowRecord borrowed(String dueDate, String returnedAt) {
         return new BorrowRecord(1, 1, 1, "2026-06-01T00:00:00.000Z", dueDate + "T00:00:00.000Z",
-                returnedAt, 0, "BORROWED", null, "2026-06-01T00:00:00.000Z");
+                returnedAt, 0, "BORROWED", null, null, "2026-06-01T00:00:00.000Z");
     }
 
     /** 指定存储态的借阅记录（due 已过，用于验证非 BORROWED 态透传不受逾期算式影响）。 */
     private BorrowRecord record(String status, String returnedAt) {
         return new BorrowRecord(1, 1, 1, "2026-06-01T00:00:00.000Z", "2026-06-29T00:00:00.000Z",
-                returnedAt, 0, status, null, "2026-06-01T00:00:00.000Z");
+                returnedAt, 0, status, null, null, "2026-06-01T00:00:00.000Z");
     }
 }

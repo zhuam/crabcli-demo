@@ -10,6 +10,7 @@ import com.crabcli.library.repo.BorrowRepository;
 import com.crabcli.library.repo.ReaderRepository;
 import com.crabcli.library.repo.ReaderTypeRepository;
 import com.crabcli.library.web.dto.BorrowDtos.BorrowRequest;
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import org.springframework.http.HttpStatus;
@@ -29,6 +30,8 @@ import org.springframework.transaction.annotation.Transactional;
  * {@code BORROW_NOT_FOUND}、非在借再还 409 {@code BORROW_NOT_ACTIVE}。
  * <p>续借入口（BE-B11 / Issue #126）：{@link #renew(int)} 薄委托
  * {@link RenewService}——规则与写路径归续借域，本类保持借出 / 还书域职责单一。
+ * 丢失登记 / 赔偿结算入口（BE-B13 / Issue #128）：{@link #markLost(int, BigDecimal)} 与
+ * {@link #compensate(int)} 同款薄委托 {@link LostCompensationService}。
  */
 @Service
 public class BorrowService {
@@ -40,11 +43,12 @@ public class BorrowService {
     private final BorrowRuleValidator validator;
     private final ReservationExpirySweeper sweeper;
     private final RenewService renewService;
+    private final LostCompensationService lostCompensationService;
 
     public BorrowService(ReaderRepository readerRepository, BookRepository bookRepository,
                          ReaderTypeRepository readerTypeRepository, BorrowRepository borrowRepository,
                          BorrowRuleValidator validator, ReservationExpirySweeper sweeper,
-                         RenewService renewService) {
+                         RenewService renewService, LostCompensationService lostCompensationService) {
         this.readerRepository = readerRepository;
         this.bookRepository = bookRepository;
         this.readerTypeRepository = readerTypeRepository;
@@ -52,6 +56,7 @@ public class BorrowService {
         this.validator = validator;
         this.sweeper = sweeper;
         this.renewService = renewService;
+        this.lostCompensationService = lostCompensationService;
     }
 
     /** 借出一本：校验链全过 → 落 status=BORROWED 行，返回创建后的借阅记录。 */
@@ -108,5 +113,15 @@ public class BorrowService {
     /** 续借入口（BE-B11）：薄委托 {@link RenewService}，规则与写路径归续借域。 */
     public BorrowRecord renew(int borrowRecordId) {
         return renewService.renew(borrowRecordId);
+    }
+
+    /** 丢失登记入口（BE-B13）：薄委托 {@link LostCompensationService}，规则与写路径归赔偿域。 */
+    public BorrowRecord markLost(int borrowRecordId, BigDecimal compensationAmount) {
+        return lostCompensationService.markLost(borrowRecordId, compensationAmount);
+    }
+
+    /** 赔偿结算入口（BE-B13）：薄委托 {@link LostCompensationService}。 */
+    public BorrowRecord compensate(int borrowRecordId) {
+        return lostCompensationService.compensate(borrowRecordId);
     }
 }

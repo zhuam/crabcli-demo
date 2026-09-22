@@ -1,5 +1,6 @@
 package com.crabcli.library.domain;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 
@@ -13,10 +14,13 @@ import java.time.temporal.ChronoUnit;
  *   <li>{@link #overdueDays(LocalDate)}：{@code max(0, today − dueDate)}，当天 = 0、
  *       超 1 天 = 1；today 由调用方按业务时区给出。</li>
  * </ul>
+ * <p>赔偿域（#128）：compensationStatus 走 PENDING（丢失登记）/ PAID（赔付完成）契约字面
+ * （前端 dict.js compensationStatus 对称）；compensationAmount 为登记金额，非丢失记录为 null。
  */
 public record BorrowRecord(int id, int readerId, int bookId, String borrowedAt, String dueAt,
                            String returnedAt, int renewCount, String status,
-                           String compensationStatus, String createdAt) {
+                           String compensationStatus, BigDecimal compensationAmount,
+                           String createdAt) {
 
     /** 实时派生后的契约状态：存储态非 BORROWED 原样返回，BORROWED 按逾期算式判 OVERDUE。 */
     public BorrowStatus effectiveStatus(LocalDate today) {

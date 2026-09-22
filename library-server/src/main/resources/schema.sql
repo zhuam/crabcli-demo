@@ -69,7 +69,8 @@ CREATE INDEX IF NOT EXISTS idx_books_category ON books(category_id);
 
 -- 借阅记录（F3/F6/F8/F9，#122 契约定稿存储字面：CHECK 接受 BORROWED/RETURNED/LOST/LOST_PAID；
 -- 契约枚举中 OVERDUE 读时派生——returned_at IS NULL AND due_at < 当天，CHECK 拒绝写入；
--- LOST 赔付后流转为 LOST_PAID，compensation_status 记 UNPAID/PAID 留痕；
+-- LOST 登记即记 compensation_status=PENDING 与 compensation_amount（#128），
+-- 赔付后流转 LOST_PAID / PAID 留痕（#128 契约字面，前端 dict.js compensationStatus 对称）；
 -- 续借至多 1 次由 CHECK 兜底。改字面前建的旧库需删除重建以拿到新 CHECK，当前无业务数据）
 CREATE TABLE IF NOT EXISTS borrow_records (
     id                  INTEGER PRIMARY KEY,
@@ -81,7 +82,8 @@ CREATE TABLE IF NOT EXISTS borrow_records (
     renew_count         INTEGER NOT NULL DEFAULT 0 CHECK (renew_count BETWEEN 0 AND 1),
     status              TEXT NOT NULL DEFAULT 'BORROWED'
                         CHECK (status IN ('BORROWED','RETURNED','LOST','LOST_PAID')),
-    compensation_status TEXT CHECK (compensation_status IN ('UNPAID','PAID')),
+    compensation_status TEXT CHECK (compensation_status IN ('PENDING','PAID')),
+    compensation_amount TEXT,          -- 赔偿金额（#128：登记丢失时记录，TEXT 存字面，读方 BigDecimal 解析）
     created_at          TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
 );
 CREATE INDEX IF NOT EXISTS idx_borrow_records_reader ON borrow_records(reader_id);

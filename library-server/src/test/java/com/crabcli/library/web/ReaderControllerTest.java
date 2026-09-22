@@ -322,7 +322,7 @@ class ReaderControllerTest {
                     readerId, bookId);
             jdbc.update("INSERT INTO borrow_records (reader_id, book_id, borrowed_at, due_at, status, "
                     + "compensation_status) VALUES (?, ?, '2026-08-01T00:00:00.000Z', "
-                    + "'2026-08-29T00:00:00.000Z', 'LOST', 'UNPAID')", readerId, bookId);
+                    + "'2026-08-29T00:00:00.000Z', 'LOST', 'PENDING')", readerId, bookId);
             jdbc.update("INSERT INTO borrow_records (reader_id, book_id, borrowed_at, due_at, status, "
                     + "compensation_status) VALUES (?, ?, '2026-07-01T00:00:00.000Z', "
                     + "'2026-07-29T00:00:00.000Z', 'LOST_PAID', 'PAID')", readerId, bookId);

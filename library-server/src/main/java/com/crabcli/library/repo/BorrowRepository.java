@@ -1,6 +1,7 @@
 package com.crabcli.library.repo;
 
 import com.crabcli.library.domain.BorrowRecord;
+import java.math.BigDecimal;
 import java.sql.PreparedStatement;
 import java.sql.Statement;
 import java.time.LocalDate;
@@ -15,10 +16,10 @@ import org.springframework.stereotype.Repository;
 
 /**
  * 借阅记录仓储（BE-B07 口径锚点 + BE-B08 借出写路径 + BE-B10 还书写路径 + BE-B11 续借
- * 写路径 / Issue #122、#123、#125、#126）：borrow_records 表（schema.sql:74 建表，
- * FK→readers/books）。B07 交付占用判定字面，B08 起本类承接借出写路径与按读者查询；
- * B10 增补还书落账（{@link #markReturned}）、B11 增补续借落账（{@link #renew}）；
- * 丢失赔偿写路径归后续。
+ * 写路径 + BE-B13 丢失赔偿写路径 / Issue #122、#123、#125、#126、#128）：borrow_records 表
+ * （schema.sql:74 建表，FK→readers/books）。B07 交付占用判定字面，B08 起本类承接借出写路径
+ * 与按读者查询；B10 增补还书落账（{@link #markReturned}）、B11 增补续借落账（{@link #renew}）、
+ * B13 增补丢失登记 / 赔偿结算落账（{@link #markLost} / {@link #markCompensated}）。
  * <p>{@link #ACTIVE_STATUS_PREDICATE} 是「占用副本的借阅」唯一字面来源，勿在他处复写：
  * 存储 BORROWED 覆盖契约 BORROWED 与 OVERDUE（逾期读时派生不落库）；LOST 均为未赔——
  * 已赔即转 LOST_PAID（契约流转态）。两者计入占用，RETURNED / LOST_PAID 不占；
@@ -41,13 +42,14 @@ public class BorrowRepository {
 
     private static final String SELECT_COLUMNS =
             "SELECT id, reader_id, book_id, borrowed_at, due_at, returned_at, renew_count, "
-                    + "status, compensation_status, created_at FROM borrow_records";
+                    + "status, compensation_status, compensation_amount, created_at FROM borrow_records";
 
     private static final RowMapper<BorrowRecord> MAPPER = (rs, i) -> new BorrowRecord(
             rs.getInt("id"), rs.getInt("reader_id"), rs.getInt("book_id"),
             rs.getString("borrowed_at"), rs.getString("due_at"), rs.getString("returned_at"),
             rs.getInt("renew_count"), rs.getString("status"),
-            rs.getString("compensation_status"), rs.getString("created_at"));
+            rs.getString("compensation_status"), rs.getBigDecimal("compensation_amount"),
+            rs.getString("created_at"));
 
     private final JdbcTemplate jdbc;
 
@@ -194,5 +196,31 @@ public class BorrowRepository {
                 "UPDATE borrow_records SET due_at = ?, renew_count = renew_count + 1 "
                         + "WHERE id = ? AND status = 'BORROWED' AND renew_count = 0",
                 newDueAt, id);
+    }
+
+    /**
+     * 丢失登记落账（BE-B13 / Issue #128）：status → LOST、compensation_status → PENDING、
+     * 记录赔偿金额（TEXT 存 {@code BigDecimal#toPlainString} 字面）。WHERE 带
+     * {@code status = 'BORROWED'} 守卫——并发窗口内记录被还 / 被登记时 0 行命中，
+     * 返回受影响行数供调用方重载重判（同 {@link #renew} 守卫惯例）。
+     */
+    public int markLost(int id, BigDecimal compensationAmount) {
+        return jdbc.update(
+                "UPDATE borrow_records SET status = 'LOST', compensation_status = 'PENDING', "
+                        + "compensation_amount = ? WHERE id = ? AND status = 'BORROWED'",
+                compensationAmount.toPlainString(), id);
+    }
+
+    /**
+     * 赔偿结算落账（BE-B13 / Issue #128）：status → LOST_PAID、compensation_status → PAID，
+     * 金额原样保留（闭环后留痕可查）。WHERE 带丢失待赔守卫
+     * （{@code status = 'LOST' AND compensation_status = 'PENDING'}），返回受影响行数
+     * 供调用方重载重判。
+     */
+    public int markCompensated(int id) {
+        return jdbc.update(
+                "UPDATE borrow_records SET status = 'LOST_PAID', compensation_status = 'PAID' "
+                        + "WHERE id = ? AND status = 'LOST' AND compensation_status = 'PENDING'",
+                id);
     }
 }
