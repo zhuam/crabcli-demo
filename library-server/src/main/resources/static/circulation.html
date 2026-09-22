@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>借还操作台 - 图书馆管理系统</title>
+    <style>
+        body { margin: 0; background: #f3f4f6; color: #111827; font-family: system-ui, sans-serif; font-size: 14px; }
+        .page { max-width: 1080px; margin: 24px auto 40px; padding: 0 16px; }
+        .page-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+        .page-head h1 { font-size: 18px; margin: 0; }
+        .card { background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; padding: 16px 20px; margin-bottom: 12px; }
+        .card h2 { font-size: 16px; margin: 0 0 4px; }
+        .guide { color: #6b7280; font-size: 13px; background: #f9fafb; border: 1px dashed #d1d5db; border-radius: 8px; padding: 8px 12px; margin: 8px 0 0; }
+        .search-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 12px; }
+        .search-row label { font-size: 13px; color: #374151; width: 40px; }
+        .search-row input { flex: 1; min-width: 160px; padding: 8px 10px; font-size: 14px; border: 1px solid #d1d5db; border-radius: 6px; outline: none; background: #fff; color: #111827; }
+        .search-row input:focus { border-color: #2563eb; }
+        .search-row select { flex: 1.4; min-width: 200px; padding: 8px 10px; font-size: 14px; border: 1px solid #d1d5db; border-radius: 6px; outline: none; background: #fff; color: #111827; }
+        .search-row select:focus { border-color: #2563eb; }
+        .btn { padding: 8px 14px; font-size: 14px; border: 1px solid #d1d5db; background: #fff; border-radius: 6px; cursor: pointer; color: #374151; }
+        .btn:hover:not(:disabled) { background: #f3f4f6; }
+        .btn:disabled { opacity: .5; cursor: not-allowed; }
+        .btn-primary { background: #2563eb; border-color: #2563eb; color: #fff; }
+        .btn-primary:hover:not(:disabled) { background: #1d4ed8; }
+        td .actions { display: flex; gap: 6px; align-items: center; }
+        td .actions .btn { padding: 4px 10px; font-size: 13px; }
+        td .actions .muted { color: #9ca3af; font-size: 12px; }
+        .input-error { border-color: #dc2626 !important; }
+        .field-hint { color: #9ca3af; font-size: 12px; margin: 6px 0 0; }
+        /* 读者面板：只读档案 + 实时配额（借出/还书后回查刷新） */
+        #reader-panel { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+        #reader-panel[hidden] { display: none; }
+        #reader-panel .rp-name { font-weight: 600; }
+        #reader-panel .rp-item { color: #374151; font-size: 13px; }
+        .disabled-hint { text-align: center; padding: 40px 0; color: #9ca3af; }
+        table { width: 100%; border-collapse: collapse; }
+        #loans-card table { border: none; }
+        #loans-card { padding-bottom: 8px; }
+        th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid #f3f4f6; vertical-align: middle; }
+        th { font-size: 13px; color: #6b7280; font-weight: 500; background: #f9fafb; white-space: nowrap; }
+        tbody tr:last-child td { border-bottom: none; }
+        tr.row-error td { background: #fef2f2; color: #991b1b; font-size: 13px; }
+        .empty { text-align: center; padding: 40px 0 32px; color: #6b7280; }
+        .empty p { margin: 0; }
+        /* 页面级错误条（列表/面板加载失败） */
+        .page-error { display: flex; align-items: center; gap: 12px; background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; border-radius: 8px; padding: 10px 14px; margin-bottom: 12px; }
+        .page-error[hidden] { display: none; }
+        .page-error .btn { color: #991b1b; border-color: #fca5a5; }
+        .page-error .btn:hover:not(:disabled) { background: #fee2e2; }
+        /* 表格骨架行（shimmer） */
+        .skeleton-bar { height: 12px; border-radius: 6px; background: linear-gradient(90deg, #eef0f3 25%, #e3e6ea 37%, #eef0f3 63%); background-size: 400% 100%; animation: shimmer 1.2s infinite; }
+        @keyframes shimmer { 0% { background-position: 100% 0; } 100% { background-position: 0 0; } }
+    </style>
+</head>
+<body>
+    <main class="page">
+        <div class="page-head">
+            <h1>借还操作台</h1>
+        </div>
+
+        <div id="page-error" class="page-error" hidden>
+            <span id="page-error-text"></span>
+            <button id="page-error-retry" type="button" class="btn">重试</button>
+        </div>
+
+        <!-- 借书卡：读者/书籍搜索 + 确认借出（三步指引，选中读者后隐藏） -->
+        <div class="card" id="borrow-card">
+            <h2>借书</h2>
+            <div id="guide" class="guide">首次借书三步：① 搜索并选择读者 → ② 搜索并选择书籍 → ③ 确认借出</div>
+            <div id="borrow-error-slot"></div>
+            <div class="search-row">
+                <label for="reader-q">读者</label>
+                <input id="reader-q" placeholder="证号 / 姓名搜索" autocomplete="off">
+                <button id="reader-search" type="button" class="btn">搜索读者</button>
+                <select id="reader-pick"></select>
+            </div>
+            <div class="search-row">
+                <label for="book-q">书籍</label>
+                <input id="book-q" placeholder="书名 / 编号 / 关键词搜索" autocomplete="off" disabled>
+                <button id="book-search" type="button" class="btn" disabled>搜索书籍</button>
+                <select id="book-pick" disabled></select>
+            </div>
+            <p class="field-hint" id="book-hint"></p>
+            <div class="form-actions" style="margin-top:12px;">
+                <button id="borrow-btn" type="button" class="btn btn-primary" disabled>确认借出</button>
+            </div>
+        </div>
+
+        <!-- 读者面板：档案 + 实时配额读数（每次操作后回查刷新，不缓存） -->
+        <div class="card" id="reader-panel" hidden>
+            <span class="rp-name" id="rp-name"></span>
+            <span class="rp-item" id="rp-type"></span>
+            <span class="rp-item" id="rp-quota"></span>
+            <span class="rp-item" id="rp-loanweeks"></span>
+            <span id="rp-overdue"></span>
+            <span id="rp-status"></span>
+        </div>
+
+        <!-- 在借 / 丢失列表：还书、续借、丢失指引 -->
+        <div class="card" id="loans-card">
+            <h2>在借记录</h2>
+            <div id="loans-slot"></div>
+        </div>
+    </main>
+
+    <script src="js/dict.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/nav.js"></script>
+    <script>
+    // 借还操作台（WEB-2 / Issue #133）。后端契约（BE-B08 #123 / BE-B10 #125 / BE-B11 #126，亲验）：
+    // POST /api/borrows {readerId,bookId} -> 201 BorrowRecord（dueAt 前 10 位为应还日期）；
+    //   409 拒绝码：READER_INACTIVE / QUOTA_EXCEEDED / READER_HAS_OVERDUE / BOOK_WITHDRAWN /
+    //   NO_AVAILABLE_COPY / RESERVED_FOR_OTHER_READER（BorrowRuleValidator），中文 message 行内直显
+    //   并高亮对应输入，表单不清空不跳转；404 READER_NOT_FOUND / BOOK_NOT_FOUND。
+    // POST /api/borrows/{id}/return -> 200 BorrowRecord；同事务递补队首 WAITING -> HELD
+    //   （ReservationExpirySweeper.HOLD_RETENTION_DAYS = 3 天新保留窗口）。
+    // PUT  /api/borrows/{id}/renew -> 200 BorrowRecord；409 RENEW_LIMIT_REACHED /
+    //   RENEW_BLOCKED_BY_RESERVATION / RENEW_BLOCKED_BY_OVERDUE / BORROW_NOT_ACTIVE（RenewService）。
+    // GET  /api/borrows?readerId=&status= -> {items,total,page,size}（BE-B12 #127）。
+    // GET  /api/readers?q=（证号/姓名模糊）与 GET /api/reader-types（{items:[{code,name,maxBorrow,loanWeeks}]}）。
+    // GET  /api/reservations?bookId=&status= -> ReservationView[]（BE-B09 #124）。
+    // 差异说明（books.html #137 先例）：
+    // 1) issue 所写「GET /api/readers/{id}」端点不存在（ReaderController 仅
+    //    POST / GET / PUT /{id} / deactivate 四路由）——读者面板实时回查改用
+    //    GET /api/readers?q=<cardNo> 精确匹配 cardNo 取该行，语义同为实时读数。
+    // 2) loanWeeks 不在 Reader 契约上（domain.Reader 无此字段），经 /api/reader-types
+    //    按 readerTypeCode 映射。
+    // 3) 读者「逾期红徽标」无服务端字段，由在借列表 OVERDUE 行实时推导（列表即数据源）。
+    // 4) availableCopies 口径 = totalCopies − 占用借阅 − HELD（BookRepository #122 正式
+    //    口径，亲验）。提交按钮仅按 availableCopies > 0 启用：HELD 使可借降为 0 时按钮
+    //    对所有人禁用（含预约人，前端无读者-预约数据可辨）；多副本仍有余量时，非预约人
+    //    借出由服务端 409 RESERVED_FOR_OTHER_READER 拒绝并行内直显。
+    // 5) 已下架书籍不进书籍下拉（reservations.html #135 先例，避免制造服务端语义外的
+    //    借出）；BOOK_WITHDRAWN 分支保留——服务端在加载后下架的竞态下仍会返回该码。
+    (function () {
+      'use strict';
+
+      var state = {
+        readerTypes: {},   // code -> ReaderType（name/loanWeeks 映射）
+        reader: null,      // 选中的 Reader（面板实时回查后整体替换）
+        book: null,        // 选中的 Book（availableCopies 提示与提交启用依据）
+        loans: [],         // 在借（含逾期）+ 丢失行，BorrowQueryView
+        readerNames: {},   // id -> Reader（还书递补提示取预约人姓名，init 拉全量）
+        bookTitles: {},    // id -> 书名（编号）（列表行标题，init 拉全量）
+        readerHits: {},    // 最近一次读者搜索命中 id -> Reader（下拉回选用）
+        bookHits: {}       // 最近一次书籍搜索命中 id -> Book（下拉回选用）
+      };
+
+      var el = function (id) { return document.getElementById(id); };
+      var readerQ = el('reader-q');
+      var readerPick = el('reader-pick');
+      var bookQ = el('book-q');
+      var bookPick = el('book-pick');
+      var bookHint = el('book-hint');
+      var borrowBtn = el('borrow-btn');
+      var loansSlot = el('loans-slot');
+
+      // ---- 基础数据 ----
+      function loadReaderTypes() {
+        return Api.get('/api/reader-types').then(function (data) {
+          state.readerTypes = {};
+          ((data && data.items) || []).forEach(function (t) { state.readerTypes[t.code] = t; });
+        });
+      }
+
+      // 逐页取全量（reservations.html 同款有界循环），还书递补提示查预约人姓名用
+      function fetchAll(path) {
+        function collect(page, acc) {
+          return Api.get(path, { page: page, size: 100 }).then(function (p) {
+            acc = acc.concat(p.items);
+            if (p.items.length === 0 || acc.length >= p.total) return acc;
+            return collect(page + 1, acc);
+          });
+        }
+        return collect(1, []);
+      }
+
+      function readerName(readerId) {
+        var r = state.readerNames[readerId];
+        return r ? r.name : '读者 #' + readerId;
+      }
+
+      // ---- 读者搜索与面板 ----
+      function fillSelect(select, placeholder, options) {
+        select.textContent = '';
+        var ph = document.createElement('option');
+        ph.value = '';
+        ph.textContent = placeholder;
+        select.appendChild(ph);
+        options.forEach(function (opt) {
+          var node = document.createElement('option');
+          node.value = opt.value;
+          node.textContent = opt.label;
+          select.appendChild(node);
+        });
+      }
+
+      function searchReaders() {
+        UI.inlineError(el('borrow-error-slot'), '');
+        var q = readerQ.value.trim();
+        if (!q) return;
+        return Api.get('/api/readers', { q: q, page: 1, size: 100 }).then(function (data) {
+          var items = data.items || [];
+          if (items.length === 0) {
+            // 验收：读者编号不存在 -> 行内「读者不存在」，不进入下一步
+            fillSelect(readerPick, '无匹配读者', []);
+            state.readerHits = {};
+            setReader(null);
+            UI.inlineError(el('borrow-error-slot'), '读者不存在');
+            return;
+          }
+          state.readerHits = {};
+          items.forEach(function (r) { state.readerHits[r.id] = r; });
+          fillSelect(readerPick, '请选择读者', items.map(function (r) {
+            return { value: r.id, label: r.name + '（' + r.cardNo + '）' + (r.status === 'INACTIVE' ? '【已注销】' : '') };
+          }));
+          if (items.length === 1) {
+            readerPick.value = String(items[0].id);
+            setReader(items[0]);
+          } else {
+            setReader(null);
+          }
+        }, function (err) {
+          UI.inlineError(el('borrow-error-slot'), err instanceof Api.ApiError ? Dict.rejectText(err) : '搜索失败，请稍后重试');
+        });
+      }
+
+      function setReader(reader) {
+        state.reader = reader;
+        state.loans = []; // 切读者即清列表：面板逾期徽标不得引用上一读者的行
+        if (!reader) {
+          el('reader-panel').hidden = true;
+          setBookControlsEnabled(false);
+          setBook(null);
+          renderLoansPlaceholder('请先选择读者');
+          return;
+        }
+        el('guide').hidden = true;
+        setBookControlsEnabled(true);
+        el('reader-panel').hidden = false; // 选中后面板可见（初始 markup 带 hidden）
+        renderPanel(reader);
+        loadLoans();
+        refreshReaderPanel(); // 选中即回查一次实时读数（搜索结果可能已滞后）
+      }
+
+      // 面板实时回查：契约无 GET /api/readers/{id}，用 q=<cardNo> 精确匹配（差异说明 1）
+      function refreshReaderPanel() {
+        var cardNo = state.reader && state.reader.cardNo;
+        if (!cardNo) return Promise.resolve();
+        return Api.get('/api/readers', { q: cardNo, page: 1, size: 100 }).then(function (data) {
+          var fresh = null;
+          (data.items || []).forEach(function (r) { if (r.cardNo === cardNo) fresh = r; });
+          if (fresh) {
+            state.reader = fresh;
+            renderPanel(fresh);
+          }
+        });
+      }
+
+      function renderPanel(r) {
+        el('rp-name').textContent = r.name + '（' + r.cardNo + '）';
+        var t = state.readerTypes[r.readerTypeCode];
+        el('rp-type').textContent = '类型：' + (Dict.readerType[r.readerTypeCode] || r.readerTypeCode) +
+          '（' + (t ? t.name : r.readerTypeCode) + '）';
+        el('rp-quota').textContent = '已借 ' + r.activeBorrowCount + ' / ' + r.maxBorrow + ' 本';
+        el('rp-loanweeks').textContent = '借期 ' + (t ? t.loanWeeks : '—') + ' 周';
+        el('rp-status').textContent = '';
+        el('rp-status').innerHTML = r.status === 'INACTIVE' ? UI.badge('INACTIVE') : '';
+        // 逾期红徽标：无服务端字段，由在借列表 OVERDUE 行推导（差异说明 3）
+        var hasOverdue = state.loans.some(function (row) { return row.status === 'OVERDUE'; });
+        el('rp-overdue').innerHTML = hasOverdue
+          ? '<span class="lib-badge lib-badge-red">有逾期未还</span>'
+          : '';
+      }
+
+      // ---- 书籍搜索 ----
+      function setBookControlsEnabled(enabled) {
+        bookQ.disabled = !enabled;
+        el('book-search').disabled = !enabled;
+        bookPick.disabled = !enabled;
+        borrowBtn.disabled = true; // 启用与否最终由 updateBorrowButton 依据书籍与副本决定
+      }
+
+      function setBook(book) {
+        state.book = book;
+        updateBorrowButton();
+        updateBookHint();
+      }
+
+      function searchBooks() {
+        UI.inlineError(el('borrow-error-slot'), '');
+        var q = bookQ.value.trim();
+        if (!q) return;
+        return Api.get('/api/books', { q: q, page: 1, size: 100 }).then(function (data) {
+          var items = (data.items || []).filter(function (b) { return b.status !== 'WITHDRAWN'; }); // 差异说明 5
+          if (items.length === 0) {
+            fillSelect(bookPick, '无匹配书籍', []);
+            state.bookHits = {};
+            setBook(null);
+            return;
+          }
+          state.bookHits = {};
+          items.forEach(function (b) {
+            state.bookHits[b.id] = b;
+            state.bookTitles[b.id] = b.title + '（' + b.bookCode + '）'; // 列表行标题同步受益
+          });
+          fillSelect(bookPick, '请选择书籍', items.map(function (b) {
+            return { value: b.id, label: b.title + '（' + b.bookCode + '）' };
+          }));
+          if (items.length === 1) {
+            bookPick.value = String(items[0].id);
+            setBook(items[0]);
+          } else {
+            setBook(null);
+          }
+        }, function (err) {
+          UI.inlineError(el('borrow-error-slot'), err instanceof Api.ApiError ? Dict.rejectText(err) : '搜索失败，请稍后重试');
+        });
+      }
+
+      function updateBookHint() {
+        var b = state.book;
+        if (!b) { bookHint.textContent = ''; return; }
+        // 口径见差异说明 4：>0 即启用；HELD 冲突在有余量场景由服务端 409 兜底
+        bookHint.textContent = '可借 ' + b.availableCopies + ' / 馆藏 ' + b.totalCopies + ' 本' +
+          (b.availableCopies <= 0 ? '（暂无可借副本）' : '');
+      }
+
+      function updateBorrowButton() {
+        borrowBtn.disabled = !(state.reader && state.book && state.book.availableCopies > 0);
+      }
+
+      // ---- 借出 ----
+      // 拒绝码 -> 高亮侧：读者侧 / 书籍侧（409 精确分支，验收核心）
+      function rejectSide(code) {
+        if (code === 'READER_INACTIVE' || code === 'QUOTA_EXCEEDED' ||
+            code === 'READER_HAS_OVERDUE' || code === 'READER_NOT_FOUND') return readerPick;
+        if (code === 'BOOK_WITHDRAWN' || code === 'NO_AVAILABLE_COPY' ||
+            code === 'RESERVED_FOR_OTHER_READER' || code === 'BOOK_NOT_FOUND') return bookPick;
+        return null;
+      }
+
+      function markInput(selectEl, on) {
+        selectEl.classList[on ? 'add' : 'remove']('input-error');
+      }
+
+      function clearMarks() {
+        markInput(readerPick, false);
+        markInput(bookPick, false);
+      }
+
+      function borrow() {
+        if (borrowBtn.disabled) return;
+        UI.inlineError(el('borrow-error-slot'), '');
+        clearMarks();
+        borrowBtn.disabled = true;
+        Api.post('/api/borrows', { readerId: state.reader.id, bookId: state.book.id })
+          .then(function (created) {
+            UI.toast('借出成功，应还日期 ' + created.dueAt.slice(0, 10), 'success');
+            setBook(null);
+            fillSelect(bookPick, '请选择书籍', []);
+            bookQ.value = '';
+            refreshReaderPanel(); // 配额计数实时回查，不缓存（验收）
+            loadLoans();
+          }, function (err) {
+            updateBorrowButton(); // 按可用状态恢复按钮，而非恒启用
+            if (!(err instanceof Api.ApiError)) {
+              UI.inlineError(el('borrow-error-slot'), '网络异常，请稍后重试');
+              return;
+            }
+            if (err.status === 403) return; // api.js 已统一提示
+            // 409 精确分支：后端中文 message 行内直显（含「最多借」「逾期」「已注销」等），
+            // 高亮对应输入，表单不清空不跳转
+            var side = rejectSide(err.code);
+            if (side) markInput(side, true);
+            UI.inlineError(el('borrow-error-slot'), Dict.rejectText(err));
+          });
+      }
+
+      // 借出成功后书籍下拉已清空，余量在下次搜索时自然取服务端最新值
+
+      // ---- 在借 / 丢失列表 ----
+      // 契约 status 为生效态且三态互斥（BorrowRepository.statusFilter：BORROWED 要求
+      // due >= today，逾期行归 OVERDUE，另 LOST 为丢失未赔；RETURNED/LOST_PAID 不进本列表）
+      // ——在借列表按三态各查一次后拼接，逾期行才可见。
+      function loadLoans() {
+        var readerId = state.reader && state.reader.id;
+        if (!readerId) {
+          renderLoansPlaceholder('请先选择读者');
+          return Promise.resolve();
+        }
+        showSkeleton();
+        function allOfStatus(status) {
+          function collect(page, acc) {
+            return Api.get('/api/borrows', { readerId: readerId, status: status, page: page, size: 100 })
+              .then(function (p) {
+                acc = acc.concat(p.items);
+                if (p.items.length === 0 || acc.length >= p.total) return acc;
+                return collect(page + 1, acc);
+              });
+          }
+          return collect(1, []);
+        }
+        return Promise.all([
+          allOfStatus('BORROWED'),
+          allOfStatus('OVERDUE'),
+          allOfStatus('LOST')
+        ]).then(function (results) {
+          state.loans = results[0].concat(results[1]).concat(results[2]);
+          renderLoans();
+          renderPanel(state.reader); // 逾期徽标随列表刷新
+        }, function (err) {
+          state.loans = [];
+          loansSlot.innerHTML = '';
+          showPageError(err instanceof Api.ApiError ? Dict.rejectText(err) : '加载失败，请稍后重试');
+        });
+      }
+
+      function showSkeleton() {
+        var bar = '<div class="skeleton-bar"></div>';
+        var cells = new Array(7).join('<td>' + bar + '</td>'); // 6 列（Array(n).join 产出 n-1 个）
+        var rows = new Array(6).join('<tr>' + cells + '</tr>'); // 5 行
+        loansSlot.innerHTML =
+          '<table>' +
+          '<thead><tr><th>书籍</th><th>借出日期</th><th>应还日期</th><th>状态</th><th>已续借</th><th>操作</th></tr></thead>' +
+          '<tbody>' + rows + '</tbody>' +
+          '</table>';
+      }
+
+      function renderLoansPlaceholder(text) {
+        loansSlot.innerHTML = '<div class="disabled-hint">' + UI.escapeHtml(text) + '</div>';
+      }
+
+      function bookTitleOf(bookId) {
+        return state.bookTitles[bookId] || '书籍 #' + bookId;
+      }
+
+      function statusCell(r) {
+        if (r.status === 'OVERDUE') {
+          var text = (Dict.text('OVERDUE') || 'OVERDUE') + ' ' + r.overdueDays + ' 天';
+          return '<span class="lib-badge lib-badge-red">' + UI.escapeHtml(text) + '</span>';
+        }
+        if (r.status === 'LOST' && r.compensationStatus === 'PENDING') {
+          var lostPending = (Dict.text('LOST') || 'LOST') + '（未赔）';
+          return '<span class="lib-badge lib-badge-orange">' + UI.escapeHtml(lostPending) + '</span>';
+        }
+        return UI.badge(r.status);
+      }
+
+      function renderLoans() {
+        if (state.loans.length === 0) {
+          loansSlot.innerHTML = '<div class="empty"><p>该读者暂无在借记录</p></div>';
+          return;
+        }
+        var rows = state.loans.map(function (r) {
+          var lost = r.status === 'LOST';
+          var ops = '';
+          if (lost) {
+            // 丢失书归还入口不可用，指引走赔偿流程（records.html 闭环）
+            ops = '<span class="muted">请走<a href="records.html">丢失赔偿流程</a></span>';
+          } else {
+            ops = '<button type="button" class="btn" data-action="return" data-id="' + r.id + '">还书</button>';
+            if (r.renewCount >= 1) {
+              // 契约每本限续借 1 次：renewCount=1 禁用并提示已达上限
+              ops += '<button type="button" class="btn" disabled>续借</button><span class="muted">已达上限</span>';
+            } else {
+              ops += '<button type="button" class="btn" data-action="renew" data-id="' + r.id + '">续借</button>';
+            }
+          }
+          return '<tr>' +
+            '<td>' + UI.escapeHtml(bookTitleOf(r.bookId)) + '</td>' +
+            '<td>' + UI.escapeHtml(r.borrowDate) + '</td>' +
+            '<td>' + UI.escapeHtml(r.dueDate) + '</td>' +
+            '<td>' + statusCell(r) + '</td>' +
+            '<td>' + (r.renewCount > 0 ? r.renewCount + ' 次' : '—') + '</td>' +
+            '<td><span class="actions">' + ops + '</span></td>' +
+            '</tr>';
+        }).join('');
+        loansSlot.innerHTML =
+          '<table>' +
+          '<thead><tr><th>书籍</th><th>借出日期</th><th>应还日期</th><th>状态</th><th>已续借</th><th>操作</th></tr></thead>' +
+          '<tbody>' + rows + '</tbody>' +
+          '</table>';
+      }
+
+      // ---- 还书 ----
+      function returnBook(id) {
+        var row = null;
+        state.loans.forEach(function (item) { if (item.id === id) row = item; });
+        if (!row) return;
+        Api.post('/api/borrows/' + id + '/return').then(function () {
+          // 递补提示：还书同事务把队首 WAITING 升为 HELD（3 天窗口），查该书 HELD 行
+          Api.get('/api/reservations', { bookId: row.bookId, status: 'HELD' })
+            .then(function (holds) {
+              var hold = (holds || []).filter(function (h) { return h.bookId === row.bookId; })[0];
+              if (!hold || !hold.holdExpiresAt) {
+                UI.toast('归还成功', 'success');
+                return;
+              }
+              // (N 天) 由 holdExpiresAt - 今日 推导（服务端 HOLD_RETENTION_DAYS=3，不硬编码）
+              var holdDay = Date.parse(hold.holdExpiresAt.slice(0, 10) + 'T00:00:00Z');
+              var todayUtc = Date.parse(new Date().toISOString().slice(0, 10) + 'T00:00:00Z');
+              var days = Math.round((holdDay - todayUtc) / 86400000);
+              UI.toast('归还成功；本书有预约：已为读者 ' + readerName(hold.readerId) +
+                ' 保留至 ' + hold.holdExpiresAt.slice(0, 10) + '（' + days + ' 天）', 'success');
+            });
+          refreshReaderPanel(); // 配额实时回查
+          loadLoans();
+        }, function (err) {
+          if (err instanceof Api.ApiError) {
+            if (err.status !== 403) UI.toast(Dict.rejectText(err), 'error'); // BORROW_NOT_ACTIVE 等直显
+          } else {
+            UI.toast('网络异常，请稍后重试', 'error');
+          }
+        });
+      }
+
+      // ---- 续借 ----
+      function renew(id) {
+        Api.put('/api/borrows/' + id + '/renew').then(function (updated) {
+          // 成功后该行应还日期立即更新：用响应记录原地替换，不整表刷新
+          state.loans = state.loans.map(function (row) {
+            if (row.id !== id) return row;
+            row.dueDate = updated.dueAt.slice(0, 10);
+            row.renewCount = updated.renewCount;
+            return row;
+          });
+          renderLoans();
+          UI.toast('续借成功，新应还日期 ' + updated.dueAt.slice(0, 10), 'success');
+        }, function (err) {
+          if (!(err instanceof Api.ApiError)) {
+            UI.toast('网络异常，请稍后重试', 'error');
+            return;
+          }
+          if (err.status === 403) return;
+          // 被拒原因行内直显：在被拒行后插入红字提示行（区别于 toast）
+          var reason = Dict.rejectText(err);
+          var tr = loansSlot.querySelector('button[data-action="renew"][data-id="' + id + '"]');
+          var rowEl = tr && tr.closest('tr');
+          if (rowEl) {
+            var tbody = rowEl.parentNode;
+            var prev = tbody.querySelector('tr.row-error'); // 只保留最新一条被拒原因
+            if (prev) prev.parentNode.removeChild(prev);
+            var errRow = document.createElement('tr');
+            errRow.className = 'row-error';
+            var cell = document.createElement('td');
+            cell.colSpan = 6;
+            cell.textContent = reason;
+            errRow.appendChild(cell);
+            tbody.insertBefore(errRow, rowEl.nextSibling);
+          } else {
+            UI.toast(reason, 'error'); // 行已被重渲染清掉的竞态兜底
+          }
+        });
+      }
+
+      // ---- 页面级错误条 ----
+      function showPageError(message) {
+        el('page-error-text').textContent = message;
+        el('page-error').hidden = false;
+      }
+
+      // ---- 事件绑定 ----
+      function bind() {
+        el('reader-search').addEventListener('click', searchReaders);
+        readerQ.addEventListener('keydown', function (e) { if (e.key === 'Enter') searchReaders(); });
+        readerPick.addEventListener('change', function () {
+          var id = parseInt(readerPick.value, 10);
+          setReader(id ? state.readerHits[id] || null : null);
+          if (state.reader) {
+            clearMarks();
+            UI.inlineError(el('borrow-error-slot'), '');
+          }
+        });
+
+        el('book-search').addEventListener('click', searchBooks);
+        bookQ.addEventListener('keydown', function (e) { if (e.key === 'Enter') searchBooks(); });
+        bookPick.addEventListener('change', function () {
+          var id = parseInt(bookPick.value, 10);
+          setBook(id ? state.bookHits[id] || null : null);
+          if (state.book) {
+            clearMarks();
+            UI.inlineError(el('borrow-error-slot'), '');
+          }
+        });
+
+        borrowBtn.addEventListener('click', borrow);
+
+        loansSlot.addEventListener('click', function (e) {
+          var btn = e.target.closest('button[data-action]');
+          if (!btn) return;
+          var id = parseInt(btn.getAttribute('data-id'), 10);
+          if (btn.getAttribute('data-action') === 'return') returnBook(id);
+          if (btn.getAttribute('data-action') === 'renew') renew(id);
+        });
+
+        el('page-error-retry').addEventListener('click', init);
+      }
+
+      // ---- 启动 ----
+      // 名字映射（读者/书籍 id -> 展示文案）一次拉全量（reservations.html #135 先例，
+      // 有界循环）；失败不拦操作台（缺名行退回 #id 标签），页面级错误条提示。
+      function init() {
+        el('page-error').hidden = true;
+        renderLoansPlaceholder('请先选择读者');
+        var failed = 0;
+        function tolerate() { failed += 1; return null; }
+        Promise.all([
+          loadReaderTypes().catch(tolerate),
+          fetchAll('/api/readers').then(function (list) {
+            list.forEach(function (r) { state.readerNames[r.id] = r; });
+          }, tolerate),
+          fetchAll('/api/books').then(function (list) {
+            list.forEach(function (b) { state.bookTitles[b.id] = b.title + '（' + b.bookCode + '）'; });
+          }, tolerate)
+        ]).then(function () {
+          if (failed > 0) showPageError('基础数据加载失败，部分名称可能显示为编号，搜索与借还仍可用');
+        });
+      }
+
+      Auth.requireRole('LIBRARIAN', 'ADMIN').then(function (user) {
+        Nav.render(user);
+        bind();
+        init();
+      }).catch(function () { /* 守卫跳转/无权限页已替换文档 */ });
+    })();
+    </script>
+</body>
+</html>
