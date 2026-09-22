@@ -1,0 +1,11 @@
+# BE-B14 / Issue #129 业务规则测试套件（rule 包 6 个套件类）专用 profile 配置。
+# 套件类以 @ActiveProfiles("test") 激活本文件，其余配置沿用
+# src/main/resources/application.yml：SQLite 驱动、sql.init always + 幂等
+# schema/data 脚本、Hikari connection-init-sql 打开 foreign_keys。
+# 既有先例测试不激活 test profile（走 @SpringBootTest(properties=...) 内联
+# 同一 URL），本文件不改变其语义（#129 调度约定：只增不改）。
+spring:
+  datasource:
+    # 与先例测试共用同一测试库：种子 R0001 / admin / librarian / reader01
+    # 由 data.sql 幂等播种；套件内数据一律自建自清（card_no 前缀 B14*）
+    url: jdbc:sqlite:target/test-library.db
