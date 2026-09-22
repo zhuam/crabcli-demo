@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>基础数据维护 - 图书馆管理系统</title>
+    <style>
+        body { margin: 0; min-height: 100vh; background: #f3f4f6; color: #111827;
+               font-family: system-ui, sans-serif; font-size: 14px; }
+        .page { max-width: 1080px; margin: 24px auto 40px; padding: 0 16px; }
+        .page-head h1 { font-size: 18px; margin: 0 0 16px; }
+        .card { background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; margin-top: 16px; overflow: hidden; }
+        .card-title { display: flex; align-items: center; gap: 12px; padding: 14px 16px;
+                      border-bottom: 1px solid #f3f4f6; }
+        .card-title h2 { font-size: 15px; margin: 0; }
+        .card-title .sub { font-size: 12px; color: #9ca3af; flex: 1; }
+        .card-title .btn { flex-shrink: 0; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 10px 12px; text-align: left; font-size: 14px; border-bottom: 1px solid #f3f4f6; }
+        th { background: #f9fafb; color: #6b7280; font-weight: 500; white-space: nowrap; }
+        td { color: #374151; }
+        td.code { font-family: ui-monospace, monospace; }
+        .btn { padding: 8px 16px; font-size: 14px; border-radius: 6px; border: 1px solid transparent; cursor: pointer; }
+        .btn-primary { background: #2563eb; color: #fff; }
+        .btn-primary:hover:not(:disabled) { background: #1d4ed8; }
+        .btn-plain { background: #fff; color: #374151; border-color: #d1d5db; }
+        .btn-plain:hover:not(:disabled) { background: #f3f4f6; }
+        .btn-danger { background: #dc2626; color: #fff; }
+        .btn-danger:hover:not(:disabled) { background: #b91c1c; }
+        .btn:disabled { opacity: .6; cursor: not-allowed; }
+        .btn-sm { padding: 5px 12px; font-size: 13px; }
+        .num-input { width: 72px; box-sizing: border-box; padding: 6px 8px; font-size: 14px;
+                     border: 1px solid #d1d5db; border-radius: 6px; outline: none; background: #fff; color: #111827; }
+        .num-input:focus { border-color: #2563eb; }
+        .cell-err { font-size: 12px; color: #dc2626; margin: 4px 0 0; }
+        .cell-err:empty { display: none; }
+        .empty { padding: 48px 0; text-align: center; color: #6b7280; }
+        dialog { border: none; border-radius: 10px; padding: 0; width: 420px; max-width: calc(100vw - 32px);
+                 box-shadow: 0 8px 32px rgba(0,0,0,.18); }
+        dialog::backdrop { background: rgba(17,24,39,.4); }
+        .dlg-body { padding: 24px 24px 20px; }
+        .dlg-body h2 { font-size: 16px; margin: 0 0 8px; }
+        .dlg-body p { line-height: 1.6; margin: 8px 0 0; }
+        .dlg-body label { display: block; font-size: 13px; color: #374151; margin: 12px 0 4px; }
+        .dlg-body input { width: 100%; box-sizing: border-box; padding: 8px 10px; font-size: 14px;
+                  border: 1px solid #d1d5db; border-radius: 6px; outline: none; font-family: inherit;
+                  background: #fff; color: #111827; }
+        .dlg-body input:focus { border-color: #2563eb; }
+        .dlg-foot { display: flex; justify-content: flex-end; gap: 8px; padding: 0 24px 20px; }
+    </style>
+</head>
+<body>
+    <div class="page">
+        <div class="page-head">
+            <h1>基础数据维护</h1>
+        </div>
+
+        <div class="card" id="rt-card">
+            <div class="card-title">
+                <h2>读者类型参数</h2>
+                <span class="sub">可借册数与借期（周）修改保存后即时生效，影响后续借书校验</span>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>编号</th><th>类型名</th><th>可借册数</th><th>借期（周）</th><th>操作</th>
+                    </tr>
+                </thead>
+                <tbody id="rt-rows"></tbody>
+            </table>
+            <div class="empty" id="rt-empty" hidden></div>
+        </div>
+
+        <div class="card" id="cat-card">
+            <div class="card-title">
+                <h2>类别管理</h2>
+                <span class="sub"></span>
+                <button id="btn-cat-new" type="button" class="btn btn-primary btn-sm">新增类别</button>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>编号</th><th>类别名</th><th>操作</th>
+                    </tr>
+                </thead>
+                <tbody id="cat-rows"></tbody>
+            </table>
+            <div class="empty" id="cat-empty" hidden></div>
+        </div>
+    </div>
+
+    <dialog id="cat-dialog">
+        <form id="cat-form" class="dlg-body" novalidate>
+            <h2 id="cat-dlg-title">新增类别</h2>
+            <label for="cat-dlg-name">类别名</label>
+            <input id="cat-dlg-name" autocomplete="off" placeholder="如 计算机技术">
+        </form>
+        <div class="dlg-foot">
+            <button id="btn-cat-cancel" type="button" class="btn btn-plain">取消</button>
+            <button id="btn-cat-save" type="button" class="btn btn-primary">保存</button>
+        </div>
+    </dialog>
+
+    <dialog id="cat-del-dialog">
+        <div class="dlg-body" id="cat-del-body">
+            <h2>删除确认</h2>
+            <p id="cat-del-text"></p>
+        </div>
+        <div class="dlg-foot">
+            <button id="btn-cat-del-cancel" type="button" class="btn btn-plain">取消</button>
+            <button id="btn-cat-del-ok" type="button" class="btn btn-danger">确认删除</button>
+        </div>
+    </dialog>
+
+    <script src="js/dict.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/nav.js"></script>
+    <script>
+    // 基础数据维护页（WEB-7 / Issue #138）。后端契约见 BaseDataController（BE-B04 / #119）：
+    // GET /api/reader-types 非分页 {items:[{code,name,maxBorrow,loanWeeks}]}；
+    // PUT /api/reader-types/{code} 部分更新 {maxBorrow?,loanWeeks?}，200 返回更新后行，
+    //   400 VALIDATION_ERROR 附 fields[{field,message}]（@Min 文案「册数至少为 1」/「借期至少为 1 周」）；
+    // GET/POST/PUT/DELETE /api/categories，DELETE 204；重复名 409 DUPLICATE_CATEGORY；
+    //   被引用删除 409 CATEGORY_IN_USE——后端 message 不含数量，N 由前端按同口径补：
+    //   countBooksReferencing 与 GET /api/books?categoryId 的 total 同为
+    //   COUNT(*) FROM books WHERE category_id（含已下架），取 total 即「被 N 本书籍引用」。
+    // 配额即时生效由后端保证（借阅校验每次实时读参数，BE-B04 / F11），本页职责是把编辑保存做对。
+    // 导航：nav.js #132 已含 admin-data.html（ADMIN）菜单项，本页无需再挂。
+    (function () {
+      'use strict';
+
+      var rtRowsEl = document.getElementById('rt-rows');
+      var rtEmptyEl = document.getElementById('rt-empty');
+      var rtCardEl = document.getElementById('rt-card');
+      var catRowsEl = document.getElementById('cat-rows');
+      var catEmptyEl = document.getElementById('cat-empty');
+
+      var catDialog = document.getElementById('cat-dialog');
+      var catForm = document.getElementById('cat-form');
+      var catDlgTitle = document.getElementById('cat-dlg-title');
+      var catNameInput = document.getElementById('cat-dlg-name');
+      var btnCatSave = document.getElementById('btn-cat-save');
+
+      var catDelDialog = document.getElementById('cat-del-dialog');
+      var catDelText = document.getElementById('cat-del-text');
+      var btnCatDelOk = document.getElementById('btn-cat-del-ok');
+
+      var categories = [];   // GET /api/categories 的 {id,name}，行操作时按 id 取行数据
+      var renaming = null;   // 重命名目标 Category；null = 新增
+      var deleting = null;   // 删除确认目标 Category
+
+      function esc(v) { return UI.escapeHtml(v); }
+
+      // 数字输入是否为正整数（空串 / 负数 / 小数 / 非数字均不过；type=number 下非法
+      // 原始输入 value 即为空串，同样被拦）。前端拦截与后端 @Min(1) 同判据。
+      function isPositiveInt(v) {
+        return /^\d+$/.test(v) && Number(v) >= 1;
+      }
+
+      // ---- 读者类型参数 ----
+      function renderReaderTypes(items) {
+        rtRowsEl.innerHTML = items.map(function (rt) {
+          return '<tr data-code="' + esc(rt.code) + '">' +
+              '<td class="code">' + esc(rt.code) + '</td>' +
+              '<td>' + esc(rt.name) + '</td>' +
+              '<td><div class="cell"><input class="num-input" data-field="maxBorrow" type="number" ' +
+                  'min="1" step="1" value="' + esc(rt.maxBorrow) + '"><p class="cell-err"></p></div></td>' +
+              '<td><div class="cell"><input class="num-input" data-field="loanWeeks" type="number" ' +
+                  'min="1" step="1" value="' + esc(rt.loanWeeks) + '"><p class="cell-err"></p></div></td>' +
+              '<td><button type="button" class="btn btn-primary btn-sm" data-act="save">保存</button></td>' +
+              '</tr>';
+        }).join('');
+        var isEmpty = items.length === 0;
+        rtEmptyEl.hidden = !isEmpty;
+        if (isEmpty) rtEmptyEl.textContent = '暂无读者类型';
+        // 每行闭包持有自身元素：输入校验联动保存按钮禁用态，保存成功后就地回填响应值
+        items.forEach(function (rt) { bindReaderTypeRow(rt); });
+      }
+
+      function bindReaderTypeRow(rt) {
+        var tr = rtRowsEl.querySelector('tr[data-code="' + rt.code + '"]');
+        // code 为种子固定字面（NORMAL/TEACHER），属性选择器不会落入转义歧义；查不到只可能
+        // 是同帧 innerHTML 尚未生效，属「理论上不会发生」，不做兜底重试
+        var maxInput = tr.querySelector('input[data-field="maxBorrow"]');
+        var weeksInput = tr.querySelector('input[data-field="loanWeeks"]');
+        var saveBtn = tr.querySelector('button[data-act="save"]');
+        var cellErr = { maxBorrow: maxInput.parentNode.querySelector('.cell-err'),
+                        loanWeeks: weeksInput.parentNode.querySelector('.cell-err') };
+
+        function cellOk(input) { return isPositiveInt(input.value.trim()); }
+
+        function refresh() {
+          saveBtn.disabled = !(cellOk(maxInput) && cellOk(weeksInput));
+        }
+
+        function clearErrors() {
+          cellErr.maxBorrow.textContent = '';
+          cellErr.loanWeeks.textContent = '';
+        }
+
+        [maxInput, weeksInput].forEach(function (input) {
+          input.addEventListener('input', function () {
+            clearErrors();
+            refresh();
+          });
+        });
+
+        saveBtn.addEventListener('click', function () {
+          clearErrors();
+          if (!cellOk(maxInput) || !cellOk(weeksInput)) return; // 禁用态兜底，正常不会进
+          Api.put('/api/reader-types/' + rt.code, {
+            maxBorrow: Number(maxInput.value.trim()),
+            loanWeeks: Number(weeksInput.value.trim())
+          }).then(function (updated) {
+            // 200 返回更新后行：以服务端值为准就地回填，不整表重载（避免清掉另一行未保存的编辑）
+            maxInput.value = updated.maxBorrow;
+            weeksInput.value = updated.loanWeeks;
+            UI.toast('已生效，影响后续借书校验', 'success');
+          }, function (err) {
+            if (err instanceof Api.ApiError && err.fields && err.fields.length) {
+              // 400 字段级提示：fields[{field,message}] 落到对应输入下的提示位
+              err.fields.forEach(function (f) {
+                if (cellErr[f.field]) cellErr[f.field].textContent = f.message;
+              });
+              refresh();
+            } else {
+              UI.inlineError(rtCardEl, err instanceof Api.ApiError ? Dict.rejectText(err) : '网络异常，请稍后重试');
+            }
+          });
+        });
+
+        refresh();
+      }
+
+      function loadReaderTypes() {
+        return Api.get('/api/reader-types').then(function (data) {
+          UI.inlineError(rtCardEl, '');
+          renderReaderTypes((data && data.items) || []);
+        }, function (err) {
+          rtRowsEl.textContent = '';
+          rtEmptyEl.hidden = false;
+          rtEmptyEl.textContent = '加载失败：' + (err instanceof Api.ApiError ? Dict.rejectText(err) : '请稍后重试');
+        });
+      }
+
+      // ---- 类别管理 ----
+      function renderCategories(items) {
+        categories = items;
+        catRowsEl.innerHTML = items.map(function (c) {
+          return '<tr data-id="' + c.id + '">' +
+              '<td class="code">' + c.id + '</td>' +
+              '<td>' + esc(c.name) + '</td>' +
+              '<td>' +
+                '<a href="javascript:void(0)" data-act="rename" data-id="' + c.id + '">重命名</a>' +
+                ' &nbsp; ' +
+                '<a href="javascript:void(0)" data-act="delete" data-id="' + c.id + '">删除</a>' +
+              '</td>' +
+              '</tr>';
+        }).join('');
+        var isEmpty = items.length === 0;
+        catEmptyEl.hidden = !isEmpty;
+        if (isEmpty) catEmptyEl.textContent = '暂无类别';
+      }
+
+      function loadCategories() {
+        return Api.get('/api/categories').then(function (data) {
+          UI.inlineError(catForm, '');
+          renderCategories((data && data.items) || []);
+        }, function (err) {
+          catRowsEl.textContent = '';
+          catEmptyEl.hidden = false;
+          catEmptyEl.textContent = '加载失败：' + (err instanceof Api.ApiError ? Dict.rejectText(err) : '请稍后重试');
+        });
+      }
+
+      function catById(id) {
+        for (var i = 0; i < categories.length; i++) {
+          if (categories[i].id === id) return categories[i];
+        }
+        return null;
+      }
+
+      // 新增 / 重命名共用一个单字段弹窗（同 books.html 弹窗惯例），409 直显行内
+      function openCatDialog(cat) {
+        renaming = cat;
+        UI.inlineError(catForm, '');
+        catDlgTitle.textContent = cat ? '重命名类别' : '新增类别';
+        catNameInput.value = cat ? cat.name : '';
+        btnCatSave.disabled = false;
+        btnCatSave.textContent = '保存';
+        catDialog.showModal();
+        catNameInput.focus();
+      }
+
+      function saveCatDialog() {
+        UI.inlineError(catForm, '');
+        var name = catNameInput.value.trim();
+        if (!name) {
+          UI.inlineError(catForm, '请输入类别名');
+          return;
+        }
+        btnCatSave.disabled = true;
+        btnCatSave.textContent = '保存中…';
+        var req = renaming
+          ? Api.put('/api/categories/' + renaming.id, { name: name })
+          : Api.post('/api/categories', { name: name });
+        req.then(function () {
+          catDialog.close();
+          UI.toast(renaming ? '已保存' : '已新增', 'success');
+          loadCategories();
+        }, function (err) {
+          btnCatSave.disabled = false;
+          btnCatSave.textContent = '保存';
+          // 409 DUPLICATE_CATEGORY 等业务拒绝：后端中文文案行内直显（契约不映射）
+          UI.inlineError(catForm, err instanceof Api.ApiError ? Dict.rejectText(err) : '网络异常，请稍后重试');
+        });
+      }
+
+      function openCatDel(cat) {
+        deleting = cat;
+        UI.inlineError(document.getElementById('cat-del-body'), '');
+        catDelText.textContent = '确定删除类别「' + cat.name + '」吗？删除后不可恢复。';
+        btnCatDelOk.disabled = false;
+        catDelDialog.showModal();
+      }
+
+      // 409 CATEGORY_IN_USE 的 N：countBooksReferencing 与
+      // GET /api/books?categoryId 的 total 同口径（COUNT(*) FROM books WHERE category_id），
+      // 单次补查即可，不为整表预取 N 个请求
+      function inUseCount(categoryId) {
+        return Api.get('/api/books', { categoryId: categoryId, page: 1, size: 1 })
+          .then(function (data) { return data.total; });
+      }
+
+      function confirmCatDel() {
+        btnCatDelOk.disabled = true;
+        var done = function () { btnCatDelOk.disabled = false; };
+        Api.del('/api/categories/' + deleting.id).then(function () {
+          catDelDialog.close();
+          UI.toast('已删除', 'success');
+          loadCategories();
+        }, function (err) {
+          if (err instanceof Api.ApiError && err.code === 'CATEGORY_IN_USE') {
+            inUseCount(deleting.id).then(function (total) {
+              UI.inlineError(document.getElementById('cat-del-body'),
+                  '该类别被 ' + total + ' 本书籍引用，无法删除');
+              done();
+            }, function () {
+              // 补查失败不阻塞主信息：回退后端文案
+              UI.inlineError(document.getElementById('cat-del-body'), Dict.rejectText(err));
+              done();
+            });
+          } else {
+            UI.inlineError(document.getElementById('cat-del-body'),
+                err instanceof Api.ApiError ? Dict.rejectText(err) : '网络异常，请稍后重试');
+            done();
+          }
+        });
+      }
+
+      // ---- 事件绑定 ----
+      document.getElementById('btn-cat-new').addEventListener('click', function () { openCatDialog(null); });
+      document.getElementById('btn-cat-cancel').addEventListener('click', function () { catDialog.close(); });
+      btnCatSave.addEventListener('click', saveCatDialog);
+      document.getElementById('btn-cat-del-ok').addEventListener('click', confirmCatDel);
+      document.getElementById('btn-cat-del-cancel').addEventListener('click', function () { catDelDialog.close(); });
+      catRowsEl.addEventListener('click', function (e) {
+        var id = Number(e.target.getAttribute && e.target.getAttribute('data-id'));
+        if (!id) return;
+        var cat = catById(id);
+        if (!cat) return;
+        if (e.target.getAttribute('data-act') === 'rename') openCatDialog(cat);
+        if (e.target.getAttribute('data-act') === 'delete') openCatDel(cat);
+      });
+
+      // ---- 启动：管理员守卫 → 导航 → 两块基础数据各自加载（互不阻塞） ----
+      Auth.requireRole('ADMIN')
+        .then(function (user) {
+          Nav.render(user);
+          loadReaderTypes();
+          loadCategories();
+        })
+        .catch(function () { /* 守卫跳转/无权限页已替换文档，无需后续初始化 */ });
+    })();
+    </script>
+</body>
+</html>

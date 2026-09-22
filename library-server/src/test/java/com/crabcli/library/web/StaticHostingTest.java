@@ -73,6 +73,14 @@ class StaticHostingTest {
     }
 
     @Test
+    void deliveredAdminDataPageServesAnonymously() throws Exception {
+        // WEB-7（#138）交付 admin-data.html：同上，落进 static/ 即刻匿名可达，无需改后端
+        mockMvc.perform(get("/admin-data.html"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith("text/html"));
+    }
+
+    @Test
     void futurePagesInStaticRootAreNotAuthBlocked() throws Exception {
         // WEB-2~8 页面（如 my.html）尚未交付：文件未落地按 404 呈现而非 401——静态路径
         // 不被安全链拦截（#130 验收第 4 条），页面落进 static/ 后即刻匿名可达，无需改后端
