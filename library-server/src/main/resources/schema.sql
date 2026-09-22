@@ -86,6 +86,11 @@ CREATE TABLE IF NOT EXISTS borrow_records (
 );
 CREATE INDEX IF NOT EXISTS idx_borrow_records_reader ON borrow_records(reader_id);
 CREATE INDEX IF NOT EXISTS idx_borrow_records_book ON borrow_records(book_id);
+-- BE-B12 / Issue #127 多条件查询索引：状态列 + 借出日（borrowed_at 前 10 字符即
+-- borrowDate，表达式索引供 substr 同式过滤走索引，避免全表扫描后内存过滤）
+CREATE INDEX IF NOT EXISTS idx_borrow_records_status ON borrow_records(status);
+CREATE INDEX IF NOT EXISTS idx_borrow_records_borrow_date
+    ON borrow_records(substr(borrowed_at, 1, 10));
 
 -- 预约（F4/F5：还回触发预约 → status HELD 并保留 3 天（hold_expires_at）；
 -- availableCopies 不含 HELD 保留副本）

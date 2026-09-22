@@ -3,6 +3,8 @@ package com.crabcli.library.repo;
 import com.crabcli.library.domain.BorrowRecord;
 import java.sql.PreparedStatement;
 import java.sql.Statement;
+import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -102,5 +104,81 @@ public class BorrowRepository {
     public void markReturned(int id, String returnedAt) {
         jdbc.update("UPDATE borrow_records SET returned_at = ?, status = 'RETURNED' WHERE id = ?",
                 returnedAt, id);
+    }
+
+    /**
+     * 多条件查询（BE-B12 / Issue #127）：readerId / 生效 status / borrowDate 闭区间
+     * 可选组合，SQL 层过滤 + LIMIT/OFFSET 分页（契约禁止全表取回内存再 filter）。
+     * 过滤走 schema 的 idx_borrow_records_{reader,status,borrow_date}（borrow_date 为
+     * {@code substr(borrowed_at,1,10)} 表达式索引，过滤式须与其逐字同形方可命中）。
+     * <p>status 传契约生效态（{@link com.crabcli.library.domain.BorrowStatus} 字面，
+     * 调用方已做白名单校验）：BORROWED / OVERDUE 为存储 BORROWED 的两个派生区间，
+     * 按 {@code BorrowStatus} 契约算式（returned_at IS NULL 且 dueDate < 当天判逾期）
+     * 在 SQL 侧表达——查询侧与读侧 {@code BorrowRecord#effectiveStatus} 的唯一分歧
+     * 风险点，两处口径均锚定 domain 契约字面。
+     */
+    public List<BorrowRecord> search(Integer readerId, String status, LocalDate from,
+                                     LocalDate to, LocalDate today, int page, int size) {
+        List<Object> args = new ArrayList<>();
+        String where = where(readerId, status, from, to, today, args);
+        args.add(size);
+        args.add((long) (page - 1) * size);
+        return jdbc.query(SELECT_COLUMNS + where + " ORDER BY id DESC LIMIT ? OFFSET ?",
+                MAPPER, args.toArray());
+    }
+
+    /** 过滤后总数（分页 total 契约）：与 {@link #search} 同一 WHERE 构造、同一 today。 */
+    public long countSearch(Integer readerId, String status, LocalDate from, LocalDate to,
+                            LocalDate today) {
+        List<Object> args = new ArrayList<>();
+        String where = where(readerId, status, from, to, today, args);
+        Long total = jdbc.queryForObject(
+                "SELECT COUNT(*) FROM borrow_records" + where, Long.class, args.toArray());
+        return total == null ? 0 : total;
+    }
+
+    /** WHERE 片段构造：条件全参数化，date 过滤取时间列前 10 字符（借出日口径）。 */
+    private static String where(Integer readerId, String status, LocalDate from,
+                                LocalDate to, LocalDate today, List<Object> args) {
+        StringBuilder where = new StringBuilder(" WHERE 1=1");
+        if (readerId != null) {
+            where.append(" AND reader_id = ?");
+            args.add(readerId);
+        }
+        if (status != null) {
+            where.append(" AND ").append(statusFilter(status, today, args));
+        }
+        if (from != null) {
+            where.append(" AND substr(borrowed_at, 1, 10) >= ?");
+            args.add(from.toString());
+        }
+        if (to != null) {
+            where.append(" AND substr(borrowed_at, 1, 10) <= ?");
+            args.add(to.toString());
+        }
+        return where.toString();
+    }
+
+    /**
+     * 生效 status → SQL 过滤式：RETURNED / LOST / LOST_PAID 即存储态等值；BORROWED /
+     * OVERDUE 为存储 BORROWED 的派生区间（BorrowStatus 契约算式，当天不逾期）。
+     */
+    private static String statusFilter(String status, LocalDate today, List<Object> args) {
+        return switch (status) {
+            case "BORROWED" -> {
+                args.add(today.toString());
+                yield "status = 'BORROWED' AND returned_at IS NULL "
+                        + "AND substr(due_at, 1, 10) >= ?";
+            }
+            case "OVERDUE" -> {
+                args.add(today.toString());
+                yield "status = 'BORROWED' AND returned_at IS NULL "
+                        + "AND substr(due_at, 1, 10) < ?";
+            }
+            default -> {
+                args.add(status);
+                yield "status = ?";
+            }
+        };
     }
 }
