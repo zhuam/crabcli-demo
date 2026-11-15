@@ -181,6 +181,22 @@ class ReaderControllerTest {
     }
 
     @Test
+    void searchAcceptsOnlyReaderStatusWhitelist() throws Exception {
+        mockMvc.perform(get("/api/readers?status=ACTIVE")
+                        .header("Authorization", "Bearer " + adminToken()))
+                .andExpect(status().isOk());
+        mockMvc.perform(get("/api/readers?status=INACTIVE")
+                        .header("Authorization", "Bearer " + adminToken()))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/readers?status=bogus")
+                        .header("Authorization", "Bearer " + adminToken()))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"))
+                .andExpect(jsonPath("$.message").value("status 非法，允许值：ACTIVE / INACTIVE"));
+    }
+
+    @Test
     void paginationClampsAndEchoesEffectivePageAndSize() throws Exception {
         String cardNo = uniqueCardNo();
         try {

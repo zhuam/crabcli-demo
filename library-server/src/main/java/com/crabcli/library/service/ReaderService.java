@@ -28,6 +28,7 @@ public class ReaderService {
     private static final String DEFAULT_READER_TYPE = "NORMAL";
     private static final int DEFAULT_SIZE = 10;
     private static final int MAX_SIZE = 100;
+    private static final List<String> STATUS_LITERALS = List.of("ACTIVE", "INACTIVE");
 
     private final ReaderRepository readerRepository;
     private final ReaderTypeRepository readerTypeRepository;
@@ -60,6 +61,10 @@ public class ReaderService {
     }
 
     public ReaderPage search(String q, String readerTypeCode, String status, Integer page, Integer size) {
+        if (status != null && !STATUS_LITERALS.contains(status)) {
+            throw new ApiException("VALIDATION_ERROR", "status 非法，允许值："
+                    + String.join(" / ", STATUS_LITERALS), HttpStatus.BAD_REQUEST);
+        }
         int effectivePage = page == null || page < 1 ? 1 : page;
         int effectiveSize = size == null || size < 1 ? DEFAULT_SIZE : Math.min(size, MAX_SIZE);
         List<Reader> items = readerRepository.search(q, readerTypeCode, status,
