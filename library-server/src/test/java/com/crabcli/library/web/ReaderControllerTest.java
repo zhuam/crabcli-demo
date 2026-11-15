@@ -197,6 +197,36 @@ class ReaderControllerTest {
     }
 
     @Test
+    void getReaderReturnsSameShapeAsListItem() throws Exception {
+        String cardNo = uniqueCardNo();
+        try {
+            int id = createReader(cardNo, "详情测试读者");
+
+            mockMvc.perform(get("/api/readers/" + id)
+                            .header("Authorization", "Bearer " + adminToken()))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.id").value(id))
+                    .andExpect(jsonPath("$.cardNo").value(cardNo))
+                    .andExpect(jsonPath("$.name").value("详情测试读者"))
+                    .andExpect(jsonPath("$.readerTypeCode").value("NORMAL"))
+                    .andExpect(jsonPath("$.status").value("ACTIVE"))
+                    .andExpect(jsonPath("$.maxBorrow").value(3))
+                    .andExpect(jsonPath("$.activeBorrowCount").value(0))
+                    .andExpect(jsonPath("$.createdAt").isNotEmpty());
+        } finally {
+            cleanupReader(cardNo);
+        }
+    }
+
+    @Test
+    void getUnknownReaderIs404() throws Exception {
+        mockMvc.perform(get("/api/readers/999999")
+                        .header("Authorization", "Bearer " + adminToken()))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("READER_NOT_FOUND"));
+    }
+
+    @Test
     void paginationClampsAndEchoesEffectivePageAndSize() throws Exception {
         String cardNo = uniqueCardNo();
         try {

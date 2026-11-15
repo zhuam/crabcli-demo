@@ -73,6 +73,10 @@ public class ReaderService {
         return new ReaderPage(items, total, effectivePage, effectiveSize);
     }
 
+    public Reader get(int id) {
+        return requireReader(id);
+    }
+
     public Reader update(int id, UpdateRequest request) {
         requireReader(id);
         requireReaderType(request.readerTypeCode());
