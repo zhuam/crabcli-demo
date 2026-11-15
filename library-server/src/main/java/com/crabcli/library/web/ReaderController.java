@@ -23,6 +23,7 @@ import org.springframework.web.bind.annotation.RestController;
  *   <li>{@code GET /api/readers?q=&readerTypeCode=&status=&page=&size=} →
  *       {@code {items,total,page,size}}，q 对证号/姓名模糊，total 为过滤后总数，
  *       page 从 1 起、size 上限 100（后端钳制，#115 契约）；</li>
+ *   <li>{@code GET /api/readers/{id}} → 200 返回与列表项同形的单个档案；</li>
  *   <li>{@code PUT /api/readers/{id} {name,readerTypeCode,phone,email}} → 200
  *       全量更新档案字段（证号是身份键不可改，status 仅经注销流转）；</li>
  *   <li>{@code POST /api/readers/{id}/deactivate} → 200 且 status=INACTIVE
@@ -53,6 +54,11 @@ public class ReaderController {
                                         @RequestParam(required = false) Integer page,
                                         @RequestParam(required = false) Integer size) {
         return service.search(q, readerTypeCode, status, page, size);
+    }
+
+    @GetMapping("/api/readers/{id}")
+    public Reader get(@PathVariable int id) {
+        return service.get(id);
     }
 
     @PutMapping("/api/readers/{id}")
